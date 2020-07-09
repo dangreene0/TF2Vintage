@@ -710,7 +710,9 @@ bool CTFWeaponBase::Deploy( void )
 		// Overrides the anim length for calculating ready time.
 		// Don't override primary attacks that are already further out than this. This prevents
 		// people exploiting weapon switches to allow weapons to fire faster.
-		float flDeployTime = 0.5f;
+		float flWeaponSwapSpeed = 0.67f;
+
+		float flDeployTime = 1.0f;
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer, flDeployTime, mult_deploy_time );
 		CALL_ATTRIB_HOOK_FLOAT( flDeployTime, mult_single_wep_deploy_time );
 
@@ -723,8 +725,19 @@ bool CTFWeaponBase::Deploy( void )
 		if ( pPlayer->m_Shared.GetNumHealers() == 0 )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer, flDeployTime, mod_medic_healed_deploy_time );
 
-		m_flNextPrimaryAttack = max( flOriginalPrimaryAttack, gpGlobals->curtime + flDeployTime );
-		m_flNextSecondaryAttack = max( flOriginalSecondaryAttack, gpGlobals->curtime + flDeployTime );
+		flDeployTime = Max(flDeployTime, FLT_EPSILON); // Don't divide by 0
+
+		for (int i = 0; i < MAX_VIEWMODELS; i++)
+		{
+			CBaseViewModel *vm = pPlayer->GetViewModel(i);
+			if (vm == nullptr)
+				continue;
+
+			vm->SetPlaybackRate((0.67f / flWeaponSwapSpeed) / flDeployTime);
+		}
+
+		m_flNextPrimaryAttack = max(flOriginalPrimaryAttack, gpGlobals->curtime + (flDeployTime * flWeaponSwapSpeed) );
+		m_flNextSecondaryAttack = max(flOriginalSecondaryAttack, gpGlobals->curtime + (flDeployTime * flWeaponSwapSpeed) );
 
 		pPlayer->SetNextAttack( m_flNextPrimaryAttack );
 

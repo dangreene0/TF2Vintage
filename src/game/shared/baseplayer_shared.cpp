@@ -13,6 +13,10 @@
 #include "tf_gamerules.h"
 #endif
 
+#if defined ( TF_VINTAGE ) || ( TF_VINTAGE_CLIENT )
+ConVar tf2v_flips("tf2v_flips", "0", FCVAR_REPLICATED, "Allows players to uncap their look angles, causing flips.");
+#endif
+
 #if defined( CLIENT_DLL )
 
 	#include "iclientvehicle.h"
