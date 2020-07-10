@@ -2054,7 +2054,7 @@ const Vector &CTFWeaponBase::GetBulletSpread( void )
 // ----------------------------------------------------------------------------
 void CTFWeaponBase::ApplyOnHitAttributes( CTFPlayer *pVictim, const CTakeDamageInfo &info )
 {
-	CTFPlayer *pOwner = GetTFPlayerOwner(), *pAttacker = ToTFPlayer( info.GetAttacker() );
+	CTFPlayer *pOwner = GetTFPlayerOwner(), *pTFVictim = ToTFPlayer(pVictim), *pAttacker = ToTFPlayer(info.GetAttacker());
 	if ( !pOwner || !pOwner->IsAlive() )
 		return;
 
@@ -2062,6 +2062,26 @@ void CTFWeaponBase::ApplyOnHitAttributes( CTFPlayer *pVictim, const CTakeDamageI
 	{
 		if( pOwner != pAttacker )
 			pOwner = pAttacker;
+	}
+
+	if (!pTFVictim->m_Shared.InCond(TF_COND_HEALTH_BUFF) && !pTFVictim->m_Shared.InCond(TF_COND_MEGAHEAL))
+	{
+		float flSlowOnHit = 0.0f;
+		CALL_ATTRIB_HOOK_FLOAT(flSlowOnHit, mult_onhit_enemyspeed);
+		if (flSlowOnHit && RandomFloat() < flSlowOnHit)
+		{
+			pTFVictim->m_Shared.StunPlayer(
+				0.2f,
+				(Clamp((pTFVictim->GetAbsOrigin() - pAttacker->GetAbsOrigin()).LengthSqr() * 4e-7f, 0.0f, 1.0f) * -0.2f) + 0.6f,
+				0.0f,
+				TF_STUNFLAG_SLOWDOWN | TF_STUNFLAG_NOSOUNDOREFFECT,
+				pAttacker);
+		}
+
+		float flSlowOnHitMajor = 0.0f;
+		CALL_ATTRIB_HOOK_FLOAT(flSlowOnHitMajor, mult_onhit_enemyspeed_major);
+		if (flSlowOnHitMajor)
+			pTFVictim->m_Shared.StunPlayer(flSlowOnHitMajor, 0.4f, 0.0f, TF_STUNFLAG_SLOWDOWN | TF_STUNFLAG_NOSOUNDOREFFECT, pAttacker);
 	}
 
 	// Afterburn shouldn't trigger on-hit effects.

@@ -241,6 +241,9 @@ private:
 	float m_fDeathTime;
 	bool  m_bFadingOut;
 	bool  m_bGib;
+	bool  m_bFeignDeath;
+	bool  m_bWasDisguised;
+	bool  m_bOnGround;
 	bool  m_bBurning;
 	float m_flInvisibilityLevel;
 	float m_flUncloakCompleteTime;
@@ -258,6 +261,9 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_TFRagdoll, DT_TFRagdoll, CTFRagdoll )
 	RecvPropVector( RECVINFO( m_vecRagdollVelocity ) ),
 	RecvPropInt( RECVINFO( m_nForceBone ) ),
 	RecvPropBool( RECVINFO( m_bGib ) ),
+	RecvPropBool(RECVINFO(m_bFeignDeath)),
+	RecvPropBool(RECVINFO(m_bWasDisguised)),
+	RecvPropBool(RECVINFO(m_bOnGround)),
 	RecvPropBool( RECVINFO( m_bBurning ) ),
 	RecvPropFloat( RECVINFO( m_flInvisibilityLevel ) ),
 	RecvPropInt( RECVINFO( m_iDamageCustom ) ),
@@ -491,6 +497,9 @@ void C_TFRagdoll::CreateTFRagdoll( void )
 			Interp_Reset( varMap );
 		}
 
+		if (!m_bFeignDeath || m_bWasDisguised)
+			m_nBody = pPlayer->GetBody();
+
 		m_nBody = pPlayer->GetBody();
 	}
 	else
@@ -622,7 +631,7 @@ void C_TFRagdoll::CreateTFGibs( void )
 	{
 		pPlayer = dynamic_cast<C_TFPlayer*>( hPlayer.Get() );
 	}
-	if ( pPlayer && ( pPlayer->m_hFirstGib == NULL ) )
+	if (pPlayer && (pPlayer->m_hFirstGib == NULL || m_bFeignDeath))
 	{
 		Vector vecVelocity = m_vecForce + m_vecRagdollVelocity;
 		VectorNormalize( vecVelocity );

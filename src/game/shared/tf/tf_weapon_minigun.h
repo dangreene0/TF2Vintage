@@ -73,6 +73,7 @@ public:
 	virtual int GetCustomDamageType() const { return TF_DMG_CUSTOM_MINIGUN; }
 
 	float			GetFiringTime( void ) { return (m_flStartedFiringAt >= 0) ? (gpGlobals->curtime - m_flStartedFiringAt) : 0; }
+	float			GetSpinUpLength(void);
 
 
 #ifdef CLIENT_DLL

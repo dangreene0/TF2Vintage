@@ -120,7 +120,7 @@ public:
 	bool	IsCritBoosted( void );
 	bool	IsMiniCritBoosted( void );
 	bool	IsSpeedBoosted( void );
-
+	bool	IsStealthed(void);
 	void	ConditionGameRulesThink( void );
 
 	void	InvisibilityThink( void );
@@ -228,6 +228,9 @@ public:
 	void	NoteLastDamageTime( int nDamage );
 	void	OnSpyTouchedByEnemy( void );
 	float	GetLastStealthExposedTime( void ) { return m_flLastStealthExposeTime; }
+	void	SetHasMotionCloak(bool bSet)		{ m_bHasMotionCloak = bSet; }
+	void	SetCloakDrainRate(float flRate)	{ m_flCloakDrainRate = flRate; }
+	void	SetCloakRegenRate(float flRate)	{ m_flCloakRegenRate = flRate; }
 
 	int		GetDesiredPlayerClassIndex( void );
 
@@ -235,6 +238,12 @@ public:
 	void	SetDesiredWeaponIndex( int iWeaponID ) { m_iDesiredWeaponID = iWeaponID; }
 	int		GetRespawnParticleID( void ) { return m_iRespawnParticleID; }
 	void	SetRespawnParticleID(int iParticleID) { m_iRespawnParticleID = iParticleID; }
+
+	bool	AddToSpyCloakMeter(float amt, bool bForce = false, bool bIgnoreAttribs = false);
+	void	SetFeignReady(bool bSet)			{ m_bFeignDeathReady = bSet; }
+	bool	IsFeignDeathReady(void)			{ return m_bFeignDeathReady; }
+
+	bool	IsFeigningDeath(void) const		{ return m_bFeigningDeath; }
 
 	float	GetSpyCloakMeter() const		{ return m_flCloakMeter; }
 	void	SetSpyCloakMeter( float val ) { m_flCloakMeter = val; }
@@ -263,6 +272,7 @@ public:
 	bool	IsCarryingObject( void ) { return m_bCarryingObject; }
 
 #ifdef GAME_DLL
+	void	UpdateCloakMeter(void);
 	void				SetCarriedObject( CBaseObject *pObj );
 	CBaseObject*		GetCarriedObject( void );
 #endif
@@ -304,6 +314,7 @@ private:
 	void ImpactWaterTrace( trace_t &trace, const Vector &vecStart );
 
 	void OnAddStealthed( void );
+	void OnAddFeignDeath(void);
 	void OnAddInvulnerable( void );
 	void OnAddTeleported( void );
 	void OnAddBurning( void );
@@ -424,6 +435,18 @@ private:
 	float					m_flFlameRemoveTime;
 	float					m_flTauntRemoveTime;
 
+#ifdef GAME_DLL
+	struct bleed_struct_t
+	{
+		CHandle<CTFPlayer> m_hAttacker;
+		CHandle<CTFWeaponBase> m_hWeapon;
+		float m_flBleedTime;
+		float m_flEndTime;
+		int m_iDamage;
+	};
+	CUtlVector< bleed_struct_t > m_aBleeds;
+#endif
+
 	// Other
 	float					m_flStunTime;
 	float					m_flPhaseTime;
@@ -445,6 +468,14 @@ private:
 	float m_flNextBurningSound;
 
 	CNetworkVar( float, m_flCloakMeter );	// [0,100]
+
+	float m_flCloakDrainRate;
+	float m_flCloakRegenRate;
+
+	bool m_bHasMotionCloak;
+
+	CNetworkVar(bool, m_bFeignDeathReady);
+	bool m_bFeigningDeath;
 
 	CNetworkVar( bool, m_bJumping );
 	CNetworkVar( bool, m_bAirDash );

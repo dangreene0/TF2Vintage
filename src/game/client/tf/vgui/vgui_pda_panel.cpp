@@ -18,6 +18,7 @@
 #include <vgui_controls/RadioButton.h>
 #include "clientmode.h"
 #include <vgui_controls/ProgressBar.h>
+#include <vgui_controls/CircularProgressBar.h>
 
 using namespace vgui;
 
@@ -141,37 +142,15 @@ CPDAPanel_Engineer_Build::CPDAPanel_Engineer_Build( vgui::Panel *parent, const c
 }
 
 //-----------------------------------------------------------------------------
-// Spy PDA
-//-----------------------------------------------------------------------------
-
-class CPDAPanel_Spy : public CPDAPanel
-{
-	DECLARE_CLASS( CPDAPanel_Spy, CPDAPanel );
-
-public:
-	CPDAPanel_Spy( vgui::Panel *parent, const char *panelName );
-};
-
-DECLARE_VGUI_SCREEN_FACTORY( CPDAPanel_Spy, "pda_panel_spy" );
-
-//-----------------------------------------------------------------------------
-// Constructor: 
-//-----------------------------------------------------------------------------
-CPDAPanel_Spy::CPDAPanel_Spy( vgui::Panel *parent, const char *panelName )
-: CPDAPanel( parent, "CPDAPanel_Spy" ) 
-{
-}
-
-//-----------------------------------------------------------------------------
 // Spy Invis PDA
 //-----------------------------------------------------------------------------
 
 class CPDAPanel_Spy_Invis : public CPDAPanel
 {
-	DECLARE_CLASS( CPDAPanel_Spy_Invis, CPDAPanel );
+	DECLARE_CLASS(CPDAPanel_Spy_Invis, CPDAPanel);
 
 public:
-	CPDAPanel_Spy_Invis( vgui::Panel *parent, const char *panelName );
+	CPDAPanel_Spy_Invis(vgui::Panel *parent, const char *panelName);
 
 	virtual void OnTick();
 
@@ -180,36 +159,76 @@ private:
 	ProgressBar *m_pInvisProgress;
 };
 
-DECLARE_VGUI_SCREEN_FACTORY( CPDAPanel_Spy_Invis, "pda_panel_spy_invis" );
+DECLARE_VGUI_SCREEN_FACTORY(CPDAPanel_Spy_Invis, "pda_panel_spy_invis");
 
 //-----------------------------------------------------------------------------
 // Constructor: 
 //-----------------------------------------------------------------------------
-CPDAPanel_Spy_Invis::CPDAPanel_Spy_Invis( vgui::Panel *parent, const char *panelName )
-: CPDAPanel( parent, "CPDAPanel_Spy_Invis" ) 
+CPDAPanel_Spy_Invis::CPDAPanel_Spy_Invis(vgui::Panel *parent, const char *panelName)
+	: CPDAPanel(parent, "CPDAPanel_Spy_Invis")
 {
-	vgui::ivgui()->AddTickSignal( GetVPanel() );
+	vgui::ivgui()->AddTickSignal(GetVPanel());
 
-	m_pInvisProgress = new ProgressBar( this, "InvisProgress" );
+	m_pInvisProgress = new ProgressBar(this, "InvisProgress");
 }
 
 //-----------------------------------------------------------------------------
 // Update the progress bar with how much invis we have left
 //-----------------------------------------------------------------------------
-void CPDAPanel_Spy_Invis::OnTick( void )
+void CPDAPanel_Spy_Invis::OnTick(void)
 {
 	C_BaseCombatWeapon *pInvisWeapon = GetOwningWeapon();
 
-	if ( !pInvisWeapon )
+	if (!pInvisWeapon)
 		return;
 
-	C_TFPlayer *pPlayer = ToTFPlayer( pInvisWeapon->GetOwner() );
+	C_TFPlayer *pPlayer = ToTFPlayer(pInvisWeapon->GetOwner());
 
-	if ( pPlayer && !pPlayer->IsDormant() )
+	if (pPlayer && !pPlayer->IsDormant())
 	{
-		if ( m_pInvisProgress )
+		if (m_pInvisProgress)
 		{
-			m_pInvisProgress->SetProgress( pPlayer->m_Shared.GetSpyCloakMeter() / 100.0f );
+			m_pInvisProgress->SetProgress(pPlayer->m_Shared.GetSpyCloakMeter() / 100.0f);
 		}
-	}	
+	}
+}
+
+class CPDAPanel_Spy_Invis_Pocket : public CPDAPanel
+{
+	DECLARE_CLASS(CPDAPanel_Spy_Invis_Pocket, CPDAPanel);
+public:
+	CPDAPanel_Spy_Invis_Pocket(vgui::Panel *parent, const char *panelName);
+
+	virtual void OnTick();
+
+private:
+	CircularProgressBar *m_pInvisProgress;
+};
+
+DECLARE_VGUI_SCREEN_FACTORY(CPDAPanel_Spy_Invis_Pocket, "pda_panel_spy_invis_pocket");
+
+CPDAPanel_Spy_Invis_Pocket::CPDAPanel_Spy_Invis_Pocket(vgui::Panel *parent, const char *panelName)
+	: CPDAPanel(parent, "CPDAPanel_Spy_Invis_Pocket")
+{
+	vgui::ivgui()->AddTickSignal(GetVPanel());
+
+	m_pInvisProgress = new CircularProgressBar(this, "InvisProgress");
+}
+
+void CPDAPanel_Spy_Invis_Pocket::OnTick(void)
+{
+	C_BaseCombatWeapon *pInvisWeapon = GetOwningWeapon();
+
+	if (!pInvisWeapon)
+		return;
+
+	C_TFPlayer *pPlayer = ToTFPlayer(pInvisWeapon->GetOwner());
+
+	if (pPlayer && !pPlayer->IsDormant())
+	{
+		if (m_pInvisProgress)
+		{
+			m_pInvisProgress->SetProgress(pPlayer->m_Shared.GetSpyCloakMeter() / 100.0f);
+		}
+	}
 }

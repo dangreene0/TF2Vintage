@@ -13,6 +13,7 @@
 #include "entity_capture_flag.h"
 #include "baseobject_shared.h"
 #include "tf_weapon_medigun.h"
+#include "tf_weapon_invis.h"
 #include "tf_weapon_pipebomblauncher.h"
 #include "in_buttons.h"
 #include "tf_viewmodel.h"
@@ -78,6 +79,8 @@ ConVar sv_showplayerhitboxes("sv_showplayerhitboxes", "0", FCVAR_REPLICATED, "Sh
 
 ConVar tf2c_building_hauling( "tf2c_building_hauling", "1", FCVAR_REPLICATED, "Toggle Engineer's building hauling ability." );
 ConVar tf2c_disable_player_shadows( "tf2c_disable_player_shadows", "0", FCVAR_REPLICATED, "Disables rendering of player shadows regardless of client's graphical settings." );
+
+ConVar tf2v_use_new_cloak("tf2v_use_new_cloak", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Gives cloaked spies a 20% damage resist and 25% shorter debuff duration.", true, 0, true, 1);
 
 #ifdef GAME_DLL
 extern ConVar tf2c_random_weapons;
@@ -481,6 +484,18 @@ bool CTFPlayerShared::IsSpeedBoosted( void )
 {
 	if ( InCond( TF_COND_SPEED_BOOST ) ||
 		InCond( TF_COND_HALLOWEEN_SPEED_BOOST ) )
+		return true;
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFPlayerShared::IsStealthed( void )
+{
+	if (InCond(TF_COND_STEALTHED) ||
+		InCond(TF_COND_STEALTHED_USER_BUFF) ||
+		InCond(TF_COND_STEALTHED_USER_BUFF_FADING))
 		return true;
 	return false;
 }
@@ -927,7 +942,7 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 			// Dispensers refill cloak.
 			if ( m_aHealers[i].bDispenserHeal )
 			{
-				m_flCloakMeter = min( m_flCloakMeter + m_aHealers[i].flAmount * gpGlobals->frametime, 100.0f );
+				AddToSpyCloakMeter( m_aHealers[i].flAmount * gpGlobals->frametime );
 			}
 
 			// Dispensers don't heal above 100%
@@ -1154,39 +1169,98 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 #endif
 }
 
+#ifdef GAME_DLL
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayerShared::UpdateCloakMeter(void)
+{
+	if (m_pOuter->IsPlayerClass(TF_CLASS_SPY))
+	{
+		if (InCond(TF_COND_STEALTHED))
+		{
+			if (m_bHasMotionCloak)
+			{
+				float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
+				if (flSpeed == 0.0f)
+				{
+					m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+
+					if (m_flCloakMeter >= 100.0f)
+						m_flCloakMeter = 100.0f;
+				}
+				else
+				{
+					float flMaxSpeed = Square(m_pOuter->MaxSpeed());
+					if (flMaxSpeed == 0.0f)
+					{
+						m_flCloakMeter -= m_flCloakDrainRate * gpGlobals->frametime * 1.5f;
+					}
+					else
+					{
+						m_flCloakMeter -= (m_flCloakDrainRate * gpGlobals->frametime * 1.5f) * Min(flSpeed / flMaxSpeed, 1.0f);
+					}
+				}
+			}
+			else
+			{
+				m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
+			}
+
+			// New cloak increases debuff speed by 25%
+			if (tf2v_use_new_cloak.GetBool())
+			{
+				float flReduction = 0.75f * gpGlobals->frametime;
+				if (InCond(TF_COND_BURNING))
+				{
+					// Reduce the duration of this burn 
+					m_flFlameRemoveTime -= flReduction;
+				}
+				if (InCond(TF_COND_BLEEDING))
+				{
+					for (int i = 0; i<m_aBleeds.Count(); ++i)
+					{
+						bleed_struct_t *bleed = &m_aBleeds[i];
+						bleed->m_flEndTime -= flReduction;
+					}
+				}
+
+				// Reduce Jarate
+				if (InCond(TF_COND_URINE))
+				{
+					m_flCondExpireTimeLeft.Set(TF_COND_URINE, max(m_flCondExpireTimeLeft[TF_COND_URINE] - flReduction, 0));
+
+					if (m_flCondExpireTimeLeft[TF_COND_URINE] == 0)
+					{
+						RemoveCond(TF_COND_URINE);
+					}
+				}
+
+			}
+
+			if (m_flCloakMeter <= 0.0f)
+			{
+				m_flCloakMeter = 0.0f;
+
+				if (!m_bHasMotionCloak)
+					FadeInvis(tf_spy_invis_unstealth_time.GetFloat());
+			}
+		}
+		else
+		{
+			m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+
+			if (m_flCloakMeter >= 100.0f)
+				m_flCloakMeter = 100.0f;
+		}
+	}
+}
+#endif
 //-----------------------------------------------------------------------------
 // Purpose: Do CLIENT/SERVER SHARED condition thinks.
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::ConditionThink( void )
 {
-	bool bIsLocalPlayer = false;
-#ifdef CLIENT_DLL
-	bIsLocalPlayer = m_pOuter->IsLocalPlayer();
-#else
-	bIsLocalPlayer = true;
-#endif
-
-	if ( m_pOuter->IsPlayerClass( TF_CLASS_SPY ) && bIsLocalPlayer )
-	{
-		if ( InCond( TF_COND_STEALTHED ) )
-		{
-			m_flCloakMeter -= gpGlobals->frametime * tf_spy_cloak_consume_rate.GetFloat();
-
-			if ( m_flCloakMeter <= 0.0f )
-			{
-				FadeInvis( tf_spy_invis_unstealth_time.GetFloat() );
-			}
-		}		
-		else
-		{
-			m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
-
-			if  (m_flCloakMeter >= 100.0f )
-			{
-				m_flCloakMeter = 100.0f;
-			}
-		}
-	}
 
 	if ( InCond( TF_COND_PHASE ) )
 	{
@@ -1200,6 +1274,10 @@ void CTFPlayerShared::ConditionThink( void )
 	}
 
 	UpdateRageBuffsAndRage();
+
+#ifdef GAME_DLL
+	UpdateCloakMeter();
+#endif
 }
 
 
@@ -1932,14 +2010,50 @@ void CTFPlayerShared::OnAddStealthed(void)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CTFPlayerShared::OnAddFeignDeath(void)
+{
+	if (!IsStealthed())
+		AddCond(TF_COND_STEALTHED);
+
+	m_bFeignDeathReady = false;
+	m_bFeigningDeath = true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CTFPlayerShared::OnRemoveStealthed(void)
 {
 #ifdef CLIENT_DLL
-	m_pOuter->EmitSound( "Player.Spy_UnCloak" );
+	C_TFWeaponInvis *pInvis = dynamic_cast<C_TFWeaponInvis *>( m_pOuter->Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
+	int nQuietUncloak = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( m_pOuter, nQuietUncloak, set_quiet_unstealth );
+	if ( nQuietUncloak != 0 )
+	{
+		m_pOuter->EmitSound("Player.Spy_UnCloakReduced");
+	}
+	else if (pInvis && pInvis->HasFeignDeath())
+	{
+		m_pOuter->EmitSound("Player.Spy_UnCloakFeignDeath");
+	}
+	else
+	{
+		m_pOuter->EmitSound("Player.Spy_UnCloak");
+	}
+
 	UpdateCritBoostEffect();
 	m_pOuter->UpdateOverhealEffect();
 	m_pOuter->UpdateRecentlyTeleportedEffect();
 #endif
+
+	if (InCond(TF_COND_FEIGN_DEATH))
+	{
+		RemoveCond(TF_COND_FEIGN_DEATH);
+		if (m_flCloakMeter > 40.0f)
+			m_flCloakMeter = 40.0f;
+
+		m_bFeigningDeath = false;
+	}
 
 	m_pOuter->HolsterOffHandWeapon();
 
@@ -2959,6 +3073,48 @@ bool CTFPlayerShared::IsLoser( void )
 int CTFPlayerShared::GetDesiredPlayerClassIndex(void)
 {
 	return m_iDesiredPlayerClass;
+}
+
+bool CTFPlayerShared::AddToSpyCloakMeter(float amt, bool bForce, bool bIgnoreAttribs)
+{
+	CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>(m_pOuter->Weapon_OwnsThisID(TF_WEAPON_INVIS));
+	if (!pInvis)
+		return false;
+
+	if (!bForce && pInvis->HasMotionCloak())
+		return false;
+
+	if (pInvis->HasFeignDeath())
+		amt = Min(amt, 35.0f);
+
+	if (bIgnoreAttribs)
+	{
+		if (amt <= 0.0f || m_flCloakMeter >= 100.0f)
+			return false;
+
+		m_flCloakMeter = Clamp(m_flCloakMeter + amt, 0.0f, 100.0f);
+		return true;
+	}
+
+	int iNoRegenFromItems = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER(pInvis, iNoRegenFromItems, mod_cloak_no_regen_from_items);
+	if (iNoRegenFromItems)
+		return false;
+
+	int iNoCloakWhenCloaked = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER(pInvis, iNoCloakWhenCloaked, NoCloakWhenCloaked);
+	if (iNoCloakWhenCloaked)
+	{
+		if (InCond(TF_COND_STEALTHED))
+			return false;
+	}
+
+	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pInvis, amt, ReducedCloakFromAmmo);
+	if (amt <= 0.0f || m_flCloakMeter >= 100.0f)
+		return false;
+
+	m_flCloakMeter = Clamp(m_flCloakMeter + amt, 0.0f, 100.0f);
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -4180,16 +4336,16 @@ bool CTFPlayer::DoClassSpecialSkill(void)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFPlayer::CanGoInvisible(void)
+bool CTFPlayer::CanGoInvisible(bool bFeigning)
 {
-	if (HasItem() && GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG)
+	if (!bFeigning && HasItem() && GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG)
 	{
 		HintMessage(HINT_CANNOT_CLOAK_WITH_FLAG);
 		return false;
 	}
 
 	// Stunned players cannot go invisible
-	if ( m_Shared.InCond( TF_COND_STUNNED ) )
+	if (m_Shared.InCond(TF_COND_STUNNED))
 	{
 		return false;
 	}

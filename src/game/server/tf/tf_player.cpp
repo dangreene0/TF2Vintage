@@ -56,6 +56,7 @@
 #include "tf_weapon_flamethrower.h"
 #include "tf_weapon_lunchbox.h"
 #include "tf_weapon_laser_pointer.h"
+#include "tf_weapon_invis.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -187,6 +188,9 @@ public:
 		m_bBurning = false;
 		m_flInvisibilityLevel = 0.0f;
 		m_iDamageCustom = 0;
+		m_bFeignDeath = false;
+		m_bWasDisguised = false;
+		m_bOnGround = true;
 		m_vecRagdollOrigin.Init();
 		m_vecRagdollVelocity.Init();
 		UseClientSideAnimation();
@@ -203,6 +207,9 @@ public:
 	CNetworkVector( m_vecRagdollOrigin );
 	CNetworkVar( bool, m_bGib );
 	CNetworkVar( bool, m_bBurning );
+	CNetworkVar(bool, m_bFeignDeath);
+	CNetworkVar(bool, m_bWasDisguised);
+	CNetworkVar(bool, m_bOnGround);
 	CNetworkVar( float, m_flInvisibilityLevel );
 	CNetworkVar( int, m_iDamageCustom );
 	CNetworkVar( int, m_iTeam );
@@ -219,6 +226,9 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CTFRagdoll, DT_TFRagdoll )
 	SendPropInt( SENDINFO( m_nForceBone ) ),
 	SendPropBool( SENDINFO( m_bGib ) ),
 	SendPropBool( SENDINFO( m_bBurning ) ),
+	SendPropBool(SENDINFO(m_bFeignDeath)),
+	SendPropBool(SENDINFO(m_bWasDisguised)),
+	SendPropBool(SENDINFO(m_bOnGround)),
 	SendPropFloat( SENDINFO( m_flInvisibilityLevel ), 8, 0, 0.0f, 1.0f ),
 	SendPropInt( SENDINFO( m_iDamageCustom ) ),
 	SendPropInt( SENDINFO( m_iTeam ), 3, SPROP_UNSIGNED ),
@@ -1215,6 +1225,13 @@ void CTFPlayer::InitClass( void )
 	// Init the anim movement vars
 	m_PlayerAnimState->SetRunSpeed( GetPlayerClass()->GetMaxSpeed() );
 	m_PlayerAnimState->SetWalkSpeed( GetPlayerClass()->GetMaxSpeed() * 0.5 );
+
+	if (m_bRegenerating)
+	{
+		CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>(Weapon_OwnsThisID(TF_WEAPON_INVIS));
+		if (pInvis && pInvis->HasFeignDeath())
+			pInvis->CleanUpInvisibility();
+	}
 
 	// Give default items for class.
 	GiveDefaultItems();
@@ -3590,6 +3607,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 	CBaseEntity *pAttacker = info.GetAttacker();
 	CBaseEntity *pInflictor = info.GetInflictor();
+	CTFPlayer *pTFAttacker = ToTFPlayer(pAttacker);
 	CTFWeaponBase *pWeapon = NULL;
 
 	//bool bObject = false;
@@ -3981,6 +3999,21 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 	}
 
+	if (pWeapon && pTFAttacker)
+	{
+		int nAddCloakOnHit = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nAddCloakOnHit, add_cloak_on_hit);
+		if (nAddCloakOnHit > 0)
+			pTFAttacker->m_Shared.AddToSpyCloakMeter(nAddCloakOnHit);
+
+		int nSpeedBoostOnHit = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nSpeedBoostOnHit, speed_boost_on_hit);
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nSpeedBoostOnHit, speed_boost_on_hit_enemy);
+		if (nSpeedBoostOnHit > 0)
+			pTFAttacker->m_Shared.AddCond(TF_COND_SPEED_BOOST, nSpeedBoostOnHit);
+
+	}
+
 	// Battalion's Backup resists
 	if ( m_Shared.InCond( TF_COND_DEFENSEBUFF ) )
 	{
@@ -4094,6 +4127,17 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	if ( GetHealth() <= iHealthBoundary && iHealthBefore > iHealthBoundary )
 	{
 		ClearExpression();
+	}
+
+	if (IsPlayerClass(TF_CLASS_SPY) && info.GetDamageCustom() != TF_DMG_CUSTOM_TELEFRAG) // Die anyway if fragged
+	{
+		if (m_Shared.IsFeignDeathReady())
+		{
+			m_Shared.SetFeignReady(false);
+
+			if (!m_Shared.InCond(TF_COND_TAUNTING))
+				SpyDeadRingerDeath(info);
+		}
 	}
 
 	CTF_GameStats.Event_PlayerDamage( this, info, iHealthBefore - GetHealth() );
@@ -5113,7 +5157,7 @@ void CTFPlayer::AmmoPackCleanUp( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayer::DropAmmoPack( bool bLunchbox/* = false*/ )
+void CTFPlayer::DropAmmoPack( bool bLunchbox, bool bFeigning )
 {
 	// Since weapon is hidden in loser state don't drop ammo pack.
 	if ( m_Shared.IsLoser() )
@@ -5175,7 +5219,8 @@ void CTFPlayer::DropAmmoPack( bool bLunchbox/* = false*/ )
 	int iMetal = max( 5, GetAmmoCount( TF_AMMO_METAL ) );
 
 	// Create the ammo pack.
-	CTFAmmoPack *pAmmoPack = CTFAmmoPack::Create( vecPackOrigin, vecPackAngles, this, pszWorldModel );
+	CTFAmmoPack *pAmmoPack;									// Weapon model.
+		pAmmoPack = CTFAmmoPack::Create(vecPackOrigin, vecPackAngles, this, pszWorldModel, bFeigning);
 	Assert( pAmmoPack );
 	if ( pAmmoPack )
 	{
@@ -5190,20 +5235,23 @@ void CTFPlayer::DropAmmoPack( bool bLunchbox/* = false*/ )
 			}
 		}
 
-		// Remove all of the players ammo.
-		RemoveAllAmmo();
+		if (!bFeigning)
+		{
+			// Remove all of the players ammo.
+			RemoveAllAmmo();
+		}
 
 		if ( bLunchbox && !bHolidayPack )
 		{
 			// No ammo for sandviches
 			pAmmoPack->SetIsLunchbox( true );
 		}
-		else
+		else if (!bFeigning)
 		{
 			// Fill up the ammo pack.
-			pAmmoPack->GiveAmmo( iPrimary, TF_AMMO_PRIMARY );
-			pAmmoPack->GiveAmmo( iSecondary, TF_AMMO_SECONDARY );
-			pAmmoPack->GiveAmmo( iMetal, TF_AMMO_METAL );
+			pAmmoPack->GiveAmmo(iPrimary, TF_AMMO_PRIMARY);
+			pAmmoPack->GiveAmmo(iSecondary, TF_AMMO_SECONDARY);
+			pAmmoPack->GiveAmmo(iMetal, TF_AMMO_METAL);
 		}
 
 		Vector vecRight, vecUp;
@@ -6762,6 +6810,83 @@ void CTFPlayer::CreateRagdollEntity( bool bGib, bool bBurning, float flInvisLeve
 	m_hRagdoll = pRagdoll;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Create a ragdoll to fake our death
+//-----------------------------------------------------------------------------
+void CTFPlayer::CreateFeignDeathRagdoll(CTakeDamageInfo const &info, bool bGibbed, bool bBurning, bool bFriendlyDisguise)
+{
+	// If we already have a ragdoll destroy it.
+	CTFRagdoll *pRagdoll = dynamic_cast<CTFRagdoll *>(m_hRagdoll.Get());
+	if (pRagdoll)
+	{
+		UTIL_Remove(pRagdoll);
+		pRagdoll = NULL;
+	}
+	Assert(pRagdoll == NULL);
+
+	// Create a ragdoll.
+	pRagdoll = dynamic_cast<CTFRagdoll *>(CreateEntityByName("tf_ragdoll"));
+	if (pRagdoll)
+	{
+		pRagdoll->m_vecRagdollOrigin = GetAbsOrigin();
+		pRagdoll->m_vecRagdollVelocity = m_vecTotalBulletForce;
+		pRagdoll->m_iPlayerIndex.Set(entindex());
+		pRagdoll->m_vecForce = CalcDamageForceVector(info);
+		pRagdoll->m_nForceBone = m_nForceBone;
+		pRagdoll->m_iDamageCustom = info.GetDamageCustom();
+		pRagdoll->m_bGib = bGibbed;
+		pRagdoll->m_bBurning = bBurning;
+		pRagdoll->m_bWasDisguised = bFriendlyDisguise;
+		pRagdoll->m_bFeignDeath = true;
+		pRagdoll->m_bOnGround = !!(GetFlags() & FL_ONGROUND);
+		pRagdoll->m_iTeam = GetTeamNumber();
+
+		if (bFriendlyDisguise)
+		{
+			pRagdoll->m_iClass = m_Shared.GetDisguiseClass();
+		}
+		else
+		{
+			pRagdoll->m_iClass = GetPlayerClass()->GetClassIndex();
+		}
+
+		/*if (info.GetInflictor())
+		{
+			if (info.GetDamageCustom() == TF_DMG_CUSTOM_BACKSTAB)
+			{
+				int nTurnToIce = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER(info.GetInflictor(), nTurnToIce, freeze_backstab_victim);
+				pRagdoll->m_bIceRagdoll = nTurnToIce != 0;
+			}
+
+			int nTurnToGold = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER(info.GetInflictor(), nTurnToGold, set_turn_to_gold);
+			pRagdoll->m_bGoldRagdoll = nTurnToGold != 0;
+
+			int nRagdollsBecomeAsh = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER(info.GetInflictor(), nRagdollsBecomeAsh, ragdolls_become_ash);
+			pRagdoll->m_bBecomeAsh = nRagdollsBecomeAsh != 0;
+
+			int nRagdollPlasmaEffect = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER(info.GetInflictor(), nRagdollPlasmaEffect, ragdolls_plasma_effect);
+			if (nRagdollPlasmaEffect != 0)
+				pRagdoll->m_iDamageCustom = TF_DMG_CUSTOM_PLASMA;
+
+			int nCritOnHardHit = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER(info.GetInflictor(), nCritOnHardHit, crit_on_hard_hit);
+			pRagdoll->m_bCritOnHardHit = nCritOnHardHit != 0;
+		}*/
+
+		if (!bGibbed && info.GetDamageType() & DMG_BLAST)
+		{
+			Vector vecForce = info.GetDamageForce();
+			pRagdoll->m_vecForce = vecForce * 1.5;
+		}
+	}
+
+	m_hRagdoll = pRagdoll;
+}
+
 // Purpose: Destroy's a ragdoll, called with a player is disconnecting.
 //-----------------------------------------------------------------------------
 void CTFPlayer::DestroyRagdoll( void )
@@ -6821,6 +6946,78 @@ void CTFPlayer::RemoveInvisibility( void )
 
 	// remove quickly
 	m_Shared.FadeInvis( 0.5 );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Fake our demise
+//-----------------------------------------------------------------------------
+void CTFPlayer::SpyDeadRingerDeath(CTakeDamageInfo const &info)
+{
+	if (!IsAlive() || m_Shared.InCond(TF_COND_STEALTHED))
+		return;
+	if (!CanGoInvisible(true) || m_Shared.GetSpyCloakMeter() < 99.9f)
+		return;
+
+	bool bFriendly = false;
+	if (m_Shared.InCond(TF_COND_DISGUISED))
+	{
+		int iDisguiseTeam = m_Shared.GetDisguiseTeam();
+		bFriendly = GetTeamNumber() == iDisguiseTeam;
+	}
+
+	bool bGib = ShouldGib(info);
+
+	bool bBurning = m_Shared.InCond(TF_COND_BURNING);
+	if (bFriendly && !m_Shared.InCond(TF_COND_DISGUISED_AS_DISPENSER))
+		bBurning &= GetPlayerClass()->GetClassIndex() != 7;
+
+	if (HasTheFlag())
+		DropFlag();
+
+	m_Shared.RemoveCond(TF_COND_BURNING);
+	m_Shared.RemoveCond(TF_COND_BLEEDING);
+
+	m_Shared.AddCond(TF_COND_FEIGN_DEATH);
+
+	// If we consume cloak, reduce our cloak level immediately.
+	float flCloakDeductOnFeign = 0;
+	CALL_ATTRIB_HOOK_FLOAT(flCloakDeductOnFeign, cloak_consume_on_feign_death_activate);
+	if (flCloakDeductOnFeign > 0)
+		m_Shared.SetSpyCloakMeter(Max((m_Shared.GetSpyCloakMeter() - (flCloakDeductOnFeign * 100)), 0.0f));
+
+	/*if (tf2v_use_new_dead_ringer.GetBool())
+	{
+		// Effect lasts 3 seconds
+		float flDREffectTime = 3.0f;
+		// Make us immune to afterburn, add a special speed boost, and prevent us from blinking.
+		m_Shared.AddCond(TF_COND_AFTERBURN_IMMUNE, flDREffectTime);
+		m_Shared.AddCond(TF_COND_SPEED_BOOST_FEIGN, flDREffectTime);
+		m_Shared.AddCond(TF_COND_BLINK_IMMUNE, flDREffectTime);
+		// Remove any blink, if we have one.
+		if (m_Shared.InCond(TF_COND_STEALTHED_BLINK))
+			m_Shared.RemoveCond(TF_COND_STEALTHED_BLINK);
+	}*/
+
+	RemoveTeleportEffect();
+
+	EmitSound("BaseCombatCharacter.StopWeaponSounds");
+	DeathSound(info);
+	TFGameRules()->DeathNotice(this, info);
+
+	/*if (GetActiveWeapon())
+	{
+		int nDropsHealthPack = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(GetActiveWeapon(), nDropsHealthPack, drop_health_pack_on_kill);
+		if (nDropsHealthPack == 1)
+			DropHealthPack();
+	}*/
+
+
+	SpeakConceptIfAllowed(MP_CONCEPT_DIED);
+
+	DropAmmoPack(false, true);
+
+	CreateFeignDeathRagdoll(info, bGib, bBurning, bFriendly);
 }
 
 //-----------------------------------------------------------------------------

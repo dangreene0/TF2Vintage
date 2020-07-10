@@ -61,6 +61,8 @@ END_DATADESC()
 extern ConVar tf2c_model_muzzleflash;
 #endif
 
+ConVar tf2v_use_new_minigun_spinup("tf2v_use_new_minigun_spinup", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Makes winding and unwinding the minigun 25% faster.");
+
 //=============================================================================
 //
 // Weapon Minigun functions.
@@ -184,12 +186,16 @@ void CTFMinigun::SharedAttack()
 	case AC_STATE_IDLE:
 		{
 			// Removed the need for cells to powerup the AC
-			WindUp();
-			m_flNextPrimaryAttack = gpGlobals->curtime + 1.0;
-			m_flNextSecondaryAttack = gpGlobals->curtime + 1.0;
-			m_flTimeWeaponIdle = gpGlobals->curtime + 1.0;
+			float flSpinupTime = GetSpinUpLength();
+
+			if (pPlayer->GetViewModel(m_nViewModelIndex))
+				pPlayer->GetViewModel(m_nViewModelIndex)->SetPlaybackRate(0.75 / Max(flSpinupTime, FLT_EPSILON));
+
+			m_flNextPrimaryAttack = gpGlobals->curtime + flSpinupTime;
+			m_flNextSecondaryAttack = gpGlobals->curtime + flSpinupTime;
+			m_flTimeWeaponIdle = gpGlobals->curtime + flSpinupTime;
 			m_flStartedFiringAt = -1;
-			pPlayer->DoAnimationEvent( PLAYERANIMEVENT_ATTACK_PRE );
+			pPlayer->DoAnimationEvent(PLAYERANIMEVENT_ATTACK_PRE);
 			break;
 		}
 	case AC_STATE_STARTFIRING:
@@ -499,6 +505,20 @@ void CTFMinigun::HandleFireOnEmpty( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+float CTFMinigun::GetSpinUpLength( void )
+{
+	float flSpinupTime = 0.75f;
+	if (!tf2v_use_new_minigun_spinup.GetBool())
+		flSpinupTime *= (4/3);
+
+	CALL_ATTRIB_HOOK_FLOAT( flSpinupTime, mult_minigun_spinup_time );
+	flSpinupTime = Max( flSpinupTime, FLT_EPSILON ); // Don't divide by 0
+	return flSpinupTime;
+}
+
 #ifdef CLIENT_DLL
 
 //-----------------------------------------------------------------------------
@@ -576,13 +596,15 @@ void CTFMinigun::ViewModelAttachmentBlending( CStudioHdr *hdr, Vector pos[], Qua
 //-----------------------------------------------------------------------------
 void CTFMinigun::UpdateBarrelMovement()
 {
-	if ( m_flBarrelCurrentVelocity != m_flBarrelTargetVelocity )
+	if (m_flBarrelCurrentVelocity != m_flBarrelTargetVelocity)
 	{
-		// update barrel velocity to bring it up to speed or to rest
-		m_flBarrelCurrentVelocity = Approach( m_flBarrelTargetVelocity, m_flBarrelCurrentVelocity, 0.1 );
+		float flSpinupTime = GetSpinUpLength();
 
-		if ( 0 == m_flBarrelCurrentVelocity )
-		{	
+		// update barrel velocity to bring it up to speed or to rest
+		m_flBarrelCurrentVelocity = Approach(m_flBarrelTargetVelocity, m_flBarrelCurrentVelocity, 0.1 / flSpinupTime);
+
+		if (0 == m_flBarrelCurrentVelocity)
+		{
 			// if we've stopped rotating, turn off the wind-down sound
 			WeaponSoundUpdate();
 		}
