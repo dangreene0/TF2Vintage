@@ -17,6 +17,7 @@
 #define CTFWeaponBaseMelee C_TFWeaponBaseMelee
 #endif
 
+typedef CUtlVector< CGameTrace > MeleePartitionVector;
 //=============================================================================
 //
 // Weapon Base Melee Class
@@ -71,6 +72,8 @@ public:
 	bool			IsCurrentAttackACritical( void ) { return m_bCurrentAttackIsCrit; }
 	bool			ConnectedHit( void ) { return m_bConnected; }
 
+	virtual int		GetSwingRange(void) const;
+
 public:	
 
 	CTFWeaponInfo	*m_pWeaponInfo;
@@ -78,6 +81,7 @@ public:
 protected:
 
 	virtual void	Swing( CTFPlayer *pPlayer );
+	bool			DoSwingTraceInternal(trace_t &tr, bool bCleave, MeleePartitionVector *enumResults);
 
 protected:
 

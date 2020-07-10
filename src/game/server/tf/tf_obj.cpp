@@ -1857,6 +1857,13 @@ int CBaseObject::OnTakeDamage( const CTakeDamageInfo &info )
 
 	float flDamage = info.GetDamage();
 
+	// Check weapon attributes if damages change when we hit a building.
+	CBaseEntity *pWeapon = info.GetWeapon();
+	if (pWeapon)
+	{
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, flDamage, mult_dmg_vs_buildings);
+	}
+
 	// Objects build on other objects take less damage
 	if ( !IsAnUpgrade() && GetParentObject() )
 	{

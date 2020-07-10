@@ -3663,6 +3663,17 @@ void CTFPlayer::TeamFortress_SetSpeed()
 		maxfbspeed *= 2.0f;
 	}
 
+	CTFWeaponBase *pWeapon;
+	
+	pWeapon = GetActiveTFWeapon();
+	CALL_ATTRIB_HOOK_FLOAT(maxfbspeed, mult_player_movespeed);
+
+	if (pWeapon)
+	{
+		maxfbspeed *= pWeapon->GetSpeedMod();
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, maxfbspeed, mult_player_movespeed_active);
+	}
+
 	// (Potentially) Reduce our speed if we were stunned
 	if ( m_Shared.InCond( TF_COND_STUNNED ) && ( m_Shared.m_nStunFlags & TF_STUNFLAG_SLOWDOWN ) )
 	{

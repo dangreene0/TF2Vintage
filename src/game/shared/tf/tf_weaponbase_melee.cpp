@@ -13,10 +13,12 @@
 #if !defined( CLIENT_DLL )
 #include "tf_player.h"
 #include "tf_gamestats.h"
+#include "tf_obj.h"
 #include "ilagcompensationmanager.h"
 // Client specific.
 #else
 #include "c_tf_player.h"
+#include "c_baseobject.h"
 #endif
 
 //=============================================================================
@@ -245,45 +247,128 @@ void CTFWeaponBaseMelee::ItemPostFrame()
 	BaseClass::ItemPostFrame();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFWeaponBaseMelee::GetSwingRange(void) const
+{
+	CBasePlayer *pPlayer = GetPlayerOwner();
+	if (pPlayer == nullptr)
+		return 48;
+
+	float flSwingRangeMult = 1.0f;
+	if (pPlayer->GetModelScale() > 1.0f)
+		flSwingRangeMult *= pPlayer->GetModelScale();
+
+	CALL_ATTRIB_HOOK_FLOAT(flSwingRangeMult, melee_range_multiplier);
+	return 48 * flSwingRangeMult;
+}
+
 bool CTFWeaponBaseMelee::DoSwingTrace( trace_t &trace )
 {
+	return DoSwingTraceInternal(trace, false, NULL);
+}
+
+bool CTFWeaponBaseMelee::DoSwingTraceInternal(trace_t &trace, bool bCleave, MeleePartitionVector *enumResults)
+{
 	// Setup a volume for the melee weapon to be swung - approx size, so all melee behave the same.
-	static Vector vecSwingMins( -18, -18, -18 );
-	static Vector vecSwingMaxs( 18, 18, 18 );
+	static Vector vecSwingMins(-18, -18, -18);
+	static Vector vecSwingMaxs(18, 18, 18);
+
+	float flBoundsMult = 1.0f;
+	CALL_ATTRIB_HOOK_FLOAT(flBoundsMult, melee_bounds_multiplier);
 
 	// Get the current player.
 	CTFPlayer *pPlayer = GetTFPlayerOwner();
-	if ( !pPlayer )
+	if (!pPlayer)
 		return false;
 
 	// Setup the swing range.
-	Vector vecForward; 
-	AngleVectors( pPlayer->EyeAngles(), &vecForward );
+	Vector vecForward;
+	AngleVectors(pPlayer->EyeAngles(), &vecForward);
 	Vector vecSwingStart = pPlayer->Weapon_ShootPosition();
-	Vector vecSwingEnd = vecSwingStart + vecForward * 48;
+	Vector vecSwingEnd = vecSwingStart + vecForward * GetSwingRange();
+	CTraceFilterIgnoreTeammates filterFriendlies(this, COLLISION_GROUP_NONE, GetTeamNumber());
 
-	// See if we hit anything.
-	UTIL_TraceLine( vecSwingStart, vecSwingEnd, MASK_SOLID, pPlayer, COLLISION_GROUP_NONE, &trace );
-	if ( trace.fraction >= 1.0 )
+	if (bCleave)
 	{
-		UTIL_TraceHull( vecSwingStart, vecSwingEnd, vecSwingMins, vecSwingMaxs, MASK_SOLID, pPlayer, COLLISION_GROUP_NONE, &trace );
-		if ( trace.fraction < 1.0 )
+		Ray_t ray; CBaseEntity *pList[256];
+		ray.Init(vecSwingStart, vecSwingEnd, vecSwingMins * flBoundsMult, vecSwingMaxs * flBoundsMult);
+
+		int nCount = UTIL_EntitiesAlongRay(pList, sizeof pList, ray, FL_CLIENT | FL_OBJECT);
+		if (nCount > 0)
 		{
-			// Calculate the point of intersection of the line (or hull) and the object we hit
-			// This is and approximation of the "best" intersection
-			CBaseEntity *pHit = trace.m_pEnt;
-			if ( !pHit || pHit->IsBSPModel() )
+			int nHit = 0;
+			for (int i = 0; i < nCount; ++i)
 			{
-				// Why duck hull min/max?
-				FindHullIntersection( vecSwingStart, trace, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, pPlayer );
+				if (pList[i] == pPlayer)
+					continue;
+
+				if (pList[i]->GetTeamNumber() == pPlayer->GetTeamNumber())
+					continue;
+
+				if (enumResults)
+				{
+					trace_t trace;
+					UTIL_TraceModel(vecSwingStart, vecSwingEnd,
+						vecSwingMins * flBoundsMult,
+						vecSwingMaxs * flBoundsMult,
+						pList[i], COLLISION_GROUP_NONE, &trace);
+
+					enumResults->Element(enumResults->AddToTail()) = trace;
+				}
 			}
 
-			// This is the point on the actual surface (the hull could have hit space)
-			vecSwingEnd = trace.endpos;	
+			return nHit > 0;
 		}
-	}
 
-	return ( trace.fraction < 1.0f );
+		return false;
+	}
+	else
+	{
+		// This takes priority over anything else we hit
+		int nDamagesSappers = 0;
+		CALL_ATTRIB_HOOK_INT(nDamagesSappers, set_dmg_apply_to_sapper);
+		if (nDamagesSappers != 0)
+		{
+			CTraceFilterIgnorePlayers filterPlayers(NULL, COLLISION_GROUP_NONE);
+			UTIL_TraceLine(vecSwingStart, vecSwingEnd, MASK_SOLID, &filterPlayers, &trace);
+			if (trace.fraction >= 1.0)
+				UTIL_TraceHull(vecSwingStart, vecSwingEnd, vecSwingMins * flBoundsMult, vecSwingMaxs * flBoundsMult, MASK_SOLID, &filterPlayers, &trace);
+
+			// Ensure valid target
+			if (trace.m_pEnt && trace.m_pEnt->IsBaseObject())
+			{
+				CBaseObject *pObject = static_cast<CBaseObject *>(trace.m_pEnt);
+				if (pObject->GetTeamNumber() == pPlayer->GetTeamNumber() && pObject->HasSapper())
+					return (trace.fraction < 1.0);
+			}
+		}
+
+		// See if we hit anything.
+		CTraceFilterIgnoreFriendlyCombatItems filterCombatItem(this, COLLISION_GROUP_NONE, pPlayer->GetTeamNumber());
+		UTIL_TraceLine(vecSwingStart, vecSwingEnd, MASK_SOLID, &filterCombatItem, &trace);
+		if (trace.fraction >= 1.0)
+		{
+			UTIL_TraceHull(vecSwingStart, vecSwingEnd, vecSwingMins * flBoundsMult, vecSwingMaxs * flBoundsMult, MASK_SOLID, &filterCombatItem, &trace);
+			if (trace.fraction < 1.0)
+			{
+				// Calculate the point of intersection of the line (or hull) and the object we hit
+				// This is and approximation of the "best" intersection
+				CBaseEntity *pHit = trace.m_pEnt;
+				if (!pHit || pHit->IsBSPModel())
+				{
+					// Why duck hull min/max?
+					FindHullIntersection(vecSwingStart, trace, VEC_DUCK_HULL_MIN, VEC_DUCK_HULL_MAX, pPlayer);
+				}
+
+				// This is the point on the actual surface (the hull could have hit space)
+				vecSwingEnd = trace.endpos;
+			}
+		}
+
+		return (trace.fraction < 1.0f);
+	}
 }
 
 // -----------------------------------------------------------------------------

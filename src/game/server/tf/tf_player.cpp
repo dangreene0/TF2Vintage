@@ -4217,6 +4217,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	CBaseEntity *pAttacker = info.GetAttacker();
 	CBaseEntity *pInflictor = info.GetInflictor();
 	CBaseEntity *pWeapon = info.GetWeapon();
+	CTFPlayer *pTFAttacker = ToTFPlayer(pAttacker);
 	CTFWeaponBase *pTFWeapon = dynamic_cast<CTFWeaponBase *>( pWeapon );
 
 	// If this is an object get the builder
@@ -4273,6 +4274,16 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 				CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pWeapon, flDamage, blast_dmg_to_self );
 			}
 		}
+	}
+
+
+	// Check to see if the weapon has resistance piercing, or changed damage based on hitting a player.
+	int nIgnoreResists = 0;
+	if (pTFAttacker != this && pWeapon)
+	{
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nIgnoreResists, mod_pierce_resists_absorbs);
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, flDamage, mult_dmg_vs_players);
+
 	}
 
 	int iOldHealth = m_iHealth;
