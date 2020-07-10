@@ -989,6 +989,8 @@ void CTFPlayer::Spawn()
 	// Make sure it has no model set, in case it had one before
 	GetViewModel( 1 )->SetWeaponModel( NULL, NULL );
 
+	m_Shared.SetHasRecoiled(false);
+
 	// Kind of lame, but CBasePlayer::Spawn resets a lot of the state that we initially want on.
 	// So if we're in the welcome state, call its enter function to reset 
 	if ( m_Shared.InState( TF_STATE_WELCOME ) )

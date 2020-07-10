@@ -295,6 +295,10 @@ public:
 	float GetRageProgress( void ) { return m_flEffectBarProgress; }
 	void ResetRageSystem( void );
 
+	// Scatterguns
+	bool	HasRecoiled(void) const			{ return m_bRecoiled; }
+	void	SetHasRecoiled(bool value)		{ m_bRecoiled = value; }
+
 private:
 
 	void ImpactWaterTrace( trace_t &trace, const Vector &vecStart );
@@ -392,6 +396,8 @@ private:
 	OuterClass			*m_pOuter;					// C_TFPlayer or CTFPlayer (client/server).
 
 	bool m_bRageActive;
+
+	bool m_bRecoiled;			// Recoil in midair from scattergun
 
 #ifdef GAME_DLL
 	// Healer handling
