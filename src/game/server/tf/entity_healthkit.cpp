@@ -106,6 +106,8 @@ bool CHealthKit::MyTouch( CBasePlayer *pPlayer )
 
 			EmitSound( user, entindex(), pszSound );
 
+			pTFPlayer->m_Shared.HealthKitPickupEffects(iHealthRestored);
+
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healonhit" );
 			
 			if ( event )

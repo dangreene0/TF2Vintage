@@ -193,6 +193,7 @@ public:
 
 	void	Burn( CTFPlayer *pAttacker, CTFWeaponBase *pWeapon = NULL, float flFlameDuration = -1.0f );
 	void	StunPlayer( float flDuration, float flSpeed, float flResistance, int nStunFlags, CTFPlayer *pStunner );
+	void	MakeBleed(CTFPlayer *pAttacker, CTFWeaponBase *pWeapon, float flBleedDuration, int iDamage);
 
 #ifdef GAME_DLL
 	void	AddPhaseEffects( void );

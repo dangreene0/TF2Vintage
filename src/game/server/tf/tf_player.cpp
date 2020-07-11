@@ -100,6 +100,13 @@ ConVar tf_allow_player_use( "tf_allow_player_use", "0", FCVAR_NOTIFY, "Allow pla
 
 ConVar tf_allow_sliding_taunt( "tf_allow_sliding_taunt", "0", 0, "Allow player to slide for a bit after taunting." );
 
+ConVar tf_feign_death_activate_damage_scale("tf_feign_death_activate_damage_scale", "0.1", FCVAR_CHEAT | FCVAR_NOTIFY);
+ConVar tf_feign_death_damage_scale("tf_feign_death_damage_scale", "0.1", FCVAR_CHEAT | FCVAR_NOTIFY);
+ConVar tf_feign_death_damage_scale_new("tf_feign_death_damage_scale_new", "0.35", FCVAR_CHEAT | FCVAR_NOTIFY);
+ConVar tf_stealth_damage_reduction("tf_stealth_damage_reduction", "0.8", FCVAR_CHEAT | FCVAR_NOTIFY);
+ConVar tf2v_new_feign_death_activate("tf2v_new_feign_death_activate", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Reduces the damage reduction of Dead Ringer activation.", true, 0, true, 2);
+ConVar tf2v_new_feign_death_stealth("tf2v_new_feign_death_stealth", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Makes Dead Ringer damage resistance while cloaked scale based on cloak amount.");
+
 
 extern ConVar spec_freeze_time;
 extern ConVar spec_freeze_traveltime;
@@ -109,6 +116,9 @@ extern ConVar sv_alltalk;
 extern ConVar tf_teamtalk;
 
 extern ConVar tf_arena_force_class;
+
+
+extern ConVar tf2v_use_new_cloak;
 
 // Team Fortress 2 Classic commands
 ConVar tf2c_random_weapons( "tf2c_random_weapons", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout." );
@@ -4036,6 +4046,15 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		info.SetDamage( flDamage * 0.65f );
 	}
 
+	// New cloak variant spies have a 20% damage reduction while cloaked.
+	// This does not apply to Dead Ringer, because Dead Ringer has a scaling damage reduction.
+	if (m_Shared.InCond(TF_COND_STEALTHED) && tf2v_use_new_cloak.GetBool() && !m_Shared.InCond(TF_COND_FEIGN_DEATH))
+	{
+		float flDamage = info.GetDamage();
+		// 20% resistance to all sources by default
+		info.SetDamage(flDamage * tf_stealth_damage_reduction.GetFloat());
+	}
+
 	// NOTE: Deliberately skip base player OnTakeDamage, because we don't want all the stuff it does re: suit voice
 	bTookDamage = CBaseCombatCharacter::OnTakeDamage( info );
 
@@ -4330,13 +4349,42 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 
 	}
 
+	if (IsPlayerClass(TF_CLASS_SPY) && info.GetDamageCustom() != TF_DMG_CUSTOM_TELEFRAG)
+	{
+		if (m_Shared.InCond(TF_COND_FEIGN_DEATH))
+		{
+			float flDamageReduction = tf_feign_death_damage_scale.GetFloat();
+
+			// New Dead Ringer reduces damage based on cloak meter amount
+			if (tf2v_new_feign_death_stealth.GetBool())
+				flDamageReduction = RemapValClamped(m_Shared.GetSpyCloakMeter(), 50.0f, 0.0f, tf_feign_death_damage_scale_new.GetFloat(), tf_stealth_damage_reduction.GetFloat());
+
+			flDamage *= flDamageReduction;
+		}
+		else if (m_Shared.IsFeignDeathReady())
+		{
+			float flActivateDamageReduction = tf_feign_death_activate_damage_scale.GetFloat();
+
+			if (tf2v_new_feign_death_activate.GetInt() == 1)
+				flActivateDamageReduction = 0.5;
+			else if (tf2v_new_feign_death_activate.GetInt() == 2)
+				flActivateDamageReduction = 0.25;
+
+			flDamage *= flActivateDamageReduction;
+		}
+	}
+
 	int iOldHealth = m_iHealth;
 	bool bIgniting = false;
+	float flBleedDuration = 0.0f;
 
 	if ( m_takedamage != DAMAGE_EVENTS_ONLY )
 	{
 		// Start burning if we took ignition damage
 		bIgniting = ( ( info.GetDamageType() & DMG_IGNITE ) && ( GetWaterLevel() < WL_Waist ) );
+
+		if (info.GetDamageCustom() != TF_DMG_CUSTOM_BLEEDING)
+			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pTFWeapon, flBleedDuration, bleeding_duration);
 
 		// Take damage - round to the nearest integer.
 		m_iHealth -= ( flDamage + 0.5f );
@@ -4361,6 +4409,13 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	{
 		//CTFWeaponBase *pTFWeapon = dynamic_cast<CTFWeaponBase *>( pWeapon );
 		m_Shared.Burn( ToTFPlayer( pAttacker ), pTFWeapon );
+	}
+
+	if (flBleedDuration > 0.0f)
+	{
+		int flBleedDamage = TF_BLEEDING_DAMAGE;
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pTFWeapon, flBleedDamage, mult_wpn_bleeddmg);
+		m_Shared.MakeBleed(pTFAttacker, pTFWeapon, flBleedDuration, flBleedDamage);
 	}
 
 	// Fire a global game event - "player_hurt"
@@ -6058,25 +6113,26 @@ int CTFPlayer::GiveAmmo( int iCount, int iAmmoIndex, bool bSuppressSound, EAmmoS
 			CALL_ATTRIB_HOOK_INT( iCount, mult_metal_pickup );
 		}
 	}
-	/*else if ( CALL_ATTRIB_HOOK_INT( bBool, ammo_becomes_health ) == 1 )
+	int nAmmoBecomesHealth = 0;
+	CALL_ATTRIB_HOOK_INT(nAmmoBecomesHealth, ammo_becomes_health);
+	if (nAmmoBecomesHealth != 0)
 	{
-	if ( !ammosource )
-	{
-	v7 = (*(int (__cdecl **)(CBaseEntity *, float, _DWORD))(*(_DWORD *)a3 + 260))(a3, (float)iCount, 0);
-	if ( v7 > 0 )
-	{
-	if ( !bSuppressSound )
-	EmitSound( "BaseCombatCharacter.AmmoPickup" );
+		if (ammosource == TF_AMMO_SOURCE_AMMOPACK)
+		{
+			if (TakeHealth(iCount, DMG_GENERIC) > 0)
+			{
+				if (!bSuppressSound)
+					EmitSound("BaseCombatCharacter.AmmoPickup");
 
-	*(float *)&a2.m128i_i32[0] = (float)iCount;
-	HealthKitPickupEffects( iCount );
-	}
-	return v7;
-	}
+				m_Shared.HealthKitPickupEffects(iCount);
+			}
 
-	if ( ammosource == TF_AMMO_SOURCE_DISPENSER )
-	return v7;
-	}*/
+			return 0;
+		}
+
+		if (ammosource == TF_AMMO_SOURCE_DISPENSER)
+			return 0;
+	}
 
 	if ( !g_pGameRules->CanHaveAmmo( this, iAmmoIndex ) )
 	{

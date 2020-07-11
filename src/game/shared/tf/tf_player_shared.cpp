@@ -667,6 +667,10 @@ void CTFPlayerShared::OnConditionAdded(int nCond)
 		OnAddStealthed();
 		break;
 
+	case TF_COND_FEIGN_DEATH:
+		OnAddFeignDeath();
+		break;
+
 	case TF_COND_INVULNERABLE:
 		OnAddInvulnerable();
 		break;
@@ -1820,6 +1824,44 @@ void CTFPlayerShared::StunPlayer( float flDuration, float flSpeed, float flResis
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CTFPlayerShared::MakeBleed(CTFPlayer *pAttacker, CTFWeaponBase *pWeapon, float flBleedDuration, int iDamage)
+{
+#ifdef GAME_DLL
+	if (m_pOuter->IsAlive() && (pAttacker || pWeapon))
+	{
+		float flEndAt = gpGlobals->curtime + flBleedDuration;
+		for (int i = 0; i<m_aBleeds.Count(); ++i)
+		{
+			bleed_struct_t *bleed = &m_aBleeds[i];
+			if (bleed->m_hAttacker == pAttacker && bleed->m_hWeapon == pWeapon)
+			{
+				bleed->m_flEndTime = flEndAt;
+
+				if (!InCond(TF_COND_BLEEDING))
+					AddCond(TF_COND_BLEEDING);
+
+				return;
+			}
+		}
+
+		bleed_struct_t bleed = {
+			pAttacker,
+			pWeapon,
+			flBleedDuration,
+			flEndAt,
+			iDamage
+		};
+		m_aBleeds.AddToTail(bleed);
+
+		if (!InCond(TF_COND_BLEEDING))
+			AddCond(TF_COND_BLEEDING);
+	}
+#endif
+}
+
 #ifdef GAME_DLL
 //-----------------------------------------------------------------------------
 // Purpose: Bonk phase effects
@@ -1986,7 +2028,16 @@ void CTFPlayerShared::OnAddStealthed(void)
 
 #endif
 
-	m_flInvisChangeCompleteTime = gpGlobals->curtime + tf_spy_invis_time.GetFloat();
+	if (InCond(TF_COND_FEIGN_DEATH))
+	{
+		m_flInvisChangeCompleteTime = gpGlobals->curtime;
+	}
+	else
+	{
+		float flCloakRate = tf_spy_invis_time.GetFloat();
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(m_pOuter, flCloakRate, mult_cloak_rate);
+		m_flInvisChangeCompleteTime = gpGlobals->curtime + flCloakRate;
+	}
 
 	// set our offhand weapon to be the invis weapon
 	int i;
@@ -2972,48 +3023,25 @@ EHANDLE CTFPlayerShared::GetFirstHealer()
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::HealthKitPickupEffects(int iAmount)
 {
-	/*int v4; // eax@2
-	int v5; // edi@8
-	int v6; // edx@9
-	int v7; // eax@9
 
-	if (CTFPlayerShared::InCond((int)this, 22))
-	CTFPlayerShared::RemoveCond((int)this, 22, a1, a2);
-	LOBYTE(v4) = CTFPlayerShared::InCond((int)this, 25);
-	if ((_BYTE)v4)
-	LOBYTE(v4) = CTFPlayerShared::RemoveCond((int)this, 25, a1, a2);
-	if ( iAmount )
+	if (InCond(TF_COND_BURNING))
 	{
-	LOBYTE(v4) = CTFPlayerShared::IsStealthed(this);
-	if (!(_BYTE)v4)
-	{
-	v4 = *((_DWORD *)this + 521);
-	if (v4)
-	{
+		RemoveCond(TF_COND_BURNING);
+	}
+	if (InCond(TF_COND_BLEEDING))
+		RemoveCond(TF_COND_BLEEDING);
+
+	if (IsStealthed() || !m_pOuter)
+		return;
+
 	IGameEvent *event = gameeventmanager->CreateEvent("player_healonhit");
-	v5 = v4;
-	if ( event )
+	if (event)
 	{
-	event->SetInt( "amount", iAmount );
-	event->SetInt( "entindex", m_pOuter->entindex() );
-	gameeventmanager->FireEvent(event);
+		event->SetInt("amount", iAmount);
+		event->SetInt("entindex", m_pOuter->entindex());
 
-
-	(*(void(__cdecl **)(int, _DWORD, int))(*(_DWORD *)v4 + 44))(v4, "amount", iAmount);
-	v6 = *(_DWORD *)(*((_DWORD *)this + 521) + 32);
-	v7 = 0;
-	if (v6)
-	v7 = *(_WORD *)(v6 + 6);
-	(*(void(__cdecl **)(int, _DWORD, int))(*(_DWORD *)v5 + 44))(v5, "entindex", v7);
-	LOBYTE(v4) = (*(int(__cdecl **)(CGameRulesProxy *, int, _DWORD))(*(_DWORD *)gameeventmanager + 32))(
-	gameeventmanager,
-	v5,
-	0);
+		gameeventmanager->FireEvent(event);
 	}
-	}
-	}
-	}
-	return v4;*/
 }
 #endif
 
