@@ -121,11 +121,11 @@ extern ConVar tf_arena_force_class;
 extern ConVar tf2v_use_new_cloak;
 
 // Team Fortress 2 Classic commands
-ConVar tf2c_random_weapons( "tf2c_random_weapons", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout." );
+ConVar tf2v_random_weapons( "tf2v_random_weapons", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout." );
 
 
-ConVar tf2c_force_stock_weapons( "tf2c_force_stock_weapons", "0", FCVAR_NOTIFY, "Forces players to use the stock loadout." );
-ConVar tf2c_legacy_weapons( "tf2c_legacy_weapons", "0", FCVAR_DEVELOPMENTONLY, "Disables all new weapons as well as Econ Item System." );
+ConVar tf2v_force_stock_weapons( "tf2v_force_stock_weapons", "0", FCVAR_NOTIFY, "Forces players to use the stock loadout." );
+ConVar tf2v_legacy_weapons( "tf2v_legacy_weapons", "0", FCVAR_DEVELOPMENTONLY, "Disables all new weapons as well as Econ Item System." );
 
 // TF2V specific cvars
 ConVar tf2v_disable_holiday_loot( "tf2v_disable_holiday_loot", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Disable loot drops in holiday gamemodes" );
@@ -992,7 +992,7 @@ void CTFPlayer::Spawn()
 {
 	MDLCACHE_CRITICAL_SECTION();
 
-	if ( tf2c_random_weapons.GetBool() )
+	if ( tf2v_random_weapons.GetBool() )
 	{
 		// Random class
 		SetDesiredPlayerClassIndex( RandomInt( TF_FIRST_NORMAL_CLASS, TF_CLASS_COUNT ) );
@@ -1356,11 +1356,11 @@ void CTFPlayer::GiveDefaultItems()
 	}
 
 	// Give weapons.
-	if ( tf2c_random_weapons.GetBool() && !m_bRegenerating )
+	if ( tf2v_random_weapons.GetBool() && !m_bRegenerating )
 		ManageRandomWeapons( pData );
-	else if ( tf2c_legacy_weapons.GetBool() )
+	else if ( tf2v_legacy_weapons.GetBool() )
 		ManageRegularWeaponsLegacy( pData );
-	else if ( !tf2c_random_weapons.GetBool() )
+	else if ( !tf2v_random_weapons.GetBool() )
 		ManageRegularWeapons( pData );
 
 
@@ -1909,7 +1909,7 @@ CEconItemView *CTFPlayer::GetLoadoutItem( int iClass, int iSlot )
 {
 	int iPreset = m_WeaponPreset[iClass][iSlot];
 
-	if ( tf2c_force_stock_weapons.GetBool() )
+	if ( tf2v_force_stock_weapons.GetBool() )
 		iPreset = 0;
 
 	return GetTFInventory()->GetItem( iClass, iSlot, iPreset );
@@ -2475,7 +2475,7 @@ void CTFPlayer::ChangeTeam( int iTeamNum, bool bAutoTeam/*= false*/, bool bSilen
 //-----------------------------------------------------------------------------
 void CTFPlayer::HandleCommand_JoinClass( const char *pClassName )
 {
-	if ( !tf2c_random_weapons.GetBool() )
+	if ( !tf2v_random_weapons.GetBool() )
 	{
 		if ( GetNextChangeClassTime() > gpGlobals->curtime )
 			return;
@@ -3117,16 +3117,16 @@ bool CTFPlayer::ClientCommand( const CCommand &args )
 			}
 		}*/
 	}
-	/*else if (FStrEq(pcmd, "tf2c_4play"))
+	/*else if (FStrEq(pcmd, "tf2v_4play"))
 	{
 		if (args.ArgC() < 2)
 		{
-			tf2c_4play.GetBool();
+			tf2v_4play.GetBool();
 			//Warning("4 Team Gameplay is currently %s", )
 			//return;
 		}
 
-		//tf2c_4play.SetValue()
+		//tf2v_4play.SetValue()
 		return true;
 	}*/
 
@@ -7643,13 +7643,13 @@ void CTFPlayer::Taunt( void )
 
 	m_bInitTaunt = true;
 	char szResponse[AI_Response::MAX_RESPONSE_NAME];
-	if ( SpeakConceptIfAllowed( MP_CONCEPT_PLAYER_TAUNT, NULL, szResponse, AI_Response::MAX_RESPONSE_NAME ) || tf2c_random_weapons.GetBool() )
+	if ( SpeakConceptIfAllowed( MP_CONCEPT_PLAYER_TAUNT, NULL, szResponse, AI_Response::MAX_RESPONSE_NAME ) || tf2v_random_weapons.GetBool() )
 	{
 		// Get the duration of the scene.
 		float flDuration = GetSceneDuration( szResponse ) + 0.2f;
 
 		// Crappy default taunt for randomizer
-		if ( tf2c_random_weapons.GetBool() && flDuration == 0.2f )
+		if ( tf2v_random_weapons.GetBool() && flDuration == 0.2f )
 		{
 			flDuration += 3.0f;
 			m_Shared.StunPlayer( 3.0f, 0.0f, 0.0f, TF_STUNFLAGS_NORMALBONK, this );
@@ -8526,7 +8526,7 @@ void CTFPlayer::NoteSpokeVoiceCommand( const char *pszScenePlayed )
 bool CTFPlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
 	int iWeaponID = TF_WEAPON_NONE;
-	if ( tf2c_random_weapons.GetBool() )
+	if ( tf2v_random_weapons.GetBool() )
 	{
 		iWeaponID = GetActiveTFWeapon()->GetWeaponID();
 	}
@@ -9030,9 +9030,9 @@ void CTFPlayer::UpdatePlayerColor( void )
 {
 	// Update color from their convars
 	Vector vecNewColor;
-	vecNewColor.x = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2c_setmerccolor_r" ) ) / 255.0f;
-	vecNewColor.y = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2c_setmerccolor_g" ) ) / 255.0f;
-	vecNewColor.z = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2c_setmerccolor_b" ) ) / 255.0f;
+	vecNewColor.x = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2v_setmerccolor_r" ) ) / 255.0f;
+	vecNewColor.y = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2v_setmerccolor_g" ) ) / 255.0f;
+	vecNewColor.z = Q_atoi( engine->GetClientConVarValue( entindex(), "tf2v_setmerccolor_b" ) ) / 255.0f;
 
 	m_vecPlayerColor = vecNewColor;
 }

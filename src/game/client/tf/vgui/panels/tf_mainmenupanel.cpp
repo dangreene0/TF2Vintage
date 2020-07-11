@@ -13,7 +13,7 @@ using namespace vgui;
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar tf2c_mainmenu_music("tf2c_mainmenu_music", "1", FCVAR_ARCHIVE, "Toggle music in the main menu");
+ConVar tf2v_mainmenu_music("tf2v_mainmenu_music", "1", FCVAR_ARCHIVE, "Toggle music in the main menu");
 
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
@@ -137,7 +137,7 @@ void CTFMainMenuPanel::OnTick()
 {
 	BaseClass::OnTick();
 
-	if (tf2c_mainmenu_music.GetBool() && !bInGameLayout)
+	if (tf2v_mainmenu_music.GetBool() && !bInGameLayout)
 	{
 		if ((m_psMusicStatus == MUSIC_FIND || m_psMusicStatus == MUSIC_STOP_FIND) && !enginesound->IsSoundStillPlaying(m_nSongGuid))
 		{

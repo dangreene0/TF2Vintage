@@ -58,7 +58,7 @@ END_DATADESC()
 #endif
 
 #ifdef CLIENT_DLL
-extern ConVar tf2c_model_muzzleflash;
+extern ConVar tf2v_model_muzzleflash;
 #endif
 
 ConVar tf2v_use_new_minigun_spinup("tf2v_use_new_minigun_spinup", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Makes winding and unwinding the minigun 25% faster.");
@@ -623,7 +623,7 @@ void CTFMinigun::OnDataChanged( DataUpdateType_t updateType )
 	HandleBrassEffect();
 	
 //	if (!ShouldMuzzleFlash())
-	if (!tf2c_model_muzzleflash.GetBool())
+	if (!tf2v_model_muzzleflash.GetBool())
 	{
 		HandleMuzzleEffect();
 	}

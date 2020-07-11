@@ -13,12 +13,12 @@ CTFNotificationManager *GetNotificationManager()
 	return &g_TFNotificationManager;
 }
 
-CON_COMMAND_F(tf2c_updateserverlist, "Check for the messages", FCVAR_DEVELOPMENTONLY)
+CON_COMMAND_F(tf2v_updateserverlist, "Check for the messages", FCVAR_DEVELOPMENTONLY)
 {
 	GetNotificationManager()->UpdateServerlistInfo();
 }
 
-ConVar tf2c_updatefrequency("tf2c_updatefrequency", "15", FCVAR_DEVELOPMENTONLY, "Updatelist update frequency (seconds)");
+ConVar tf2v_updatefrequency("tf2v_updatefrequency", "15", FCVAR_DEVELOPMENTONLY, "Updatelist update frequency (seconds)");
 
 bool ServerLessFunc(const int &lhs, const int &rhs)
 {
@@ -50,7 +50,7 @@ bool CTFNotificationManager::Init()
 	{
 		m_SteamHTTP = steamapicontext->SteamHTTP();
 		m_mapServers.SetLessFunc(ServerLessFunc);
-		fUpdateLastCheck = tf2c_updatefrequency.GetFloat() * -1;
+		fUpdateLastCheck = tf2v_updatefrequency.GetFloat() * -1;
 		bCompleted = false;
 		m_bInited = true;
 
@@ -65,7 +65,7 @@ bool CTFNotificationManager::Init()
 
 void CTFNotificationManager::Update(float frametime)
 {
-	if (!MAINMENU_ROOT->InGame() && gpGlobals->curtime - fUpdateLastCheck > tf2c_updatefrequency.GetFloat())
+	if (!MAINMENU_ROOT->InGame() && gpGlobals->curtime - fUpdateLastCheck > tf2v_updatefrequency.GetFloat())
 	{
 		fUpdateLastCheck = gpGlobals->curtime;
 		UpdateServerlistInfo();

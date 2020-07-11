@@ -60,14 +60,14 @@
 #define TF_FLAMETHROWER_AMMO_PER_SECONDARY_ATTACK	20
 
 #ifdef CLIENT_DLL
-	extern ConVar tf2c_muzzlelight;
+	extern ConVar tf2v_muzzlelight;
 #endif
 
 ConVar  tf2v_airblast( "tf2v_airblast", "2", FCVAR_REPLICATED | FCVAR_NOTIFY, "Enable/Disable the Airblast function of the Flamethrower. 0 = off, 1 = tf2c (default), 2 = tf2v" );
-ConVar  tf2c_airblast_players( "tf2c_airblast_players", "1", FCVAR_REPLICATED, "Enable/Disable the Airblast pushing players." );
+ConVar  tf2v_airblast_players( "tf2v_airblast_players", "1", FCVAR_REPLICATED, "Enable/Disable the Airblast pushing players." );
 
 #ifdef GAME_DLL
-ConVar	tf2c_debug_airblast( "tf2c_debug_airblast", "0", FCVAR_CHEAT, "Visualize airblast box." );
+ConVar	tf2v_debug_airblast( "tf2v_debug_airblast", "0", FCVAR_CHEAT, "Visualize airblast box." );
 #endif
 
 IMPLEMENT_NETWORKCLASS_ALIASED( TFFlameThrower, DT_WeaponFlameThrower )
@@ -388,7 +388,7 @@ void CTFFlameThrower::PrimaryAttack()
 
 #ifdef CLIENT_DLL
 	// Handle the flamethrower light
-	if (tf2c_muzzlelight.GetBool())
+	if (tf2v_muzzlelight.GetBool())
 	{
 		dlight_t *dl = effects->CL_AllocDlight(LIGHT_INDEX_MUZZLEFLASH + index);
 		dl->origin = vecMuzzlePos;
@@ -551,7 +551,7 @@ void CTFFlameThrower::SecondaryAttack()
 
 	int count = UTIL_EntitiesInBox( pList, 64, vecOrigin - vecBlastSize, vecOrigin + vecBlastSize, 0 );
 
-	if ( tf2c_debug_airblast.GetBool() )
+	if ( tf2v_debug_airblast.GetBool() )
 	{
 		NDebugOverlay::Box( vecOrigin, -vecBlastSize, vecBlastSize, 0, 0, 255, 100, 2.0 );
 	}
@@ -632,7 +632,7 @@ void CTFFlameThrower::DeflectPlayer( CTFPlayer *pVictim, CTFPlayer *pAttacker, V
 	if ( !pVictim )
 		return;
 
-	if ( !pVictim->InSameTeam( pAttacker ) && tf2c_airblast_players.GetBool() )
+	if ( !pVictim->InSameTeam( pAttacker ) && tf2v_airblast_players.GetBool() )
 	{
 		// Don't push players if they're too far off to the side. Ignore Z.
 		Vector vecVictimDir = pVictim->WorldSpaceCenter() - pAttacker->WorldSpaceCenter();

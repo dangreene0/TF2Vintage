@@ -92,8 +92,8 @@ ConVar tf_christmas( "tf_christmas", "0", FCVAR_NOTIFY | FCVAR_REPLICATED );
 ConVar tf_medieval_autorp( "tf_medieval_autorp", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable Medieval Mode auto-roleplaying." );
 
 // TF2C specific cvars.
-ConVar tf2c_falldamage_disablespread( "tf2c_falldamage_disablespread", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Toggles random 20% fall damage spread." );
-ConVar tf2c_allow_thirdperson( "tf2c_allow_thirdperson", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow players to switch to third person mode." );
+ConVar tf2v_falldamage_disablespread( "tf2v_falldamage_disablespread", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Toggles random 20% fall damage spread." );
+ConVar tf2v_allow_thirdperson( "tf2v_allow_thirdperson", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow players to switch to third person mode." );
 
 #ifdef GAME_DLL
 // TF overrides the default value of this convar
@@ -2742,7 +2742,7 @@ void CTFGameRules::ClientSettingsChanged( CBasePlayer *pPlayer )
 	pTFPlayer->SetFlipViewModel( Q_atoi( engine->GetClientConVarValue( pPlayer->entindex(), "cl_flipviewmodels" ) ) > 0 );
 
 	// Keep track of their spawn particle.
-	pTFPlayer->m_Shared.SetRespawnParticleID( Q_atoi( engine->GetClientConVarValue( pPlayer->entindex(), "tf2c_setmercparticle" ) ) );
+	pTFPlayer->m_Shared.SetRespawnParticleID( Q_atoi( engine->GetClientConVarValue( pPlayer->entindex(), "tf2v_setmercparticle" ) ) );
 
 	const char *pszFov = engine->GetClientConVarValue( pPlayer->entindex(), "fov_desired" );
 	int iFov = atoi( pszFov );
@@ -2776,31 +2776,31 @@ static const char *g_aTaggedConVars[] =
 	"tf_use_fixed_weaponspreads",
 	"nospread",
 
-	"tf2c_force_stock_weapons",
+	"tf2v_force_stock_weapons",
 	"stockweapons",
 
-	"tf2c_allow_thirdperson",
+	"tf2v_allow_thirdperson",
 	"thirdperson",
 
-	"tf2c_random_weapons",
+	"tf2v_random_weapons",
 	"randomizer",
 
-	"tf2c_autojump",
+	"tf2v_autojump",
 	"autojump",
 
-	"tf2c_duckjump",
+	"tf2v_duckjump",
 	"duckjump",
 
-	"tf2c_allow_special_classes",
+	"tf2v_allow_special_classes",
 	"specialclasses",
 
-	"tf2c_airblast",
+	"tf2v_airblast",
 	"airblast",
 
-	"tf2c_building_hauling",
+	"tf2v_building_hauling",
 	"hauling",
 
-	"tf2c_building_upgrades",
+	"tf2v_building_upgrades",
 	"buildingupgrades",
 
 	"mp_highlander",
@@ -3518,7 +3518,7 @@ float CTFGameRules::FlPlayerFallDamage( CBasePlayer *pPlayer )
 		float flRatio = (float)pPlayer->GetMaxHealth() / 100.0;
 		flFallDamage *= flRatio;
 
-		if ( tf2c_falldamage_disablespread.GetBool() == false )
+		if ( tf2v_falldamage_disablespread.GetBool() == false )
 		{
 			flFallDamage *= random->RandomFloat( 0.8, 1.2 );
 		}
@@ -4929,7 +4929,7 @@ bool CTFGameRules::AllowThirdPersonCamera( void )
 	}
 #endif
 
-	return tf2c_allow_thirdperson.GetBool();
+	return tf2v_allow_thirdperson.GetBool();
 }
 
 //-----------------------------------------------------------------------------
