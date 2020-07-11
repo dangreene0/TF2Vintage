@@ -3827,6 +3827,32 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			// Reduce our damage
 			info.SetDamage( info.GetDamage() * m_Shared.m_flStunResistance );
 		}
+
+		// Promote or demote Crits and Minicrits. Having both simultaneously negates the attribute.
+		int nMinicritsToCrits = 0;
+		int nCritsToMinicrits = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nMinicritsToCrits, minicrits_become_crits);
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nCritsToMinicrits, crits_become_minicrits);
+		// If we have something making minicrits turn into criticals, apply.
+		if ((bitsDamage & DMG_MINICRITICAL) && (nMinicritsToCrits && !nCritsToMinicrits))
+		{
+			bitsDamage &= ~DMG_MINICRITICAL;
+			bitsDamage |= DMG_CRITICAL;
+		}
+		// If we have something reducing criticals to minicrits, apply.
+		else if ((bitsDamage & DMG_CRITICAL) && (nCritsToMinicrits && !nMinicritsToCrits))
+		{
+			bitsDamage &= ~DMG_CRITICAL;
+			bitsDamage |= DMG_MINICRITICAL;
+		}
+
+		int nNoDamageOnCrit = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nNoDamageOnCrit, crit_does_no_damage);
+		if ((bitsDamage & DMG_CRITICAL) && nNoDamageOnCrit)
+		{
+			info.SetDamage(0.0f);
+			info.ScaleDamageForce(0.0f);
+		}
 	}
 
 	// If we're not damaging ourselves, apply randomness
@@ -4347,6 +4373,19 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nIgnoreResists, mod_pierce_resists_absorbs);
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, flDamage, mult_dmg_vs_players);
 
+	}
+
+	if (info.GetDamageType() & DMG_BURN | DMG_IGNITE)
+	{
+		float flDamageFireMult = 1.0f;
+		CALL_ATTRIB_HOOK_FLOAT(flDamageFireMult, mult_dmgtaken_from_fire);
+		if ((nIgnoreResists == 1) && (flDamageFireMult < 1.0f))
+			flDamageFireMult = 1.0f;
+		flDamage *= flDamageFireMult;
+
+		// Immune to fire, no damage.
+		if (m_Shared.InCond(TF_COND_FIRE_IMMUNE))
+			return 0;
 	}
 
 	if (IsPlayerClass(TF_CLASS_SPY) && info.GetDamageCustom() != TF_DMG_CUSTOM_TELEFRAG)
