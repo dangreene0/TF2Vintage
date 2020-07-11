@@ -37,11 +37,11 @@ class CTFMinigun : public CTFWeaponBaseGun
 {
 public:
 
-	DECLARE_CLASS( CTFMinigun, CTFWeaponBaseGun );
-	DECLARE_NETWORKCLASS(); 
+	DECLARE_CLASS(CTFMinigun, CTFWeaponBaseGun);
+	DECLARE_NETWORKCLASS();
 	DECLARE_PREDICTABLE();
 
-// Server specific.
+	// Server specific.
 #ifndef CLIENT_DLL
 	DECLARE_DATADESC();
 #endif
@@ -49,76 +49,87 @@ public:
 	CTFMinigun();
 	~CTFMinigun();
 
-	virtual void	Precache( void );
+	virtual void	Precache(void);
 	virtual void	Spawn(void);
-	virtual int		GetWeaponID( void ) const			{ return TF_WEAPON_MINIGUN; }
+	virtual int		GetWeaponID(void) const			{ return TF_WEAPON_MINIGUN; }
+	MinigunState_t  GetWeaponState(void) const		{ return m_iWeaponState; }
 	virtual void	PrimaryAttack();
+	virtual void	UseRealMinigunBrassEject(void);
 	virtual void	SecondaryAttack();
 	void			SharedAttack();
+	void			FireAttack(int nDamageAmount);
 	virtual void	WeaponIdle();
-	virtual bool	SendWeaponAnim( int iActivity );
-	virtual bool	CanHolster( void ) const;
-	virtual bool	Holster( CBaseCombatWeapon *pSwitchingTo );
-	virtual bool	Lower( void );
-	virtual void	HandleFireOnEmpty( void );
-	virtual void	WeaponReset( void );
+	virtual bool	SendWeaponAnim(int iActivity);
+	virtual bool	CanHolster(void) const;
+	virtual bool	Holster(CBaseCombatWeapon *pSwitchingTo);
+	virtual bool	Lower(void);
+	virtual void	HandleFireOnEmpty(void);
 
-	virtual bool	CanReload( void ) { return false; }
+	virtual float	GetProjectileDamage(void);
+	virtual float	GetWeaponSpread(void);
+
+
+	virtual void	WeaponReset(void);
+
+	virtual bool	CanReload(void) { return false; }
 
 #ifdef GAME_DLL
-	virtual int		UpdateTransmitState( void );
+	virtual int		UpdateTransmitState(void);
 #endif
 
 
-	virtual int GetCustomDamageType() const { return TF_DMG_CUSTOM_MINIGUN; }
+	virtual int		GetCustomDamageType() const { return TF_DMG_CUSTOM_MINIGUN; }
 
-	float			GetFiringTime( void ) { return (m_flStartedFiringAt >= 0) ? (gpGlobals->curtime - m_flStartedFiringAt) : 0; }
+	float			GetFiringTime(void) { return (m_flStartedFiringAt > 0) ? (gpGlobals->curtime - m_flStartedFiringAt) : 0; }
+	float			GetWindingTime(void) { return (m_flStartedWindingAt > 0) ? (gpGlobals->curtime - m_flStartedWindingAt) : 0; }
 	float			GetSpinUpLength(void);
 
-
 #ifdef CLIENT_DLL
-	float GetBarrelRotation();
+	float			GetBarrelRotation();
 #endif
 
 private:
-	
-	CTFMinigun( const CTFMinigun & ) {}
 
-	void WindUp( void );
-	void WindDown( void );
+	CTFMinigun(const CTFMinigun &) {}
+
+	void WindUp(void);
+	void WindDown(void);
 
 
 #ifdef CLIENT_DLL
 	// Barrel spinning
-	virtual CStudioHdr *OnNewModel( void );
-	virtual void		StandardBlendingRules( CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask );
-	virtual void		ViewModelAttachmentBlending( CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask );
-	
-	virtual void		UpdateOnRemove( void );
+	virtual CStudioHdr *OnNewModel(void);
+	virtual void		StandardBlendingRules(CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask);
+	virtual void		ViewModelAttachmentBlending(CStudioHdr *hdr, Vector pos[], Quaternion q[], float currentTime, int boneMask);
 
-	void				CreateMove( float flInputSampleTime, CUserCmd *pCmd, const QAngle &vecOldViewAngles );
+	virtual void		UpdateOnRemove(void);
 
-	void				OnDataChanged( DataUpdateType_t type );
-		
-	virtual void		ItemPreFrame( void );
-	
+	void				CreateMove(float flInputSampleTime, CUserCmd *pCmd, const QAngle &vecOldViewAngles);
+
+	void				OnDataChanged(DataUpdateType_t type);
+
+	virtual void		ItemPreFrame(void);
+
 	// Firing sound
-	void				WeaponSoundUpdate( void );
+	void				WeaponSoundUpdate(void);
 
-	void				UpdateBarrelMovement( void );
-	virtual void		SetDormant( bool bDormant );
+	void				UpdateBarrelMovement(void);
+	virtual void		SetDormant(bool bDormant);
 
 
 #endif
 
 private:
-	virtual void PlayWeaponShootSound( void ) {}	// override base class call to play shoot sound; we handle that ourselves separately
+	virtual void PlayWeaponShootSound(void) {}	// override base class call to play shoot sound; we handle that ourselves separately
 
-	CNetworkVar( MinigunState_t, m_iWeaponState );
-	CNetworkVar( bool, m_bCritShot );
+	CNetworkVar(MinigunState_t, m_iWeaponState);
+	CNetworkVar(bool, m_bCritShot);
 
 	float			m_flNextFiringSpeech;
 	float			m_flStartedFiringAt;
+	float			m_flStartedWindingAt;
+	float			m_flDrainTime;
+	float			m_flNextFireAttack;
 	float	m_flBarrelCurrentVelocity;
 	float	m_flBarrelTargetVelocity;
 	int		m_iBarrelBone;
@@ -144,5 +155,24 @@ private:
 	int					m_iMuzzleAttachment;
 #endif
 };
+
+
+// More realistic Minigun type.
+
+#if defined CLIENT_DLL
+#define CTFMinigun_Real C_TFMinigun_Real
+#endif
+
+class CTFMinigun_Real : public CTFMinigun
+{
+public:
+
+	DECLARE_CLASS(CTFMinigun_Real, CTFMinigun)
+	DECLARE_NETWORKCLASS();
+	DECLARE_PREDICTABLE();
+
+	virtual int GetWeaponID(void) const { return TF_WEAPON_MINIGUN_REAL; }
+};
+
 
 #endif // TF_WEAPON_MINIGUN_H

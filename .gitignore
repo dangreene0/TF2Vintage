@@ -67,3 +67,5 @@ fgdlib.lib
 src/utils/sapi51/Samples/VB/TTSAppVB/ttsapp.RES
 *.pdb
 src/game/server/Release_tf2vintage/vc120.pdb
+src/game/client/Release_tf2vintage/vc120.pdb
+src/game/server/Release_tf2vintage/vc120.pdb
