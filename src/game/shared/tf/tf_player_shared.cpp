@@ -1183,12 +1183,14 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 	{
 		if (InCond(TF_COND_STEALTHED))
 		{
+
+			//m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
 			if (m_bHasMotionCloak)
 			{
 				float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
 				if (flSpeed == 0.0f)
 				{
-					m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+					m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
 
 					if (m_flCloakMeter >= 100.0f)
 						m_flCloakMeter = 100.0f;
@@ -1198,17 +1200,17 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 					float flMaxSpeed = Square(m_pOuter->MaxSpeed());
 					if (flMaxSpeed == 0.0f)
 					{
-						m_flCloakMeter -= m_flCloakDrainRate * gpGlobals->frametime * 1.5f;
+						m_flCloakMeter -= tf_spy_cloak_consume_rate.GetFloat() *gpGlobals->frametime * 1.5f;
 					}
 					else
 					{
-						m_flCloakMeter -= (m_flCloakDrainRate * gpGlobals->frametime * 1.5f) * Min(flSpeed / flMaxSpeed, 1.0f);
+						m_flCloakMeter -= (tf_spy_cloak_consume_rate.GetFloat() *gpGlobals->frametime * 1.5f) * Min(flSpeed / flMaxSpeed, 1.0f);
 					}
 				}
 			}
 			else
 			{
-				m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
+				m_flCloakMeter -= gpGlobals->frametime * tf_spy_cloak_consume_rate.GetFloat();
 			}
 
 			// New cloak increases debuff speed by 25%
@@ -1252,7 +1254,7 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 		}
 		else
 		{
-			m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+			m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
 
 			if (m_flCloakMeter >= 100.0f)
 				m_flCloakMeter = 100.0f;
@@ -1266,6 +1268,34 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 void CTFPlayerShared::ConditionThink( void )
 {
 
+	/*bool bIsLocalPlayer = false;
+	if (m_pOuter->IsPlayerClass(TF_CLASS_SPY))
+#ifdef CLIENT_DLL
+		bIsLocalPlayer = m_pOuter->IsLocalPlayer();
+#else
+		bIsLocalPlayer = true;
+#endif
+
+	if (m_pOuter->IsPlayerClass(TF_CLASS_SPY) && bIsLocalPlayer)
+	{
+		if (InCond(TF_COND_STEALTHED))
+		{
+			m_flCloakMeter -= gpGlobals->frametime * tf_spy_cloak_consume_rate.GetFloat();
+			if (m_flCloakMeter <= 0.0f)
+			{
+				FadeInvis(tf_spy_invis_unstealth_time.GetFloat());
+			}
+		}
+		else
+		{
+			m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
+			if (m_flCloakMeter >= 100.0f)
+			{
+				m_flCloakMeter = 100.0f;
+			}
+		}
+	}*/
+			
 	if ( InCond( TF_COND_PHASE ) )
 	{
 		if ( gpGlobals->curtime > m_flPhaseTime )
@@ -1278,7 +1308,7 @@ void CTFPlayerShared::ConditionThink( void )
 	}
 
 	UpdateRageBuffsAndRage();
-
+	
 #ifdef GAME_DLL
 	UpdateCloakMeter();
 #endif
