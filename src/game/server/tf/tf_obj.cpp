@@ -1861,7 +1861,15 @@ int CBaseObject::OnTakeDamage( const CTakeDamageInfo &info )
 	CBaseEntity *pWeapon = info.GetWeapon();
 	if (pWeapon)
 	{
-		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, flDamage, mult_dmg_vs_buildings);
+		int nEnergyWeaponNoDamage = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER(pWeapon, nEnergyWeaponNoDamage, energy_weapon_no_hurt_building);
+		if (nEnergyWeaponNoDamage != 0)
+			flDamage *= 0.2;
+
+		int nMultiWeaponDamageBuilding = 0;
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pWeapon, nMultiWeaponDamageBuilding, mult_dmg_vs_buildings);
+		if (nMultiWeaponDamageBuilding != 0)
+			flDamage *= nMultiWeaponDamageBuilding;
 	}
 
 	// Objects build on other objects take less damage

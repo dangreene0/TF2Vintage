@@ -1190,7 +1190,7 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 				float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
 				if (flSpeed == 0.0f)
 				{
-					m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
+					m_flCloakMeter += gpGlobals->frametime * m_flCloakDrainRate;
 
 					if (m_flCloakMeter >= 100.0f)
 						m_flCloakMeter = 100.0f;
@@ -1200,17 +1200,17 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 					float flMaxSpeed = Square(m_pOuter->MaxSpeed());
 					if (flMaxSpeed == 0.0f)
 					{
-						m_flCloakMeter -= tf_spy_cloak_consume_rate.GetFloat() *gpGlobals->frametime * 1.5f;
+						m_flCloakMeter -= m_flCloakDrainRate *gpGlobals->frametime * 1.5f;
 					}
 					else
 					{
-						m_flCloakMeter -= (tf_spy_cloak_consume_rate.GetFloat() *gpGlobals->frametime * 1.5f) * Min(flSpeed / flMaxSpeed, 1.0f);
+						m_flCloakMeter -= (m_flCloakDrainRate *gpGlobals->frametime * 1.5f) * Min(flSpeed / flMaxSpeed, 1.0f);
 					}
 				}
 			}
 			else
 			{
-				m_flCloakMeter -= gpGlobals->frametime * tf_spy_cloak_consume_rate.GetFloat();
+				m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
 			}
 
 			// New cloak increases debuff speed by 25%
@@ -1254,7 +1254,7 @@ void CTFPlayerShared::UpdateCloakMeter(void)
 		}
 		else
 		{
-			m_flCloakMeter += gpGlobals->frametime * tf_spy_cloak_regen_rate.GetFloat();
+			m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
 
 			if (m_flCloakMeter >= 100.0f)
 				m_flCloakMeter = 100.0f;
@@ -4342,26 +4342,17 @@ bool CTFPlayer::DoClassSpecialSkill(void)
 		if (m_Shared.m_flStealthNextChangeTime <= gpGlobals->curtime)
 		{
 			// Toggle invisibility
-			if (m_Shared.InCond(TF_COND_STEALTHED))
+			CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>(Weapon_OwnsThisID(TF_WEAPON_INVIS));
+			if (pInvis)
 			{
-#ifdef GAME_DLL
-				m_Shared.FadeInvis(tf_spy_invis_unstealth_time.GetFloat());
-#endif
-				bDoSkill = true;
-			}
-			else if (CanGoInvisible() && (m_Shared.GetSpyCloakMeter() > 8.0f))	// must have over 10% cloak to start
-			{
-#ifdef GAME_DLL
-				m_Shared.AddCond(TF_COND_STEALTHED);
-#endif
-				bDoSkill = true;
+				bDoSkill = pInvis->ActivateInvisibility();
 			}
 
 			if (bDoSkill)
 				m_Shared.m_flStealthNextChangeTime = gpGlobals->curtime + 0.5;
 		}
+		break;
 	}
-	break;
 
 	case TF_CLASS_DEMOMAN:
 	{
