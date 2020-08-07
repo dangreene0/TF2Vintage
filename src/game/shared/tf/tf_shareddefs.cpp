@@ -398,6 +398,7 @@ const char *g_aWeaponNames[] =
 	"TF_WEAPON_BAT_WOOD",
 	"TF_WEAPON_ROBOT_ARM",
 	"TF_WEAPON_BUFF_ITEM",
+	"TF_WEAPON_MINIGUN_REAL",
 	"TF_WEAPON_COUNT",	// end marker, do not add below here
 };
 
