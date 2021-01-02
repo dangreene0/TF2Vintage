@@ -1219,6 +1219,8 @@ void CEconItemSchema::ClientConnected( edict_t *pClient )
 		CSteamID const *playerID = engine->GetClientSteamID( pClient );
 		if ( playerID == NULL )
 			return;
+
+		g_pEconNetwork->OnClientConnected( *playerID );
 	}
 #endif
 }
@@ -1231,6 +1233,10 @@ void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 		CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
 		if ( !pPlayer || !pPlayer->IsPlayer() || pPlayer->IsFakeClient() )
 			return;
+
+		CSteamID playerID{};
+		pPlayer->GetSteamID( &playerID );
+		g_pEconNetwork->OnClientDisconnected( playerID );
 
 		CSingleUserRecipientFilter filter( pPlayer );
 		UserMessageBegin( filter, "ResetInventory" );
@@ -1317,3 +1323,11 @@ void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
 #endif
 
 
+//		if ( !GetItemSchema()->LoadFromBuffer( sContext.m_buffer ) )
+//		{
+//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+//			ConColorMsg( COLOR_RED, "Unable to load Econ Item Schema from server, loading local file.\n" );
+//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+//
+//			GetItemSchema()->LoadFromFile();
+//		}
