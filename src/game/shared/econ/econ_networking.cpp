@@ -3,6 +3,7 @@
 #include "vstdlib/coroutine.h"
 #include "tier0/threadtools.h"
 #include "econ_networking.h"
+#include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
@@ -89,6 +90,9 @@ private:
 	ISteamNetworking *SteamNetworking( void ) const;
 
 	CUtlVector< CPlainAutoPtr<CSocket> >	m_vecSockets;
+	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
+
+	friend void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
 };
 
 //-----------------------------------------------------------------------------
@@ -394,6 +398,11 @@ void CEconNetworking::P2PSessionFailed( P2PSessionConnectFail_t *pFailure )
 //-----------------------------------------------------------------------------
 static CEconNetworking g_Networking;
 IEconNetworking *g_pEconNetwork = &g_Networking;
+
+void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
+{
+	g_Networking.m_MessageTypes.Insert( eMsg, pHandler );
+}
 
 #endif // NO_STEAM
 //-----------------------------------------------------------------------------
