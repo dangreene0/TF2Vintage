@@ -7,7 +7,9 @@
 #include "tier1/smartptr.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
+#include "steam/steam_api_common.h"
 #include "steam/isteamnetworking.h"
+#include "steam/isteamuser.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -143,6 +145,14 @@ void CEconNetworking::Shutdown( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::OnClientConnected( CSteamID const &steamID )
 {
+#if defined( GAME_DLL )
+	if ( !steamgameserverapicontext->SteamGameServer() )
+		return;
+#else
+	if ( !steamapicontext->SteamUser() )
+		return;
+#endif
+
 	if ( !SteamNetworking() )
 		return;
 
@@ -154,6 +164,30 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID )
 	CSocket *pSocket = OpenConnection( steamID );
 	if ( pSocket )
 	{
+	#if defined( GAME_DLL )
+		CProtobufMsg<CServerHelloMsg> msg;
+		CSteamID remoteID = steamgameserverapicontext->SteamGameServer()->GetSteamID();
+		MsgType_t eMsg = k_EServerHelloMsg;
+	#else
+		CProtobufMsg<CClientHelloMsg> msg;
+		CSteamID remoteID = steamapicontext->SteamUser()->GetSteamID();
+		MsgType_t eMsg = k_EClientHelloMsg;
+	#endif
+
+		uint unVersion = 0;
+		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
+		if ( fh && filesystem->Tell( fh ) > 0 )
+		{
+			char version[48];
+			filesystem->ReadLine( version, sizeof( version ), fh );
+			unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen( version ) + 1 );
+		}
+		filesystem->Close( fh );
+
+		msg.Body().set_version( unVersion );
+		msg.Body().set_steamid( remoteID.ConvertToUint64() );
+
+		BSendMessage( steamID, eMsg, msg.Body() );
 	}
 }
 
@@ -371,6 +405,25 @@ void CEconNetworking::ReceivedServerHello( CServerHelloMsg const &msg )
 	CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
 	if ( !pPlayer || !engine->IsConnected() )
 		return;
+
+	FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
+	if ( fh && filesystem->Tell( fh ) > 0 )
+	{
+		char version[48];
+		filesystem->ReadLine( version, sizeof( version ), fh );
+		uint32 unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
+
+		CProtobufMsg<CClientHelloMsg> msg;
+		msg.Body().set_version( unVersion );
+
+		CSteamID playerID;
+		pPlayer->GetSteamID( &playerID );
+		msg.Body().set_steamid( playerID.ConvertToUint64() );
+
+		BSendMessage( CSteamID( msg.Body().steamid() ), k_EClientHelloMsg, msg.Body() );
+	}
+
+	filesystem->Close( fh );
 #endif
 }
 
@@ -380,6 +433,26 @@ void CEconNetworking::ReceivedServerHello( CServerHelloMsg const &msg )
 void CEconNetworking::ReceivedClientHello( CClientHelloMsg const &msg )
 {
 #if defined( GAME_DLL )
+	FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
+	if ( fh && filesystem->Tell( fh ) > 0 )
+	{
+		char version[48];
+		filesystem->ReadLine( version, sizeof( version ), fh );
+
+		uint32 unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
+		if ( unVersion > 0 && msg.has_version() )
+		{
+			if ( msg.version() != unVersion )
+			{
+				engine->ServerCommand( UTIL_VarArgs( 
+					"kickid %d \"The server you are trying to connect to\\nis running a different version of the game.\"\n",
+					UTIL_PlayerBySteamID( CSteamID( msg.steamid() ) )->GetUserID() ) 
+				);
+			}
+		}
+	}
+
+	filesystem->Close( fh );
 #endif
 }
 
@@ -456,6 +529,36 @@ void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandle
 {
 	g_Networking.m_MessageTypes.Insert( eMsg, pHandler );
 }
+
+class CServerHelloHandler : public CBaseMsgHandler
+{
+public:
+	CServerHelloHandler() {}
+
+	virtual bool ProcessPacket( INetPacket *pPacket )
+	{
+		CProtobufMsg<CServerHelloMsg> msg( pPacket );
+		g_Networking.ReceivedServerHello( msg.Body() );
+
+		return true;
+	}
+};
+REG_ECON_MSG_HANDLER( CServerHelloHandler, k_EServerHelloMsg, CServerHelloMsg );
+
+class CClientHelloHandler : public CBaseMsgHandler
+{
+public:
+	CClientHelloHandler() {}
+
+	virtual bool ProcessPacket( INetPacket *pPacket )
+	{
+		CProtobufMsg<CClientHelloMsg> msg( pPacket );
+		g_Networking.ReceivedClientHello( msg.Body() );
+
+		return true;
+	}
+};
+REG_ECON_MSG_HANDLER( CClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
 
 #endif // NO_STEAM
 //-----------------------------------------------------------------------------
