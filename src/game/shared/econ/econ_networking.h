@@ -17,6 +17,16 @@ enum EChannelType_t
 typedef uint32 MsgType_t;
 
 //-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+abstract_class INetPacket : public IRefCounted
+{
+public:
+	virtual MsgType_t MsgType( void ) const = 0;
+	virtual byte *Data( void ) const = 0;
+	virtual uint32 Size( void ) const = 0;
+};
+//-----------------------------------------------------------------------------
 // Purpose: Interface for sending economy data over the wire to clients
 //-----------------------------------------------------------------------------
 abstract_class IEconNetworking
