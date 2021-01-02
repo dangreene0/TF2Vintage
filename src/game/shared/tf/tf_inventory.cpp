@@ -12,17 +12,24 @@
 #include "econ_item_system.h"
 #include "utlbuffer.h"
 #ifdef CLIENT_DLL
+#include "hud_macros.h"
 #include "tier0/icommandline.h"
+#include "tf_mainmenu.h"
+#include "panels/tf_mainmenupanel.h"
 #endif
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 static CTFInventory g_TFInventory;
-
 CTFInventory *GetTFInventory()
 {
 	return &g_TFInventory;
 }
 
-CTFInventory::CTFInventory() : CAutoGameSystemPerFrame( "CTFInventory" )
+#ifdef CLIENT_DLL
+DECLARE_MESSAGE( g_TFInventory, ResetInventory )
+#endif
+CTFInventory::CTFInventory()
 {
 #ifdef CLIENT_DLL
 	m_pInventory = NULL;
@@ -194,6 +201,7 @@ bool CTFInventory::Init( void )
 
 #if defined( CLIENT_DLL )
 	LoadInventory();
+	HOOK_HUD_MESSAGE( g_TFInventory, ResetInventory )
 #endif
 
 	return true;
@@ -202,6 +210,28 @@ bool CTFInventory::Init( void )
 void CTFInventory::LevelInitPreEntity( void )
 {
 	GetItemSchema()->Precache();
+}
+
+void CTFInventory::ClientConnected( edict_t *pClient )
+{
+#if defined( GAME_DLL )
+	if( engine->IsDedicatedServer() )
+	{
+		if ( !pClient || pClient->IsFree() )
+			return;
+		// Anoyingly, they are not networked at this point and not a player
+		CSteamID const *playerID = engine->GetClientSteamID( pClient );
+		if( playerID == NULL )
+			return;
+
+		
+	}
+#endif
+}
+
+void CTFInventory::ClientDisconnected( edict_t *pClient )
+{
+	// Reset is handled by CEconItemSchema
 }
 
 int CTFInventory::GetNumPresets(int iClass, int iSlot)
@@ -389,6 +419,11 @@ void CTFInventory::ChangeLoadoutSlot(int iClass, int iLoadoutSlot)
 	SaveInventory();
 }
 
+
+void CTFInventory::MsgFunc_ResetInventory( bf_read &msg )
+{
+	MAINMENU_ROOT->GetMenuPanel( LOADOUT_MENU )->DefaultLayout();
+}
 #endif
 
 // Legacy array, used when we're forced to use old method of giving out weapons.

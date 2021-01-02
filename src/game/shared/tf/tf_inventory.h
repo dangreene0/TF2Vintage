@@ -46,6 +46,9 @@ public:
 	virtual bool Init( void );
 	virtual void LevelInitPreEntity( void );
 
+	virtual void ClientConnected( edict_t *pClient );
+	virtual void ClientDisconnected( edict_t *pClient );
+
 	int GetNumPresets( int iClass, int iSlot );
 	int GetWeapon( int iClass, int iSlot );
 	CEconItemView *GetItem( int iClass, int iSlot, int iNum );
@@ -60,7 +63,7 @@ public:
 	// Presets.
 	int GetCurrentLoadoutSlot(int iClass);
 	void ChangeLoadoutSlot(int iClass, int iLoadoutSlot);
-
+	void MsgFunc_ResetInventory( bf_read &msg );
 #endif
 
 private:

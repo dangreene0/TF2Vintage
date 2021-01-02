@@ -86,6 +86,8 @@ void RegisterUserMessages()
 	usermessages->Register("PlayerTeleportHomeEffect", -1);
 
 	usermessages->Register("PlayerLoadoutUpdated", -1);
+
+	usermessages->Register("ResetInventory", 0);
 #ifndef _X360
 	// NVNT register haptic user messages
 	RegisterHapticMessages();
