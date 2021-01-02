@@ -5,10 +5,10 @@
 //-----------------------------------------------------------------------------
 
 $Macro SRCDIR		"..\.."
-$Macro GAMENAME 	"tf2vintage" [!$SOURCESDK]
-$Macro GAMENAME 	"tf2vintage" [$SOURCESDK]
+$Macro GAMENAME 	"tf2vintage"
 
 $Include "$SRCDIR\game\client\client_base.vpc"
+$Include "$SRCDIR\game\shared\econ_protobuf_include.vpc"
 
 $Configuration
 {

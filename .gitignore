@@ -53,6 +53,9 @@ config.cfg
 # shader files
 *.tmp
 
+# generated protobuf sources
+generated_proto*/
+
 # library files
 src/lib/public/mathlib.lib
 src/lib/public/raytrace.lib
