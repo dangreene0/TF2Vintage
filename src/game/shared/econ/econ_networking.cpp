@@ -83,6 +83,9 @@ public:
 	virtual void PreClientUpdate( void );
 #endif
 
+	void ReceivedServerHello( CServerHelloMsg const &msg );
+	void ReceivedClientHello( CClientHelloMsg const &msg );
+
 	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, P2PSessionRequest_t, m_OnSessionRequested );
 	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, P2PSessionConnectFail_t, m_OnSessionFailed );
 
@@ -358,6 +361,27 @@ void CEconNetworking::PreClientUpdate()
 	}
 }
 #endif // CLIENT_DLL
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::ReceivedServerHello( CServerHelloMsg const &msg )
+{
+#if defined( CLIENT_DLL )
+	CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
+	if ( !pPlayer || !engine->IsConnected() )
+		return;
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::ReceivedClientHello( CClientHelloMsg const &msg )
+{
+#if defined( GAME_DLL )
+#endif
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Local SteamNetworking definition that
