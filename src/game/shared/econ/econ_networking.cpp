@@ -6,6 +6,7 @@
 #include "tier1/smartptr.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
+#include "steam/isteamnetworking.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -15,6 +16,43 @@
 
 ConVar net_steamcnx_debug( "net_steamcnx_debug", "0", FCVAR_NONE, "Show debug spew for steam based connections, 2 shows all network traffic for steam sockets." );
 static ConVar net_steamcnx_allowrelay( "net_steamcnx_allowrelay", "1", FCVAR_ARCHIVE, "Allow steam connections to attempt to use relay servers as fallback (best if specified on command line:  +net_steamcnx_allowrelay 1)" );
+
+
+class CSocket
+{
+public:
+	enum ESocketType_t
+	{
+		CLIENT	= 0,
+		SERVER	= 1
+	};
+
+	EXPLICIT CSocket( CSteamID const &remoteID, ESocketType_t socketType )
+	{
+		m_steamID = remoteID;
+		m_socketType = socketType;
+	}
+
+	static char const *NameOfSocket( ESocketType_t sock )
+	{
+		static char const *szNames[] ={
+			"CLIENT",
+			"SERVER"
+		};
+		return szNames[ sock ];
+	}
+
+	CSteamID const &GetSteamID( void ) const			{ return m_steamID; }
+	ESocketType_t GetSocketType( void ) const			{ return m_socketType; }
+	ESocketType_t GetRemoteSocketType() const			{ return ( m_socketType == CLIENT ) ? SERVER : CLIENT; }
+
+	int GetRemoteChannel() const						{ return ( GetRemoteSocketType() == CLIENT ) ? k_EChannelClient : k_EChannelServer; }
+	int GetLocalChannel() const							{ return ( GetSocketType() == CLIENT ) ? k_EChannelClient : k_EChannelServer; }
+private:
+	CSteamID m_steamID;
+	ESocketType_t m_socketType;
+};
+
 
 class CEconNetworking : public CAutoGameSystemPerFrame, public IEconNetworking
 {
@@ -27,6 +65,12 @@ public:
 
 	void OnClientConnected( CSteamID const &steamID ) OVERRIDE;
 	void OnClientDisconnected( CSteamID const &steamID ) OVERRIDE;
+
+	CSocket *OpenConnection( CSteamID const &steamID );
+	void CloseConnection( CSocket *pSocket );
+	CSocket *FindConnectionForID( CSteamID const &steamID );
+	void ProcessDataFromConnection( CSocket *pSocket );
+
 	bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData, int nChannel = 0 ) OVERRIDE;
 	bool RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSize, CSteamID *pRemoteID, int nChannel = 0 ) OVERRIDE;
 
@@ -43,6 +87,8 @@ public:
 
 private:
 	ISteamNetworking *SteamNetworking( void ) const;
+
+	CUtlVector< CPlainAutoPtr<CSocket> >	m_vecSockets;
 };
 
 //-----------------------------------------------------------------------------
@@ -76,6 +122,11 @@ bool CEconNetworking::Init( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::Shutdown( void )
 {
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		CloseConnection( m_vecSockets[i].Get() );
+	}
+	m_vecSockets.Purge();
 }
 
 //-----------------------------------------------------------------------------
@@ -92,6 +143,11 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID )
 	{
 		ConColorMsg( {255, 255, 100, 255}, "Initiate %llx\n", steamID.ConvertToUint64() );
 	}
+
+	CSocket *pSocket = OpenConnection( steamID );
+	if ( pSocket )
+	{
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -105,6 +161,98 @@ void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 	if ( net_steamcnx_debug.GetBool() )
 	{
 		ConColorMsg( {255, 255, 100, 255}, "Terminate %llx\n", steamID.ConvertToUint64() );
+	}
+
+	FOR_EACH_VEC_BACK( m_vecSockets, i )
+	{
+		if ( m_vecSockets[i]->GetSteamID() == steamID )
+		{
+			CloseConnection( m_vecSockets[i].Get() );
+			m_vecSockets.FastRemove( i );
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CSocket *CEconNetworking::OpenConnection( CSteamID const &steamID )
+{
+	if ( !SteamNetworking() )
+		return nullptr;
+
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		if ( m_vecSockets[i]->GetSteamID() == steamID )
+		{
+			AssertMsg( false, "Tried to open multiple connections to the same remote!" );
+			return nullptr;
+		}
+	}
+
+	CSocket::ESocketType_t sock = steamID.BGameServerAccount() ? CSocket::SERVER : CSocket::CLIENT;
+	CSocket *pSock = new CSocket( steamID, sock );
+	m_vecSockets[m_vecSockets.AddToTail()].Attach( pSock );
+
+	if ( net_steamcnx_debug.GetBool() )
+	{
+		ConColorMsg( {255, 255, 100, 255}, "Opened Steam Socket %s ( socket %d )\n", CSocket::NameOfSocket( sock ), sock );
+	}
+
+	return pSock;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::CloseConnection( CSocket *pSocket )
+{
+	if ( !SteamNetworking() || pSocket == NULL )
+		return;
+
+	SteamNetworking()->CloseP2PChannelWithUser( pSocket->GetSteamID(), pSocket->GetLocalChannel() );
+	SteamNetworking()->CloseP2PChannelWithUser( pSocket->GetSteamID(), pSocket->GetRemoteChannel() );
+
+	if ( net_steamcnx_debug.GetBool() )
+	{
+		ConColorMsg( {255, 255, 100, 255}, "Closed Steam Socket %s\n", CSocket::NameOfSocket( pSocket->GetSocketType() ) );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CSocket *CEconNetworking::FindConnectionForID( CSteamID const &steamID )
+{
+	CSocket *pSock = nullptr;
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		if ( m_vecSockets[i]->GetSteamID() == steamID )
+		{
+			pSock = m_vecSockets[i].Get();
+			break;
+		}
+	}
+
+	return pSock;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
+{
+	uint32 cubMsgSize = 0;
+	int nChannel = pSocket->GetLocalChannel();
+	while ( SteamNetworking()->IsP2PPacketAvailable( &cubMsgSize, nChannel ) )
+	{
+		void *pData = malloc( cubMsgSize );
+		uint32 cubTotalMsgSize{}; CSteamID remoteID{};
+		if ( SteamNetworking()->ReadP2PPacket( pData, cubMsgSize, &cubTotalMsgSize, &remoteID, nChannel ) )
+		{
+			AssertMsg( cubMsgSize == cubTotalMsgSize, "We can't handle split packets at this time." );
+		}
+		free( pData );
 	}
 }
 
@@ -152,6 +300,12 @@ void CEconNetworking::Update( float frametime )
 	CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
 	if ( !pPlayer || !engine->IsConnected() )
 		return;
+
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		CSocket *pSocket = m_vecSockets[i].Get();
+		ProcessDataFromConnection( pSocket );
+	}
 }
 
 #else
@@ -163,6 +317,12 @@ void CEconNetworking::PreClientUpdate()
 {
 	if ( !SteamNetworking() )
 		return;
+
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		CSocket *pSocket = m_vecSockets[i].Get();
+		ProcessDataFromConnection( pSocket );
+	}
 }
 #endif // CLIENT_DLL
 
@@ -207,6 +367,9 @@ void CEconNetworking::P2PSessionRequested( P2PSessionRequest_t *pRequest )
 		if ( remoteID != localID )
 			return;
 	}
+#else
+	if ( !OpenConnection( remoteID ) )
+		return;
 #endif
 
 	SteamNetworking()->AcceptP2PSessionWithUser( remoteID );
