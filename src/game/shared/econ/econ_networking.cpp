@@ -255,6 +255,19 @@ void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
 		if ( SteamNetworking()->ReadP2PPacket( pData, cubMsgSize, &cubTotalMsgSize, &remoteID, nChannel ) )
 		{
 			AssertMsg( cubMsgSize == cubTotalMsgSize, "We can't handle split packets at this time." );
+
+			CNetPacket *pPacket = new CNetPacket; 
+			pPacket->InitFromMemory( pData, cubMsgSize - sizeof( CNetPacket ) );
+
+			CBaseMsgHandler *pHandler = NULL;
+			unsigned nIndex = m_MessageTypes.Find( pPacket->MsgType() );
+			if ( nIndex != m_MessageTypes.InvalidIndex() )
+				pHandler = (CBaseMsgHandler*)m_MessageTypes[ nIndex ];
+
+			if ( pHandler )
+				pHandler->QueueWork( pPacket );
+
+			pPacket->Release();
 		}
 		free( pData );
 	}
@@ -290,6 +303,22 @@ bool CEconNetworking::RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSi
 //-----------------------------------------------------------------------------
 bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg )
 {
+	if ( !SteamNetworking() )
+		return false;
+
+	CSocket *pSock = FindConnectionForID( targetID );
+	if ( pSock == nullptr )
+		return false;
+
+	CNetPacket *pPacket = new CNetPacket;
+	if ( pPacket == nullptr )
+		return false;
+
+	pPacket->Init( msg.ByteSize(), eMsg );
+	msg.SerializeToArray( pPacket->MutableData(), pPacket->Size() );
+
+	uint32 cubData = pPacket->Size() + sizeof( CNetPacket );
+	return SteamNetworking()->SendP2PPacket( targetID, pPacket, cubData, k_EP2PSendReliable, pSock->GetRemoteChannel() );
 }
 
 #if defined( CLIENT_DLL )

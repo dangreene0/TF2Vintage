@@ -26,6 +26,48 @@ public:
 	virtual byte *Data( void ) const = 0;
 	virtual uint32 Size( void ) const = 0;
 };
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CNetPacket : public INetPacket
+{
+	friend class CRefCountAccessor;
+	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
+public:
+	CNetPacket()
+	{
+		m_pData = NULL;
+		m_unSize = 0;
+		m_eMsg = k_EInvalidMsg;
+	}
+
+	virtual MsgType_t MsgType( void ) const { return m_eMsg; }
+	virtual byte *Data( void ) const { return m_pData; }
+	byte *MutableData( void ) { return m_pData; }
+	virtual uint32 Size( void ) const { return m_unSize; }
+
+protected:
+	virtual ~CNetPacket()
+	{
+		Assert( m_cRefCount == 0 );
+		Assert( m_pData == NULL );
+	}
+
+	friend class CEconNetworking;
+	void Init( uint32 size, MsgType_t eMsg );
+	void InitFromMemory( void const *pMemory, uint32 size );
+
+private:
+	MsgType_t m_eMsg;
+	byte *m_pData;
+	size_t m_unSize;
+
+	virtual int AddRef( void );
+	virtual int Release( void );
+	volatile uint m_cRefCount;
+};
+
 //-----------------------------------------------------------------------------
 // Purpose: Interface for sending economy data over the wire to clients
 //-----------------------------------------------------------------------------
