@@ -23,7 +23,7 @@ abstract_class INetPacket : public IRefCounted
 {
 public:
 	virtual MsgType_t MsgType( void ) const = 0;
-	virtual byte *Data( void ) const = 0;
+	virtual byte const *Data( void ) const = 0;
 	virtual uint32 Size( void ) const = 0;
 };
 
@@ -43,7 +43,7 @@ public:
 	}
 
 	virtual MsgType_t MsgType( void ) const { return m_eMsg; }
-	virtual byte *Data( void ) const { return m_pData; }
+	virtual byte const *Data( void ) const { return m_pData; }
 	byte *MutableData( void ) { return m_pData; }
 	virtual uint32 Size( void ) const { return m_unSize; }
 

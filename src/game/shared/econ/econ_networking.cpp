@@ -1,6 +1,5 @@
 #include "cbase.h"
 #include "filesystem.h"
-#include "vstdlib/coroutine.h"
 #include "tier0/threadtools.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
@@ -413,14 +412,17 @@ void CEconNetworking::ReceivedServerHello( CServerHelloMsg const &msg )
 		filesystem->ReadLine( version, sizeof( version ), fh );
 		uint32 unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
 
-		CProtobufMsg<CClientHelloMsg> msg;
-		msg.Body().set_version( unVersion );
+		CProtobufMsg<CClientHelloMsg> reply;
+		reply.Body().set_version( unVersion );
 
 		CSteamID playerID;
 		pPlayer->GetSteamID( &playerID );
-		msg.Body().set_steamid( playerID.ConvertToUint64() );
+		reply.Body().set_steamid( playerID.ConvertToUint64() );
 
-		BSendMessage( CSteamID( msg.Body().steamid() ), k_EClientHelloMsg, msg.Body() );
+		CSteamID serverID( msg.steamid() );
+		Assert( serverID.BGameServerAccount() );
+
+		BSendMessage( serverID, k_EClientHelloMsg, reply.Body() );
 	}
 
 	filesystem->Close( fh );
