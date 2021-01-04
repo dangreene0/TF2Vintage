@@ -6,6 +6,7 @@
 
 
 #include "tier1/mempool.h"
+#include "vstdlib/coroutine.h"
 
 class CNetPacket;
 class INetPacket;
@@ -24,18 +25,14 @@ public:
 class CBaseMsgHandler : public IMessageHandler
 {
 public:
-	CBaseMsgHandler() : 
-		m_pWorkPacket( NULL ), 
-		m_hWorkThread( NULL )
-	{
-	}
+	CBaseMsgHandler();
 
 	virtual bool ProcessMessage( INetPacket *pPacket )	{ return false; }
 	bool BWaitForCompletion( void ) OVERRIDE;
 	void QueueWork( INetPacket *pPacket );
 private:
 	INetPacket *m_pWorkPacket;
-	ThreadHandle_t m_hWorkThread;
+	HCoroutine m_hCoroutine;
 };
 
 

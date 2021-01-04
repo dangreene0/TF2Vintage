@@ -13,20 +13,15 @@ struct WorkItem_t
 	INetPacket *m_pPacket;
 };
 
-static unsigned WorkThread( void *pvParam )
+static void WorkThread( void *pvParam )
 {
-	Assert( pvParam );
 	WorkItem_t *pWork = (WorkItem_t*)pvParam;
 	IMessageHandler *pHandler = pWork->m_pHandler;
 	INetPacket *pPacket = pWork->m_pPacket;
 
 	pHandler->ProcessMessage( pPacket );
-	while ( !pHandler->BWaitForCompletion() )
-		ThreadSleep( 25 );
 
 	pPacket->Release();
-
-	return 0;
 }
 
 
@@ -67,10 +62,18 @@ int CNetPacket::Release( void )
 	{
 		if( m_pData )
 			free( m_pData );
+
 		delete this;
 	}
 
 	return nRefCounts;
+}
+
+
+
+CBaseMsgHandler::CBaseMsgHandler()
+	: m_pWorkPacket( NULL ), m_hCoroutine( NULL )
+{
 }
 
 
@@ -79,7 +82,7 @@ int CNetPacket::Release( void )
 //-----------------------------------------------------------------------------
 bool CBaseMsgHandler::BWaitForCompletion( void )
 {
-	while ( ThreadGetCurrentHandle() == m_hWorkThread )
+	while ( Coroutine_GetCurrentlyActive() == m_hCoroutine )
 		ThreadSleep( 25 );
 
 	return true;
@@ -91,5 +94,8 @@ bool CBaseMsgHandler::BWaitForCompletion( void )
 void CBaseMsgHandler::QueueWork( INetPacket *pPacket )
 {
 	WorkItem_t work{this, pPacket};
-	m_hWorkThread = CreateSimpleThread( &WorkThread, &work, 1024 );
+	pPacket->AddRef();
+
+	m_hCoroutine = Coroutine_Create( WorkThread, &work );
+	Coroutine_Continue( m_hCoroutine, "process packet" );
 }
