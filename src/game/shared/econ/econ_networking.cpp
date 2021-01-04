@@ -292,8 +292,8 @@ void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
 		{
 			AssertMsg( cubMsgSize == cubTotalMsgSize, "We can't handle split packets at this time." );
 
-			CNetPacket *pPacket = new CNetPacket; 
-			pPacket->InitFromMemory( pData, cubMsgSize - sizeof( CNetPacket ) );
+			CNetPacket *pPacket = new CNetPacket;
+			pPacket->InitFromMemory( pData, cubMsgSize );
 
 			CBaseMsgHandler *pHandler = NULL;
 			unsigned nIndex = m_MessageTypes.Find( pPacket->MsgType() );
@@ -353,8 +353,10 @@ bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, go
 	pPacket->Init( msg.ByteSize(), eMsg );
 	msg.SerializeToArray( pPacket->MutableData(), pPacket->Size() );
 
-	uint32 cubData = pPacket->Size() + sizeof( CNetPacket );
-	return SteamNetworking()->SendP2PPacket( targetID, pPacket, cubData, k_EP2PSendReliable, pSock->GetRemoteChannel() );
+	bool bSuccess = SteamNetworking()->SendP2PPacket( targetID, pPacket->Data(), pPacket->Size(), k_EP2PSendReliable, pSock->GetRemoteChannel() );
+
+	pPacket->Release();
+	return bSuccess;
 }
 
 #if defined( CLIENT_DLL )
