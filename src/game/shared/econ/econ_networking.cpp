@@ -11,6 +11,50 @@
 #include "steam/isteamuser.h"
 #endif
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CNetPacket : public INetPacket
+{
+	friend class CRefCountAccessor;
+	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
+public:
+	CNetPacket()
+	{
+		m_pData = NULL;
+		m_eMsg = k_EInvalidMsg;
+	}
+
+	virtual MsgType_t MsgType( void ) const { return m_eMsg; }
+	virtual byte const *Data( void ) const { return m_pData; }
+	byte *MutableData( void ) { return m_pData; }
+	virtual uint32 Size( void ) const { return m_unSize; }
+	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
+
+protected:
+	virtual ~CNetPacket()
+	{
+		Assert( m_cRefCount == 0 );
+		Assert( m_pData == NULL );
+	}
+
+	friend class CEconNetworking;
+	void Init( uint32 size, MsgType_t eMsg );
+	void InitFromMemory( void const *pMemory, uint32 size );
+
+private:
+	MsgType_t m_eMsg;
+	byte *m_pData;
+	size_t m_unSize;
+	MsgHdr_t m_Hdr;
+
+	virtual int AddRef( void );
+	virtual int Release( void );
+	volatile uint m_cRefCount;
+};
+DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 0, UTLMEMORYPOOL_GROW_FAST );
+
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -523,6 +567,55 @@ void CEconNetworking::P2PSessionFailed( P2PSessionConnectFail_t *pFailure )
 
 	const int nFailureMessage = pFailure->m_eP2PSessionError - 1;
 	ConColorMsg( {255, 255, 100, 255}, "P2P session failed: Reason %d (%s)\n", pFailure->m_eP2PSessionError, s_szFailureReason[nFailureMessage] );
+}
+
+
+void CNetPacket::Init( uint32 size, MsgType_t eMsg )
+{
+	m_Hdr = {eMsg, size};
+	m_unSize = size + sizeof( MsgHdr_t );
+	m_eMsg = eMsg;
+
+	m_pData = (byte*)malloc( m_unSize );
+	Q_memcpy( m_pData, &m_Hdr, sizeof( MsgHdr_t ) );
+
+	AddRef();
+}
+
+void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
+{
+	Assert( pMemory );
+
+	m_pData = (byte *)malloc( size );
+	Q_memcpy( m_pData, pMemory, size );
+
+	Q_memcpy( &m_Hdr, m_pData, sizeof( MsgHdr_t ) );
+
+	Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
+	m_eMsg = m_Hdr.m_eMsgType;
+	m_unSize = size + sizeof( MsgHdr_t );
+
+	AddRef();
+}
+
+int CNetPacket::AddRef( void )
+{
+	return ThreadInterlockedIncrement( &m_cRefCount );
+}
+
+int CNetPacket::Release( void )
+{
+	Assert( m_cRefCount > 0 );
+	int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
+	if ( nRefCounts == 0 )
+	{
+		if( m_pData )
+			free( m_pData );
+
+		delete this;
+	}
+
+	return nRefCounts;
 }
 
 //-----------------------------------------------------------------------------

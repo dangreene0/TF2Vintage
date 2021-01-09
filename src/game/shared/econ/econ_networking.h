@@ -23,8 +23,8 @@ typedef uint32 MsgType_t;
 
 struct MsgHdr_t
 {
-	MsgType_t m_eMsgType;
-	uint32 m_unMsgSize;
+	MsgType_t m_eMsgType;	// Message type
+	uint32 m_unMsgSize;		// Size of message without header
 	EChannelType_t m_eChannel;
 };
 
@@ -37,48 +37,6 @@ public:
 	virtual MsgType_t MsgType( void ) const = 0;
 	virtual byte const *Data( void ) const = 0;
 	virtual uint32 Size( void ) const = 0;
-};
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-class CNetPacket : public INetPacket
-{
-	friend class CRefCountAccessor;
-	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
-public:
-	CNetPacket()
-	{
-		m_pData = NULL;
-		m_eMsg = k_EInvalidMsg;
-	}
-
-	virtual MsgType_t MsgType( void ) const { return m_eMsg; }
-	virtual byte const *Data( void ) const { return m_pData; }
-	byte *MutableData( void ) { return m_pData; }
-	virtual uint32 Size( void ) const { return m_unSize; }
-	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
-
-protected:
-	virtual ~CNetPacket()
-	{
-		Assert( m_cRefCount == 0 );
-		Assert( m_pData == NULL );
-	}
-
-	friend class CEconNetworking;
-	void Init( uint32 size, MsgType_t eMsg );
-	void InitFromMemory( void const *pMemory, uint32 size );
-
-private:
-	MsgType_t m_eMsg;
-	byte *m_pData;
-	size_t m_unSize;
-	MsgHdr_t m_Hdr;
-
-	virtual int AddRef( void );
-	virtual int Release( void );
-	volatile uint m_cRefCount;
 };
 
 //-----------------------------------------------------------------------------
