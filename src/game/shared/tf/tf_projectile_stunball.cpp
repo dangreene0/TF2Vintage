@@ -352,7 +352,7 @@ void CTFStunBall::VPhysicsCollision( int index, gamevcollisionevent_t *pEvent )
 //-----------------------------------------------------------------------------
 void CTFStunBall::SetScorer( CBaseEntity *pScorer )
 {
-	m_Scorer = pScorer;
+	m_hScorer = pScorer;
 }
 
 //-----------------------------------------------------------------------------

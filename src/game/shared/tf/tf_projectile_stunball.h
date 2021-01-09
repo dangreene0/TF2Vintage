@@ -80,7 +80,7 @@ private:
 	CNetworkVar( bool, m_bCritical );
 
 	CHandle<CBaseEntity>	m_hEnemy;
-	EHANDLE					m_Scorer;
+	EHANDLE					m_hScorer;
 	EHANDLE					m_hSpriteTrail;
 #else
 	bool					m_bCritical;

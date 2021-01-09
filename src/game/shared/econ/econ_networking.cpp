@@ -282,7 +282,7 @@ CSocket *CEconNetworking::FindConnectionForID( CSteamID const &steamID )
 //-----------------------------------------------------------------------------
 void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
 {
-	uint32 cubMsgSize = 0;
+	uint32 cubMsgSize = 0; // Message size includes header
 	int nChannel = pSocket->GetLocalChannel();
 	while ( SteamNetworking()->IsP2PPacketAvailable( &cubMsgSize, nChannel ) )
 	{
@@ -351,7 +351,7 @@ bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, go
 		return false;
 
 	pPacket->Init( msg.ByteSize(), eMsg );
-	msg.SerializeToArray( pPacket->MutableData(), pPacket->Size() );
+	msg.SerializeWithCachedSizesToArray( pPacket->MutableData() + sizeof(MsgHdr_t) );
 
 	bool bSuccess = SteamNetworking()->SendP2PPacket( targetID, pPacket->Data(), pPacket->Size(), k_EP2PSendReliable, pSock->GetRemoteChannel() );
 

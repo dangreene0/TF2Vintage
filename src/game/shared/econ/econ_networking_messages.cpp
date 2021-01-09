@@ -27,9 +27,12 @@ static void WorkThread( void *pvParam )
 
 void CNetPacket::Init( uint32 size, MsgType_t eMsg )
 {
-	m_pData = (byte*)malloc( size );
-	m_unSize = size;
+	m_Hdr = {size, eMsg};
+	m_unSize = size + sizeof(MsgHdr_t);
 	m_eMsg = eMsg;
+
+	m_pData = (byte*)malloc( m_unSize );
+	Q_memcpy( m_pData, &m_Hdr, sizeof(MsgHdr_t) );
 
 	AddRef();
 }
@@ -39,12 +42,14 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 {
 	Assert( pMemory );
 
-	m_eMsg = *(MsgType_t *)pMemory;
-	m_pData = (byte *)malloc( size );
 	m_unSize = size;
+	m_pData = (byte*)malloc( m_unSize );
+	Q_memcpy( m_pData, pMemory, size );
 
-	Assert( m_pData );
-	Q_memcpy( m_pData, (void **)((intp)pMemory + sizeof( MsgType_t )), size );
+	Q_memcpy( &m_Hdr, m_pData, sizeof(MsgHdr_t) );
+	m_eMsg = m_Hdr.m_eMsgType;
+
+	Assert( ( m_Hdr.m_unMsgSize + sizeof(MsgHdr_t) ) == size );
 
 	AddRef();
 }

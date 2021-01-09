@@ -5,6 +5,11 @@
 #endif
 
 
+#ifdef COMPILER_GCC
+#undef min
+#undef max
+#endif
+
 #include <google/protobuf/message.h>
 #include "econ_messages.pb.h"
 #include "tier1/mempool.h"
@@ -15,6 +20,13 @@ enum EChannelType_t
 	k_EChannelServer	= 1
 };
 typedef uint32 MsgType_t;
+
+struct MsgHdr_t
+{
+	MsgType_t m_eMsgType;
+	uint32 m_unMsgSize;
+	EChannelType_t m_eChannel;
+};
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -38,7 +50,6 @@ public:
 	CNetPacket()
 	{
 		m_pData = NULL;
-		m_unSize = 0;
 		m_eMsg = k_EInvalidMsg;
 	}
 
@@ -46,6 +57,7 @@ public:
 	virtual byte const *Data( void ) const { return m_pData; }
 	byte *MutableData( void ) { return m_pData; }
 	virtual uint32 Size( void ) const { return m_unSize; }
+	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
 
 protected:
 	virtual ~CNetPacket()
@@ -62,6 +74,7 @@ private:
 	MsgType_t m_eMsg;
 	byte *m_pData;
 	size_t m_unSize;
+	MsgHdr_t m_Hdr;
 
 	virtual int AddRef( void );
 	virtual int Release( void );
