@@ -631,7 +631,7 @@ private:
 
 	// Bots.
 	friend void Bot_Think( CTFPlayer *pBot );
-	friend static void tf_bot_add( const CCommand &args );
+	friend void cc_tf_bot_add( const CCommand &args );
 	friend class CTFBot; friend class CTFBotManager;
 
 	// Physics.

@@ -493,8 +493,8 @@ void CEconNetworking::ReceivedClientHello( CClientHelloMsg const &msg )
 			if ( msg.version() != unVersion )
 			{
 				engine->ServerCommand( UTIL_VarArgs( 
-					"kickid %d \"The server you are trying to connect to\\nis running a different version of the game.\"\n",
-					UTIL_PlayerBySteamID( CSteamID( msg.steamid() ) )->GetUserID() ) 
+					"kickid %d \"The server you are trying to connect to is running a\\n different version of the game.\"\n",
+					UTIL_PlayerBySteamID( msg.steamid() )->GetUserID() ) 
 				);
 			}
 		}
