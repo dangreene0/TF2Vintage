@@ -563,8 +563,8 @@ CTFPlayer::CTFPlayer()
 	m_lifeState = LIFE_DEAD; // Start "dead".
 	m_iMaxSentryKills = 0;
 	m_flNextNameChangeTime = 0;
-
-	m_flNextHealthRegen = 0;
+	m_flHealthRegenAccumulation = 0;
+	m_flLastHealthRegen = 0;
 	m_flNextTimeCheck = gpGlobals->curtime;
 	m_flSpawnTime = 0;
 
@@ -713,6 +713,9 @@ void CTFPlayer::TFPlayerThink()
 //-----------------------------------------------------------------------------
 void CTFPlayer::RegenThink( void )
 {
+	if ( !IsAlive() )
+		return;
+
 	// Health drain/regen attribute.
 	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
 	int iHealthRegen = 0;
@@ -725,52 +728,72 @@ void CTFPlayer::RegenThink( void )
 	// If we heal, use an algorithm similar to medic's to determine healing.
 	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
 	{
-		if ( IsAlive() )
+		if ( TFGameRules()->IsPVEModeActive() ) // Regen is static in MVM.
 		{
-			if ( TFGameRules()->GetGameType() != TF_GAMETYPE_MVM ) // Regen is static in MVM.
-			{
-				// Scale health regen to the last time we took damage.
-				float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
-				// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
-				float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
+			// Scale health regen to the last time we took damage.
+			float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
+			// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
+			float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
 
-				iHealthRegen = ceil( TF_MEDIC_REGEN_AMOUNT * flScaleGeneric );
-			}
+			m_flHealthRegenAccumulation += TF_MEDIC_REGEN_AMOUNT * flScaleGeneric;
 		}
 	}
 
-	int iHealAmountMedic = 0;
 	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
 	{
-		if ( IsAlive() )
-		{
-			// Heal faster if we haven't been in combat for a while
-			float flTimeSinceDamage = gpGlobals->curtime - GetLastDamageTime();
-			float flScale;
-			if (tf2v_use_new_medic_regen.GetBool())
-				flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
-			else
-				flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
+		// Heal faster if we haven't been in combat for a while
+		float flTimeSinceDamage = gpGlobals->curtime - GetLastDamageTime();
+		float flScale;
+		if (tf2v_use_new_medic_regen.GetBool())
+			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
+		else
+			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
 
-			iHealAmountMedic = ceil( TF_MEDIC_REGEN_AMOUNT * flScale );
-		}
+		m_flHealthRegenAccumulation += TF_MEDIC_REGEN_AMOUNT * flScale;
 	}
 
-	if ( IsAlive() )
+	m_flHealthRegenAccumulation += iHealthRegenLegacy;
+
+	int nHealthChange = 0; 
+	if ( m_flHealthRegenAccumulation >= 1.0f )
 	{
-		int iHealthRestored = TakeHealth( iHealAmountMedic + iHealthRegen + iHealthRegenLegacy, DMG_GENERIC );
-		if ( iHealthRestored != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
+		nHealthChange = floor( m_flHealthRegenAccumulation );
+
+		int nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
+		if ( nHealthRestored > 0 )
 		{
-			IGameEvent *event = gameeventmanager->CreateEvent( "player_healonhit" );
+			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
 			if ( event )
 			{
-				event->SetInt( "amount", iHealthRestored );
-				event->SetInt( "entindex", entindex() );
+				event->SetInt( "priority", 1 );	// HLTV event priority
+				event->SetInt( "patient", GetUserID() );
+				event->SetInt( "healer", GetUserID() );
+				event->SetInt( "amount", nHealthRestored );
 
 				gameeventmanager->FireEvent( event );
 			}
 		}
 	}
+	else if ( m_flHealthRegenAccumulation < -1.0f )
+	{
+		nHealthChange = ceil( m_flHealthRegenAccumulation );
+		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+	}
+
+	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
+	{
+		IGameEvent *event = gameeventmanager->CreateEvent( "player_healonhit" );
+		if ( event )
+		{
+			event->SetInt( "amount", nHealthChange );
+			event->SetInt( "entindex", entindex() );
+
+			gameeventmanager->FireEvent( event );
+		}
+	}
+
+	m_flHealthRegenAccumulation -= nHealthChange;
+	m_flLastHealthRegen = gpGlobals->curtime;
 
 	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 }
@@ -779,34 +802,33 @@ void CTFPlayer::RegenThink( void )
 //-----------------------------------------------------------------------------
 // Purpose: Health regen for Area of Effect content.
 //-----------------------------------------------------------------------------
-void CTFPlayer::AOEHeal( CTFPlayer *pPatient, CTFPlayer *pHealer )
+void CTFPlayer::AOEHeal( CTFPlayer *pHealer )
 {
 	// Must be alive, must be buffed, and cannot be the same person executing the heal.
-	if ( pPatient->IsAlive() && pPatient->m_Shared.InCond( TF_COND_RADIUSHEAL ) && ( pPatient != pHealer ) )
+	if ( IsAlive() && m_Shared.InCond( TF_COND_RADIUSHEAL ) && ( this != pHealer ) )
 	{
 		int iHealthRegenAOE = 0;
 		int iHealthRestored = 0;
 		
 		// More time since combat equals faster healing. Healing increases up to 300%.
 		int iAoEHealthBase = 26; 
-		float flTimeSinceDamageAOE = gpGlobals->curtime - pPatient->m_flLastDamageTime;
+		float flTimeSinceDamageAOE = gpGlobals->curtime - m_flLastDamageTime;
 		float flScaleAoE = RemapValClamped( flTimeSinceDamageAOE, 10, 15, iAoEHealthBase, (iAoEHealthBase * 3 ) );
 		iHealthRegenAOE = ceil( TF_MEDIC_REGEN_AMOUNT * flScaleAoE );
 		
 		// Check how much health we give.
-		iHealthRestored = pPatient->TakeHealth( iHealthRegenAOE, DMG_GENERIC );
+		iHealthRestored = TakeHealth( iHealthRegenAOE, DMG_GENERIC );
 		if ( iHealthRestored > 0 )
 		{
 			CTF_GameStats.Event_PlayerHealedOther( pHealer, iHealthRestored );
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
 			if ( event )
 			{
-				event->SetInt( "patient", pPatient->GetUserID() );
+				event->SetInt( "patient", GetUserID() );
 				event->SetInt( "healer", pHealer->GetUserID() );
 				event->SetInt( "amount", iHealthRestored );
 			}
 		}
-		
 	}
 }
 

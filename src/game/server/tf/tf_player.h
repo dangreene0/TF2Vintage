@@ -438,6 +438,10 @@ public:
 	virtual CAttributeList *GetAttributeList() { return &m_AttributeList; }
 	virtual void		ReapplyProvision( void ) { /*Do nothing*/ };
 
+protected:
+	CNetworkVarEmbedded( CAttributeContainerPlayer, m_AttributeManager );
+
+public:
 	// Entity inputs
 	void				InputIgnitePlayer( inputdata_t &inputdata );
 	void				InputExtinguishPlayer( inputdata_t &inputdata );
@@ -452,6 +456,7 @@ public:
 	CNetworkVector( m_vecPlayerColor );
 
 	CTFPlayerShared m_Shared;
+	friend class CTFPlayerShared;
 
 	bool	m_bPuppet;
 
@@ -599,7 +604,7 @@ public:
 	bool m_bEurekaTeleport;
 	float m_flEurekaTeleportTime;
 
-private:
+protected:
 
 	int					GetAutoTeam( void );
 	float	m_flStunTime;
@@ -613,14 +618,17 @@ private:
 
 	// Think.
 	void				TFPlayerThink();
-	void				RegenThink( void );
-public:
-	void				AOEHeal( CTFPlayer *pPatient, CTFPlayer *pHealer );
-private:
 	void				UpdateTimers( void );
+	void				RemoveMeleeCrit( void );
+
+	// Regeneration
+	void				RegenThink( void );
+private:
+	float	m_flHealthRegenAccumulation;
+	float	m_flLastHealthRegen;
 
 public:
-	void				RemoveMeleeCrit( void );
+	void				AOEHeal( CTFPlayer *pHealer );
 
 	// Client commands.
 	void				HandleCommand_JoinTeam( const char *pTeamName );
@@ -696,7 +704,6 @@ private:
 
 	float					m_flNextRegenerateTime;
 	float					m_flNextChangeClassTime;
-	float					m_flNextHealthRegen;
 
 	// Ragdolls.
 	Vector					m_vecTotalBulletForce;
@@ -784,9 +791,6 @@ private:
 
 	CNetworkVar( int, m_nForceTauntCam );
 	CNetworkVar( bool, m_bTyping );
-
-	friend class CAttributeContainerPlayer;
-	CAttributeContainerPlayer m_AttributeManager;
 
 	COutputEvent		m_OnDeath;
 
