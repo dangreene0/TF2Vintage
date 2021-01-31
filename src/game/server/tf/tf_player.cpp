@@ -758,8 +758,8 @@ void CTFPlayer::RegenThink( void )
 
 	if ( IsAlive() )
 	{
-		if ( iHealthRestored != 0 )
 		int iHealthRestored = TakeHealth( iHealAmountMedic + iHealthRegen + iHealthRegenLegacy, DMG_GENERIC );
+		if ( iHealthRestored != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
 		{
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healonhit" );
 			if ( event )
