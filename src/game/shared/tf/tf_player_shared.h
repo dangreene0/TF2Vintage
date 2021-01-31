@@ -123,7 +123,7 @@ public:
 	void	SetCond( int nCond )				{ m_nPlayerCond = nCond; }
 	void	AddCond( int nCond, float flDuration = PERMANENT_CONDITION );
 	void	RemoveCond( int nCond );
-	bool	InCond( int nCond );
+	bool	InCond( int nCond ) const;
 	void	RemoveAllCond( CTFPlayer *pPlayer );
 	void	OnConditionAdded( int nCond );
 	void	OnConditionRemoved( int nCond );

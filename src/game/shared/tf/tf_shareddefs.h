@@ -795,6 +795,9 @@ extern const char *g_szProjectileNames[];
 
 #define TF_MAX_PRESETS 4		// Needs to match g_InventoryLoadoutPresets
 
+// Lunchboxes
+#define TF_LUNCHBOX_HEALTH_BUFF			50
+
 // Most of these conds aren't actually implemented but putting them here for compatibility.
 enum
 {

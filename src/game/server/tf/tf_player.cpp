@@ -1646,10 +1646,10 @@ int CTFPlayer::GetMaxHealth( void ) const
 	int iMaxHealth = GetMaxHealthForBuffing();
 	CALL_ATTRIB_HOOK_INT( iMaxHealth, add_maxhealth_nonbuffed );
 
-	if ( const_cast<CTFPlayerShared &>( m_Shared ).InCond( TF_COND_LUNCHBOX_HEALTH_BUFF ) )
-		iMaxHealth += 50;
+	if ( m_Shared.InCond( TF_COND_LUNCHBOX_HEALTH_BUFF ) )
+		iMaxHealth += TF_LUNCHBOX_HEALTH_BUFF;
 
-	return iMaxHealth;
+	return Max( iMaxHealth, 1 );
 }
 
 //-----------------------------------------------------------------------------
@@ -1660,14 +1660,14 @@ int CTFPlayer::GetMaxHealthForBuffing( void ) const
 	int iMaxHealth = m_PlayerClass.GetMaxHealth();
 	CALL_ATTRIB_HOOK_INT( iMaxHealth, add_maxhealth );
 	
-	if (m_Shared.m_bShieldEquipped == true)
+	if ( m_Shared.m_bShieldEquipped == true )
 		CALL_ATTRIB_HOOK_INT( iMaxHealth, add_maxhealth_shieldrequired );
 
 	CTFSword *pSword = dynamic_cast<CTFSword *>( const_cast<CTFPlayer *>( this )->Weapon_OwnsThisID( TF_WEAPON_SWORD ) );
 	if ( pSword )
 		iMaxHealth += pSword->GetSwordHealthMod();
 
-	if ( const_cast<CTFPlayerShared &>( m_Shared ).InCond( TF_COND_HALLOWEEN_GIANT ) )
+	if ( m_Shared.InCond( TF_COND_HALLOWEEN_GIANT ) )
 		iMaxHealth *= tf_halloween_giant_health_scale.GetFloat();
 
 	return iMaxHealth;

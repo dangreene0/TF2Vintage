@@ -534,7 +534,7 @@ void CTFPlayerShared::RemoveCond(int nCond)
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CTFPlayerShared::InCond(int nCond)
+bool CTFPlayerShared::InCond(int nCond) const
 {
 	Assert(nCond >= 0 && nCond < TF_COND_LAST);
 
@@ -4978,13 +4978,11 @@ void CTFPlayerShared::PulseRageBuff( /*CTFPlayerShared::ERageBuffSlot*/ )
 {
 	// g_SoldierBuffAttributeIDToConditionMap is called here in Live TF2
 #ifdef GAME_DLL
-	CTFPlayer *pOuter = m_pOuter;
-
 	if ( !m_pOuter )
 		return;
 
 	CBaseEntity *pEntity = NULL;
-	Vector vecOrigin = pOuter->GetAbsOrigin();
+	Vector vecOrigin = m_pOuter->GetAbsOrigin();
 
 	for ( CEntitySphereQuery sphere( vecOrigin, TF_BUFF_RADIUS ); ( pEntity = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
 	{
@@ -4999,7 +4997,7 @@ void CTFPlayerShared::PulseRageBuff( /*CTFPlayerShared::ERageBuffSlot*/ )
 
 		if ( vecDir.LengthSqr() < ( TF_BUFF_RADIUS * TF_BUFF_RADIUS ) )
 		{
-			if ( pPlayer && pPlayer->InSameTeam( pOuter ) )
+			if ( pPlayer && pPlayer->InSameTeam( m_pOuter ) )
 			{
 				switch ( m_iActiveBuffType )
 				{
@@ -5013,8 +5011,8 @@ void CTFPlayerShared::PulseRageBuff( /*CTFPlayerShared::ERageBuffSlot*/ )
 						pPlayer->m_Shared.AddCond( TF_COND_REGENONDAMAGEBUFF, 1.2f );
 						break;
 					case TF_COND_RADIUSHEAL:
-						pPlayer->m_Shared.AddCond(TF_COND_RADIUSHEAL, TF_MEDIC_REGEN_TIME);
-						pPlayer->AOEHeal(pPlayer, pOuter);
+						pPlayer->m_Shared.AddCond( TF_COND_RADIUSHEAL, TF_REGEN_TIME * 1.1 );
+						pPlayer->AOEHeal( m_pOuter );
 						break;
 				}
 
@@ -5026,17 +5024,17 @@ void CTFPlayerShared::PulseRageBuff( /*CTFPlayerShared::ERageBuffSlot*/ )
 					{
 						event->SetInt( "userid", pPlayer->GetUserID() );
 						event->SetInt( "buff_type", m_iActiveBuffType );
-						event->SetInt( "buff_owner", pOuter->entindex() );
+						event->SetInt( "buff_owner", m_pOuter->entindex() );
 						gameeventmanager->FireEvent( event );
 					}
 				}
 			}
  			
-			if (pPlayer && pPlayer->m_Shared.InCond(TF_COND_DISGUISED) && !pPlayer->m_Shared.InCond(TF_COND_STEALTHED) && (!pPlayer->InSameTeam(pOuter) && pPlayer->m_Shared.GetDisguiseTeam() == pOuter->GetTeamNumber()) && m_iActiveBuffType == TF_COND_RADIUSHEAL)
+			if (pPlayer && pPlayer->m_Shared.InCond(TF_COND_DISGUISED) && !pPlayer->m_Shared.InCond(TF_COND_STEALTHED) && (!pPlayer->InSameTeam(m_pOuter) && pPlayer->m_Shared.GetDisguiseTeam() == m_pOuter->GetTeamNumber()) && m_iActiveBuffType == TF_COND_RADIUSHEAL)
 			{
 				// Also heal disguised spies.
-				pPlayer->m_Shared.AddCond(TF_COND_RADIUSHEAL, TF_MEDIC_REGEN_TIME);
-				pPlayer->AOEHeal(pPlayer, pOuter);
+				pPlayer->m_Shared.AddCond(TF_COND_RADIUSHEAL, TF_REGEN_TIME * 1.1 );
+				pPlayer->AOEHeal(m_pOuter);
 			}
 		}
 	}
