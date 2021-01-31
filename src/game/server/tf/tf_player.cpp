@@ -681,19 +681,6 @@ void CTFPlayer::TFPlayerThink()
 		DispatchParticleEffect( "rocketjump_smoke", PATTACH_POINT_FOLLOW, this, "foot_R" );
 		m_bJumpEffect = true;
 	}
-
-	if ( !IsPlayerClass( TF_CLASS_MEDIC ) && ( gpGlobals->curtime > m_flNextHealthRegen ) )
-	{
-		int iHealthDrain = 0;
-		CALL_ATTRIB_HOOK_INT( iHealthDrain, add_health_regen );
-		int iHealthRegenLegacy = 0;
-		CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
-		if ( iHealthDrain || iHealthRegenLegacy )
-		{
-			MedicRegenThink();
-			m_flNextHealthRegen = gpGlobals->curtime + TF_MEDIC_REGEN_TIME;
-		}
-	}
 	
 	// Check us teleporting back home.
 	if ( m_bEurekaTeleport )
@@ -717,8 +704,6 @@ void CTFPlayer::TFPlayerThink()
 			TFGameRules()->GetPlayerSpawnSpot( this );
 		}
 	}
-	
-	
 
 	SetContextThink( &CTFPlayer::TFPlayerThink, gpGlobals->curtime, "TFPlayerThink" );
 }
@@ -726,19 +711,19 @@ void CTFPlayer::TFPlayerThink()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayer::MedicRegenThink( void )
+void CTFPlayer::RegenThink( void )
 {
 	// Health drain/regen attribute.
 	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
-	int iHealthDrain = 0;
-	CALL_ATTRIB_HOOK_INT( iHealthDrain, add_health_regen );
+	int iHealthRegen = 0;
+	CALL_ATTRIB_HOOK_INT( iHealthRegen, add_health_regen );
 	
 	// Health drain/regen attribute, based on the older passive healing per second model.
 	int iHealthRegenLegacy = 0;
 	CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
 	
 	// If we heal, use an algorithm similar to medic's to determine healing.
-	if ( ( iHealthDrain != 0 && iHealthDrain > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
+	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
 	{
 		if ( IsAlive() )
 		{
@@ -747,9 +732,9 @@ void CTFPlayer::MedicRegenThink( void )
 				// Scale health regen to the last time we took damage.
 				float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
 				// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
-				float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthDrain );
+				float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
 
-				iHealthDrain = ceil( TF_MEDIC_REGEN_AMOUNT * flScaleGeneric );
+				iHealthRegen = ceil( TF_MEDIC_REGEN_AMOUNT * flScaleGeneric );
 			}
 		}
 	}
@@ -773,8 +758,8 @@ void CTFPlayer::MedicRegenThink( void )
 
 	if ( IsAlive() )
 	{
-		int iHealthRestored = TakeHealth( iHealAmountMedic + iHealthDrain + iHealthRegenLegacy, DMG_GENERIC );
 		if ( iHealthRestored != 0 )
+		int iHealthRestored = TakeHealth( iHealAmountMedic + iHealthRegen + iHealthRegenLegacy, DMG_GENERIC );
 		{
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healonhit" );
 			if ( event )
@@ -787,8 +772,7 @@ void CTFPlayer::MedicRegenThink( void )
 		}
 	}
 
-	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
-		SetContextThink( &CTFPlayer::MedicRegenThink, gpGlobals->curtime + TF_MEDIC_REGEN_TIME, "MedicRegenThink" );
+	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 }
 
 
@@ -824,8 +808,6 @@ void CTFPlayer::AOEHeal( CTFPlayer *pPatient, CTFPlayer *pHealer )
 		}
 		
 	}
-
-		return;	// Not healing.
 }
 
 
@@ -8368,11 +8350,7 @@ void CTFPlayer::StateEnterACTIVE()
 	m_flLastAction = gpGlobals->curtime;
 	m_bIsIdle = false;
 
-	// If we're a Medic, start thinking to regen myself
-	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
-	{
-		SetContextThink( &CTFPlayer::MedicRegenThink, gpGlobals->curtime + TF_MEDIC_REGEN_TIME, "MedicRegenThink" );
-	}
+	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 }
 
 //-----------------------------------------------------------------------------

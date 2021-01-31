@@ -613,7 +613,7 @@ private:
 
 	// Think.
 	void				TFPlayerThink();
-	void				MedicRegenThink( void );
+	void				RegenThink( void );
 public:
 	void				AOEHeal( CTFPlayer *pPatient, CTFPlayer *pHealer );
 private:
