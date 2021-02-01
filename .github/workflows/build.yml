@@ -26,10 +26,10 @@ jobs:
 
       - name: Create project
         if: runner.os == 'Linux'
-        run: sudo src/devtools/bin/vpc /tf2vintage +game /mksln TF2Vintage
+        run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2Vintage
       - name: Create project
         if: runner.os == 'Windows'
-        run: src/devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
+        run: cd src & devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
 
       - name: Build project
         if: runner.os == 'Linux'
