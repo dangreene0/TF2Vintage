@@ -7,7 +7,6 @@ jobs:
     strategy:
       matrix:
         platform: [ windows-latest, ubuntu-latest ]
-        src-dir: [ ./src, $GITHUB_WORKSPACE/src ]
     
     runs-on:
       ${{matrix.platform}}
@@ -25,7 +24,10 @@ jobs:
         with:
           arch: x86
       
-      - run: cd ${{matrix.src-dir}}
+      - run: cd ./src
+        if: runner.os == 'Windows'
+      - run: cd $GITHUB_WORKSPACE/src
+        if: runner.os == 'Linux'
 
       - name: Create project
         if: runner.os == 'Linux'
