@@ -4,12 +4,12 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        platform: windows-latest #[ windows-latest, ubuntu-latest ]
+    #strategy:
+    #  matrix:
+    #    platform: [ windows-latest, ubuntu-latest ]
     
     runs-on:
-      ${{matrix.platform}}
+      windows-latest #${{matrix.platform}}
     
     steps:
       - name: Checkout
