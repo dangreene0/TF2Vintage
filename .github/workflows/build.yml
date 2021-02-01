@@ -6,7 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ windows-latest, ubuntu-latest ]
+        platform: windows-latest #[ windows-latest, ubuntu-latest ]
     
     runs-on:
       ${{matrix.platform}}
@@ -31,7 +31,7 @@ jobs:
         run: sudo bash createtf2vintage
       - name: Create project
         if: runner.os == 'Windows'
-        run: ./createtf2vintage.bat
+        run: createtf2vintage.bat
 
       - name: Build project
         if: runner.os == 'Linux'
