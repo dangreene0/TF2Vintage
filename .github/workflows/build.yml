@@ -24,7 +24,7 @@ jobs:
         with:
           arch: x86
       
-      - run: cd TF2Vintage/src
+      - run: cd src
 
       - name: Create project
         if: runner.os == 'Linux'
