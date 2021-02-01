@@ -23,15 +23,13 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x86
-      
-      - run: cd src
 
       - name: Create project
         if: runner.os == 'Linux'
-        run: sudo devtools/bin/vpc /tf2vintage +game /mksln TF2Vintage
+        run: sudo src/devtools/bin/vpc /tf2vintage +game /mksln TF2Vintage
       - name: Create project
         if: runner.os == 'Windows'
-        run: devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
+        run: src/devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
 
       - name: Build project
         if: runner.os == 'Linux'
