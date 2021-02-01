@@ -623,9 +623,12 @@ protected:
 
 	// Regeneration
 	void				RegenThink( void );
+	void				RegenAmmoInternal( int nAmmoIndex, float flAmt );
 private:
-	float	m_flHealthRegenAccumulation;
+	float	m_flAccumulatedHealthRegen;
 	float	m_flLastHealthRegen;
+	float	m_flAmmoRegenAccumulations[TF_AMMO_COUNT];
+	float	m_flNextAmmoRegen;
 
 public:
 	void				AOEHeal( CTFPlayer *pHealer );

@@ -1015,7 +1015,8 @@ enum {
 // Class data
 //-----------------------------------------------------------------------------
 #define TF_REGEN_TIME			1.0		// Number of seconds between each regen.
-#define TF_MEDIC_REGEN_AMOUNT		1 		// Amount of health regenerated each regen.
+#define TF_REGEN_AMOUNT			1 		// Amount of health regenerated each regen.
+#define TF_AMMO_REGEN_TIME		5.0
 
 //-----------------------------------------------------------------------------
 // Assist-damage constants

@@ -563,7 +563,7 @@ CTFPlayer::CTFPlayer()
 	m_lifeState = LIFE_DEAD; // Start "dead".
 	m_iMaxSentryKills = 0;
 	m_flNextNameChangeTime = 0;
-	m_flHealthRegenAccumulation = 0;
+	m_flAccumulatedHealthRegen = 0;
 	m_flLastHealthRegen = 0;
 	m_flNextTimeCheck = gpGlobals->curtime;
 	m_flSpawnTime = 0;
@@ -716,6 +716,13 @@ void CTFPlayer::RegenThink( void )
 	if ( !IsAlive() )
 		return;
 
+	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
+
+	// We should really only be hitting this path once
+	Assert( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime );
+	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime )
+		return;
+
 	// Health drain/regen attribute.
 	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
 	int iHealthRegen = 0;
@@ -735,7 +742,7 @@ void CTFPlayer::RegenThink( void )
 			// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
 			float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
 
-			m_flHealthRegenAccumulation += TF_MEDIC_REGEN_AMOUNT * flScaleGeneric;
+			m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScaleGeneric;
 		}
 	}
 
@@ -749,15 +756,15 @@ void CTFPlayer::RegenThink( void )
 		else
 			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
 
-		m_flHealthRegenAccumulation += TF_MEDIC_REGEN_AMOUNT * flScale;
+		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
 	}
 
-	m_flHealthRegenAccumulation += iHealthRegenLegacy;
+	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
 	int nHealthChange = 0; 
-	if ( m_flHealthRegenAccumulation >= 1.0f )
+	if ( m_flAccumulatedHealthRegen >= 1.0f )
 	{
-		nHealthChange = floor( m_flHealthRegenAccumulation );
+		nHealthChange = floor( m_flAccumulatedHealthRegen );
 
 		int nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
 		if ( nHealthRestored > 0 )
@@ -774,9 +781,9 @@ void CTFPlayer::RegenThink( void )
 			}
 		}
 	}
-	else if ( m_flHealthRegenAccumulation < -1.0f )
+	else if ( m_flAccumulatedHealthRegen < -1.0f )
 	{
-		nHealthChange = ceil( m_flHealthRegenAccumulation );
+		nHealthChange = ceil( m_flAccumulatedHealthRegen );
 		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
 	}
 
@@ -792,12 +799,45 @@ void CTFPlayer::RegenThink( void )
 		}
 	}
 
-	m_flHealthRegenAccumulation -= nHealthChange;
+	m_flAccumulatedHealthRegen -= nHealthChange;
 	m_flLastHealthRegen = gpGlobals->curtime;
 
-	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
+	if ( m_flNextAmmoRegen < gpGlobals->curtime )
+	{
+		float flAmmoRegen = 0;
+		CALL_ATTRIB_HOOK_FLOAT( flAmmoRegen, addperc_ammo_regen );
+		if ( flAmmoRegen != 0.0f )
+		{
+			RegenAmmoInternal( TF_AMMO_PRIMARY, flAmmoRegen );
+			RegenAmmoInternal( TF_AMMO_SECONDARY, flAmmoRegen );
+		}
+
+		int iMetalRegen = 0;
+		CALL_ATTRIB_HOOK_INT( iMetalRegen, add_metal_regen );
+		if ( iMetalRegen != 0 )
+		{
+			GiveAmmo( iMetalRegen, TF_AMMO_METAL, true );
+		}
+
+		m_flNextAmmoRegen = gpGlobals->curtime + TF_AMMO_REGEN_TIME;
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::RegenAmmoInternal( int nAmmoIndex, float flAmt )
+{
+	m_flAmmoRegenAccumulations[ nAmmoIndex ] += flAmt;
+
+	int iMaxAmmo = GetMaxAmmo( nAmmoIndex );
+	int iAmmo = m_flAmmoRegenAccumulations[ nAmmoIndex ] * iMaxAmmo;
+	if ( iAmmo >= 1 )
+	{
+		GiveAmmo( iAmmo, nAmmoIndex, true );
+		m_flAmmoRegenAccumulations[ nAmmoIndex ] -= (float)iAmmo / iMaxAmmo;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Health regen for Area of Effect content.
@@ -814,7 +854,7 @@ void CTFPlayer::AOEHeal( CTFPlayer *pHealer )
 		int iAoEHealthBase = 26; 
 		float flTimeSinceDamageAOE = gpGlobals->curtime - m_flLastDamageTime;
 		float flScaleAoE = RemapValClamped( flTimeSinceDamageAOE, 10, 15, iAoEHealthBase, (iAoEHealthBase * 3 ) );
-		iHealthRegenAOE = ceil( TF_MEDIC_REGEN_AMOUNT * flScaleAoE );
+		iHealthRegenAOE = ceil( TF_REGEN_AMOUNT * flScaleAoE );
 		
 		// Check how much health we give.
 		iHealthRestored = TakeHealth( iHealthRegenAOE, DMG_GENERIC );
