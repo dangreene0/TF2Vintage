@@ -24,10 +24,7 @@ jobs:
         with:
           arch: x86
       
-      - run: cd ./src
-        if: runner.os == 'Windows'
-      - run: cd $GITHUB_WORKSPACE/src
-        if: runner.os == 'Linux'
+      - run: cd TF2Vintage/src
 
       - name: Create project
         if: runner.os == 'Linux'
