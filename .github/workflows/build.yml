@@ -1,0 +1,41 @@
+name: CI
+
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ windows-latest, ubuntu-latest ]
+    
+    runs-on:
+      ${{matrix.platform}}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Configure dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt update && sudo apt install -y build-essential gcc-multilib g++-multilib
+      - name: Configure dependencies
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+      
+      - run: cd $GITHUB_WORKSPACE/src
+
+      - name: Create project
+        if: runner.os == 'Linux'
+        run: sudo bash createtf2vintage
+      - name: Create project
+        if: runner.os == 'Windows'
+        run: ./createtf2vintage.bat
+
+      - name: Build project
+        if: runner.os == 'Linux'
+        run: sudo make -f TF2Vintage.mak
+      - name: Build project
+        if: runner.os == 'Windows'
+        run: msbuild TF2Vintage.sln
