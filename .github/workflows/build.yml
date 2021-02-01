@@ -24,7 +24,7 @@ jobs:
         with:
           arch: x86
       
-      - run: cd ./src
+      - run: cd {{$GITHUB_WORKSPACE}}/src
 
       - name: Create project
         if: runner.os == 'Linux'
