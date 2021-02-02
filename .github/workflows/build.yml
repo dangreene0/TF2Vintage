@@ -44,7 +44,7 @@ jobs:
       - name: Build project
         if: runner.os == 'Linux'
         run: | 
-          export STEAM_RUNTIME_PATH $GITHUB_WORKSPACE/valve/steam-runtime
+          export STEAM_RUNTIME_PATH="$GITHUB_WORKSPACE/valve/steam-runtime"
           cd src && sudo make -f TF2Vintage.mak
       - name: Build project
         if: runner.os == 'Windows'
