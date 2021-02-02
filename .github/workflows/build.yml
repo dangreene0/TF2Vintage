@@ -11,9 +11,6 @@ jobs:
     runs-on:
       ubuntu-latest #${{matrix.platform}}
     
-    env:
-      STEAM_RUNTIME_PATH: $GITHUB_WORKSPACE/valve/steam-runtime
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -47,6 +44,8 @@ jobs:
       - name: Build project
         if: runner.os == 'Linux'
         run: cd src && sudo make -f TF2Vintage.mak
+        env:
+          STEAM_RUNTIME_PATH: $GITHUB_WORKSPACE/valve/steam-runtime
       - name: Build project
         if: runner.os == 'Windows'
         run: cd src;msbuild TF2Vintage.sln
