@@ -9,7 +9,7 @@ jobs:
     #    platform: [ windows-latest, ubuntu-latest ]
     
     runs-on:
-      windows-latest #${{matrix.platform}}
+      ubuntu-latest #${{matrix.platform}}
     
     steps:
       - name: Checkout
