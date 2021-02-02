@@ -33,7 +33,7 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Linux'
-        run: sudo make -f TF2Vintage.mak
+        run: cd src && sudo make -f TF2Vintage.mak
       - name: Build project
         if: runner.os == 'Windows'
-        run: msbuild TF2Vintage.sln
+        run: cd src;msbuild TF2Vintage.sln
