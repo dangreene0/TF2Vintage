@@ -34,7 +34,7 @@ jobs:
       - name: Download Steam runtime
         if: runner.os == 'Linux'
         run: |
-          cd $GITHUB_WORKSPACE
+          cd /
           sudo mkdir valve
           cd valve
           sudo wget http://media.steampowered.com/client/runtime/steam-runtime-sdk_latest.tar.xz
@@ -43,11 +43,12 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Linux'
-        run: | 
-          export STEAM_RUNTIME_PATH="$GITHUB_WORKSPACE/valve/steam-runtime"
+        run:
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --target="i386 amd64" --auto-upgrade
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --target="i386 amd64" --auto-upgrade
           cd src && sudo make -f TF2Vintage.mak
+        env:
+          STEAM_RUNTIME_PATH: /valve/steam-runtime
       - name: Build project
         if: runner.os == 'Windows'
         run: cd src;msbuild TF2Vintage.sln
