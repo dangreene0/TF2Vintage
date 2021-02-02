@@ -1034,8 +1034,9 @@ void CEconItemSchema::Precache( void )
 		}
 
 		// Cache all attrbute names.
-		for ( static_attrib_t const &attrib : pItem->attributes )
+		FOR_EACH_VEC( pItem->attributes, i )
 		{
+			static_attrib_t const &attrib = pItem->attributes[i];
 			const CEconAttributeDefinition *pAttribute = attrib.GetStaticData();
 
 			// Special case for custom_projectile_model attribute.
