@@ -4,12 +4,12 @@ on: [ push, pull_request ]
 
 jobs:
   build:
-    #strategy:
-    #  matrix:
-    #    platform: [ windows-latest, ubuntu-latest ]
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest ] #TODO: [ windows-latest, ubuntu-latest ] 
     
     runs-on:
-      ubuntu-latest #${{matrix.platform}}
+      ${{matrix.platform}}
     
     steps:
       - name: Checkout
@@ -18,18 +18,18 @@ jobs:
       - name: Configure dependencies
         if: runner.os == 'Linux'
         run: sudo apt update && sudo apt install -y build-essential gcc-multilib g++-multilib
-      - name: Configure dependencies
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x86
+      #- name: Configure dependencies
+      #  if: runner.os == 'Windows'
+      #  uses: ilammy/msvc-dev-cmd@v1
+      #  with:
+      #    arch: x86
 
       - name: Create project
         if: runner.os == 'Linux'
         run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2Vintage
-      - name: Create project
-        if: runner.os == 'Windows'
-        run: cd src;devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
+      #- name: Create project
+      #  if: runner.os == 'Windows'
+      #  run: cd src;devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
       
       - name: Download Steam runtime
         if: runner.os == 'Linux'
@@ -49,6 +49,6 @@ jobs:
           cd src && sudo make -f TF2Vintage.mak
         env:
           STEAM_RUNTIME_PATH: /valve/steam-runtime
-      - name: Build project
-        if: runner.os == 'Windows'
-        run: cd src;msbuild TF2Vintage.sln
+      #- name: Build project
+      #  if: runner.os == 'Windows'
+      #  run: cd src;msbuild TF2Vintage.sln
