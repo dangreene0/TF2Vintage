@@ -11,6 +11,9 @@ jobs:
     runs-on:
       ubuntu-latest #${{matrix.platform}}
     
+    env:
+      STEAM_RUNTIME_PATH: $GITHUB_WORKSPACE/valve/steam-runtime
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -30,6 +33,16 @@ jobs:
       - name: Create project
         if: runner.os == 'Windows'
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2013 +game /mksln TF2vintage.sln
+      
+      - name: Download Steam runtime
+        if: runner.os == 'Linux'
+        run: |
+          cd $GITHUB_WORKSPACE
+          sudo mkdir valve
+          cd valve
+          sudo wget http://media.steampowered.com/client/runtime/steam-runtime-sdk_latest.tar.xz
+          sudo tar xvf steam-runtime-sdk_latest.tar.xz
+          sudo mv steam-runtime-sdk_2013-09-05 steam-runtime
 
       - name: Build project
         if: runner.os == 'Linux'
