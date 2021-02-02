@@ -43,7 +43,7 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Linux'
-        run:
+        run: |
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --target="i386 amd64" --auto-upgrade
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --target="i386 amd64" --auto-upgrade
           cd src && sudo make -f TF2Vintage.mak
