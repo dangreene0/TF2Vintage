@@ -45,7 +45,8 @@ jobs:
         if: runner.os == 'Linux'
         run: | 
           export STEAM_RUNTIME_PATH="$GITHUB_WORKSPACE/valve/steam-runtime"
-          sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --host=amd64 --target=i386
+          sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --host=amd64 --target=i386
+          sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --host=amd64 --target=i386 --auto-upgrade
           cd src && sudo make -f TF2Vintage.mak
       - name: Build project
         if: runner.os == 'Windows'
