@@ -23,6 +23,8 @@ jobs:
       #  uses: ilammy/msvc-dev-cmd@v1
       #  with:
       #    arch: x86
+      #    sdk: 8.1
+      #    toolset: 12.0
 
       - name: Create project
         if: runner.os == 'Linux'
@@ -52,3 +54,35 @@ jobs:
       #- name: Build project
       #  if: runner.os == 'Windows'
       #  run: cd src;msbuild TF2Vintage.sln
+
+      - name: Upload product
+        uses: actions/upload-artifact@v2
+        with:
+          name: TF2Vintage
+          path: game/tf2vintage
+  
+  release:
+    on: 
+      push:
+        # Sequence of patterns matched against refs/tags
+        tags:
+          - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: TF2Vintage
+        
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          tag_name: ${{github.ref}}
+          release_name: ${{github.ref}}
+          draft: false
+          prerelease: false
