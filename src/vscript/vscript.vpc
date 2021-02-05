@@ -4,10 +4,10 @@
 //	Project Script
 //-----------------------------------------------------------------------------
 
-$macro SRCDIR		".."
 $Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+$Macro SRCDIR		".."
 
-$include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
+$Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
 
 $Configuration
 {
@@ -40,12 +40,12 @@ $Project "VScript"
 
 	$Folder	"Header Files"
 	{
-		$File   "vscript_init_nut.h"
-		$File   "squirrel_vm.h"
-		$File   "sq_vector.h"
-		$File   "sq_vmstate.h"
-		$File	"lua_vm.h"
-		$File	"lua_vector.h"
+		$DynamicFile   	"vscript_init_nut.h"
+		$File   		"squirrel_vm.h"
+		$File   		"sq_vector.h"
+		$File   		"sq_vmstate.h"
+		$File			"lua_vm.h"
+		$File			"lua_vector.h"
 	}
 
 	$Folder "Squirrel Lang"
