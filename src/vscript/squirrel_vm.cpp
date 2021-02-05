@@ -242,7 +242,7 @@ bool CSquirrelVM::Init( void )
 
 	m_ScriptClasses.Init( 256 );
 
-	Run( g_Script_init );
+	Run( g_Script_vscript_init );
 
 	// store a reference to the scope utilities from the init script
 	m_CreateScopeClosure = LookupObject( "VSquirrel_OnCreateScope" );
