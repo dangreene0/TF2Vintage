@@ -70,3 +70,4 @@ vc140.pdb
 src/Output-Build.txt
 src/utils/vvis_launcher/vvis_launcher.vpc.sentinel
 *.vpc.sentinel
+*_nut.h
