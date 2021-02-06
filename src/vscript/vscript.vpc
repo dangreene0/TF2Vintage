@@ -117,6 +117,15 @@ $Project "VScript"
 			$File   "$SRCDIR\thirdparty\SQUIRREL2\sqplus\SquirrelObject.cpp"
 			$File   "$SRCDIR\thirdparty\SQUIRREL2\sqplus\SquirrelObject.h"
 			$File   "$SRCDIR\thirdparty\SQUIRREL2\sqplus\SquirrelVM.cpp"
+			{
+				$Configuration
+				{
+					$Compiler
+					{
+						$AdditionalOptions					"$BASE /EHsc"
+					}
+				}
+			}
 			$File   "$SRCDIR\thirdparty\SQUIRREL2\sqplus\SquirrelVM.h"
 		}
 
