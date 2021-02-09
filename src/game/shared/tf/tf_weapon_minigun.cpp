@@ -644,10 +644,10 @@ float CTFMinigun::GetWeaponSpread( void )
 		switch (tf2v_use_new_minigun_rampup.GetInt())
 		{
 			case 1:	// Rampup based on firing time.
-			case 2:
 			if ( GetFiringTime() < TF_MINIGUN_PENALTY_TIME )
 				flSpreadMod = RemapValClamped( GetFiringTime(), 0.2, TF_MINIGUN_PENALTY_TIME, 0.5, 1 );			
 			break;
+			case 2:
 			case 3:	// Rampup based on spinning time.
 			if ( GetWindingTime() < TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() )
 				flSpreadMod = RemapValClamped( GetWindingTime(), 0.2, (TF_MINIGUN_PENALTY_TIME + GetSpinUpLength()), 0.5, 1 );				
