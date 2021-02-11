@@ -17,26 +17,31 @@
 typedef unsigned char uint8;
 #endif
 
-#if defined( __GNUC__ ) && !defined(POSIX)
+#if defined( __GNUC__ ) && !defined(_WIN32) && !defined(POSIX)
 	#if __GNUC__ < 4
 		#error "Steamworks requires GCC 4.X (4.2 or 4.4 have been tested)"
 	#endif
 	#define POSIX 1
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__)
+#if defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__) || defined(__s390x__)
 #define X64BITS
 #endif
 
+#if !defined(VALVE_BIG_ENDIAN)
+#if defined(_PS3)
 // Make sure VALVE_BIG_ENDIAN gets set on PS3, may already be set previously in Valve internal code.
-#if !defined(VALVE_BIG_ENDIAN) && defined(_PS3)
-#define VALVE_BIG_ENDIAN
+#define VALVE_BIG_ENDIAN 1
+#endif
+#if defined( __GNUC__ ) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define VALVE_BIG_ENDIAN 1
+#endif
 #endif
 
 typedef unsigned char uint8;
 typedef signed char int8;
 
-#if defined( _WIN32 )
+#if defined( _WIN32 ) && !defined( __GNUC__ )
 
 typedef __int16 int16;
 typedef unsigned __int16 uint16;
@@ -84,7 +89,7 @@ typedef unsigned int uintp;
 
 #endif // else _WIN32
 
-#ifdef __clang__
+#ifdef API_GEN
 # define STEAM_CLANG_ATTR(ATTR) __attribute__((annotate( ATTR )))
 #else
 # define STEAM_CLANG_ATTR(ATTR)
@@ -104,7 +109,6 @@ typedef unsigned int uintp;
 #define STEAM_DESC(DESC) STEAM_CLANG_ATTR("desc:" #DESC ";")
 #define STEAM_CALL_RESULT(RESULT_TYPE) STEAM_CLANG_ATTR("callresult:" #RESULT_TYPE ";")
 #define STEAM_CALL_BACK(RESULT_TYPE) STEAM_CLANG_ATTR("callback:" #RESULT_TYPE ";")
-#define STEAM_FLAT_NAME(NAME) STEAM_CLANG_ATTR("flat_name:" #NAME ";")
 
 const int k_cubSaltSize   = 8;
 typedef	uint8 Salt_t[ k_cubSaltSize ];
@@ -184,81 +188,5 @@ const SiteId_t k_ulSiteIdInvalid = 0;
 // Party Beacon ID
 typedef uint64 PartyBeaconID_t;
 const PartyBeaconID_t k_ulPartyBeaconIdInvalid = 0;
-
-enum ESteamIPType
-{
-	k_ESteamIPTypeIPv4 = 0,
-	k_ESteamIPTypeIPv6 = 1,
-};
-
-#pragma pack( push, 1 )
-
-struct SteamIPAddress_t
-{
-	union {
-
-		uint32			m_unIPv4;		// Host order
-		uint8			m_rgubIPv6[16];		// Network order! Same as inaddr_in6.  (0011:2233:4455:6677:8899:aabb:ccdd:eeff)
-
-		// Internal use only
-		uint64			m_ipv6Qword[2];	// big endian
-	};
-
-	ESteamIPType m_eType;
-
-	bool IsSet() const 
-	{ 
-		if ( k_ESteamIPTypeIPv4 == m_eType )
-		{
-			return m_unIPv4 != 0;
-		}
-		else 
-		{
-			return m_ipv6Qword[0] !=0 || m_ipv6Qword[1] != 0; 
-		}
-	}
-
-	static SteamIPAddress_t IPv4Any()
-	{
-		SteamIPAddress_t ipOut;
-		ipOut.m_eType = k_ESteamIPTypeIPv4;
-		ipOut.m_unIPv4 = 0;
-
-		return ipOut;
-	}
-
-	static SteamIPAddress_t IPv6Any()
-	{
-		SteamIPAddress_t ipOut;
-		ipOut.m_eType = k_ESteamIPTypeIPv6;
-		ipOut.m_ipv6Qword[0] = 0;
-		ipOut.m_ipv6Qword[1] = 0;
-
-		return ipOut;
-	}
-
-	static SteamIPAddress_t IPv4Loopback()
-	{
-		SteamIPAddress_t ipOut;
-		ipOut.m_eType = k_ESteamIPTypeIPv4;
-		ipOut.m_unIPv4 = 0x7f000001;
-
-		return ipOut;
-	}
-
-	static SteamIPAddress_t IPv6Loopback()
-	{
-		SteamIPAddress_t ipOut;
-		ipOut.m_eType = k_ESteamIPTypeIPv6;
-		ipOut.m_ipv6Qword[0] = 0;
-		ipOut.m_ipv6Qword[1] = 0;
-		ipOut.m_rgubIPv6[15] = 1;
-
-		return ipOut;
-	}
-};
-
-#pragma pack( pop )
-
 
 #endif // STEAMTYPES_H

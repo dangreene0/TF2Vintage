@@ -4,10 +4,10 @@
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
+#include "steam/isteamnetworkingsockets.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api_common.h"
-#include "steam/isteamnetworking.h"
 #include "steam/isteamuser.h"
 #endif
 
