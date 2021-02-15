@@ -21,8 +21,6 @@ CBaseDiscordPresence::CBaseDiscordPresence()
 
 CBaseDiscordPresence::~CBaseDiscordPresence()
 {
-	if ( g_pDiscord )
-		delete g_pDiscord;
 }
 
 bool CBaseDiscordPresence::Init()
@@ -54,7 +52,10 @@ void CBaseDiscordPresence::Shutdown()
 	ResetPresence();
 
 	if ( g_pDiscord )
+	{
 		delete g_pDiscord;
+		g_pDiscord = NULL;
+	}
 
 	if ( rpc == this )
 		rpc = NULL;
