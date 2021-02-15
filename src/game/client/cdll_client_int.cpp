@@ -16,7 +16,6 @@
 #include "prediction.h"
 #include "clientsideeffects.h"
 #include "particlemgr.h"
-#include "steam/steam_api.h"
 #include "initializer.h"
 #include "smoke_fog_overlay.h"
 #include "view.h"
@@ -106,6 +105,10 @@
 #endif
 #include "vgui/ILocalize.h"
 #include "vgui/IVGui.h"
+#ifndef NO_STEAM
+#include "steam/steam_api.h"
+#endif
+#include "steam/steamnetworkingsockets.h" // doesn't require Steam
 #include "ixboxsystem.h"
 #include "ipresence.h"
 #include "engine/imatchmaking.h"
@@ -1221,6 +1224,13 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 
 	vgui::VGui_InitMatSysInterfacesList( "ClientDLL", &appSystemFactory, 1 );
 
+	SteamNetworkingErrMsg err;
+	if ( !GameNetworkingSockets_Init( nullptr, err ) )
+	{
+		Error( "%s", err );
+		return false;
+	}
+
 	// Add the client systems.	
 	
 	// Client Leaf System has to be initialized first, since DetailObjectSystem uses it
@@ -1450,6 +1460,8 @@ void CHLClient::Shutdown( void )
 	DisconnectDataModel();
 	ShutdownFbx();
 #endif
+
+	GameNetworkingSockets_Kill();
 	
 	// This call disconnects the VGui libraries which we rely on later in the shutdown path, so don't do it
 //	DisconnectTier3Libraries( );

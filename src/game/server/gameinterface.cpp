@@ -87,6 +87,7 @@
 #ifndef NO_STEAM
 #include "steam/steam_gameserver.h"
 #endif
+#include "steam/steamnetworkingsockets.h" // doesn't require Steam
 #include "tier3/tier3.h"
 #include "serverbenchmark_base.h"
 #include "querycache.h"
@@ -849,6 +850,13 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 
 	// init the cvar list first in case inits want to reference them
 	InitializeCvars();
+
+	SteamNetworkingErrMsg err;
+	if ( !GameNetworkingSockets_Init( nullptr, err ) )
+	{
+		Error( "%s", err );
+		return false;
+	}
 	
 	// Initialize the particle system
 	if ( !g_pParticleSystemMgr->Init( g_pParticleSystemQuery ) )
@@ -971,6 +979,8 @@ void CServerGameDLL::DLLShutdown( void )
 	g_TextStatsMgr.WriteFile( filesystem );
 
 	IGameSystem::ShutdownAllSystems();
+
+	GameNetworkingSockets_Kill();
 
 #ifdef CSTRIKE_DLL // BOTPORT: TODO: move these ifdefs out
 	RemoveBotControl();
