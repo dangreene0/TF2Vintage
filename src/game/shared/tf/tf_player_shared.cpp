@@ -134,6 +134,8 @@ ConVar tf2v_use_new_beggars( "tf2v_use_new_beggars", "0", FCVAR_NOTIFY | FCVAR_R
 
 ConVar tf2v_use_new_axtinguisher("tf2v_use_new_axtinguisher", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Changes the behavior of the Axtinguisher.", true, 0, true, 3);
 
+ConVar tf2v_overflow_ammo( "tf2v_overflow_ammo", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Overflows ammo pools to adjust for partially loaded weapons.", true, 0, true, 1);
+
 #ifdef CLIENT_DLL
 ConVar tf2v_enable_burning_death( "tf2v_enable_burning_death", "0", FCVAR_REPLICATED, "Enables an animation that plays sometimes when dying to fire damage.", true, 0.0f, true, 1.0f );
 #endif
@@ -6876,6 +6878,7 @@ int CTFPlayer::GetMaxAmmo( int iAmmoIndex, int iClassNumber /*= -1*/ ) const
 			}
 		}
 #endif
+
 	}
 	
 	// If we're using 2007 era ammocounts, re-adjust our ammo pools.
@@ -6929,6 +6932,35 @@ int CTFPlayer::GetMaxAmmo( int iAmmoIndex, int iClassNumber /*= -1*/ ) const
 		case TF_AMMO_SPECIAL3:
 			iMaxAmmo = 1;
 			break;
+	}
+	
+	// Check if we should adjust ammocounts for partial reloads.
+	if ( tf2v_overflow_ammo.GetBool() )
+	{
+		for ( int i = 0; i < WeaponCount(); i++ )
+		{
+			CTFWeaponBase *pWpn = (CTFWeaponBase *)GetWeapon( i );
+
+			if ( !pWpn )
+				continue;
+
+			if ( pWpn->GetPrimaryAmmoType() != iAmmoIndex )
+				continue;
+
+			// Check our weapon's current amount of loaded rounds compared to what it should have in a full magazine
+			int iWpnClip = pWpn->Clip1(), iWpnMaxClip = pWpn->GetMaxClip1(), iWpnClipDelta = 0;
+			iWpnClipDelta = iWpnMaxClip - iWpnClip;
+				
+			// Get the weapon's current amount of remaining ammo.
+			int iWpnAmmo = m_pOuter->GetAmmoCount(pWpn->GetPrimaryAmmoType());
+				
+			// If we're partially loaded but are near maxed ammo, increase the ammo pool slightly to compensate for a partial reload.
+			if ( iWpnAmmo + iWpnClipDelta > iMaxAmmo )
+			{
+				// Make our new maxed ammo the value with a full reload.
+				iMaxAmmo = iWpnAmmo + iWpnClipDelta;
+			}
+		}
 	}
 
 	return iMaxAmmo;
