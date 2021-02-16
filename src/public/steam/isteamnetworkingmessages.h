@@ -165,9 +165,8 @@ struct SteamNetworkingMessagesSessionFailed_t
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
 
 	// Standalone lib.
-	static_assert( STEAMNETWORKINGMESSAGES_INTERFACE_VERSION[25] == '2', "Version mismatch" );
+	//static_assert( STEAMNETWORKINGMESSAGES_INTERFACE_VERSION[25] == '2', "Version mismatch" );
 	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingMessages *SteamNetworkingMessages_LibV2();
-	inline ISteamNetworkingMessages *SteamNetworkingMessages_Lib() { return SteamNetworkingMessages_LibV2(); }
 
 	// If running in context of steam, we also define a gameserver instance.
 	#ifdef STEAMNETWORKINGSOCKETS_STEAM
@@ -175,11 +174,9 @@ struct SteamNetworkingMessagesSessionFailed_t
 		inline ISteamNetworkingMessages *SteamGameServerNetworkingMessages_Lib() { return SteamGameServerNetworkingMessages_LibV2(); }
 	#endif
 
-	#ifndef STEAMNETWORKINGSOCKETS_STEAMAPI
-		inline ISteamNetworkingMessages *SteamNetworkingMessages() { return SteamNetworkingMessages_LibV2(); }
-		#ifdef STEAMNETWORKINGSOCKETS_STEAM
-			inline ISteamNetworkingMessages *SteamGameServerNetworkingMessages() { return SteamGameServerNetworkingMessages_LibV2(); }
-		#endif
+	inline ISteamNetworkingMessages *SteamNetworkingMessages() { return SteamNetworkingMessages_LibV2(); }
+	#ifdef STEAMNETWORKINGSOCKETS_STEAM
+		inline ISteamNetworkingMessages *SteamGameServerNetworkingMessages() { return SteamGameServerNetworkingMessages_LibV2(); }
 	#endif
 #endif
 

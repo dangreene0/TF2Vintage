@@ -703,7 +703,7 @@ protected:
 #ifdef STEAMNETWORKINGSOCKETS_STANDALONELIB
 
 	// Standalone lib.
-	static_assert( STEAMNETWORKINGSOCKETS_INTERFACE_VERSION[24] == '9', "Version mismatch" );
+	//static_assert( STEAMNETWORKINGSOCKETS_INTERFACE_VERSION[24] == '9', "Version mismatch" );
 	STEAMNETWORKINGSOCKETS_INTERFACE ISteamNetworkingSockets *SteamNetworkingSockets_LibV9();
 	inline ISteamNetworkingSockets *SteamNetworkingSockets_Lib() { return SteamNetworkingSockets_LibV9(); }
 
