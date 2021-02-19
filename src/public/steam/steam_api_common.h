@@ -208,6 +208,8 @@ public:
 	void Register( T *pObj, func_t func );
 	void Unregister();
 
+	void operator() ( P *pParam ) { Run( (void *)pParam ); }
+
 protected:
 	virtual void Run( void *pvParam );
 	
