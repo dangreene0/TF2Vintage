@@ -4,7 +4,8 @@
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
-#include "steam/isteamnetworkingsockets.h"
+#include "steam/isteamnetworkingutils.h"
+#include "steam/isteamnetworkingmessages.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api_common.h"
@@ -50,7 +51,7 @@ private:
 
 	virtual int AddRef( void );
 	virtual int Release( void );
-	volatile uint m_cRefCount;
+	uint m_cRefCount;
 };
 DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 0, UTLMEMORYPOOL_GROW_FAST );
 
@@ -77,6 +78,7 @@ public:
 	{
 		m_steamID = remoteID;
 		m_socketType = socketType;
+		m_identity.SetSteamID( remoteID );
 	}
 
 	static char const *NameOfSocket( ESocketType_t sock )
@@ -91,12 +93,14 @@ public:
 	CSteamID const &GetSteamID( void ) const			{ return m_steamID; }
 	ESocketType_t GetSocketType( void ) const			{ return m_socketType; }
 	ESocketType_t GetRemoteSocketType() const			{ return ( m_socketType == CLIENT ) ? SERVER : CLIENT; }
+	SteamNetworkingIdentity const &GetIdentity( void ) const { return m_identity; }
 
 	int GetRemoteChannel() const						{ return ( GetRemoteSocketType() == CLIENT ) ? k_EChannelClient : k_EChannelServer; }
 	int GetLocalChannel() const							{ return ( GetSocketType() == CLIENT ) ? k_EChannelClient : k_EChannelServer; }
 private:
 	CSteamID m_steamID;
 	ESocketType_t m_socketType;
+	SteamNetworkingIdentity m_identity;
 };
 
 
@@ -118,7 +122,7 @@ public:
 	void ProcessDataFromConnection( CSocket *pSocket );
 
 	bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData, int nChannel = 0 ) OVERRIDE;
-	bool RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSize, CSteamID *pRemoteID, int nChannel = 0 ) OVERRIDE;
+	bool RecvData( void *pubDest, uint32 cubDest, int nChannel = 0 ) OVERRIDE;
 
 	bool BSendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
 
@@ -131,11 +135,11 @@ public:
 	void ReceivedServerHello( CServerHelloMsg const &msg );
 	void ReceivedClientHello( CClientHelloMsg const &msg );
 
-	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, P2PSessionRequest_t, m_OnSessionRequested );
-	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, P2PSessionConnectFail_t, m_OnSessionFailed );
+	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, SteamNetworkingMessagesSessionRequest_t, m_OnSessionRequested );
+	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, SteamNetworkingMessagesSessionFailed_t, m_OnSessionFailed );
 
 private:
-	ISteamNetworking *SteamNetworking( void ) const;
+	ISteamNetworkingMessages *SteamNetworking( void ) const;
 
 	CUtlVector< CPlainAutoPtr<CSocket> >	m_vecSockets;
 	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
@@ -166,6 +170,12 @@ CEconNetworking::~CEconNetworking()
 //-----------------------------------------------------------------------------
 bool CEconNetworking::Init( void )
 {
+	if( net_steamcnx_allowrelay.GetBool() )
+		SteamNetworkingUtils()->InitRelayNetworkAccess();
+
+	SteamNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionRequest, &m_OnSessionRequested );
+	SteamNetworkingUtils()->SetGlobalConfigValuePtr( k_ESteamNetworkingConfig_Callback_MessagesSessionFailed, &m_OnSessionFailed );
+
 	return true;
 }
 
@@ -294,8 +304,8 @@ void CEconNetworking::CloseConnection( CSocket *pSocket )
 	if ( !SteamNetworking() || pSocket == NULL )
 		return;
 
-	SteamNetworking()->CloseP2PChannelWithUser( pSocket->GetSteamID(), pSocket->GetLocalChannel() );
-	SteamNetworking()->CloseP2PChannelWithUser( pSocket->GetSteamID(), pSocket->GetRemoteChannel() );
+	SteamNetworking()->CloseChannelWithUser( pSocket->GetIdentity(), pSocket->GetLocalChannel() );
+	SteamNetworking()->CloseChannelWithUser( pSocket->GetIdentity(), pSocket->GetRemoteChannel() );
 
 	if ( net_steamcnx_debug.GetBool() )
 	{
@@ -324,17 +334,21 @@ CSocket *CEconNetworking::FindConnectionForID( CSteamID const &steamID )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+// TODO: Convert
 void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
 {
-	uint32 cubMsgSize = 0; // Message size includes header
-	int nChannel = pSocket->GetLocalChannel();
-	while ( SteamNetworking()->IsP2PPacketAvailable( &cubMsgSize, nChannel ) )
+	if ( !SteamNetworking() )
+		return;
+
+	SteamNetworkingMessage_t *messages[16];
+	int nNumMessages = SteamNetworking()->ReceiveMessagesOnChannel( pSocket->GetLocalChannel(), messages, 16 );
+	while ( nNumMessages > 0 )
 	{
-		void *pData = malloc( cubMsgSize );
-		uint32 cubTotalMsgSize{}; CSteamID remoteID{};
-		if ( SteamNetworking()->ReadP2PPacket( pData, cubMsgSize, &cubTotalMsgSize, &remoteID, nChannel ) )
+		for ( int i = 0; i < nNumMessages; ++i )
 		{
-			AssertMsg( cubMsgSize == cubTotalMsgSize, "We can't handle split packets at this time." );
+			uint32 cubMsgSize = messages[i]->GetSize(); // Includes header size
+			void *pData = malloc( cubMsgSize );
+			Q_memcpy( pData, messages[i]->GetData(), cubMsgSize );
 
 			CNetPacket *pPacket = new CNetPacket;
 			pPacket->InitFromMemory( pData, cubMsgSize );
@@ -342,14 +356,16 @@ void CEconNetworking::ProcessDataFromConnection( CSocket *pSocket )
 			CBaseMsgHandler *pHandler = NULL;
 			unsigned nIndex = m_MessageTypes.Find( pPacket->MsgType() );
 			if ( nIndex != m_MessageTypes.InvalidIndex() )
-				pHandler = (CBaseMsgHandler*)m_MessageTypes[ nIndex ];
+				pHandler = (CBaseMsgHandler *)m_MessageTypes[nIndex];
 
 			if ( pHandler )
 				pHandler->QueueWork( pPacket );
 
 			pPacket->Release();
+			messages[i]->Release();
 		}
-		free( pData );
+
+		nNumMessages = SteamNetworking()->ReceiveMessagesOnChannel( pSocket->GetLocalChannel(), messages, 16 );
 	}
 }
 
@@ -361,21 +377,29 @@ bool CEconNetworking::SendData( CSteamID const &targetID, void const *pubData, u
 	if ( !SteamNetworking() )
 		return false;
 
-	return SteamNetworking()->SendP2PPacket( targetID, pubData, cubData, k_EP2PSendReliable, nChannel );
+	SteamNetworkingIdentity identity{};
+	identity.SetSteamID( targetID );
+
+	return SteamNetworking()->SendMessageToUser( identity, pubData, cubData, k_nSteamNetworkingSend_ReliableNoNagle, nChannel ) == k_EResultOK;
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CEconNetworking::RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSize, CSteamID *pRemoteID, int nChannel )
+bool CEconNetworking::RecvData( void *pubDest, uint32 cubDest, int nChannel )
 {
 	if ( !SteamNetworking() )
 		return false;
 
-	if ( !SteamNetworking()->IsP2PPacketAvailable( pcubMsgSize, nChannel ) )
-		return false;
+	SteamNetworkingMessage_t *message = new SteamNetworkingMessage_t;
+	int nNumMessages = SteamNetworking()->ReceiveMessagesOnChannel( nChannel, &message, 1 );
 
-	return SteamNetworking()->ReadP2PPacket( pubDest, cubDest, pcubMsgSize, pRemoteID, nChannel );
+	if ( message->GetSize() <= cubDest )
+		V_memcpy( pubDest, message->GetData(), message->GetSize() );
+
+	message->Release();
+
+	return nNumMessages == 1;
 }
 
 //-----------------------------------------------------------------------------
@@ -383,9 +407,6 @@ bool CEconNetworking::RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSi
 //-----------------------------------------------------------------------------
 bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg )
 {
-	if ( !SteamNetworking() )
-		return false;
-
 	CSocket *pSock = FindConnectionForID( targetID );
 	if ( pSock == nullptr )
 		return false;
@@ -397,7 +418,8 @@ bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, go
 	pPacket->Init( msg.ByteSize(), eMsg );
 	msg.SerializeWithCachedSizesToArray( pPacket->MutableData() + sizeof(MsgHdr_t) );
 
-	bool bSuccess = SteamNetworking()->SendP2PPacket( targetID, pPacket->Data(), pPacket->Size(), k_EP2PSendReliable, pSock->GetRemoteChannel() );
+	bool bSuccess = SteamNetworking()->SendMessageToUser( pSock->GetIdentity(), pPacket->Data(), pPacket->Size(), 
+														  k_nSteamNetworkingSend_ReliableNoNagle, pSock->GetRemoteChannel() ) == k_EResultOK;
 
 	pPacket->Release();
 	return bSuccess;
@@ -507,13 +529,13 @@ void CEconNetworking::ReceivedClientHello( CClientHelloMsg const &msg )
 //-----------------------------------------------------------------------------
 // Purpose: Local SteamNetworking definition that
 //-----------------------------------------------------------------------------
-FORCEINLINE ISteamNetworking *CEconNetworking::SteamNetworking( void ) const
+FORCEINLINE ISteamNetworkingMessages *CEconNetworking::SteamNetworking( void ) const
 {
-	ISteamNetworking *pNetwork = steamapicontext->SteamNetworking();
+	ISteamNetworkingMessages *pNetwork = SteamNetworkingMessages();
 	if ( !pNetwork )
 	{
 	#if defined( GAME_DLL )
-		pNetwork = steamgameserverapicontext->SteamGameServerNetworking();
+		pNetwork = SteamNetworkingMessages(); // SteamGameServerNetworkingMessages();
 		if ( pNetwork )
 			return pNetwork;
 	#endif
@@ -526,9 +548,9 @@ FORCEINLINE ISteamNetworking *CEconNetworking::SteamNetworking( void ) const
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CEconNetworking::P2PSessionRequested( P2PSessionRequest_t *pRequest )
+void CEconNetworking::P2PSessionRequested( SteamNetworkingMessagesSessionRequest_t *pRequest )
 {
-	CSteamID remoteID = pRequest->m_steamIDRemote;
+	SteamNetworkingIdentity remoteID = pRequest->m_identityRemote;
 	if ( !SteamNetworking() )
 		return;
 
@@ -542,31 +564,34 @@ void CEconNetworking::P2PSessionRequested( P2PSessionRequest_t *pRequest )
 		CSteamID localID;
 		pLocalPlayer->GetSteamID( &localID );
 
-		if ( remoteID != localID )
+		if ( remoteID.GetSteamID() != localID )
 			return;
 	}
 #else
-	if ( !OpenConnection( remoteID ) )
+	if ( !OpenConnection( remoteID.GetSteamID() ) )
 		return;
 #endif
 
-	SteamNetworking()->AcceptP2PSessionWithUser( remoteID );
+	SteamNetworking()->AcceptSessionWithUser( remoteID );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CEconNetworking::P2PSessionFailed( P2PSessionConnectFail_t *pFailure )
+// TODO: Expand info returned
+void CEconNetworking::P2PSessionFailed( SteamNetworkingMessagesSessionFailed_t *pFailure )
 {
 	static const char *const s_szFailureReason[] ={
-		"Target not running app",
-		"Target doesn't own app",
+		"Target didn't respond",
+		"Target failed authentication",
+		"Target failed certification",
 		"Target isn't connected to steam",
-		"Target didn't respond"
+		"Target not running app",
+		"Bad protocol version"
 	};
 
-	const int nFailureMessage = pFailure->m_eP2PSessionError - 1;
-	ConColorMsg( {255, 255, 100, 255}, "P2P session failed: Reason %d (%s)\n", pFailure->m_eP2PSessionError, s_szFailureReason[nFailureMessage] );
+	const int nFailureMessage = pFailure->m_info.m_eEndReason - k_ESteamNetConnectionEnd_Remote_Min;
+	ConColorMsg( {255, 255, 100, 255}, "P2P session failed: Reason %d (%s)\n", pFailure->m_info.m_eEndReason, s_szFailureReason[nFailureMessage] );
 }
 
 

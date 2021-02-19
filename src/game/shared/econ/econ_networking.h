@@ -48,7 +48,7 @@ public:
 	virtual void OnClientConnected( CSteamID const &steamID ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
 	virtual bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData, int nChannel = 0 ) = 0;
-	virtual bool RecvData( void *pubDest, uint32 cubDest, uint32 *pcubMsgSize, CSteamID *pRemoteID, int nChannel = 0 ) = 0;
+	virtual bool RecvData( void *pubDest, uint32 cubDest, int nChannel = 0 ) = 0;
 	virtual bool BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
 };
 
