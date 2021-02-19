@@ -1499,6 +1499,9 @@ void CServerGameDLL::PreClientUpdate( bool simulating )
 
 	CRTime::UpdateRealTime();
 
+	if( SteamNetworkingSockets() )
+		SteamNetworkingSockets()->RunCallbacks();
+
 //#ifdef _DEBUG  - allow this in release for now
 	DrawAllDebugOverlays();
 //#endif

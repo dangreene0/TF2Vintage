@@ -1513,6 +1513,9 @@ void CHLClient::HudUpdate( bool bActive )
 
 	CRTime::UpdateRealTime();
 
+	if( SteamNetworkingSockets() )
+		SteamNetworkingSockets()->RunCallbacks();
+
 	GetClientVoiceMgr()->Frame( frametime );
 
 	gHUD.UpdateHud( bActive );
