@@ -6952,7 +6952,7 @@ int CTFPlayer::GetMaxAmmo( int iAmmoIndex, int iClassNumber /*= -1*/ ) const
 			iWpnClipDelta = iWpnMaxClip - iWpnClip;
 				
 			// Get the weapon's current amount of remaining ammo.
-			int iWpnAmmo = m_pOuter->GetAmmoCount(pWpn->GetPrimaryAmmoType());
+			int iWpnAmmo = GetAmmoCount(pWpn->GetPrimaryAmmoType());
 				
 			// If we're partially loaded but are near maxed ammo, increase the ammo pool slightly to compensate for a partial reload.
 			if ( iWpnAmmo + iWpnClipDelta > iMaxAmmo )
