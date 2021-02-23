@@ -975,6 +975,13 @@ void CEconItemSchema::Precache( void )
 		if ( pItem->GetPlayerModel() )
 			CBaseEntity::PrecacheModel( pItem->GetPlayerModel() );
 
+		if ( pItem->GetLegacyWorldModel() )
+			CBaseEntity::PrecacheModel( pItem->GetLegacyWorldModel() );
+
+		if ( pItem->GetLegacyPlayerModel() )
+			CBaseEntity::PrecacheModel( pItem->GetLegacyPlayerModel() );
+
+
 		for ( int iClass = 0; iClass < TF_CLASS_COUNT_ALL; iClass++ )
 		{
 			if ( pItem->GetPerClassModel( iClass ) )

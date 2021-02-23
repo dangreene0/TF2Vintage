@@ -83,8 +83,10 @@ int CEconItemDefinition::GetLoadoutSlot( int iClass /*= TF_CLASS_UNDEFINED*/ )
 //-----------------------------------------------------------------------------
 char const *CEconItemDefinition::GetPlayerModel( void ) const
 {
-	if ( ( v_model && v_model[0] != '\0' ) && UseOldWeaponModels() )
+
+	if ( ( v_model && v_model[0] != '\0' ) && TFGameRules()->UseOldWeaponModels() )
 		return v_model;
+
 
 	if ( model_player && model_player[0] != '\0' )
 		return model_player;
@@ -97,11 +99,34 @@ char const *CEconItemDefinition::GetPlayerModel( void ) const
 //-----------------------------------------------------------------------------
 char const *CEconItemDefinition::GetWorldModel( void ) const
 {
-	if ( ( w_model && w_model[0] != '\0' ) && UseOldWeaponModels() )
+
+	if ( ( w_model && w_model[0] != '\0' ) && TFGameRules()->UseOldWeaponModels() )
 		return w_model;
 
 	if ( model_world && model_world[0] != '\0' )
 		return model_world;
+
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+char const *CEconItemDefinition::GetLegacyPlayerModel( void ) const
+{
+	if ( ( v_model && v_model[0] != '\0' ) )
+		return v_model;
+
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+char const *CEconItemDefinition::GetLegacyWorldModel( void ) const
+{
+	if ( ( w_model && w_model[0] != '\0' ) )
+		return w_model;
 
 	return NULL;
 }
@@ -114,7 +139,7 @@ int CEconItemDefinition::GetAttachToHands( void ) const
 	// This only applies to base items right now, but this allows it to be expanded later.
 	if ( CanUseOldModel() )
 	{
-		if ( UseOldWeaponModels() )
+		if ( TFGameRules()->UseOldWeaponModels() )
 			return 0;
 	}
 

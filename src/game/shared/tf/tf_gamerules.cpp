@@ -319,17 +319,11 @@ CON_COMMAND_F( tf_halloween_force_mob_spawn, "For testing.", FCVAR_DEVELOPMENTON
 {
 	isZombieMobForceSpawning = true;
 }
+
 #endif
 
 
 ConVar tf2v_use_old_models( "tf2v_use_old_models", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows servers to use the v/w model format instead of the modern c models.", true, 0, true, 1 );
-bool UseOldWeaponModels( void )
-{
-	if ( tf2v_use_old_models.GetBool() )
-		return true;
-
-	return false;
-}
 
 static bool BIsCvarIndicatingHolidayIsActive( int iCvarValue, /*EHoliday*/ int eHoliday )
 {
@@ -499,6 +493,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	RecvPropString( RECVINFO( m_pszCustomUpgradesFile ) ),
 	RecvPropBool( RECVINFO( m_bMannVsMachineAlarmStatus ) ),
 	RecvPropBool( RECVINFO( m_bHaveMinPlayersToEnableReady ) ),
+	RecvPropBool( RECVINFO( m_bUseOldWeaponModels ) ),
 #else
 	SendPropInt( SENDINFO( m_nGameType ), 4, SPROP_UNSIGNED ),
 	SendPropString( SENDINFO( m_pszTeamGoalStringRed ) ),
@@ -528,6 +523,7 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	SendPropString( SENDINFO( m_pszCustomUpgradesFile ) ),
 	SendPropBool( SENDINFO( m_bMannVsMachineAlarmStatus ) ),
 	SendPropBool( SENDINFO( m_bHaveMinPlayersToEnableReady ) ),
+	SendPropBool(SENDINFO(m_bUseOldWeaponModels)),
 #endif
 END_NETWORK_TABLE()
 
@@ -1522,6 +1518,9 @@ void CTFGameRules::Activate()
 	{
 		CreateEntityByName( "info_populator" );
 	}*/
+	
+	// Should server use the old viewmodel/worldmodel weapons where applicable?
+	m_bUseOldWeaponModels.Set( tf2v_use_old_models.GetBool() );
 }
 
 void CTFGameRules::OnNavMeshLoad( void )
