@@ -72,7 +72,7 @@ public:
 		m_pTargetHit = NULL;
 	}
 
-	bool ApplyToEntity( CBaseEntity *pEntity );
+	int ApplyToEntity( CBaseEntity *pEntity );
 
 public:
 	const CTakeDamageInfo *info;

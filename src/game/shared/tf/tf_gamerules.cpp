@@ -2163,7 +2163,7 @@ private:
 
 ConVar tf_fixedup_damage_radius( "tf_fixedup_damage_radius", "1", FCVAR_DEVELOPMENTONLY );
 
-bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
+int CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 {
 	const int MASK_RADIUS_DAMAGE = MASK_SHOT&( ~CONTENTS_HITBOX );
 	trace_t		tr;
@@ -2264,7 +2264,7 @@ bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 	}
 
 	if ( flAdjustedDamage <= 0 )
-		return false;
+		return 0;
 
 	// the explosion can 'see' this entity, so hurt them!
 	if ( tr.startsolid )
@@ -2317,7 +2317,7 @@ bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 	// Now hit all triggers along the way that respond to damage... 
 	pEntity->TraceAttackToTriggers( adjustedInfo, m_vecSrc, tr.endpos, dir );
 
-	return true;
+	return adjustedInfo.GetDamage();
 }
 
 //-----------------------------------------------------------------------------
@@ -2418,6 +2418,7 @@ void CTFGameRules::RadiusDamage( CTFRadiusDamageInfo &radiusInfo )
 	CTakeDamageInfo *info = (CTakeDamageInfo *)radiusInfo.info;
 	CBaseEntity *pAttacker = info->GetAttacker();
 	int iPlayersDamaged = 0;
+	int iTotalPlayerDamage = 0;
 
 	CBaseEntity *pEntity = NULL;
 	for ( CEntitySphereQuery sphere( radiusInfo.m_vecSrc, radiusInfo.m_flRadius ); ( pEntity = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
@@ -2446,16 +2447,50 @@ void CTFGameRules::RadiusDamage( CTFRadiusDamageInfo &radiusInfo )
 		if ( vecDir.LengthSqr() > Square(radiusInfo.m_flRadius) )
 			continue;
 
-		if ( radiusInfo.ApplyToEntity( pEntity ) )
+		int iCurrentPlayerDamage = radiusInfo.ApplyToEntity( pEntity );
+		if ( iCurrentPlayerDamage > 0 )
 		{
 			if ( pEntity->IsPlayer() && !pEntity->InSameTeam( pAttacker ) )
 			{
 				iPlayersDamaged++;
+				iTotalPlayerDamage += iCurrentPlayerDamage;
 			}
 		}
 	}
 
 	info->SetDamagedOtherPlayers( iPlayersDamaged );
+	
+	//Check if we get any health from radius damage from damaging people.
+	float flAddHealth = 0;
+	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( info->GetWeapon(), flAddHealth, add_health_on_radius_damage );
+	if (flAddHealth > 0 && iTotalPlayerDamage)
+	{
+		CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>(info->GetWeapon());
+		CBaseEntity *pOwner = info->GetAttacker();
+		if (pWeapon && pOwner)
+		{
+			// Compare the total damage we did to our stock damage, and adjust our health bonus based on that ratio. 
+			flAddHealth *= Clamp(iTotalPlayerDamage / (float)pWeapon->GetTFWpnData().GetWeaponData(TF_WEAPON_PRIMARY_MODE).m_nDamage, 0.0f, 1.0f);
+			// Same as add_onhit_addhealth from here.
+			if (flAddHealth)
+			{
+				int iHealthRestored = pOwner->TakeHealth(flAddHealth, DMG_GENERIC);
+
+				if (iHealthRestored)
+				{
+					IGameEvent *event = gameeventmanager->CreateEvent("player_healonhit");
+
+					if (event)
+					{
+						event->SetInt("amount", iHealthRestored);
+						event->SetInt("entindex", pOwner->entindex());
+
+						gameeventmanager->FireEvent(event);
+					}
+				}
+			}
+		}
+	}
 
 	// For attacker, radius and damage need to be consistent so custom weapons don't screw up rocket jumping.
 	if ( radiusInfo.m_flSelfDamageRadius != 0.0f )
