@@ -66,6 +66,7 @@
 
 	ConVar tf2v_new_flames( "tf2v_new_flames", "0", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Swap out the particle system for the Flamethrower to the newer one?", true, 0.0f, true, 1.0f );
 #endif
+ConVar tf2v_force_flame_visual( "tf2v_force_flame_visual", "2", FCVAR_REPLICATED, "Forces clients to use the new or old flame effect. Set to 2 to disable.", true, 0.0f, true, 2.0f );
 
 ConVar tf2v_airblast( "tf2v_airblast", "1", FCVAR_REPLICATED|FCVAR_NOTIFY, "Enable/Disable the Airblast function of the Flamethrower. 0 = off, 1 = Pre-JI, 2 = Post-JI" );
 ConVar tf2v_airblast_players( "tf2v_airblast_players", "1", FCVAR_REPLICATED, "Enable/Disable the Airblast pushing players." );
@@ -921,14 +922,14 @@ char const *CTFFlameThrower::GetFlameEffectInternal( void ) const
 	int nFireType = 0;
 	CALL_ATTRIB_HOOK_INT(nFireType, set_weapon_mode);
 	if ( nFireType == 1 )	 // Phlogistinator.
-	{	if ( !tf2v_new_flames.GetBool() )
+	{	if ( !tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 0 )
 		{
 			if ( m_bCritFire )		
 				return "drg_phlo_stream_crit";
 			else
 				return "drg_phlo_stream";
 		}
-		else
+		else if ( tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 1 )
 		{
 			if ( m_bCritFire )		
 				return "tf2v_drg_phlo_stream_crit_new_flame";
@@ -938,18 +939,18 @@ char const *CTFFlameThrower::GetFlameEffectInternal( void ) const
 	}
 	else if (nFireType == 3) // Rainblower.
 	{
-		if ( !tf2v_new_flames.GetBool() )
+		if ( !tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 0 )
 		{
 			return "flamethrower_rainbow";
 		}
-		else
+		else if ( tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 1 )
 		{
 			return "tf2v_flamethrower_rainbow_new_flame";
 		}		
 	}
 
 
-	if ( !tf2v_new_flames.GetBool() )
+	if ( !tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 0 )
 	{
 		if ( m_bCritFire )
 		{
@@ -960,7 +961,7 @@ char const *CTFFlameThrower::GetFlameEffectInternal( void ) const
 			else
 				szParticleEffect = ConstructTeamParticle( "flamethrower_crit_%s", iTeam, true );
 		}
-		else
+		else if ( tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 1 )
 		{
 			if ( IsLocalPlayerUsingVisionFilterFlags( TF_VISION_FILTER_PYRO ) )
 				szParticleEffect = "flamethrower_rainbow";
@@ -970,7 +971,7 @@ char const *CTFFlameThrower::GetFlameEffectInternal( void ) const
 				szParticleEffect = "flamethrower";
 		}
 	}
-	else
+	else if ( tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 1 )
 	{
 		if ( m_bCritFire )
 		{
@@ -1426,7 +1427,7 @@ void CTFFlameEntity::OnDataChanged( DataUpdateType_t updateType )
 
 	if ( updateType == DATA_UPDATE_CREATED )
 	{
-		if ( tf2v_new_flames.GetBool() )
+		if ( tf2v_new_flames.GetBool() || tf2v_force_flame_visual.GetInt() == 1 )
 			SetNextClientThink( CLIENT_THINK_ALWAYS );
 	}
 }
