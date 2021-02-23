@@ -255,6 +255,8 @@ ConVar tf2v_console_grenadelauncher_magazine("tf2v_console_grenadelauncher_magaz
 
 ConVar tf2v_remove_loser_disguise("tf2v_remove_loser_disguise", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Forces spies on a losing team to undisguise.", true, 0, true, 1 );
 
+extern ConVar tf2v_use_new_blackbox;
+
 #ifdef CLIENT_DLL
 ConVar tf2v_censor_swears( "tf2v_censor_swears", "0", FCVAR_GAMEDLL, "Automatically censor bad words.", true, 0, true, 1 );
 #endif
@@ -2462,6 +2464,8 @@ void CTFGameRules::RadiusDamage( CTFRadiusDamageInfo &radiusInfo )
 	//Check if we get any health from radius damage from damaging people.
 	float flAddHealth = 0;
 	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( info->GetWeapon(), flAddHealth, add_health_on_radius_damage );
+	if (tf2v_use_new_blackbox.GetBool())
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( info->GetWeapon(), flAddHealth, add_health_on_radius_damage_bb2 );
 	if (flAddHealth > 0 && iTotalPlayerDamage)
 	{
 		CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>(info->GetWeapon());

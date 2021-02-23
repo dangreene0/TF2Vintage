@@ -60,6 +60,7 @@ ConVar tf_weapon_criticals( "tf_weapon_criticals", "1", FCVAR_NOTIFY | FCVAR_REP
 ConVar tf_weapon_always_allow_inspect( "tf_weapon_always_allow_inspect", "1", FCVAR_REPLICATED | FCVAR_ARCHIVE, "Allow the inspect animation on any weapon" );
 ConVar tf2v_allcrit( "tf2v_allcrit", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables or disables always on criticals." );
 ConVar tf2v_use_new_weapon_swap_speed( "tf2v_use_new_weapon_swap_speed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables faster weapon switching." );
+ConVar tf2v_use_new_blackbox( "tf2v_use_new_blackbox", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Trades the +15HP per hit for +20HP per attack." );
 ConVar tf_dev_marked_for_death_lifetime( "tf_dev_marked_for_death_lifetime", "1", FCVAR_DEVELOPMENTONLY | FCVAR_REPLICATED );
 
 //=============================================================================
@@ -3010,6 +3011,8 @@ void CTFWeaponBase::ApplyOnHitAttributes( CBaseEntity *pVictim, CTFPlayer *pAtta
 
 	float flAddHealth = 0.0f;
 	CALL_ATTRIB_HOOK_FLOAT( flAddHealth, add_onhit_addhealth );
+	if (!tf2v_use_new_blackbox.GetBool())
+		CALL_ATTRIB_HOOK_FLOAT( flAddHealth, add_onhit_addhealth_bb1 );	
 	if ( flAddHealth )
 	{
 		int iHealthRestored = pOwner->TakeHealth( flAddHealth, DMG_GENERIC );
