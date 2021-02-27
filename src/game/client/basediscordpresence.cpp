@@ -48,16 +48,11 @@ bool CBaseDiscordPresence::Init()
 
 void CBaseDiscordPresence::Shutdown()
 {
-	ResetPresence();
-
 	if ( g_pDiscord )
 	{
 		delete g_pDiscord;
 		g_pDiscord = NULL;
 	}
-
-	if ( rpc == this )
-		rpc = NULL;
 }
 
 void CBaseDiscordPresence::Update( float frametime )
