@@ -319,8 +319,6 @@ int CTFGrenadePipebombProjectile::DrawModel( int flags )
 #define TF_WEAPON_PIPEBOMB_BOUNCE_SOUND	   	 "Weapon_Grenade_Pipebomb.Bounce"
 #define TF_WEAPON_CANNONBALL_MODEL			 "models/weapons/w_models/w_cannonball.mdl"
 #define TF_WEAPON_CANNON_IMPACT_SOUND		 "Weapon_LooseCannon.BallImpact"
-#define TF_WEAPON_GRENADE_DETONATE_TIME    2.0f
-#define TF_WEAPON_GRENADE_XBOX_DAMAGE      112
 
 BEGIN_DATADESC( CTFGrenadePipebombProjectile )
 END_DATADESC()
@@ -426,9 +424,8 @@ void CTFGrenadePipebombProjectile::Spawn()
 		{
 			SetModel( TF_WEAPON_GRENADE_MODEL );
 		}
-		float flDetonateTime = TF_WEAPON_GRENADE_DETONATE_TIME;
-		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( m_hLauncher.Get(), flDetonateTime, fuse_mult );
-		SetDetonateTimerLength( flDetonateTime );
+		
+		SetDetonateTimerLength( TF_WEAPON_GRENADE_DETONATE_TIME );
 		SetTouch( &CTFGrenadePipebombProjectile::PipebombTouch );
 	}
 
