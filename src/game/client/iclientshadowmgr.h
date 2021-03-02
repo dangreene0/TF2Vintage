@@ -103,6 +103,7 @@ public:
 
 	virtual void GetFrustumExtents( ClientShadowHandle_t handle, Vector &vecMin, Vector &vecMax ) = 0;
 
+	virtual void SetShadowFromWorldLightsEnabled( bool bEnable ) = 0;
 };
 
 
