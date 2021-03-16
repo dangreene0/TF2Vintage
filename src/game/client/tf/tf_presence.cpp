@@ -722,9 +722,6 @@ void CTFDiscordPresence::Shutdown( void )
 
 	if ( steamapicontext->SteamFriends() )
 		steamapicontext->SteamFriends()->ClearRichPresence();
-
-	Assert( rpc == this );
-	rpc = NULL;
 }
 
 //-----------------------------------------------------------------------------

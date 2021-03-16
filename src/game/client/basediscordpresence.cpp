@@ -49,8 +49,6 @@ bool CBaseDiscordPresence::Init()
 
 void CBaseDiscordPresence::Shutdown()
 {
-	ResetPresence();
-
 	if ( g_pDiscord )
 	{
 		delete g_pDiscord;
