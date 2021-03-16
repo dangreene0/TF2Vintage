@@ -495,8 +495,6 @@ public:
 	int GetLoadoutSlot( int iClass = TF_CLASS_UNDEFINED );
 	char const *GetPlayerModel( void ) const;
 	char const *GetWorldModel( void ) const;
-	char const *GetLegacyPlayerModel( void ) const;
-	char const *GetLegacyWorldModel( void ) const;
 	int GetAttachToHands( void ) const;
 	const wchar_t *GenerateLocalizedFullItemName( void );
 	const wchar_t *GenerateLocalizedItemNameNoQuality( void );

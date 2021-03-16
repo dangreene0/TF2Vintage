@@ -416,7 +416,6 @@ public:
 	virtual bool	IsInHybridCTF_CPMode( void ) { return m_bPlayingHybrid_CTF_CP; };
 	virtual bool	IsInSpecialDeliveryMode( void ) { return m_bPlayingSpecialDeliveryMode; };
 	bool			UsePlayerReadyStatusMode( void );
-	bool 			UseOldWeaponModels( void ) { return m_bUseOldWeaponModels; };
 
 #ifdef CLIENT_DLL
 
@@ -605,7 +604,6 @@ private:
 	CNetworkString( m_pszCustomUpgradesFile, MAX_PATH );
 	CNetworkVar( bool, m_bMannVsMachineAlarmStatus );
 	CNetworkVar( bool, m_bHaveMinPlayersToEnableReady );
-	CNetworkVar( bool, m_bUseOldWeaponModels );
 	CNetworkVar( CHandle<CTeamRoundTimer>, m_hBlueKothTimer );
 	CNetworkVar( CHandle<CTeamRoundTimer>, m_hRedKothTimer );
 	CNetworkVar( CHandle<CTeamRoundTimer>, m_hGreenKothTimer );
