@@ -1929,7 +1929,7 @@ void CTFBot::AccumulateSniperSpots( void )
 
 		if ( m_sniperSpots.Count() >= tf_bot_sniper_spot_max_count.GetInt() )
 		{
-			int nWorst = -1;
+			int nWorst = 0;
 			for ( int j=0; j < m_sniperSpots.Count(); ++j )
 			{
 				SniperSpotInfo *info = &m_sniperSpots[j];
