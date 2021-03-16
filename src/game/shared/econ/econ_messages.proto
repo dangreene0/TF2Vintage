@@ -36,6 +36,13 @@ enum EBaseMsg
 	k_EBaseMsg_Max			= 50;
 }
 
+message CProtobufMsgHdr
+{
+	required uint32 protocol_version = 1;
+	required string dest_identity = 2; // This is required for P2P protocol
+	optional uint32 protocol_type = 3;
+}
+
 message CClientHelloMsg
 {
 	required uint32 version = 1;
