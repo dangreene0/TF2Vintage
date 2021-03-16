@@ -79,49 +79,6 @@ int CEconItemDefinition::GetLoadoutSlot( int iClass /*= TF_CLASS_UNDEFINED*/ )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-char const *CEconItemDefinition::GetPlayerModel( void ) const
-{
-	if ( ( v_model && v_model[0] != '\0' ) && UseOldWeaponModels() )
-		return v_model;
-
-	if ( model_player && model_player[0] != '\0' )
-		return model_player;
-
-	return NULL;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-char const *CEconItemDefinition::GetWorldModel( void ) const
-{
-	if ( ( w_model && w_model[0] != '\0' ) && UseOldWeaponModels() )
-		return w_model;
-
-	if ( model_world && model_world[0] != '\0' )
-		return model_world;
-
-	return NULL;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-int CEconItemDefinition::GetAttachToHands( void ) const
-{
-	// This only applies to base items right now, but this allows it to be expanded later.
-	if ( CanUseOldModel() )
-	{
-		if ( UseOldWeaponModels() )
-			return 0;
-	}
-
-	return attach_to_hands;
-}
-
-//-----------------------------------------------------------------------------
 // Purpose: Generate item name to show in UI with prefixes, qualities, etc...
 //-----------------------------------------------------------------------------
 const wchar_t *CEconItemDefinition::GenerateLocalizedFullItemName( void )

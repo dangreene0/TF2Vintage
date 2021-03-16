@@ -484,18 +484,13 @@ public:
 		is_cut_content = false;
 		is_multiclass_item = false;
 		CLEAR_STR( holiday_restriction );
-		CLEAR_STR( v_model );
-		CLEAR_STR( w_model );
-		can_use_old_model = 0;
 	}
 	~CEconItemDefinition();
 
 	PerTeamVisuals_t *GetVisuals( int iTeamNum = TEAM_UNASSIGNED );
 	char const *GetPerClassModel( int iClass = TF_CLASS_UNDEFINED );
 	int GetLoadoutSlot( int iClass = TF_CLASS_UNDEFINED );
-	char const *GetPlayerModel( void ) const;
-	char const *GetWorldModel( void ) const;
-	int GetAttachToHands( void ) const;
+	int GetAttachToHands(void) const { return attach_to_hands; }
 	const wchar_t *GenerateLocalizedFullItemName( void );
 	const wchar_t *GenerateLocalizedItemNameNoQuality( void );
 	void IterateAttributes( IEconAttributeIterator *iter ) const;
@@ -506,6 +501,20 @@ public:
 	{
 		Assert( name && *name );
 		return name;
+	}
+	char const *GetPlayerModel( void ) const
+	{
+		if ( model_player && model_player[0] != '\0' )
+			return model_player;
+
+		return NULL;
+	}
+	char const *GetWorldModel( void ) const
+	{
+		if ( model_world && model_world[0] != '\0' )
+			return model_world;
+
+		return NULL;
 	}
 	char const *GetVisionFilteredModel( void ) const
 	{
@@ -585,19 +594,9 @@ public:
 
 		return NULL;
 	}
-	bool CanUseOldModel( void ) const
-	{
-		// Need to check if our v/w models are defined.
-		if ( can_use_old_model == 1 )
-			return true;
-			
-		return false;
-	}
-
 
 	bool LoadFromKV( KeyValues *pKV );
 	void ParseVisuals( KeyValues *pKVData, int iIndex );
-		
 
 private:
 	char const *name;
@@ -617,9 +616,6 @@ private:
 	char const *equip_region;
 	char const *holiday_restriction;
 	char const *item_script;
-	
-	char const *v_model;
-	char const *w_model;
 
 	KeyValues *definition;
 
@@ -655,7 +651,6 @@ public:
 	bool is_custom_content;
 	bool is_cut_content;
 	bool is_multiclass_item;
-	int can_use_old_model;
 };
 
 #endif // ECON_ITEM_SCHEMA_H
