@@ -1870,13 +1870,13 @@ public:
 				}
 			}
 		}
-		else if ( pPlayer && ( pPlayer->m_Shared.InCond( TF_COND_SHIELD_CHARGE ) || pPlayer->m_Shared.m_bShieldChargeStopped ) )
+		else if ( pPlayer && ( pPlayer->m_Shared.InCond( TF_COND_SHIELD_CHARGE ) || (pPlayer->m_Shared.GetNextMeleeCrit() != kCritType_None) ) )
 		{
 			float flAmt = 1.0f;
 			if ( pPlayer->m_Shared.InCond( TF_COND_SHIELD_CHARGE ) )
 				flAmt = ( 100.0f - pPlayer->m_Shared.GetShieldChargeMeter() ) / 100.0f;
 			else
-				flAmt = Min( ( ( gpGlobals->curtime - pPlayer->m_Shared.m_flShieldChargeEndTime ) + -1.5f ) * 10.0f / 3.0f, 1.0f );
+				flAmt = 1.0f - Min( ( gpGlobals->curtime - pPlayer->m_Shared.m_flShieldChargeEndTime - 1.5f ) * 10.0f / 3.0f, 1.0f );
 
 			switch ( pPlayer->GetTeamNumber() )
 			{
@@ -1955,9 +1955,9 @@ public:
 			if ( nPaintRGB != 0 )
 			{
 				float flPaint[3] ={
-					Clamp( ( (nPaintRGB & 0x00FF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
-					Clamp( ( (nPaintRGB & 0x0000FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
-					Clamp( ( (nPaintRGB & 0x000000FF) ) / 255.0f, 0.0f, 1.0f )
+					Clamp( ( (nPaintRGB & 0xFF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
+					Clamp( ( (nPaintRGB & 0x00FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
+					Clamp( ( (nPaintRGB & 0x0000FF) ) / 255.0f, 0.0f, 1.0f )
 				};
 
 				m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );
