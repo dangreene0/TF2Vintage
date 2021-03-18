@@ -14,18 +14,25 @@
 #include "econ_messages.pb.h"
 #include "tier1/mempool.h"
 
-enum EChannelType_t
-{
-	k_EChannelClient	= 0,
-	k_EChannelServer	= 1
-};
+struct SteamNetworkingIdentity;
 typedef uint32 MsgType_t;
+
+#define ECON_SERVER_PORT 27200 //constexpr uint16 g_nServerPort =
+
+// Use this to determine how a message was sent over the
+// wire, if required. Don't rely on this value being present,
+// or what the value is!
+enum EProtocolType
+{	// Currently only a TCP type is implemented
+	k_EProtocolTCP		= 1,
+	k_EProtocolUDP		= 2
+};
 
 struct MsgHdr_t
 {
 	MsgType_t m_eMsgType;	// Message type
 	uint32 m_unMsgSize;		// Size of message without header
-	EChannelType_t m_eChannel;
+	CProtobufMsgHdr *m_ProtoHdr;
 };
 
 //-----------------------------------------------------------------------------
@@ -37,6 +44,7 @@ public:
 	virtual MsgType_t MsgType( void ) const = 0;
 	virtual byte const *Data( void ) const = 0;
 	virtual uint32 Size( void ) const = 0;
+	virtual CProtobufMsgHdr const &Hdr( void ) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -47,8 +55,11 @@ abstract_class IEconNetworking
 public:
 	virtual void OnClientConnected( CSteamID const &steamID ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
-	virtual bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData, int nChannel = 0 ) = 0;
-	virtual bool RecvData( void *pubDest, uint32 cubDest, int nChannel = 0 ) = 0;
+#if defined( CLIENT_DLL )
+	virtual void ConnectToServer( SteamNetworkingIdentity const &identity ) = 0;
+#endif
+	virtual bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData ) = 0;
+	virtual bool RecvData( void *pubDest, uint32 cubDest ) = 0;
 	virtual bool BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
 };
 

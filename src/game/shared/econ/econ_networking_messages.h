@@ -19,7 +19,6 @@ abstract_class IMessageHandler
 public:
 	virtual ~IMessageHandler() {}
 	virtual bool ProcessMessage( INetPacket *pPacket ) = 0;
-	virtual bool BWaitForCompletion( void ) = 0;
 };
 
 class CBaseMsgHandler : public IMessageHandler
@@ -28,10 +27,8 @@ public:
 	CBaseMsgHandler();
 
 	virtual bool ProcessMessage( INetPacket *pPacket )	{ return false; }
-	bool BWaitForCompletion( void ) OVERRIDE;
 	void QueueWork( INetPacket *pPacket );
 private:
-	INetPacket *m_pWorkPacket;
 	HCoroutine m_hCoroutine;
 };
 
@@ -104,7 +101,8 @@ public:
 		pMsg->m_pBody = AllocMsg();
 		Assert( pMsg->m_pBody );
 
-		return pMsg->Body().ParseFromArray( (void *)pPacket->Data(), (int)pPacket->Size() );
+		return pMsg->Body().ParseFromArray( (void *)pPacket->Data() + sizeof( MsgHdr_t ), 
+											(int)pPacket->Size() - sizeof( MsgHdr_t ) );
 	}
 
 	INetPacket *NetPacket( void ) const { return m_pPacket; }

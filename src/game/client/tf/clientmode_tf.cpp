@@ -50,6 +50,8 @@
 #include "usermessages.h"
 #include "utlvector.h"
 #include "props_shared.h"
+#include "steam/isteamnetworkingsockets.h"
+#include "econ/econ_networking.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -333,6 +335,8 @@ void ClientModeTFNormal::Init()
 #endif
 
 	BaseClass::Init();
+
+	ListenForGameEvent( "server_spawn" );
 
 	ListenForGameEvent( "pumpkin_lord_summoned" );
 	ListenForGameEvent( "pumpkin_lord_killed" );
@@ -645,6 +649,34 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 	else if ( FStrEq( eventname, "player_changename" ) )
 	{
 		return; // server sends a colorized text string for this
+	}
+	else if ( FStrEq( eventname, "server_spawn" ) )
+	{
+		char const *pszAddr = event->GetString( "address" );
+
+		long nIP = event->GetInt( "ip" );
+		if ( nIP == 0 && pszAddr && pszAddr[0] != '\0' )
+		{
+			CUtlStringList ip_parts;
+			V_SplitString( pszAddr, ".", ip_parts );
+			Assert( ip_parts.Count() == 4 );
+
+			int nIPParts[4];
+			for ( int i=0; i < ip_parts.Count(); ++i )
+			{
+				nIPParts[i] = V_atoi( ip_parts[i] );
+			}
+
+			nIP = ( nIPParts[0]<<24 ) + ( nIPParts[1]<<16 ) + ( nIPParts[2]<<8 ) + nIPParts[3];
+		}
+
+		SteamNetworkingIPAddr serverAdr;
+		serverAdr.SetIPv4( nIP, ECON_SERVER_PORT );
+
+		SteamNetworkingIdentity ident;
+		ident.SetIPAddr( serverAdr );
+
+		g_pEconNetwork->ConnectToServer( ident );
 	}
 
 	BaseClass::FireGameEvent( event );
