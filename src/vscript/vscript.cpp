@@ -25,8 +25,6 @@ IScriptVM *CScriptManager::CreateVM( ScriptLanguage_t language )
 		case SL_SQUIRREL:
 			pVM = CreateSquirrelVM();
 			break;
-		case SL_LUA:
-			pVM = CreateLuaVM();
 		default:
 			return NULL;
 	}
