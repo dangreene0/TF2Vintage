@@ -740,6 +740,10 @@ bool CTFSniperRifle::CanFireCriticalShot( bool bIsHeadshot )
 	if ( nSniperNoHeadshot == 1 )
 		return false;
 
+	// can only fire a crit shot if this is a headshot, unless we're critboosted
+	if ( !bIsHeadshot )
+		return false;
+
 	int nSniperFullChargeHeadShotOnly = 0;
 	CALL_ATTRIB_HOOK_INT( nSniperFullChargeHeadShotOnly, sniper_no_headshot_without_full_charge );
 	if ( nSniperFullChargeHeadShotOnly == 1 && m_flChargedDamage < TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX )
