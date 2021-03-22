@@ -4310,7 +4310,7 @@ bool CTFPlayer::ClientCommand( const CCommand &args )
 					if ( TFGameRules()->IsFourTeamGame() )
 						nTeam = random->RandomInt( TF_TEAM_RED, TF_TEAM_YELLOW );
 					else
-					GetTeamNumber() == TF_TEAM_BLUE ? nTeam = TF_TEAM_RED : nTeam = TF_TEAM_BLUE;
+						nTeam = GetTeamNumber() == TF_TEAM_BLUE ? TF_TEAM_RED : TF_TEAM_BLUE;
 
 				} while ( nClass == TF_CLASS_SCOUT || nClass == TF_CLASS_SPY || nTeam == GetTeamNumber() );
 			}
@@ -4339,6 +4339,11 @@ bool CTFPlayer::ClientCommand( const CCommand &args )
 			// Change our disguise weapon, using the slot we're currently using. Use primary if it fails.
 			m_Shared.RecalcDisguiseWeapon(iSlot);
 			
+		}
+		else
+		{
+			CSingleUserRecipientFilter filter( this );
+			EmitSound( filter, entindex(), "Player.UseDeny" );
 		}
 
 		return true;
