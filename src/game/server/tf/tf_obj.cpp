@@ -2834,7 +2834,7 @@ bool CBaseObject::Command_Repair( CTFPlayer *pActivator )
 		if ( tf2v_use_new_jag.GetInt() > 0 )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pActivator, flRepairRate, mult_repair_value_jag);
 		
-		int	iAmountToHeal = Min( (int)(flRepairRate * 100), GetMaxHealth() - GetHealth() );
+		int	iAmountToHeal = Min( (int)(flRepairRate * 100.f), GetMaxHealth() - GetHealth() );
 
 		// repair the building
 		int iRepairRateCost = tf2v_use_new_wrench_mechanics.GetBool() ? 3 : 5;
@@ -2843,7 +2843,7 @@ bool CBaseObject::Command_Repair( CTFPlayer *pActivator )
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, building_cost_reduction );
 		iRepairRateCost *= ( 1 / flModRepairCost );
 
-		int iRepairCost = ceil( (float)( iAmountToHeal ) * iRepairRateCost );	
+		int iRepairCost = ceil( (float)( iAmountToHeal ) / iRepairRateCost );	
 	
 		TRACE_OBJECT( UTIL_VarArgs( "%0.2f CObjectDispenser::Command_Repair ( %d / %d ) - cost = %d\n", gpGlobals->curtime, 
 			GetHealth(),
