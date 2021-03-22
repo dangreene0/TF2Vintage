@@ -204,6 +204,8 @@ void CAttributeManager::AddProvider( CBaseEntity *pEntity )
 
 	m_AttributeProviders.AddToTail( pEntity );
 	pAttributes->GetAttributeManager()->AddReceiver( m_hOuter.Get() );
+
+	ClearCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -216,6 +218,8 @@ void CAttributeManager::RemoveProvider( CBaseEntity *pEntity )
 
 	m_AttributeProviders.FindAndFastRemove( pEntity );
 	pAttributes->GetAttributeManager()->RemoveReceiver( m_hOuter.Get() );
+
+	ClearCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -249,11 +253,11 @@ void CAttributeManager::ProvideTo( CBaseEntity *pEntity )
 	if ( pAttribInterface )
 	{
 		pAttribInterface->GetAttributeManager()->AddProvider( m_hOuter.Get() );
+
 	#ifndef CLIENT_DLL
 		m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-	#endif
-
 		NetworkStateChanged();
+	#endif
 	}
 }
 
@@ -272,11 +276,11 @@ void CAttributeManager::StopProvidingTo( CBaseEntity *pEntity )
 	if ( pAttribInterface )
 	{
 		pAttribInterface->GetAttributeManager()->RemoveProvider( m_hOuter.Get() );
+
 	#ifndef CLIENT_DLL
 		m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-	#endif
-
 		NetworkStateChanged();
+	#endif
 	}
 }
 
@@ -338,9 +342,8 @@ void CAttributeManager::ClearCache( void )
 
 #ifndef CLIENT_DLL
 	m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-#endif
-
 	NetworkStateChanged();
+#endif
 }
 
 //-----------------------------------------------------------------------------
