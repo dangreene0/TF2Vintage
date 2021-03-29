@@ -185,7 +185,7 @@ void CEconWearable::Equip( CBasePlayer *pPlayer )
 
 	#ifdef GAME_DLL
 		UpdateModelToClass();
-		UpdatePlayerBodygroups( TURN_ON_BODYGROUPS );
+		UpdatePlayerBodygroups( TURN_ON_BODYGROUP_OVERRIDES );
 		PlayAnimForPlaybackEvent( WEARABLEANIM_EQUIP );
 	#endif
 	}
@@ -196,7 +196,7 @@ void CEconWearable::UnEquip( CBasePlayer *pPlayer )
 	if ( pPlayer )
 	{
 	#ifdef GAME_DLL
-		UpdatePlayerBodygroups( TURN_OFF_BODYGROUPS );
+		UpdatePlayerBodygroups( TURN_OFF_BODYGROUP_OVERRIDES );
 	#endif
 
 		StopFollowingEntity();

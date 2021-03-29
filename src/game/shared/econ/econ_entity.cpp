@@ -564,6 +564,7 @@ void CEconEntity::UpdatePlayerBodygroups( int bOnOff )
 //-----------------------------------------------------------------------------
 void CEconEntity::UpdateOnRemove( void )
 {
+	UpdatePlayerBodygroups( TURN_OFF_BODYGROUP_OVERRIDES );
 	SetOwnerEntity( NULL );
 	ReapplyProvision();
 	BaseClass::UpdateOnRemove();

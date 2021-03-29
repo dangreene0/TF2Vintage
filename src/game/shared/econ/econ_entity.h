@@ -22,8 +22,8 @@
 #include "c_tf_viewmodeladdon.h"
 #endif
 
-#define TURN_ON_BODYGROUPS		true
-#define TURN_OFF_BODYGROUPS		false
+#define TURN_ON_BODYGROUP_OVERRIDES		true
+#define TURN_OFF_BODYGROUP_OVERRIDES		false
 
 //-----------------------------------------------------------------------------
 // Purpose: BaseCombatWeapon is derived from this in live tf2.

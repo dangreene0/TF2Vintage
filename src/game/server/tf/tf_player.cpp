@@ -1866,7 +1866,7 @@ void CTFPlayer::GiveDefaultItems()
 			pWeapon->WeaponRegenerate();
 
 			// player_bodygroups
-			pWeapon->UpdatePlayerBodygroups( TURN_ON_BODYGROUPS );
+			pWeapon->UpdatePlayerBodygroups( TURN_ON_BODYGROUP_OVERRIDES );
 
 			// Extra wearables
 			pWeapon->UpdateExtraWearables();
