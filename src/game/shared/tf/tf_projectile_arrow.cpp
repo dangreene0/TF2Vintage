@@ -839,26 +839,10 @@ void CTFProjectile_Arrow::Deflected( CBaseEntity *pDeflectedBy, Vector &vecDir )
 	if ( pOwner )
 		pOwner->SpeakConceptIfAllowed( MP_CONCEPT_DEFLECTED, "projectile:1,victim:1" );
 
-	// Get arrow's speed.
-	float flVel = GetAbsVelocity().Length();
-
-	QAngle angForward;
-	VectorAngles( vecDir, angForward );
-
-	// Now change arrow's direction.
-	SetAbsAngles( angForward );
-	SetAbsVelocity( vecDir * flVel );
-
-	// And change owner.
-	IncremenentDeflected();
 	SetOwnerEntity( pDeflectedBy );
 	SetScorer( pDeflectedBy );
-	ChangeTeam( pDeflectedBy->GetTeamNumber() );
-
-	if ( m_iProjType != TF_PROJECTILE_ARROW && m_iProjType != TF_PROJECTILE_FESTIVE_ARROW )
-	{
-		m_nSkin = ( pDeflectedBy->GetTeamNumber() - 2 );
-	}
+	ChangeTeam( pDeflector->GetTeamNumber() );
+	SetLauncher( pDeflector->GetActiveWeapon() );
 
 	if ( pDeflector->m_Shared.IsCritBoosted() )
 		m_bCritical = true;
@@ -869,6 +853,7 @@ void CTFProjectile_Arrow::Deflected( CBaseEntity *pDeflectedBy, Vector &vecDir )
 		m_hSpriteTrail->Remove();
 	}
 
+	IncremenentDeflected();
 	CreateTrail();
 
 	// clean up so we can hit these things again
@@ -977,7 +962,7 @@ void CTFProjectile_Arrow::RemoveTrail( void )
 void CTFProjectile_Arrow::AdjustDamageDirection( CTakeDamageInfo const &info, Vector &vecDirection, CBaseEntity *pEntity )
 {
 	if ( pEntity )
-		vecDirection = ( info.GetDamagePosition() - info.GetDamageForce() ) - pEntity->WorldSpaceCenter();
+		vecDirection = info.GetDamagePosition() - info.GetDamageForce() - pEntity->WorldSpaceCenter();
 }
 
 //-----------------------------------------------------------------------------
