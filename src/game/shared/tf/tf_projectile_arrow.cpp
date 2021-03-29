@@ -205,7 +205,7 @@ CTFProjectile_Arrow *CTFProjectile_Arrow::Create( CBaseEntity *pWeapon, const Ve
 
 		// Spawn.
 		DispatchSpawn( pArrow );
-		pArrow->m_flTrailReflectLifetime = 0;
+		pArrow->m_flTrailLifetime = 0;
 		// don't hit ourselves
 		pArrow->m_aHitEnemies.AddToTail( pOwner->entindex() );
 
@@ -880,7 +880,7 @@ void CTFProjectile_Arrow::Deflected( CBaseEntity *pDeflectedBy, Vector &vecDir )
 void CTFProjectile_Arrow::IncremenentDeflected( void )
 {
 	m_iDeflected++;
-	m_flTrailReflectLifetime = 1.0f;
+	m_flTrailLifetime = 1.0f;
 }
 
 //-----------------------------------------------------------------------------
@@ -927,7 +927,7 @@ void CTFProjectile_Arrow::CreateTrail( void )
 	if ( IsDormant() || m_hSpriteTrail != nullptr )
 		return;
 
-	if ( m_iProjType == TF_PROJECTILE_HEALING_BOLT || m_iProjType == TF_PROJECTILE_FESTIVE_HEALING_BOLT )
+	if ( m_iProjType == TF_PROJECTILE_HEALING_BOLT || m_iProjType == TF_PROJECTILE_FESTIVE_HEALING_BOLT || m_iProjType == TF_PROJECTILE_GRAPPLINGHOOK )
 		return;
 
 	CSpriteTrail *pTrail = CSpriteTrail::SpriteTrailCreate( GetTrailParticleName(), GetAbsOrigin(), true );
@@ -939,7 +939,8 @@ void CTFProjectile_Arrow::CreateTrail( void )
 		pTrail->SetTextureResolution( 0.01f );
 		pTrail->SetLifeTime( 0.3f );
 		pTrail->SetAttachment( this, PATTACH_ABSORIGIN );
-		pTrail->SetContextThink( &CTFProjectile_Arrow::RemoveTrail, gpGlobals->curtime + 3.0f, "FadeTrail" );
+
+		SetContextThink( &CTFProjectile_Arrow::RemoveTrail, gpGlobals->curtime + 3.0f, "FadeTrail" );
 
 		m_hSpriteTrail = pTrail;
 	}
@@ -953,18 +954,18 @@ void CTFProjectile_Arrow::RemoveTrail( void )
 	if ( !m_hSpriteTrail )
 		return;
 
-	if( m_flTrailReflectLifetime <= 0 )
+	if( m_flTrailLifetime <= 0 )
 	{
 		UTIL_Remove( m_hSpriteTrail.Get() );
-		m_flTrailReflectLifetime = 1.0f;
+		m_flTrailLifetime = 1.0f;
 	}
 	else
 	{
 		CSpriteTrail *pSprite = dynamic_cast<CSpriteTrail *>( m_hSpriteTrail.Get() );
 		if ( pSprite )
-			pSprite->SetBrightness( m_flTrailReflectLifetime * 128.f );
+			pSprite->SetBrightness( m_flTrailLifetime * 128.f );
 
-		m_flTrailReflectLifetime -= 0.1;
+		m_flTrailLifetime -= 0.1;
 
 		SetContextThink( &CTFProjectile_Arrow::RemoveTrail, gpGlobals->curtime, "FadeTrail" );
 	}
