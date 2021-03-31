@@ -250,11 +250,11 @@ void CSquirrelVM::Shutdown( void )
 {
 	if ( GetVM() )
 	{
+		sq_collectgarbage( GetVM() );
+
 		// free the root table reference
 		sq_pushnull( GetVM() );
 		sq_setroottable( GetVM() );
-
-		sq_collectgarbage( GetVM() );
 
 		DisconnectDebugger();
 
