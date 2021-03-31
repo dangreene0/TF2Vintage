@@ -1061,20 +1061,14 @@ bool CObjectTeleporter::Command_Repair( CTFPlayer *pActivator )
 		iAmountToHeal = min( (int)(flRepairRate * 100), GetMaxHealth() - GetHealth() );
 
 		// repair the building
-		if ( tf2v_use_new_wrench_mechanics.GetBool() )
-		{
-			// 3HP per metal (new repair cost)
-			iRepairRateCost = 3;
-		}
-		else
-		{
-			// 5HP per metal (old repair cost)
-			iRepairRateCost = 5;
-		}
+		int iRepairRateCost = tf2v_use_new_wrench_mechanics.GetBool() ? 3 : 5;
+
+		float flModRepairCost = 1.0f;
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, mod_teleporter_cost );
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, building_cost_reduction );
 		iRepairRateCost *= ( 1 / flModRepairCost );
-		iRepairCost = ceil( (float)( iAmountToHeal ) * (1 / iRepairRateCost ) );
+
+		int iRepairCost = ceil( (float)( iAmountToHeal ) / iRepairRateCost );
 
 		TRACE_OBJECT( UTIL_VarArgs( "%0.2f CObjectDispenser::Command_Repair ( %d / %d ) - cost = %d\n", gpGlobals->curtime, 
 			GetHealth(),
@@ -1112,20 +1106,14 @@ bool CObjectTeleporter::Command_Repair( CTFPlayer *pActivator )
 			iAmountToHeal = min( (int)(flRepairRate * 100), pMatch->GetMaxHealth() - pMatch->GetHealth() );
 
 			// repair the building
-			if ( tf2v_use_new_wrench_mechanics.GetBool() )
-			{
-				// 3HP per metal (new repair cost)
-				iRepairRateCost = 3;
-			}
-			else
-			{
-				// 5HP per metal (old repair cost)
-				iRepairRateCost = 5;
-			}
+			int iRepairRateCost = tf2v_use_new_wrench_mechanics.GetBool() ? 3 : 5;
+
+			float flModRepairCost = 1.0f;
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, mod_teleporter_cost );
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, building_cost_reduction );
 			iRepairRateCost *= ( 1 / flModRepairCost );
-			iRepairCost = ceil( (float)( iAmountToHeal ) * (1 / iRepairRateCost ) );
+
+			int iRepairCost = ceil( (float)( iAmountToHeal ) / iRepairRateCost );
 
 			TRACE_OBJECT( UTIL_VarArgs( "%0.2f CObjectDispenser::Command_Repair ( %d / %d ) - cost = %d\n", gpGlobals->curtime, 
 				pMatch->GetHealth(),

@@ -6596,7 +6596,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		// Start burning if we took ignition damage
 		bIgniting = ( ( info.GetDamageType() & DMG_IGNITE ) && ( GetWaterLevel() < WL_Waist ) );
 
-		if ( info.GetDamageCustom() != TF_DMG_CUSTOM_BLEEDING )
+		if ( info.GetDamageCustom() != TF_DMG_CUSTOM_BLEEDING && pAttacker->IsPlayer() )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pTFWeapon, flBleedDuration, bleeding_duration );
 
 		// Take damage - round to the nearest integer.
