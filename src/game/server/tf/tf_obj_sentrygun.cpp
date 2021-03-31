@@ -703,38 +703,26 @@ bool CObjectSentrygun::Command_Repair( CTFPlayer *pActivator )
 {
 	if ( GetHealth() < GetMaxHealth() )
 	{
-		int iAmountToHeal;
-		
 		float flRepairRate = 1;
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flRepairRate, mult_repair_value );
 		
 		if ( tf2v_use_new_jag.GetInt() > 0 )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flRepairRate, mult_repair_value_jag );
 
-
 		// Wrangled sentries have 33% of normal repair rate (as of Gun Mettle)
 		if ( ( m_iState == SENTRY_STATE_WRANGLED || m_iState == SENTRY_STATE_WRANGLED_RECOVERY ) && tf2v_use_new_wrangler_repair.GetBool() )
 			flRepairRate *= TF_WRANGLER_STRENGTH;
 
-		iAmountToHeal = Min( (int)(flRepairRate * 100), GetMaxHealth() - GetHealth() );
+		int iAmountToHeal = Min( (int)(flRepairRate * 100.f), GetMaxHealth() - GetHealth() );
 					
 		// repair the building
-		int iRepairCost;
-		int iRepairRateCost;
+		int iRepairRateCost = tf2v_use_new_wrench_mechanics.GetBool() ? 3 : 5;
+
 		float flModRepairCost = 1.0f;
-		if ( tf2v_use_new_wrench_mechanics.GetBool() )
-		{
-			// 3HP per metal (new repair cost)
-			iRepairRateCost = 3;
-		}
-		else
-		{
-			// 5HP per metal (old repair cost)
-			iRepairRateCost = 5;
-		}
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, building_cost_reduction );
 		iRepairRateCost *= ( 1 / flModRepairCost );
-		iRepairCost = ceil( (float)( iAmountToHeal ) * (1 / iRepairRateCost ) );	
+
+		int iRepairCost = ceil( (float)( iAmountToHeal ) / iRepairRateCost );		
 
 		TRACE_OBJECT( UTIL_VarArgs( "%0.2f CObjectDispenser::Command_Repair ( %d / %d ) - cost = %d\n", gpGlobals->curtime,
 			GetHealth(),
@@ -750,7 +738,7 @@ bool CObjectSentrygun::Command_Repair( CTFPlayer *pActivator )
 
 			pActivator->RemoveBuildResources( iRepairCost );
 
-			float flNewHealth = Min( (float)GetMaxHealth(), m_flHealth + ( iRepairCost * (iRepairRateCost) ) );
+			float flNewHealth = min( GetMaxHealth(), m_flHealth + ( iRepairCost * (iRepairRateCost) ) );
 			SetHealth( flNewHealth );
 
 			return ( iRepairCost > 0 );
