@@ -214,7 +214,7 @@ void CTFProjectile_EnergyRing::ProjectileTouch( CBaseEntity *pOther )
 			{
 				// Is our victim, don't damage them.
 				if ( m_aHitEnemies[i].hEntity == pOther && 
-					 ( tf2v_use_new_bison_damage.GetInt() == 1 || (m_aHitEnemies[i].flLastHitTime + TF_WEAPON_ENERGYRING_INTERVAL) < gpGlobals->curtime ) )
+					 ( tf2v_use_new_bison_damage.GetInt() == 1 || (m_aHitEnemies[i].flLastHitTime + TF_WEAPON_ENERGYRING_INTERVAL) > gpGlobals->curtime ) )
 				{
 					bShouldDamage = false;
 					break;
