@@ -66,6 +66,16 @@ float CTFRaygun::Energy_GetShotCost( void ) const
 	return 5.0f;
 }
 
+#ifdef CLIENT_DLL
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRaygun::DispatchMuzzleFlash( const char* effectName, C_BaseEntity* pAttachEnt )
+{
+	DispatchParticleEffect( effectName, PATTACH_POINT_FOLLOW, pAttachEnt, "muzzle", GetEnergyWeaponColor( false ), GetEnergyWeaponColor( true ) );
+}
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------

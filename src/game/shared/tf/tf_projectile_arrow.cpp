@@ -207,7 +207,7 @@ CTFProjectile_Arrow *CTFProjectile_Arrow::Create( CBaseEntity *pWeapon, const Ve
 		DispatchSpawn( pArrow );
 		pArrow->m_flTrailLifetime = 0;
 		// don't hit ourselves
-		pArrow->m_aHitEnemies.AddToTail( pOwner->entindex() );
+		pArrow->m_aHitEnemies.AddToTail( pOwner );
 
 		// Setup the initial velocity.
 		Vector vecForward, vecRight, vecUp;
@@ -527,10 +527,10 @@ bool CTFProjectile_Arrow::StrikeTarget( mstudiobbox_t *pBox, CBaseEntity *pTarge
 	{
 		if ( CanPenetrate() )
 		{
-			if ( m_aHitEnemies.Find( ENTINDEX( pTarget ) ) != m_aHitEnemies.InvalidIndex() )
+			if ( m_aHitEnemies.Find( pTarget ) != m_aHitEnemies.InvalidIndex() )
 				return true;
 
-			m_aHitEnemies.AddToTail( ENTINDEX( pTarget ) );
+			m_aHitEnemies.AddToTail( pTarget );
 		}
 
 		if ( InSameTeam( pTarget ) )
@@ -859,7 +859,7 @@ void CTFProjectile_Arrow::Deflected( CBaseEntity *pDeflectedBy, Vector &vecDir )
 	// clean up so we can hit these things again
 	m_aHitEnemies.Purge();
 	// don't hit ourselves
-	m_aHitEnemies.AddToTail( ENTINDEX( pDeflectedBy ) );
+	m_aHitEnemies.AddToTail( pDeflectedBy );
 }
 
 void CTFProjectile_Arrow::IncremenentDeflected( void )

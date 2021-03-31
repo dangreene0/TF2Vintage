@@ -36,6 +36,9 @@ public:
 	virtual float	GetProjectileSpeed( void )			{ return 1200.0f; }
 	virtual float	GetProjectileGravity( void )		{ return 0.0f; }
 	virtual void	PrimaryAttack();
+
+	bool			IsViewModelFlipped( void ) OVERRIDE { return !BaseClass::IsViewModelFlipped(); }
+	virtual const char *GetMuzzleFlashParticleEffect( void ) { return "drg_bison_muzzleflash"; }
 	
 	virtual bool		HasChargeBar( void )				{ return true; }
 	virtual const char* GetEffectLabelText( void )			{ return "#TF_BISON"; }
@@ -44,6 +47,7 @@ public:
 	virtual float		Energy_GetRechargeCost( void ) const { return 5.f; }
 
 #ifdef CLIENT_DLL
+	virtual void	DispatchMuzzleFlash( const char* effectName, C_BaseEntity* pAttachEnt );
 	virtual bool	ShouldPlayClientReloadSound() { return true; }
 #endif
 
