@@ -967,6 +967,7 @@ void CHudItemEffects::SetPlayer( C_TFPlayer *pPlayer )
 		case TF_CLASS_SOLDIER:
 			AddItemMeter( NEW_WEAPON_METER( C_TFBuffItem, true, NULL ) );
 			AddItemMeter( NEW_WEAPON_METER( C_TFRocketLauncher_Airstrike, false, "resource/UI/HudItemEffectMeter_Demoman.res" ) );
+			AddItemMeter( NEW_WEAPON_METER( C_TFRaygun, false, "resource/UI/HUDItemEffectMeter_Raygun.res" ) );
 			AddItemMeter( NEW_WEAPON_METER( C_TFParticleCannon, false, "resource/UI/HudItemEffectMeter_particlecannon.res" ) );
 			break;
 		case TF_CLASS_DEMOMAN:
