@@ -1045,9 +1045,6 @@ bool CObjectTeleporter::Command_Repair( CTFPlayer *pActivator )
 {
 	bool bRepaired = false;
 	int iAmountToHeal = 0;
-	int iRepairCost = 0;
-	int iRepairRateCost = 0;
-	float flModRepairCost = 1.0f;
 	
 	float flRepairRate = 1;
 	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flRepairRate, mult_repair_value );
