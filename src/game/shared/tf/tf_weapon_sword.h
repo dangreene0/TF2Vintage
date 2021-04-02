@@ -55,6 +55,7 @@ public:
 
 	virtual bool	Deploy( void );
 	virtual bool	CanHolster( void );
+	virtual bool	Holster( CBaseCombatWeapon *pSwitchingTo );
 	virtual int		GetSkinOverride( void );
 	virtual void	OnDecapitation( CTFPlayer *pVictim );
 	virtual float	GetMeleeDamage( CBaseEntity *pTarget, int &iDamageType, int &iCustomDamage );
@@ -65,11 +66,7 @@ public:
 	
 	
 private:
-#if defined( GAME_DLL )
 	CNetworkVar( bool, m_bIsBloody );
-#else
-	bool m_bIsBloody;
-#endif
 
 	CTFKatana( const CTFKatana& );
 };

@@ -1607,6 +1607,9 @@ void CTFPlayer::Regenerate( void )
 
 	// Reset charge meter
 	m_Shared.SetShieldChargeMeter( 100.0f );
+
+	// Allow honorbound weapons to be switched away from without penalty for a bit
+	m_Shared.m_flFirstPrimaryAttack = MAX( m_Shared.m_flFirstPrimaryAttack, gpGlobals->curtime + 1.0f );
 }
 
 //-----------------------------------------------------------------------------

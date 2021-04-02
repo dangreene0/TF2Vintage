@@ -244,6 +244,7 @@ BEGIN_RECV_TABLE_NOBASE( CTFPlayerShared, DT_TFPlayerShared )
 	RecvPropBool( RECVINFO( m_bGunslinger ) ),
 	RecvPropInt( RECVINFO( m_iRespawnParticleID ) ),
 	RecvPropInt( RECVINFO( m_iMaxHealth ) ),
+	RecvPropFloat( RECVINFO( m_flFirstPrimaryAttack ) ),
 	RecvPropFloat( RECVINFO( m_flEffectBarProgress ) ),
 	RecvPropFloat( RECVINFO( m_flEnergyDrinkMeter ) ),
 	RecvPropFloat( RECVINFO( m_flFocusLevel ) ),
@@ -331,6 +332,7 @@ BEGIN_SEND_TABLE_NOBASE( CTFPlayerShared, DT_TFPlayerShared )
 	SendPropBool( SENDINFO( m_bGunslinger ) ),
 	SendPropInt( SENDINFO( m_iRespawnParticleID ), 0, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_iMaxHealth ), 10 ),
+	SendPropFloat( SENDINFO( m_flFirstPrimaryAttack ) ),
 	SendPropFloat( SENDINFO( m_flEffectBarProgress ), 11, 0, 0.0f, 100.0f ),
 	SendPropFloat( SENDINFO( m_flEnergyDrinkMeter ), 11, 0, 0.0f, 100.0f ),
 	SendPropFloat( SENDINFO( m_flFocusLevel ), 11, 0, 0.0f, 100.0f ),
@@ -394,6 +396,8 @@ CTFPlayerShared::CTFPlayerShared()
 	m_iWearableBodygroups = 0;
 	m_iDisguiseBodygroups = 0;
 	m_iWeaponBodygroup = 0;
+
+	m_flFirstPrimaryAttack = 0.0f;
 
 #ifdef CLIENT_DLL
 	m_iDisguiseWeaponModelIndex = -1;
@@ -6295,7 +6299,7 @@ bool CTFPlayer::Weapon_ShouldSetLast(CBaseCombatWeapon *pOldWeapon, CBaseCombatW
 	// if the weapon doesn't want to be auto-switched to, don't!	
 	CTFWeaponBase *pTFWeapon = dynamic_cast< CTFWeaponBase * >(pOldWeapon);
 
-	if (pTFWeapon->AllowsAutoSwitchTo() == false)
+	if (pTFWeapon && pTFWeapon->AllowsAutoSwitchTo() == false)
 	{
 		return false;
 	}
@@ -6308,8 +6312,61 @@ bool CTFPlayer::Weapon_ShouldSetLast(CBaseCombatWeapon *pOldWeapon, CBaseCombatW
 //-----------------------------------------------------------------------------
 bool CTFPlayer::Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex)
 {
-	m_PlayerAnimState->ResetGestureSlot(GESTURE_SLOT_ATTACK_AND_RELOAD);
-	return BaseClass::Weapon_Switch(pWeapon, viewmodelindex);
+	// Ghosts can't do anything
+	if ( m_Shared.InCond( TF_COND_HALLOWEEN_GHOST_MODE ) )
+	{
+		return false;
+	}
+
+	CBaseCombatWeapon *pLastWeapon = GetLastWeapon();
+	CBaseCombatWeapon *pActiveWeapon = GetActiveWeapon();
+
+	bool bSwitched = BaseClass::Weapon_Switch( pWeapon, viewmodelindex );
+	if ( bSwitched )
+	{
+		m_PlayerAnimState->ResetGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD );
+
+		if ( Weapon_ShouldSetLast( pActiveWeapon, pWeapon ) )
+		{
+			Weapon_SetLast( pActiveWeapon );
+			//SetSecondaryLastWeapon( pLastWeapon );
+		}
+		else if ( Weapon_ShouldSetLast( pWeapon, pLastWeapon ) )
+		{
+			CTFWeaponBase *pTFWeapon = assert_cast< CTFWeaponBase * >( pWeapon );
+			if ( pTFWeapon && pTFWeapon->IsHonorBound() )
+			{
+				// Allow switching away from honorbound weapons before fully deployed,
+				// this lets them scroll through weapons without penalty
+				m_Shared.m_flFirstPrimaryAttack = gpGlobals->curtime;
+			}
+
+			//if ( pWeapon != GetSecondaryLastWeapon() )
+			//{
+			//	Weapon_SetLast( GetSecondaryLastWeapon() );
+			//	SetSecondaryLastWeapon( pLastWeapon );
+			//}
+			//else
+			//{
+				Weapon_SetLast( pLastWeapon );
+			//}
+		}
+		else
+		{
+			Weapon_SetLast( pLastWeapon );
+		}
+	}
+	else
+	{
+		// We didn't switch, restore
+		Weapon_SetLast( pLastWeapon );
+	}
+
+#ifdef CLIENT_DLL
+	m_Shared.UpdateCritBoostEffect();
+#endif
+
+	return bSwitched;
 }
 
 //-----------------------------------------------------------------------------

@@ -642,6 +642,8 @@ public:
 
 	// Gas Player
 	EHANDLE m_hGasAttacker;
+
+	CNetworkVar( float, m_flFirstPrimaryAttack );
 private:
 	float		m_flTauntRemoveTime;
 	
