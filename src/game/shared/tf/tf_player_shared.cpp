@@ -1185,7 +1185,16 @@ void CTFPlayerShared::RemoveAttributeFromPlayer( char const *szName )
 int CTFPlayerShared::GetMaxBuffedHealth( void )
 {
 	float flBoostMax = m_pOuter->GetMaxHealthForBuffing() * tf_max_health_boost.GetFloat();
-
+#ifdef GAME_DLL
+	FOR_EACH_VEC( m_aHealers, i )
+	{
+		float flOverheal = m_pOuter->GetMaxHealthForBuffing() * m_aHealers[i].flOverhealBonus;
+		if ( flOverheal > flBoostMax )
+		{
+			flBoostMax = flOverheal;
+		}
+	}
+#endif
 	int iRoundDown = floor( flBoostMax / 5 );
 	iRoundDown = iRoundDown * 5;
 
@@ -1205,7 +1214,16 @@ int	CTFPlayerShared::GetDisguiseMaxHealth( void )
 int CTFPlayerShared::GetDisguiseMaxBuffedHealth( void )
 {
 	float flBoostMax = GetDisguiseMaxHealth() * tf_max_health_boost.GetFloat();
-
+#ifdef GAME_DLL
+	for ( int i = 0; i < m_aHealers.Count(); i++ )
+	{
+		float flOverheal = GetDisguiseMaxHealth() * m_aHealers[i].flOverhealBonus;
+		if ( (int)flOverheal > flBoostMax )
+		{
+			flBoostMax = flOverheal;
+		}
+	}
+#endif
 	int iRoundDown = floor( flBoostMax / 5 );
 	iRoundDown = iRoundDown * 5;
 
@@ -1270,6 +1288,9 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 		float flTimeSinceDamage = gpGlobals->curtime - m_pOuter->GetLastDamageTime();
 		float flScale = RemapValClamped( flTimeSinceDamage, 10, 15, 1.0, 3.0 );
 
+		float flModScale = 1.0;
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( m_pOuter, flModScale, mult_health_fromhealers );
+
 		float flOverhealAmount = (float)m_pOuter->GetHealth() / m_pOuter->GetMaxHealth();
 		if ( flOverhealAmount > 1.0f )
 		{
@@ -1327,12 +1348,22 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 			if ( bHealDisguise )
 				bDecayDisguiseHealth = false;
 
+			float flPerHealerModScale = 1.0f;
+			// Check if the healer has an attribute that modifies their overheal rate
+			if( flOverhealAmount > 1.0f && !m_aHealers[i].bDispenserHeal )
+			{
+				CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( m_aHealers[i].pHealer, flPerHealerModScale, overheal_fill_rate );
+			}
 			
 			// Dispensers heal at a constant rate
 			if ( m_aHealers[i].bDispenserHeal )
 			{
 				// Dispensers heal at a slower rate, but ignore flScale
-				m_flHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount;
+				if( bHealActually )
+					m_flHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount * flModScale;
+
+				if( bHealDisguise )
+					m_flDisguiseHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount * flModScale;
 			}
 			else // Player heals are affected by the last damage time
 			{
@@ -1340,7 +1371,12 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 				if( bHealActually )
 				{
 					CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( m_pOuter, flScale, mult_healing_from_medics );
-					m_flHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount * flScale;
+					m_flHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount * flScale * flModScale * flPerHealerModScale;
+				}
+
+				if ( bHealDisguise )
+				{
+					m_flDisguiseHealFraction += gpGlobals->frametime * m_aHealers[i].flAmount * flScale * flModScale * flPerHealerModScale;
 				}
 			}
 
@@ -1348,6 +1384,11 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 
 			if ( m_flLowestOverhealDecayRate == -1 || m_aHealers[i].flOverhealDecayRate < m_flLowestOverhealDecayRate )
 				m_flLowestOverhealDecayRate = m_aHealers[i].flOverhealDecayRate;
+		}
+
+		if ( InCond( TF_COND_HEALING_DEBUFF ) )
+		{
+			m_flHealFraction *= 0.75f;
 		}
 
 		int nHealthToAdd = ( int )m_flHealFraction;
@@ -1361,42 +1402,21 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 
 			// Modify our max overheal.
 			int iBoostMax = GetMaxBuffedHealth();
-			for ( int i = 0; i < m_aHealers.Count(); i++ )
-			{
-				float flOverheal = m_pOuter->GetMaxHealthForBuffing() * m_aHealers[i].flOverhealBonus;
-				if ( (int)flOverheal > iBoostMax )
-				{
-					iBoostMax = flOverheal;
-				}
-			}
 
 			if ( InCond( TF_COND_DISGUISED ) )
 			{
 				// Separate cap for disguised health
 				int iFakeBoostMax = GetDisguiseMaxBuffedHealth();
-				for ( int i = 0; i < m_aHealers.Count(); i++ )
-				{
-					float flOverheal = GetDisguiseMaxHealth() * m_aHealers[i].flOverhealBonus;
-					if ( (int)flOverheal > iFakeBoostMax )
-					{
-						iFakeBoostMax = flOverheal;
-					}
-				}
-				int nFakeHealthToAdd = clamp(nHealthToAdd, 0, iFakeBoostMax - m_iDisguiseHealth);
-
-				CTFPlayer *pDisguiseTarget = ToTFPlayer( GetDisguiseTarget() );
-				CALL_ATTRIB_HOOK_INT_ON_OTHER( pDisguiseTarget, nFakeHealthToAdd, mult_health_fromhealers );
-
+				int nFakeHealthToAdd = clamp( nDisguiseHealthToAdd, 0, iFakeBoostMax - m_iDisguiseHealth );
 				m_iDisguiseHealth += nFakeHealthToAdd;
 			}
 
 			// Cap it to the max we'll boost a player's health
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( ToTFPlayer(m_pOuter), nHealthToAdd, mult_health_fromhealers );
 			nHealthToAdd = clamp( nHealthToAdd, 0, ( iBoostMax - m_pOuter->GetHealth() ) );
 			m_pOuter->TakeHealth( nHealthToAdd, DMG_IGNORE_MAXHEALTH );			
 			
 			// split up total healing based on the amount each healer contributes
-			for ( int i = 0; i < m_aHealers.Count(); i++ )
+			FOR_EACH_VEC( m_aHealers, i )
 			{
 				if ( m_aHealers[i].pHealer.IsValid() && m_aHealers[i].pScorer.IsValid() )
 				{
@@ -1425,7 +1445,7 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 
 		if ( InCond( TF_COND_BLEEDING ) )
 		{
-			for ( int i=0; i<m_aBleeds.Count(); ++i )
+			FOR_EACH_VEC( m_aBleeds, i )
 			{
 				bleed_struct_t *bleed = &m_aBleeds[i];
 				bleed->m_flEndTime -= flReduction * gpGlobals->frametime;
