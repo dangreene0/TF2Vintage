@@ -13,6 +13,8 @@
 #define ATTRIB_REAPPLY_PARITY_BITS 6
 #define ATTRIB_REAPPLY_PARITY_MASK ( ( 1 << ATTRIB_REAPPLY_PARITY_BITS ) - 1 )
 
+typedef CUtlVector< CHandle<CBaseEntity> > ProviderVector;
+
 BEGIN_DATADESC_NO_BASE( CAttributeManager )
 	DEFINE_FIELD( m_iReapplyProvisionParity, FIELD_INTEGER ),
 	DEFINE_FIELD( m_hOuter, FIELD_EHANDLE ),

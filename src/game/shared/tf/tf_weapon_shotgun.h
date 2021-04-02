@@ -75,8 +75,7 @@ public:
 #endif
 
 	virtual void	Equip( CBaseCombatCharacter *pEquipTo );
-	virtual bool	Deploy( void );
-	virtual bool	Holster( CBaseCombatWeapon *pSwitchTo );
+	virtual bool	CanAutoReload( void ) { return m_bAutoReload; }
 	virtual void	FinishReload( void );
 	virtual bool	SendWeaponAnim( int iActivity );
 

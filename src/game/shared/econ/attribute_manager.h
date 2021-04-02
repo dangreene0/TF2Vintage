@@ -8,7 +8,6 @@
 #include "gamestringpool.h"
 #include "econ_item_interface.h"
 
-typedef CUtlVector< CHandle<CBaseEntity> > ProviderVector;
 
 // Client specific.
 #ifdef CLIENT_DLL

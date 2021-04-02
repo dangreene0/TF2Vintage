@@ -196,47 +196,12 @@ void CTFScatterGun::Equip( CBaseCombatCharacter *pEquipTo )
 	int nScatterGunNoReloadSingle = 0;
 	CALL_ATTRIB_HOOK_INT( nScatterGunNoReloadSingle, set_scattergun_no_reload_single );
 	if ( nScatterGunNoReloadSingle == 1 )
+	{
 		m_bReloadsSingly = false;
+		m_bAutoReload = false;
+	}
 
 	BaseClass::Equip( pEquipTo );
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CTFScatterGun::Deploy()
-{
-	if ( !ReloadsSingly() )
-	{
-	#if defined( CLIENT_DLL )
-		cl_autoreload.SetValue( 0 );
-	#else
-		CTFPlayer *pOwner = ToTFPlayer( GetOwner() );
-		if ( pOwner )
-			pOwner->SetAutoReload( false );
-	#endif
-	}
-
-	return BaseClass::Deploy();
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CTFScatterGun::Holster(CBaseCombatWeapon *pSwitchTo)
-{
-	if ( !ReloadsSingly() )
-	{
-	#if defined( CLIENT_DLL )
-		cl_autoreload.SetValue( m_bAutoReload );
-	#else
-		CTFPlayer *pOwner = ToTFPlayer( GetOwner() );
-		if ( pOwner )
-			pOwner->SetAutoReload( m_bAutoReload );
-	#endif
-	}
-
-	return BaseClass::Holster( pSwitchTo );
 }
 
 //-----------------------------------------------------------------------------
