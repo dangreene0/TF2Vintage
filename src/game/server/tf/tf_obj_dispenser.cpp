@@ -813,7 +813,7 @@ void CObjectDispenser::StopHealing( CBaseEntity *pOther )
 
 		if ( pPlayer )
 		{
-			pPlayer->m_Shared.StopHealing( GetOwner() );
+			pPlayer->m_Shared.StopHealing( this );
 		}
 	}
 }

@@ -220,7 +220,7 @@ public:
 
 #ifdef GAME_DLL
 	void	Heal( CBaseEntity *pHealer, float flAmount, float flOverhealBonus, float flOverhealDecayMult, bool bDispenserHeal = false, CTFPlayer *pScorer = NULL );
-	void	StopHealing( CTFPlayer *pPlayer );
+	void	StopHealing( CBaseEntity *pHealer );
 	void	SetBestOverhealDecayMult( float fValue )	{ m_flLowestOverhealDecayRate = fValue; }
 	float	GetBestOverhealDecayMult() const			{ return m_flLowestOverhealDecayRate; }
 	void	RecalculateChargeEffects( bool bInstantRemove = false );

@@ -4145,15 +4145,15 @@ void CTFPlayerShared::Heal(CBaseEntity *pHealer, float flAmount, float flOverhea
 // Purpose: Heal players.
 // pPlayer is person who healed us
 //-----------------------------------------------------------------------------
-void CTFPlayerShared::StopHealing(CTFPlayer *pPlayer)
+void CTFPlayerShared::StopHealing(CBaseEntity *pHealer)
 {
-	int iIndex = FindHealerIndex(pPlayer);
+	int iIndex = FindHealerIndex( pHealer );
 	if ( iIndex == m_aHealers.InvalidIndex() )
 		return;
 
-	m_aHealers.Remove(iIndex);
+	m_aHealers.Remove( iIndex );
 
-	if (!m_aHealers.Count())
+	if ( !m_aHealers.Count() )
 	{
 		RemoveCond(TF_COND_HEALTH_BUFF);
 	}
