@@ -380,11 +380,11 @@ class CTFWeaponBase : public CBaseCombatWeapon
 
 	virtual float		GetSpeedMod( void ) const { return 1.0f; }
 
-	bool 				IsPenetrating( void );
-	virtual bool		CanOverload( void );
-	bool				IsSilentKiller( void );
-	virtual bool		CanDecapitate( void );
 	bool				IsHonorBound( void ) const;
+	bool 				IsPenetrating( void ) const;
+	virtual bool		CanOverload( void ) const;
+	bool				IsSilentKiller( void ) const;
+	virtual bool		CanDecapitate( void ) const;
 
 	void				SetIsBeingRepurposedForTaunt( bool bCanOverride ) { m_bBeingRepurposedForTaunt = bCanOverride; }
 	bool				IsBeingRepurposedForTaunt() const { return m_bBeingRepurposedForTaunt; }

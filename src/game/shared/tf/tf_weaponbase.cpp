@@ -2504,7 +2504,7 @@ bool CTFWeaponBase::IsHonorBound( void ) const
 //-----------------------------------------------------------------------------
 // Purpose: Return if we should not show death notices to enemy
 // ----------------------------------------------------------------------------
-bool CTFWeaponBase::IsSilentKiller( void )
+bool CTFWeaponBase::IsSilentKiller( void ) const
 {
 	int nSilentKiller = 0;
 	CALL_ATTRIB_HOOK_INT( nSilentKiller, set_silent_killer );
@@ -2514,7 +2514,7 @@ bool CTFWeaponBase::IsSilentKiller( void )
 //-----------------------------------------------------------------------------
 // Purpose: Used for calculating penetrating shots.
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::IsPenetrating(void)
+bool CTFWeaponBase::IsPenetrating( void ) const
 {
 	if (GetCustomDamageType() == TF_DMG_CUSTOM_PENETRATE_ALL_PLAYERS)
 		return true;
@@ -2532,7 +2532,7 @@ bool CTFWeaponBase::IsPenetrating(void)
 //-----------------------------------------------------------------------------
 // Purpose: Used to calculate if a weapon causes decapitations.
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::CanDecapitate( void )
+bool CTFWeaponBase::CanDecapitate( void ) const
 {			 
 	int nDecapitateType = 0;
 	CALL_ATTRIB_HOOK_INT( nDecapitateType, decapitate_type );
@@ -2542,7 +2542,7 @@ bool CTFWeaponBase::CanDecapitate( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::CanOverload( void )
+bool CTFWeaponBase::CanOverload( void ) const
 {			 
 	int nCanOverload = 0;
 	CALL_ATTRIB_HOOK_INT( nCanOverload, can_overload );

@@ -114,16 +114,26 @@ void CTFDecapitationMeleeWeaponBase::SetupGameEventListeners( void )
 //-----------------------------------------------------------------------------
 void CTFDecapitationMeleeWeaponBase::FireGameEvent( IGameEvent *event )
 {
-	if (FStrEq( event->GetName(), "player_death" ))
-	{
-		CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-		if (pOwner && engine->GetPlayerUserId( pOwner->edict() ) == event->GetInt( "attacker" ) && 
-			 (event->GetInt( "weaponid" ) == TF_WEAPON_SWORD || event->GetInt( "customkill" ) == TF_DMG_CUSTOM_TAUNTATK_BARBARIAN_SWING) && CanDecapitate())
-		{
-			CTFPlayer *pVictim = ToTFPlayer( UTIL_PlayerByUserId( event->GetInt( "userid" ) ) );
-			OnDecapitation( pVictim );
-		}
-	}
+	if ( !FStrEq( event->GetName(), "player_death" ) )
+		return;
+
+	CTFPlayer *pOwner = GetTFPlayerOwner();
+	if ( !pOwner )
+		return;
+
+	if ( event->GetInt( "attacker" ) != pOwner->GetUserID() )
+		return;
+
+	/*if ( event->GetInt( "weaponid" ) != TF_WEAPON_SWORD && event->GetInt( "customkill" ) != TF_DMG_CUSTOM_TAUNTATK_BARBARIAN_SWING )
+		return;*/
+
+	if ( !CanDecapitate() )
+		return;
+
+	CTFPlayer *pVictim = ToTFPlayer( UTIL_PlayerByUserId( event->GetInt( "userid" ) ) );
+	Assert( pVictim );
+
+	OnDecapitation( pVictim );
 }
 
 #endif
