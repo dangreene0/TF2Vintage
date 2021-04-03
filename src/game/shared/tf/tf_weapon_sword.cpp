@@ -37,7 +37,7 @@ END_NETWORK_TABLE()
 
 #if defined( CLIENT_DLL )
 BEGIN_PREDICTION_DATA( CTFKatana )
-DEFINE_PRED_FIELD( m_bIsBloody, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE )
+
 END_PREDICTION_DATA()
 #endif
 
@@ -186,7 +186,7 @@ bool CTFKatana::Deploy( void )
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-bool CTFKatana::CanHolster( void )
+bool CTFKatana::CanHolster( void ) const
 {
 	if( IsHonorBound() )
 	{
@@ -285,7 +285,7 @@ int CTFKatana::GetSkinOverride()
 			return 3;
 	}
 
-	return 3;
+	return -1;
 }
 
 void CTFKatana::OnDecapitation( CTFPlayer *pVictim )

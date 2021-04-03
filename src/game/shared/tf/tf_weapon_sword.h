@@ -54,7 +54,7 @@ public:
 	virtual ~CTFKatana() {}
 
 	virtual bool	Deploy( void );
-	virtual bool	CanHolster( void );
+	virtual bool	CanHolster( void ) const;
 	virtual bool	Holster( CBaseCombatWeapon *pSwitchingTo );
 	virtual int		GetSkinOverride( void );
 	virtual void	OnDecapitation( CTFPlayer *pVictim );

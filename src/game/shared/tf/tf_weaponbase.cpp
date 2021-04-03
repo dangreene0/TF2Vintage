@@ -2494,7 +2494,7 @@ bool CTFWeaponBase::AutoFiresFullClipAllAtOnce( void ) const
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::IsHonorBound( void )
+bool CTFWeaponBase::IsHonorBound( void ) const
 {
 	int nHonorBound = 0;
 	CALL_ATTRIB_HOOK_INT( nHonorBound, honorbound );
