@@ -219,6 +219,23 @@ void FX_FireBullets( int iPlayer, const Vector &vecOrigin, const QAngle &vecAngl
 	{
 		fireInfo.m_iTracerFreq = 2;
 	}	
+
+	int nShouldFireTracer = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nShouldFireTracer, sniper_fires_tracer );
+	if ( !nShouldFireTracer )
+	{
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nShouldFireTracer, sniper_fires_tracer_HIDDEN );
+	}
+	// Check for heatmaker
+	if ( !nShouldFireTracer )
+	{
+		nShouldFireTracer = pPlayer->m_Shared.InCond( TF_COND_SNIPERCHARGE_RAGE_BUFF );
+	}
+
+	if ( nShouldFireTracer )
+	{
+		fireInfo.m_iTracerFreq = 1;
+	}
 		
 	// Reset multi-damage structures.
 	ClearMultiDamage();
