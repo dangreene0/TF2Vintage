@@ -511,7 +511,6 @@ public:
 	}
 	char const *GetWorldModel( void ) const
 	{
-		Assert( model_world && *model_world );
 		if ( model_world && model_world[0] != '\0' )
 			return model_world;
 

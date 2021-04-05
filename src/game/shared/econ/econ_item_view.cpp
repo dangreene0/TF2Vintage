@@ -248,6 +248,7 @@ const char *CEconItemView::GetWorldDisplayModel( int iClass/* = 0*/ ) const
 			pszModelName = pStatic->GetPerClassModel( iClass );
 	}
 
+	Assert( pszModelName && pszModelName[0] );
 	return pszModelName;
 }
 
