@@ -682,7 +682,14 @@ const char *CTFWeaponBase::GetWorldModel( void ) const
 	// Use model from item schema if we have an item ID.
 	if ( HasItemDefinition() )
 	{
-		return GetItem()->GetWorldDisplayModel();
+		int iClass = TF_CLASS_UNDEFINED;
+		CTFPlayer *pPlayer = GetTFPlayerOwner();
+		if ( pPlayer )
+		{
+			iClass = pPlayer->GetPlayerClass()->GetClassIndex();
+		}
+
+		return GetItem()->GetWorldDisplayModel( iClass );
 	}
 
 	return BaseClass::GetWorldModel();
