@@ -42,9 +42,24 @@ CTFRaygun::CTFRaygun()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
+void CTFRaygun::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheParticleSystem( "drg_bison_impact" );
+	PrecacheParticleSystem( "drg_bison_idle" );
+	PrecacheParticleSystem( "drg_bison_muzzleflash" );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
 void CTFRaygun::PrimaryAttack()
 {
 	if ( !CanAttack() )
+		return;
+
+	if ( !Energy_HasEnergy() )
 		return;
 
 	// Set the weapon mode.
@@ -66,6 +81,46 @@ float CTFRaygun::Energy_GetShotCost( void ) const
 	return 5.0f;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Reset the charge when we holster
+//-----------------------------------------------------------------------------
+bool CTFRaygun::Holster( CBaseCombatWeapon *pSwitchingTo )
+{
+#ifdef CLIENT_DLL
+	GetViewmodelAddon()->ParticleProp()->StopParticlesNamed( GetIdleParticleEffect(), true );
+#endif
+
+	return BaseClass::Holster( pSwitchingTo );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFRaygun::Deploy( void )
+{
+#ifdef CLIENT_DLL
+	SetContextThink( &CTFRaygun::ClientEffectsThink, gpGlobals->curtime + rand() % 5, "RG_EFFECTS_THINK" );
+#endif
+
+	return BaseClass::Deploy();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRaygun::ItemPostFrame( void )
+{
+	BaseClass::ItemPostFrame();
+
+#ifdef CLIENT_DLL
+	if ( WeaponState() == WEAPON_IS_ACTIVE )
+	{
+		if ( GetIndexForThinkContext( "RG_EFFECTS_THINK" ) == NO_THINK_CONTEXT )
+			SetContextThink( &CTFRaygun::ClientEffectsThink, gpGlobals->curtime + rand() % 5, "RG_EFFECTS_THINK" );
+	}
+#endif
+}
+
 #ifdef CLIENT_DLL
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -73,6 +128,35 @@ float CTFRaygun::Energy_GetShotCost( void ) const
 void CTFRaygun::DispatchMuzzleFlash( const char* effectName, C_BaseEntity* pAttachEnt )
 {
 	DispatchParticleEffect( effectName, PATTACH_POINT_FOLLOW, pAttachEnt, "muzzle", GetEnergyWeaponColor( false ), GetEnergyWeaponColor( true ) );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRaygun::ClientEffectsThink( void )
+{
+	CTFPlayer *pPlayer = GetTFPlayerOwner();
+	if ( !pPlayer )
+		return;
+
+	if ( !pPlayer->IsLocalPlayer() )
+		return;
+
+	if ( !pPlayer->GetViewModel() )
+		return;
+
+	if ( WeaponState() != WEAPON_IS_ACTIVE )
+		return;
+
+	const int nRandomTime = 2 + rand() % 5;
+	SetContextThink( &CTFRaygun::ClientEffectsThink, gpGlobals->curtime + nRandomTime, "RG_EFFECTS_THINK" );
+
+	CNewParticleEffect *pEffect = GetViewmodelAddon()->ParticleProp()->Create( GetIdleParticleEffect(), PATTACH_POINT_FOLLOW, "muzzle" );
+	if ( pEffect )
+	{
+		pEffect->SetControlPoint( CUSTOM_COLOR_CP1, GetEnergyWeaponColor( false ) );
+		pEffect->SetControlPoint( CUSTOM_COLOR_CP2, GetEnergyWeaponColor( true ) );
+	}
 }
 #endif
 
@@ -82,4 +166,26 @@ void CTFRaygun::DispatchMuzzleFlash( const char* effectName, C_BaseEntity* pAtta
 CTFDRGPomson::CTFDRGPomson()
 {
 	m_bReloadsSingly = true;
+}
+
+void CTFDRGPomson::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheParticleSystem( "drg_pomson_idle" );
+	PrecacheParticleSystem( "drg_pomson_impact_drain" );
+	PrecacheParticleSystem( "drg_pomson_projectile" );
+	PrecacheParticleSystem( "drg_pomson_muzzleflash" );
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFDRGPomson::GetProjectileFireSetup( CTFPlayer *pPlayer, Vector vecOffset, Vector *vecSrc, QAngle *angForward, bool bHitTeammates, bool bUseHitboxes )
+{
+	BaseClass::GetProjectileFireSetup( pPlayer, vecOffset, vecSrc, angForward, bHitTeammates, bUseHitboxes );
+
+	// adjust to line up with the weapon muzzle
+	vecSrc->z -= 13.0f;
 }
