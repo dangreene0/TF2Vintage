@@ -125,7 +125,7 @@ const char *CTFParticleCannon::GetMuzzleFlashParticleEffect( void )
 //-----------------------------------------------------------------------------
 // Purpose: No holstering while charging a shot.
 //-----------------------------------------------------------------------------
-bool CTFParticleCannon::CanHolster( void )
+bool CTFParticleCannon::CanHolster( void ) const
 {
 	if ( m_flChargeBeginTime > 0 )
 		return false;
@@ -145,7 +145,7 @@ bool CTFParticleCannon::Holster( CBaseCombatWeapon *pSwitchingTo )
 	m_flChargeBeginTime = 0;
 
 #ifdef CLIENT_DLL
-	ParticleProp()->StopParticlesNamed( "drg_cowmangler_idle", true );
+	GetViewmodelAddon()->ParticleProp()->StopParticlesNamed( "drg_cowmangler_idle", true );
 #endif
 
 	StopSound( "Weapon_CowMangler.Charging" );
@@ -363,9 +363,8 @@ void CTFParticleCannon::ClientEffectsThink( void )
 			break;
 	}
 
-	//ParticleProp()->Init( this );
 	const char *pszIdleParticle = ( GetTeamNumber() == TF_TEAM_RED ) ? "drg_cow_idle" : "drg_cow_idle_blue";
-	CNewParticleEffect *pEffect = ParticleProp()->Create( pszIdleParticle, PATTACH_POINT_FOLLOW, pszAttachPoint );
+	CNewParticleEffect *pEffect = GetViewmodelAddon()->ParticleProp()->Create( pszIdleParticle, PATTACH_POINT_FOLLOW, pszAttachPoint );
 	if ( pEffect )
 	{
 		pEffect->SetControlPoint( CUSTOM_COLOR_CP1, GetEnergyWeaponColor( false ) );

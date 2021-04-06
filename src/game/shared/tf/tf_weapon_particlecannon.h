@@ -43,7 +43,7 @@ public:
 	const char *GetShootSound( int iIndex ) const OVERRIDE;
 	const char *GetMuzzleFlashParticleEffect( void ) OVERRIDE;
 
-	virtual bool CanHolster( void );
+	virtual bool CanHolster( void ) const;
 	virtual bool Holster( CBaseCombatWeapon *pSwitchingTo );
 	virtual bool Deploy( void );
 	virtual void ItemPostFrame( void );
