@@ -92,11 +92,6 @@ $Project "Client (TF)"
 		{
 			$File	"NextBot\c_NextBot.cpp"
 			$File	"NextBot\c_NextBot.h"
-			$File	"tf\player_vs_environment\c_headless_hatman.cpp"
-			$File	"tf\player_vs_environment\c_headless_hatman.h"
-			$File	"tf\player_vs_environment\c_eyeball_boss.cpp"
-			$File	"tf\player_vs_environment\c_eyeball_boss.h"
-			$File	"tf\player_vs_environment\c_merasmus.cpp"
 		}
 
 		$Folder	"TF"
@@ -241,6 +236,15 @@ $Project "Client (TF)"
 				$File	"tf\c_tf_mvm_boss_progress_user.h"
 				$File	"$SRCDIR\game\shared\tf\tf_upgrades_shared.cpp"
 				$File	"$SRCDIR\game\shared\tf\tf_upgrades_shared.h"
+
+				$Folder "Halloween"
+				{
+					$File	"tf\player_vs_environment\c_headless_hatman.cpp"
+					$File	"tf\player_vs_environment\c_headless_hatman.h"
+					$File	"tf\player_vs_environment\c_eyeball_boss.cpp"
+					$File	"tf\player_vs_environment\c_eyeball_boss.h"
+					$File	"tf\player_vs_environment\c_merasmus.cpp"
+				}
 			}
 			
 			$Folder	"Unused"
