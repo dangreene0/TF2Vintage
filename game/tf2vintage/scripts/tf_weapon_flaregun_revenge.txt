@@ -14,7 +14,7 @@ WeaponData
 	"PunchAngle"			"2.0"
 	"Spread"			"0.0"
 	"TimeFireDelay"			"2.0"
-	"ProjectileType"		"projectile_flare"
+	"ProjectileType"		"projectile_energy_ring"
 	"HasTeamSkins_Viewmodel"	"1"
 	"UseRapidFireCrits"		"1"
 	"HasTeamSkins_Worldmodel"	"1"
