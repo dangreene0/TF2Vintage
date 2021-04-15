@@ -20,18 +20,10 @@ IMPLEMENT_CLIENTCLASS_DT( C_TFObjectiveResource, DT_TFObjectiveResource, CTFObje
 	RecvPropInt( RECVINFO( m_nMvMWorldMoney ) ),
 	RecvPropFloat( RECVINFO( m_flMannVsMachineNextWaveTime ) ),
 	RecvPropBool( RECVINFO( m_bMannVsMachineBetweenWaves ) ),
-
 	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassCounts ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassCounts[0] ) ) ),
 	RecvPropArray( RecvPropString( RECVINFO( m_iszMannVsMachineWaveClassNames[0] ) ), m_iszMannVsMachineWaveClassNames ),
 	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassFlags ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassFlags[0] ) ) ),
-
-	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassCounts2 ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassCounts2[0] ) ) ),
-	RecvPropArray( RecvPropString( RECVINFO( m_iszMannVsMachineWaveClassNames2[0] ) ), m_iszMannVsMachineWaveClassNames2 ),
-	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassFlags2 ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassFlags2[0] ) ) ),
-
 	RecvPropArray3( RECVINFO_ARRAY( m_bMannVsMachineWaveClassActive ), RecvPropBool( RECVINFO( m_bMannVsMachineWaveClassActive[0] ) ) ),
-	RecvPropArray3( RECVINFO_ARRAY( m_bMannVsMachineWaveClassActive2 ), RecvPropBool( RECVINFO( m_bMannVsMachineWaveClassActive2[0] ) ) ),
-
 	RecvPropInt( RECVINFO( m_nFlagCarrierUpgradeLevel ) ),
 	RecvPropFloat( RECVINFO( m_flMvMBaseBombUpgradeTime ) ),
 	RecvPropFloat( RECVINFO( m_flMvMNextBombUpgradeTime ) ),

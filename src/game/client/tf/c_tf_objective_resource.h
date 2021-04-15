@@ -42,13 +42,9 @@ private:
 	bool m_bMannVsMachineBetweenWaves;
 
 	int m_nMannVsMachineWaveClassCounts[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
-	int m_nMannVsMachineWaveClassCounts2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
 	char m_iszMannVsMachineWaveClassNames[ MVM_CLASS_TYPES_PER_WAVE_MAX ][64];
-	char m_iszMannVsMachineWaveClassNames2[ MVM_CLASS_TYPES_PER_WAVE_MAX ][64];
 	unsigned int m_nMannVsMachineWaveClassFlags[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
-	unsigned int m_nMannVsMachineWaveClassFlags2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
 	bool m_bMannVsMachineWaveClassActive[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
-	bool m_bMannVsMachineWaveClassActive2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
 
 	int m_nFlagCarrierUpgradeLevel;
 	float m_flMvMBaseBombUpgradeTime;
