@@ -31,6 +31,32 @@ public:
 	const char		*GetGameSpecificCPBarBG( int index, int iCappingTeam );
 	void			SetCappingTeam( int index, int team );
 
+private:
+	int m_nMannVsMachineMaxWaveCount;
+	int m_nMannVsMachineWaveCount;
+	int m_nMannVsMachineWaveEnemyCount;
+
+	int m_nMvMWorldMoney;
+
+	float m_flMannVsMachineNextWaveTime;
+	bool m_bMannVsMachineBetweenWaves;
+
+	int m_nMannVsMachineWaveClassCounts[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+	int m_nMannVsMachineWaveClassCounts2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+	char m_iszMannVsMachineWaveClassNames[ MVM_CLASS_TYPES_PER_WAVE_MAX ][64];
+	char m_iszMannVsMachineWaveClassNames2[ MVM_CLASS_TYPES_PER_WAVE_MAX ][64];
+	unsigned int m_nMannVsMachineWaveClassFlags[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+	unsigned int m_nMannVsMachineWaveClassFlags2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+	bool m_bMannVsMachineWaveClassActive[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+	bool m_bMannVsMachineWaveClassActive2[ MVM_CLASS_TYPES_PER_WAVE_MAX ];
+
+	int m_nFlagCarrierUpgradeLevel;
+	float m_flMvMBaseBombUpgradeTime;
+	float m_flMvMNextBombUpgradeTime;
+
+	int m_iChallengeIndex;
+	char m_iszMvMPopfileName[ MAX_PATH ];
+	int m_nMvMEventPopfileType;
 };
 
 inline C_TFObjectiveResource *TFObjectiveResource()
