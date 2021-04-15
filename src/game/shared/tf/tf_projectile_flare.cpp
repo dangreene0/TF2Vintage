@@ -47,7 +47,7 @@ extern ConVar tf_rocket_show_radius;
 extern ConVar tf2v_minicrits_on_deflect;
 
 ConVar tf2v_use_new_flare_radius( "tf2v_use_new_flare_radius", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses modern flare explosion sizes (110Hu)instead of older ones (92Hu) for exploding flares." );
-
+ConVar tf2v_use_new_flare( "tf2v_use_new_flare", "3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes the behavior of flares on the Flare Gun.", true, 0, true, 4 );
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -227,6 +227,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	Vector vecOrigin = GetAbsOrigin();
 	CTFPlayer *pTFVictim = ToTFPlayer( pOther );
 	int nDamageType = GetDamageType();
+	int nDamage = GetDamage();
 
 	CTFFlareGun *pFlareGun = dynamic_cast<CTFFlareGun *>( m_hLauncher.Get() );
 	if ( pFlareGun )
@@ -302,17 +303,45 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	if ( m_hEnemy == NULL )
 		m_hEnemy = pOther;
 
-	if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )
+	// Set up our era specific flare settings.
+	if ( nWeaponMode == TF_FLARE_MODE_NORMAL )
 	{
-		if ( nWeaponMode == TF_FLARE_MODE_NORMAL )
-			SetCritical( true );
+		if (tf2v_use_new_flare.GetInt() == 0) // Original flare did 20 damage, compared to 30.
+			nDamage *= (2 / 3);
+
+		if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )	
+		{
+			switch (tf2v_use_new_flare.GetInt())
+			{
+				case 0:
+				case 1:
+					// Don't do anything else.
+					break;
+				case 2:
+					// Minicrit hit a burning player.
+					nDamageType |= DMG_MINICRITICAL;
+					break;
+				case 3:
+					// Minicrit hit a burning player from mid to long range. (Mininum 800Hu)
+					// We're calculating this using the hangtime of the projectile and the time it would take to go 800Hu.
+					if ( gpGlobals->curtime >= ( m_flCreateTime + ( TF_FLARE_SPEED / 800) ) )
+						nDamageType |= DMG_MINICRITICAL;
+					break;
+				case 4:
+				default:
+					// Critical hit a burning player.
+					SetCritical( true );
+					break;	
+			}
+		}
+		
 	}
 
 	// Invisible.
 	AddSolidFlags( FSOLID_NOT_SOLID );
 	m_takedamage = DAMAGE_NO;
-
-	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), nDamageType, TF_DMG_CUSTOM_BURNING_FLARE );
+				
+	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, nDamage, nDamageType, TF_DMG_CUSTOM_BURNING_FLARE );
 	pOther->TakeDamage( info );
 
 	if ( bWaitToImpact )
