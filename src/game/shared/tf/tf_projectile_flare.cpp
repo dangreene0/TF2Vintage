@@ -226,6 +226,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	int nWeaponMode = TF_FLARE_MODE_NORMAL;
 	Vector vecOrigin = GetAbsOrigin();
 	CTFPlayer *pTFVictim = ToTFPlayer( pOther );
+	int nDamageType = GetDamageType();
 
 	CTFFlareGun *pFlareGun = dynamic_cast<CTFFlareGun *>( m_hLauncher.Get() );
 	if ( pFlareGun )
@@ -238,7 +239,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 			{
 				SetCollisionGroup( COLLISION_GROUP_DEBRIS );
 
-				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), GetDamageType()|DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
+				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
 				pTFVictim->TakeDamage( info );
 
 				if ( pAttacker && pTFVictim->GetTeamNumber() != pAttacker->GetTeamNumber() )
@@ -311,7 +312,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	AddSolidFlags( FSOLID_NOT_SOLID );
 	m_takedamage = DAMAGE_NO;
 
-	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), GetDamageType(), TF_DMG_CUSTOM_BURNING_FLARE );
+	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), nDamageType, TF_DMG_CUSTOM_BURNING_FLARE );
 	pOther->TakeDamage( info );
 
 	if ( bWaitToImpact )
