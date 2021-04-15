@@ -48,7 +48,6 @@ extern ConVar tf2v_critchance;
 extern ConVar tf2v_critchance_rapid;
 extern ConVar tf2v_crit_duration_rapid;
 extern ConVar tf2v_use_shortstop_slowdown;
-extern ConVar tf2v_use_new_beggars;
 extern ConVar tf2v_use_new_axtinguisher;
 
 #ifdef CLIENT_DLL

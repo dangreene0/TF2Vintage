@@ -19,6 +19,8 @@
 #include "tf_player.h"
 #endif
 
+extern ConVar tf2v_use_new_beggars;
+
 //=============================================================================
 //
 // Weapon Rocket Launcher tables.
@@ -101,6 +103,9 @@ void CTFRocketLauncher::Misfire( void )
 			trace_t tr;
 			UTIL_TraceLine( pRocket->GetAbsOrigin(), pPlayer->EyePosition(), MASK_SOLID, pRocket, COLLISION_GROUP_NONE, &tr );
 			pRocket->Explode( &tr, pPlayer );
+			
+			if (tf2v_use_new_beggars.GetBool())
+				m_iClip1--;
 		}
 	}
 #endif
