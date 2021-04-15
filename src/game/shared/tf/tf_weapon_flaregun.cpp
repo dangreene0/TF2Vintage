@@ -538,7 +538,7 @@ bool CTFFlareGun_Revenge::HasChargeBar( void )
 bool CTFFlareGun_Revenge::CanGetAirblastCrits( void ) const
 {
 	int nAirblastRevenge = 0;
-	CALL_ATTRIB_HOOK_INT( nAirblastRevenge, sentry_killed_revenge );
+	CALL_ATTRIB_HOOK_INT( nAirblastRevenge, extinguish_revenge );
 	return nAirblastRevenge == 1;
 }
 
