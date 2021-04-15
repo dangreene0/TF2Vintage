@@ -5334,15 +5334,12 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 						switch (tf2v_use_new_axtinguisher.GetInt())
 						{
 							case 0:
-							default:
-							{
+							case 2:
 								// Full crits, nothing special.
 								bitsDamage |= DMG_CRITICAL;
 								info.AddDamageType( DMG_CRITICAL );		
-							}
+								break;
 							case 1:
-							case 2:
-							{
 								// Hits in the back full crit, hits from the front minicrit.
 								if ( pTFAttacker->IsBehindTarget(this) )
 								{
@@ -5354,9 +5351,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 									bitsDamage |= DMG_MINICRITICAL;
 									info.AddDamageType( DMG_MINICRITICAL );
 								}							
-							}
+								break;
 							case 3:
-							{
 								// Minicrit, add extra damage with the amount of burn time left, and extinguish.
 								
 								// Add the minicrit.
@@ -5364,7 +5360,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 								info.AddDamageType( DMG_MINICRITICAL );
 								
 								// Calculate out the remaining ticks left on this burn.
-								int nFlameTicksRemaining = floor((m_Shared.m_flFlameRemoveTime / gpGlobals->curtime) / TF_BURNING_FREQUENCY);
+								int nFlameTicksRemaining = floor((m_Shared.m_flFlameRemoveTime - gpGlobals->curtime) / TF_BURNING_FREQUENCY);
 								int nBonusTicks = nFlameTicksRemaining / 4;
 								
 								// Do the afterburn damage we would have done, plus one bonus afterburn tick per four ticks.
@@ -5375,7 +5371,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 								m_Shared.RemoveCond(TF_COND_BURNING);
 								if (m_Shared.InCond(TF_COND_BURNING_PYRO))
 									m_Shared.RemoveCond(TF_COND_BURNING_PYRO);
-							}
+								break;
 						}
 
 					}
