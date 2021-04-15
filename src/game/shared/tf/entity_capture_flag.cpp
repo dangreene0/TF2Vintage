@@ -730,6 +730,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 		m_nSkin = ( GetTeamNumber() == TEAM_UNASSIGNED ) ? 2 : (GetTeamNumber() - 2);
 	}
 
+	int nOldFlagStatus = m_nFlagStatus;
 	SetFlagStatus( TF_FLAGINFO_STOLEN );
 	ResetFlagReturnTime();
 	ResetFlagNeutralTime();
@@ -770,6 +771,39 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	DestroyReturnIcon();
 
 	HandleFlagPickedUpInDetectionZone( pPlayer );
+
+	if ( TFObjectiveResource() )
+	{
+		TFObjectiveResource()->SetFlagCarrierUpgradeLevel( 0 );
+		TFObjectiveResource()->SetBaseMvMBombUpgradeTime( -1 );
+		TFObjectiveResource()->SetNextMvMBombUpgradeTime( -1 );
+	}
+
+	if ( TFGameRules()->IsMannVsMachineMode() )
+	{
+		if ( nOldFlagStatus == TF_FLAGINFO_NONE )
+		{
+			if ( pPlayer->IsMiniBoss() )
+			{
+				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_GIANT_HAS_BOMB, TF_TEAM_MVM_PLAYERS );
+			}
+			else
+			{
+				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_FIRST_BOMB_PICKUP, TF_TEAM_MVM_PLAYERS );
+			}
+		}
+		else
+		{
+			if ( pPlayer->IsMiniBoss() )
+			{
+				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_GIANT_HAS_BOMB, TF_TEAM_MVM_PLAYERS );
+			}
+			else
+			{
+				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_BOMB_PICKUP, TF_TEAM_MVM_PLAYERS );
+			}
+		}
+	}
 
 #endif
 }
