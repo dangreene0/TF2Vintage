@@ -9,6 +9,7 @@
 #include "tf_gamerules.h"
 #include "entity_capture_flag.h"
 #include "func_capture_zone.h"
+#include "func_flagdetectionzone.h"
 
 
 BEGIN_DATADESC( CMannVsMachineLogic )
