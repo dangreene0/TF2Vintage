@@ -67,6 +67,9 @@ void CMannVsMachineLogic::SetupOnRoundStart( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CMannVsMachineLogic::Update( void )
 {
 	VPROF_BUDGET( "CMannVsMachineLogic::Update", VPROF_BUDGETGROUP_GAME );
@@ -96,7 +99,7 @@ void CMannVsMachineLogic::Update( void )
 					if ( !pZone->IsDisabled() && pZone->IsAlarmZone() && pZone->PointIsWithin( pFlag->GetAbsOrigin() ) )
 					{
 						// Is the alarm currently off?
-						if ( TFGameRules()->GetMannVsMachineAlarmStatus() == false )
+						if ( !TFGameRules()->GetMannVsMachineAlarmStatus() )
 						{
 							IGameEvent *event = gameeventmanager->CreateEvent( "mvm_bomb_alarm_triggered" );
 							if ( event )
@@ -114,4 +117,11 @@ void CMannVsMachineLogic::Update( void )
 
 		TFGameRules()->SetMannVsMachineAlarmStatus( false );
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CMannVsMachineLogic::InitPopulationManager(void)
+{
 }

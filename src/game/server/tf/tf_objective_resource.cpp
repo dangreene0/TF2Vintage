@@ -45,23 +45,23 @@ END_SEND_TABLE()
 
 
 BEGIN_DATADESC( CTFObjectiveResource )
-DEFINE_FIELD( m_nMannVsMachineMaxWaveCount, FIELD_INTEGER ),
-DEFINE_FIELD( m_nMannVsMachineWaveCount, FIELD_INTEGER ),
-DEFINE_FIELD( m_nMannVsMachineWaveEnemyCount, FIELD_INTEGER ),
-DEFINE_FIELD( m_nMvMWorldMoney, FIELD_INTEGER ),
-DEFINE_FIELD( m_flMannVsMachineNextWaveTime, FIELD_TIME ),
-DEFINE_FIELD( m_bMannVsMachineBetweenWaves, FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_nMannVsMachineMaxWaveCount, FIELD_INTEGER ),
+	DEFINE_FIELD( m_nMannVsMachineWaveCount, FIELD_INTEGER ),
+	DEFINE_FIELD( m_nMannVsMachineWaveEnemyCount, FIELD_INTEGER ),
+	DEFINE_FIELD( m_nMvMWorldMoney, FIELD_INTEGER ),
+	DEFINE_FIELD( m_flMannVsMachineNextWaveTime, FIELD_TIME ),
+	DEFINE_FIELD( m_bMannVsMachineBetweenWaves, FIELD_BOOLEAN ),
 
-DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassCounts, FIELD_INTEGER ),
-DEFINE_AUTO_ARRAY( m_iszMannVsMachineWaveClassNames, FIELD_STRING ),
-DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassFlags, FIELD_INTEGER ),
+	DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassCounts, FIELD_INTEGER ),
+	DEFINE_AUTO_ARRAY( m_iszMannVsMachineWaveClassNames, FIELD_STRING ),
+	DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassFlags, FIELD_INTEGER ),
 
-DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassCounts2, FIELD_INTEGER ),
-DEFINE_AUTO_ARRAY( m_iszMannVsMachineWaveClassNames2, FIELD_STRING ),
-DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassFlags2, FIELD_INTEGER ),
+	DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassCounts2, FIELD_INTEGER ),
+	DEFINE_AUTO_ARRAY( m_iszMannVsMachineWaveClassNames2, FIELD_STRING ),
+	DEFINE_AUTO_ARRAY( m_nMannVsMachineWaveClassFlags2, FIELD_INTEGER ),
 
-DEFINE_AUTO_ARRAY( m_bMannVsMachineWaveClassActive, FIELD_BOOLEAN ),
-DEFINE_AUTO_ARRAY( m_bMannVsMachineWaveClassActive2, FIELD_BOOLEAN ),
+	DEFINE_AUTO_ARRAY( m_bMannVsMachineWaveClassActive, FIELD_BOOLEAN ),
+	DEFINE_AUTO_ARRAY( m_bMannVsMachineWaveClassActive2, FIELD_BOOLEAN ),
 END_DATADESC()
 
 

@@ -22,7 +22,7 @@ public:
 	DECLARE_DATADESC();
 
 	CTFObjectiveResource();
-	virtual ~CTFObjectiveResource();
+	virtual ~CTFObjectiveResource() {}
 
 	virtual void Spawn( void );
 
