@@ -5407,7 +5407,16 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				info.AddDamageType( DMG_MINICRITICAL );
 			}
 			
-			if ( ( info.GetDamageType() & DMG_IGNITE ) && info.GetDamageCustom() == TF_DMG_CUSTOM_BURNING_FLARE )
+			// HACK: We're using the display attribute for an unconditional fire crit.
+			int nCritOnCond = 0;
+			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nCritOnCond, crit_vs_burning_FLARES_DISPLAY_ONLY );
+			if ( nCritOnCond )
+			{
+				bitsDamage |= DMG_CRITICAL;
+				info.AddDamageType( DMG_CRITICAL );
+			}
+			
+			/*if ( ( info.GetDamageType() & DMG_IGNITE ) && info.GetDamageCustom() == TF_DMG_CUSTOM_BURNING_FLARE )
 			{
 				CTFFlareGun *pFlareGun = dynamic_cast< CTFFlareGun* >( pWeapon );
 				if ( pFlareGun && pFlareGun->GetFlareGunMode() != TF_FLARE_MODE_REVENGE )
@@ -5415,7 +5424,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					bitsDamage |= DMG_MINICRITICAL;
 					info.AddDamageType( DMG_MINICRITICAL );
 				}
-			}
+			}*/
 		}		
 
 

@@ -6106,9 +6106,9 @@
 			}
 			"attributes"
 			{
-				"crit vs burning players"
+				"crit_vs_burning_FLARES_DISPLAY_ONLY"
 				{
-					"attribute_class"	"or_crit_vs_playercond"
+					"attribute_class"	"crit_vs_burning_FLARES_DISPLAY_ONLY"
 					"value"	"1"
 				}
 				"damage penalty"
