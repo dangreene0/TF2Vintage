@@ -783,22 +783,22 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	{
 		if ( nOldFlagStatus == TF_FLAGINFO_NONE )
 		{
-			if ( pPlayer->IsMiniBoss() )
+			/*if ( pPlayer->IsMiniBoss() )
 			{
 				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_GIANT_HAS_BOMB, TF_TEAM_MVM_PLAYERS );
 			}
-			else
+			else*/
 			{
 				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_FIRST_BOMB_PICKUP, TF_TEAM_MVM_PLAYERS );
 			}
 		}
 		else
 		{
-			if ( pPlayer->IsMiniBoss() )
+			/*if ( pPlayer->IsMiniBoss() )
 			{
 				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_GIANT_HAS_BOMB, TF_TEAM_MVM_PLAYERS );
 			}
-			else
+			else*/
 			{
 				TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_BOMB_PICKUP, TF_TEAM_MVM_PLAYERS );
 			}
