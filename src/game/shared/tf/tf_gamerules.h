@@ -416,6 +416,9 @@ public:
 	virtual bool	IsInSpecialDeliveryMode( void ) { return m_bPlayingSpecialDeliveryMode; };
 	bool			UsePlayerReadyStatusMode( void );
 
+	bool			GetMannVsMachineAlarmStatus( void ) const { return m_bMannVsMachineAlarmStatus; }
+	void			SetMannVsMachineAlarmStatus( bool bSet ) { m_bMannVsMachineAlarmStatus = bSet; }
+
 #ifdef CLIENT_DLL
 
 	DECLARE_CLIENTCLASS_NOBASE(); // This makes data tables able to access our private vars.

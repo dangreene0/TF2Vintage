@@ -84,6 +84,7 @@ void CMannVsMachineLogic::Update( void )
 	if ( m_flNextAlarmCheck < gpGlobals->curtime )
 	{
 		m_flNextAlarmCheck = gpGlobals->curtime + 0.1;
+
 		for ( int i=0; i<ICaptureFlagAutoList::AutoList().Count(); ++i )
 		{
 			CCaptureFlag *pFlag = static_cast<CCaptureFlag *>( ICaptureFlagAutoList::AutoList()[i] );
