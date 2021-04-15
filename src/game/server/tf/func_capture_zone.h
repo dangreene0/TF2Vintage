@@ -36,7 +36,7 @@ public:
 
 	void	Spawn();
 
-	virtual void CaptureTouch( CBaseEntity *pOther );
+	void	CaptureTouch( CBaseEntity *pOther ) OVERRIDE;
 
 	bool	IsDisabled( void );
 	void	SetDisabled( bool bDisabled );
@@ -54,6 +54,8 @@ private:
 	int				m_nCapturePoint;	// Used in non-CTF maps to identify this capture point
 
 	COutputEvent	m_outputOnCapture;	// Fired a flag is captured on this point.
+	COutputEvent	m_OnCapTeam1;
+	COutputEvent	m_OnCapTeam2;
 
 	DECLARE_DATADESC();
 
