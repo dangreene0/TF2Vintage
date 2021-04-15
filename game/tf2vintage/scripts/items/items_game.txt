@@ -6106,9 +6106,9 @@
 			}
 			"attributes"
 			{
-				"crit_vs_burning_FLARES_DISPLAY_ONLY"
+				"crit_vs_burning"
 				{
-					"attribute_class"	"crit_vs_burning_FLARES_DISPLAY_ONLY"
+					"attribute_class"	"crit_vs_burning"
 					"value"	"1"
 				}
 				"damage penalty"
@@ -18400,7 +18400,16 @@
 			"effect_type"	"negative"
 			"stored_as_integer"	"0"
 		}
-		
+		"10026"
+		{
+			"name"	"crit_vs_burning"
+			"attribute_class"	"crit_vs_burning"
+			"description_string"	"#Attrib_CritVsBurning"
+			"description_format"	"value_is_or"
+			"hidden"	"0"
+			"effect_type"	"positive"
+			"stored_as_integer"	"0"
+		}
 	}
 	"attribute_controlled_attached_particles"
 	{

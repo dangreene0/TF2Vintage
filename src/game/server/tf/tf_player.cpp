@@ -5407,9 +5407,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				info.AddDamageType( DMG_MINICRITICAL );
 			}
 			
-			// HACK: We're using the display attribute for an unconditional fire crit.
 			int nCritOnCond = 0;
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nCritOnCond, crit_vs_burning_FLARES_DISPLAY_ONLY );
+			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nCritOnCond, crit_vs_burning );
 			if ( nCritOnCond )
 			{
 				bitsDamage |= DMG_CRITICAL;
