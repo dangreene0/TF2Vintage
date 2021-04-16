@@ -515,6 +515,32 @@ int CHudItemEffectMeterTemp<C_TFShotgun_Revenge>::GetCount( void )
 }
 
 //-----------------------------------------------------------------------------
+// C_TFFlareGun_Revenge Specialization
+//-----------------------------------------------------------------------------
+template<>
+bool CHudItemEffectMeterTemp<C_TFFlareGun_Revenge>::IsEnabled( void )
+{
+	if ( GetWeapon() )
+		return true;
+
+	return false;
+}
+
+template<>
+int CHudItemEffectMeterTemp<C_TFFlareGun_Revenge>::GetCount( void )
+{
+	if ( m_hPlayer )
+	{
+		C_TFFlareGun_Revenge *pRevenge = GetWeapon();
+		if ( pRevenge && pRevenge->CanGetAirblastCrits() )
+			return m_hPlayer->m_Shared.GetAirblastCritCount();
+	}
+
+	return -1;
+}
+
+
+//-----------------------------------------------------------------------------
 // C_TFBuffItem Specialization
 //-----------------------------------------------------------------------------
 template<>
