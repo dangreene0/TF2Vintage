@@ -38,7 +38,44 @@ END_RECV_TABLE()
 C_TFObjectiveResource::C_TFObjectiveResource()
 {
 	PrecacheMaterial( "sprites/obj_icons/icon_obj_cap_blu" );
+	PrecacheMaterial( "sprites/obj_icons/icon_obj_cap_blu_up" );
 	PrecacheMaterial( "sprites/obj_icons/icon_obj_cap_red" );
+	PrecacheMaterial( "sprites/obj_icons/icon_obj_cap_red_up" );
+	PrecacheMaterial( "VGUI/flagtime_empty" );
+	PrecacheMaterial( "VGUI/flagtime_full" );
+
+	m_nMannVsMachineMaxWaveCount = 0;
+	m_nMannVsMachineWaveCount = 0;
+	m_nMannVsMachineWaveEnemyCount = 0;
+	m_nMvMWorldMoney = 0;
+	m_flMannVsMachineNextWaveTime = 0;
+	m_bMannVsMachineBetweenWaves = false;
+	m_nFlagCarrierUpgradeLevel = 0;
+	m_flMvMBaseBombUpgradeTime = 0;
+	m_flMvMNextBombUpgradeTime = 0;
+	m_iChallengeIndex = -1;
+	m_iszMvMPopfileName[0] = '\0';
+	m_nMvMEventPopfileType = MVM_EVENT_POPFILE_NONE;
+
+	for ( int i = 0 ; i < ARRAYSIZE( m_nMannVsMachineWaveClassCounts ); ++i )
+	{
+		m_nMannVsMachineWaveClassCounts[ i ] = 0;
+	}
+
+	for ( int i = 0 ; i < ARRAYSIZE( m_nMannVsMachineWaveClassFlags ); ++i )
+	{
+		m_nMannVsMachineWaveClassFlags[ i ] = MVM_CLASS_FLAG_NONE;
+	}
+
+	for ( int i = 0 ; i < ARRAYSIZE( m_iszMannVsMachineWaveClassNames ); ++i )
+	{
+		m_iszMannVsMachineWaveClassNames[ i ][0] = NULL_STRING;
+	}
+
+	for ( int i = 0 ; i < ARRAYSIZE( m_bMannVsMachineWaveClassActive ); ++i )
+	{
+		m_bMannVsMachineWaveClassActive[ i ] = false;
+	}
 }
 
 //-----------------------------------------------------------------------------

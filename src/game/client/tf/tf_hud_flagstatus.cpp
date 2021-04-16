@@ -577,21 +577,9 @@ void CTFHudFlagObjectives::OnTick()
 
 				if (m_pSpecCarriedImage)
 				{
-					switch (pPlayerFlag->GetTeamNumber())
-					{
-						case TF_TEAM_RED:
-							m_pSpecCarriedImage->SetImage(("%s_red", STRING(pPlayerFlag->m_szHudIcon)));
-							break;
-						case TF_TEAM_BLUE:
-							m_pSpecCarriedImage->SetImage(("%s_blue", STRING(pPlayerFlag->m_szHudIcon)));
-							break;
-						case TF_TEAM_GREEN:
-							m_pSpecCarriedImage->SetImage(("%s_green", STRING(pPlayerFlag->m_szHudIcon)));
-							break;
-						case TF_TEAM_YELLOW:
-							m_pSpecCarriedImage->SetImage(("%s_yellow", STRING(pPlayerFlag->m_szHudIcon)));
-							break;
-					}
+					char szHudIcon[ MAX_PATH ];
+					pPlayerFlag->GetHudIcon( pPlayerFlag->GetTeamNumber(), szHudIcon, sizeof( szHudIcon ) );
+					m_pSpecCarriedImage->SetImage(szHudIcon);
 				}
 			}
 		}

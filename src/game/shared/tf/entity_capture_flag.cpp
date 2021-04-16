@@ -7,6 +7,7 @@
 #include "entity_capture_flag.h"
 #include "tf_gamerules.h"
 #include "tf_shareddefs.h"
+#include "filesystem.h"
 
 #ifdef CLIENT_DLL
 #include <vgui_controls/Panel.h>
@@ -45,6 +46,11 @@ ConVar cl_flag_return_height( "cl_flag_return_height", "82", FCVAR_CHEAT );
 
 ConVar tf2v_assault_ctf_rules( "tf2v_assault_ctf_rules", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses reversed CTF locations and instant respawning flags. Applied on map switch." );
 
+#define FLAG_EFFECTS_NONE		0
+#define FLAG_EFFECTS_ALL		1
+#define FLAG_EFFECTS_PAPERONLY	2
+#define FLAG_EFFECTS_COLORONLY	3
+
 #ifdef CLIENT_DLL
 
 static void RecvProxy_IsDisabled( const CRecvProxyData *pData, void *pStruct, void *pOut )
@@ -55,6 +61,17 @@ static void RecvProxy_IsDisabled( const CRecvProxyData *pData, void *pStruct, vo
 	if ( pFlag )
 	{
 		pFlag->SetDisabled( bIsDisabled ); 
+	}
+}
+
+static void RecvProxy_IsVisibleWhenDisabled( const CRecvProxyData *pData, void *pStruct, void *pOut )
+{
+	CCaptureFlag *pFlag = (CCaptureFlag *) pStruct;
+	bool bVisible = ( pData->m_Value.m_Int > 0 );
+
+	if ( pFlag )
+	{
+		pFlag->SetVisibleWhenDisabled( bVisible ); 
 	}
 }
 
@@ -83,20 +100,42 @@ BEGIN_NETWORK_TABLE( CCaptureFlag, DT_CaptureFlag )
 
 #ifdef GAME_DLL
 	SendPropBool( SENDINFO( m_bDisabled ) ),
+	SendPropBool( SENDINFO( m_bVisibleWhenDisabled ) ),
 	SendPropInt( SENDINFO( m_nGameType ), 5, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nFlagStatus ), 3, SPROP_UNSIGNED ),
 	SendPropTime( SENDINFO( m_flResetTime ) ),
 	SendPropTime( SENDINFO( m_flNeutralTime ) ),
 	SendPropTime( SENDINFO( m_flMaxResetTime ) ),
 	SendPropEHandle( SENDINFO( m_hPrevOwner ) ),
+	SendPropString( SENDINFO( m_szModel ) ),
+	SendPropString( SENDINFO( m_szHudIcon ) ),
+	SendPropString( SENDINFO( m_szPaperEffect ) ),
+	SendPropString( SENDINFO( m_szTrailEffect ) ),
+	SendPropInt( SENDINFO( m_nUseTrailEffect ), 3, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nPointValue ) ),
+	SendPropFloat( SENDINFO( m_flAutoCapTime ) ),
+	SendPropBool( SENDINFO( m_bGlowEnabled ) ),
+	SendPropFloat( SENDINFO( m_flTimeToSetPoisonous ) ),
+
 #else
 	RecvPropInt( RECVINFO( m_bDisabled ), 0, RecvProxy_IsDisabled ),
+	RecvPropInt( RECVINFO( m_bVisibleWhenDisabled ), 0, RecvProxy_IsVisibleWhenDisabled ),
 	RecvPropInt( RECVINFO( m_nGameType ) ),
 	RecvPropInt( RECVINFO( m_nFlagStatus ), 0, RecvProxy_FlagStatus ),
 	RecvPropTime( RECVINFO( m_flResetTime ) ),
 	RecvPropTime( RECVINFO( m_flNeutralTime ) ),
 	RecvPropTime( RECVINFO( m_flMaxResetTime ) ),
 	RecvPropEHandle( RECVINFO( m_hPrevOwner ) ),
+	RecvPropString( RECVINFO( m_szModel ) ),
+	RecvPropString( RECVINFO( m_szHudIcon ) ),
+	RecvPropString( RECVINFO( m_szPaperEffect ) ),
+	RecvPropString( RECVINFO( m_szTrailEffect ) ),
+	RecvPropInt( RECVINFO( m_nUseTrailEffect ) ),
+	RecvPropInt( RECVINFO( m_nPointValue ) ),
+	RecvPropFloat( RECVINFO( m_flAutoCapTime ) ),
+	RecvPropBool( RECVINFO( m_bGlowEnabled ) ),
+	RecvPropFloat( RECVINFO( m_flTimeToSetPoisonous ) ),
+
 #endif
 END_NETWORK_TABLE()
 
@@ -104,17 +143,18 @@ BEGIN_DATADESC( CCaptureFlag )
 
 	// Keyfields.
 	DEFINE_KEYFIELD( m_flResetTime, FIELD_INTEGER, "ReturnTime"),
-
 	DEFINE_KEYFIELD( m_nGameType, FIELD_INTEGER, "GameType" ),
-		
-	DEFINE_KEYFIELD( m_szModel, FIELD_STRING, "flag_model" ),
-	DEFINE_KEYFIELD( m_szHudIcon, FIELD_STRING, "flag_icon" ),
-	DEFINE_KEYFIELD( m_szPaperEffect, FIELD_STRING, "flag_paper" ),
-	DEFINE_KEYFIELD( m_szTrailEffect, FIELD_STRING, "flag_trail" ),
 	DEFINE_KEYFIELD( m_nUseTrailEffect, FIELD_INTEGER, "trail_effect" ),
+	DEFINE_KEYFIELD( m_bReturnBetweenWaves, FIELD_BOOLEAN, "ReturnBetweenWaves" ),
 	DEFINE_KEYFIELD( m_bVisibleWhenDisabled, FIELD_BOOLEAN, "VisibleWhenDisabled" ),
+	DEFINE_KEYFIELD( m_nPointValue, FIELD_INTEGER, "PointValue" ),
 	
 #ifdef GAME_DLL
+	DEFINE_KEYFIELD( m_iszModel, FIELD_STRING, "flag_model" ),
+	DEFINE_KEYFIELD( m_iszHudIcon, FIELD_STRING, "flag_icon" ),
+	DEFINE_KEYFIELD( m_iszPaperEffect, FIELD_STRING, "flag_paper" ),
+	DEFINE_KEYFIELD( m_iszTrailEffect, FIELD_STRING, "flag_trail" ),
+
 	// Inputs.
 	DEFINE_INPUTFUNC( FIELD_VOID, "Enable", InputEnable ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "Disable", InputDisable ),
@@ -158,9 +198,26 @@ CCaptureFlag::CCaptureFlag()
 #else
 	m_hReturnIcon = NULL;
 	m_pGlowTrail = NULL;
-#endif	
+
+	m_iszModel = NULL_STRING;
+	m_iszHudIcon = NULL_STRING;
+	m_iszPaperEffect = NULL_STRING;
+	m_iszTrailEffect = NULL_STRING;
+
+	m_nPointValue = 0;
+#endif
+
 	UseClientSideAnimation();
-	m_nUseTrailEffect = 1;
+
+	m_nUseTrailEffect = FLAG_EFFECTS_ALL;
+	m_bGlowEnabled = true;
+	m_bReturnBetweenWaves = true;
+	m_bVisibleWhenDisabled = false;
+
+	m_szModel.GetForModify()[0] = '\0';
+	m_szHudIcon.GetForModify()[0] = '\0';
+	m_szPaperEffect.GetForModify()[0] = '\0';
+	m_szTrailEffect.GetForModify()[0] = '\0';
 }
 
 //-----------------------------------------------------------------------------
@@ -172,17 +229,52 @@ unsigned int CCaptureFlag::GetItemID( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose:
 //-----------------------------------------------------------------------------
-const char *CCaptureFlag::GetTrailEffect( int iTeamNum, char *buf , size_t buflen )
+const char *CCaptureFlag::GetFlagModel( void )
 {
-	const char *szTrailEffect = "flagtrail";
-	if ( m_szTrailEffect != NULL_STRING )
-		szTrailEffect = STRING( m_szTrailEffect );
+	if ( m_szModel[0] != '\0' )
+	{
+		if ( g_pFullFileSystem->FileExists( m_szModel.Get(), "GAME" ) )
+		{
+			return ( m_szModel.Get() );
+		}
+	}
 
-	Q_snprintf( buf, buflen, "effects/%s_%s.vmt", szTrailEffect, g_aTeamNamesShort[ iTeamNum ] );
+	return TF_FLAG_MODEL;
+}
 
-	return buf;
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCaptureFlag::GetHudIcon( int nTeam, char *pchName, int nBuffSize )
+{
+	Assert( nTeam >= 0 && nTeam < TF_TEAM_COUNT );
+	V_snprintf( pchName, nBuffSize, "%s_%s", 
+				( m_szHudIcon[0] != '\0' ) ? m_szHudIcon.Get() : TF_FLAG_ICON,
+				g_aTeamParticleNames[ nTeam ] );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+const char *CCaptureFlag::GetPaperEffect( void )
+{
+	if ( m_szPaperEffect[0] != '\0' )
+		return m_szPaperEffect.Get();
+
+	return TF_FLAG_EFFECT;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCaptureFlag::GetTrailEffect( int nTeam, char *pchName, int nBuffSize )
+{
+	Assert( nTeam >= 0 && nTeam < TF_TEAM_COUNT );
+	V_snprintf( pchName, nBuffSize, "effects/%s_%s.vmt", 
+				( m_szTrailEffect[0] != '\0' ) ? m_szTrailEffect.Get() : TF_FLAG_TRAIL,
+				g_aTeamParticleNames[ nTeam ] );
 }
 
 //-----------------------------------------------------------------------------
@@ -190,25 +282,7 @@ const char *CCaptureFlag::GetTrailEffect( int iTeamNum, char *buf , size_t bufle
 //-----------------------------------------------------------------------------
 void CCaptureFlag::Precache( void )
 {
-	// Flag model
-	if (m_szModel == NULL_STRING)
-	{
-		m_szModel = MAKE_STRING(TF_FLAG_MODEL);
-	}
-
-	// Paper trail particle effect
-	if (m_szPaperEffect == NULL_STRING)
-	{
-		m_szPaperEffect = MAKE_STRING("player_intel_papertrail");
-	}
-
-	// Team colored trail
-	if (m_szTrailEffect == NULL_STRING)
-	{
-		m_szTrailEffect = MAKE_STRING("flagtrail");
-	}
-
-	PrecacheModel(STRING(m_szModel));
+	PrecacheModel( GetFlagModel() );
 
 	PrecacheScriptSound( TF_CTF_FLAGSPAWN ); // Should be Resource.Flagspawn
 	PrecacheScriptSound( TF_CTF_ENEMY_STOLEN );
@@ -238,16 +312,16 @@ void CCaptureFlag::Precache( void )
 	PrecacheScriptSound( TF_INVADE_TEAM_CAPTURED );
 	PrecacheScriptSound( TF_INVADE_FLAG_RETURNED );
 
-	PrecacheParticleSystem( "player_intel_trail_blue" );
-	PrecacheParticleSystem( "player_intel_trail_red" );
+	PrecacheParticleSystem( GetPaperEffect() );
 
 
 	// Team colored trail
 	char tempChar[ 512 ];
-	PrecacheModel( GetTrailEffect( TF_TEAM_RED, tempChar, sizeof( tempChar ) ) );
-	PrecacheModel( GetTrailEffect( TF_TEAM_BLUE, tempChar, sizeof( tempChar ) ) );
-	PrecacheModel( GetTrailEffect( TF_TEAM_GREEN, tempChar, sizeof( tempChar ) ) );
-	PrecacheModel( GetTrailEffect( TF_TEAM_YELLOW, tempChar, sizeof( tempChar ) ) );
+	for( int i = TF_TEAM_RED; i < TF_TEAM_COUNT; ++i )
+	{
+		GetTrailEffect( TF_TEAM_RED, tempChar, sizeof( tempChar ) );
+		PrecacheModel( tempChar );
+	}
 
 }
 
@@ -282,13 +356,17 @@ void CCaptureFlag::OnDataChanged( DataUpdateType_t updateType )
 //-----------------------------------------------------------------------------
 void CCaptureFlag::Spawn( void )
 {
+#ifdef GAME_DLL
+	V_strncpy( m_szModel.GetForModify(), STRING( m_iszModel ), MAX_PATH );
+	V_strncpy( m_szHudIcon.GetForModify(), STRING( m_iszHudIcon ), MAX_PATH );
+	V_strncpy( m_szPaperEffect.GetForModify(), STRING( m_iszPaperEffect ), MAX_PATH );
+	V_strncpy( m_szTrailEffect.GetForModify(), STRING( m_iszTrailEffect ), MAX_PATH );
+#endif
+
 	// Precache the model and sounds.  Set the flag model.
 	Precache();
 
-	if (m_szHudIcon == NULL_STRING)
-		m_szHudIcon = MAKE_STRING("../hud/objectives_flagpanel_carried");
-
-	SetModel( STRING(m_szModel) );
+	SetModel( GetFlagModel() );
 	
 	// Set the flag solid and the size for touching.
 	SetSolid( SOLID_BBOX );
@@ -311,6 +389,8 @@ void CCaptureFlag::Spawn( void )
 
 	// Base class spawn.
 	BaseClass::Spawn();
+
+	SetCollisionBounds( Vector( -19.5f, -22.5f, -6.5f ), Vector( 19.5f, 22.5f, 6.5f ) );
 
 #ifdef GAME_DLL
 	// Save the starting position, so we can reset the flag later if need be.
@@ -1231,8 +1311,16 @@ void CCaptureFlag::SetDisabled( bool bDisabled )
 
 	if ( bDisabled )
 	{
-		if (!m_bVisibleWhenDisabled)
-			AddEffects(EF_NODRAW);
+		if ( m_bVisibleWhenDisabled )
+		{
+			SetRenderMode( kRenderTransAlpha );
+			SetRenderColorA( 180 );
+			RemoveEffects( EF_NODRAW );
+		}
+		else
+		{
+			AddEffects( EF_NODRAW );
+		}
 
 		SetTouch( NULL );
 		SetThink( NULL );
@@ -1240,11 +1328,26 @@ void CCaptureFlag::SetDisabled( bool bDisabled )
 	else
 	{
 		RemoveEffects( EF_NODRAW );
+		SetRenderMode( kRenderNormal );
+		SetRenderColorA( 255 );
 
 		SetTouch( &CCaptureFlag::FlagTouch );
 		SetThink( &CCaptureFlag::Think );
 		SetNextThink( gpGlobals->curtime );
 	}
+
+#ifdef CLIENT_DLL
+	UpdateGlowEffect();
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCaptureFlag::SetVisibleWhenDisabled( bool bVisible )
+{
+	m_bVisibleWhenDisabled = bVisible;
+	SetDisabled( IsDisabled() ); 
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -1326,7 +1429,7 @@ void CCaptureFlag::ManageSpriteTrail( void )
 {
 	if ( m_nFlagStatus == TF_FLAGINFO_STOLEN )
 	{
-		if ( ( m_nUseTrailEffect == 1 || m_nUseTrailEffect == 3 ) )
+		if ( ( m_nUseTrailEffect == FLAG_EFFECTS_ALL || m_nUseTrailEffect == FLAG_EFFECTS_COLORONLY ) )
 		{
 			if ( GetPrevOwner() /*&& GetPrevOwner() != CBasePlayer::GetLocalPlayer() */ )
 			{
@@ -1466,7 +1569,7 @@ void CCaptureFlag::ManageTrailEffects( void )
 		if (!m_nUseTrailEffect)
 			return;
 
-		if ( GetPrevOwner() && (m_nUseTrailEffect == 1 || m_nUseTrailEffect == 2) )
+		if ( GetPrevOwner() && (m_nUseTrailEffect == FLAG_EFFECTS_ALL || m_nUseTrailEffect == FLAG_EFFECTS_PAPERONLY) )
 		{
 			CTFPlayer *pPlayer = ToTFPlayer( GetPrevOwner() );
 

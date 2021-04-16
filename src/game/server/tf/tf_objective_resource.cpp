@@ -71,25 +71,34 @@ CTFObjectiveResource::CTFObjectiveResource()
 	m_iszMvMPopfileName = MAKE_STRING( "" );
 	m_nMvMEventPopfileType.Set( MVM_EVENT_POPFILE_NONE );
 
-	for ( int i = 0 ; i < m_nMannVsMachineWaveClassCounts.Count() ; ++i )
+	for ( int i = 0; i < m_nMannVsMachineWaveClassCounts.Count(); ++i )
 	{
 		m_nMannVsMachineWaveClassCounts.Set( i, 0 );
 	}
 
-	for ( int i = 0 ; i < m_nMannVsMachineWaveClassFlags.Count() ; ++i )
+	for ( int i = 0; i < m_nMannVsMachineWaveClassFlags.Count(); ++i )
 	{
 		m_nMannVsMachineWaveClassFlags.Set( i, MVM_CLASS_FLAG_NONE );
 	}
 
-	for ( int i = 0 ; i < m_iszMannVsMachineWaveClassNames.Count() ; ++i )
+	for ( int i = 0; i < m_iszMannVsMachineWaveClassNames.Count(); ++i )
 	{
 		m_iszMannVsMachineWaveClassNames.Set( i, NULL_STRING );
 	}
 
-	for ( int i = 0 ; i < m_bMannVsMachineWaveClassActive.Count() ; ++i )
+	for ( int i = 0; i < m_bMannVsMachineWaveClassActive.Count(); ++i )
 	{
 		m_bMannVsMachineWaveClassActive.Set( i, false );
 	}
+
+	m_iszTeleporter = AllocPooledString( "teleporter" );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFObjectiveResource::~CTFObjectiveResource()
+{
 }
 
 //-----------------------------------------------------------------------------
@@ -98,4 +107,88 @@ CTFObjectiveResource::CTFObjectiveResource()
 void CTFObjectiveResource::Spawn( void )
 {
 	BaseClass::Spawn();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFObjectiveResource::IncrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags )
+{
+	for ( int i = 0; i < m_nMannVsMachineWaveClassCounts.Count(); ++i )
+	{
+		if ( m_iszMannVsMachineWaveClassNames[ i ] == iszClassIconName && ( m_nMannVsMachineWaveClassFlags[ i ] & iFlags ) )
+		{
+			int nCurCount = m_nMannVsMachineWaveClassCounts[i];
+			m_nMannVsMachineWaveClassCounts.Set( i, nCurCount + 1 );
+
+			if ( m_nMannVsMachineWaveClassCounts[ i ] <= 0 )
+			{
+				m_nMannVsMachineWaveClassCounts.Set( i, 1 );
+			}
+
+			break;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFObjectiveResource::DecrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags )
+{
+	for ( int i = 0; i < m_nMannVsMachineWaveClassCounts.Count(); ++i )
+	{
+		if ( m_iszMannVsMachineWaveClassNames[i] == iszClassIconName && ( m_nMannVsMachineWaveClassFlags[ i ] & iFlags ) )
+		{
+			int nCurCount = m_nMannVsMachineWaveClassCounts[i];
+			m_nMannVsMachineWaveClassCounts.Set( i, nCurCount - 1 );
+
+			if ( m_nMannVsMachineWaveClassCounts[i] < 0 )
+			{
+				m_nMannVsMachineWaveClassCounts.Set( i, 0 );
+			}
+
+			if ( m_nMannVsMachineWaveClassCounts[i] == 0 )
+			{
+				SetMannVsMachineWaveClassActive( iszClassIconName, false );
+			}
+
+			break;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFObjectiveResource::SetMannVsMachineWaveClassActive( string_t iszClassIconName, bool bActive )
+{
+	for ( int i = 0; i < m_iszMannVsMachineWaveClassNames.Count(); ++i )
+	{
+		if ( m_iszMannVsMachineWaveClassNames[ i ] == iszClassIconName )
+		{
+			m_bMannVsMachineWaveClassActive.Set( i, bActive );
+			break;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFObjectiveResource::ClearMannVsMachineWaveClassFlags( void )
+{
+	for ( int i = 0; i < m_nMannVsMachineWaveClassFlags.Count(); ++i )
+	{
+		m_nMannVsMachineWaveClassFlags.Set( i, MVM_CLASS_FLAG_NONE );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFObjectiveResource::AddMannVsMachineWaveClassFlags( int nIndex, unsigned int iFlags )
+{
+	unsigned int iOldFlags = m_nMannVsMachineWaveClassFlags[ nIndex ];
+	m_nMannVsMachineWaveClassFlags.Set( nIndex, iOldFlags | iFlags );
 }
