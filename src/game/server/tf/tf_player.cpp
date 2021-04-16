@@ -220,6 +220,10 @@ ConVar tf2v_use_new_diamondback( "tf2v_use_new_diamondback", "0", FCVAR_REPLICAT
 
 ConVar tf2v_use_new_big_earner( "tf2v_use_new_big_earner", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Enables the Speed Boost on backstab when using the Big Earner." );
 
+ConVar tf2v_use_new_demo_explosion_variance( "tf2v_use_new_demo_explosion_variance", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Reduce the damage variance on Demoman explosives from +/- 10% damage to +/- 2%." );
+
+
+
 
 // -------------------------------------------------------------------------------- //
 // Player animation event. Sent to the client when a player fires, jumps, reloads, etc..
@@ -5839,7 +5843,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
 				float flOptimalDistance = 512.0;
-
+				
 				flCenter = RemapValClamped( flDistance / flOptimalDistance, 0.0, 2.0, 1.0, 0.0 );
 				if ( bitsDamage & DMG_NOCLOSEDISTANCEMOD )
 				{
@@ -5886,18 +5890,32 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 							case TF_WEAPON_ROCKETLAUNCHER:
 							case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
 							case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
-							case TF_WEAPON_PIPEBOMBLAUNCHER:
+							case TF_WEAPON_DIRECTHIT:
 								// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
 								flRandomDamage *= 0.5;
 								break;
 							case TF_WEAPON_SCATTERGUN:
+							case TF_WEAPON_SODA_POPPER :
+							case TF_WEAPON_PEP_BRAWLER_BLASTER :
 								// Scattergun gets 50% bonus of other weapons at short range
 								flRandomDamage *= 1.5;
 								break;
-							case TF_WEAPON_STICKBOMB:	
-								// Post-nerf Caber follows the standard explosive short range bonus.
-								if ( tf2v_use_new_caber.GetBool() )
+							case TF_WEAPON_PIPEBOMBLAUNCHER:
+							case TF_WEAPON_GRENADELAUNCHER :
+							case TF_WEAPON_CANNON :
+								if (tf2v_use_new_demo_explosion_variance.GetBool()) // Only a 20% bonus for new explosion damage.
+									flRandomDamage *= 0.2;
+								else if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER) // Pipes affected by the 50% bonus though!
 									flRandomDamage *= 0.5;
+								break;
+							case TF_WEAPON_STICKBOMB:	
+								if (tf2v_use_new_caber.GetBool()) // Only new caber has an affected bonus
+								{
+									if (tf2v_use_new_demo_explosion_variance.GetBool())
+										flRandomDamage *= 0.2; // 20% for new Demoman explosives
+									else
+										flRandomDamage *= 0.5; // 50% for old Demoman explosives
+								}
 								break;
 							default:
 								break;
