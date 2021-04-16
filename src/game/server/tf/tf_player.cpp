@@ -222,6 +222,8 @@ ConVar tf2v_use_new_big_earner( "tf2v_use_new_big_earner", "0", FCVAR_REPLICATED
 
 ConVar tf2v_use_new_demo_explosion_variance( "tf2v_use_new_demo_explosion_variance", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Reduce the damage variance on Demoman explosives from +/- 10% damage to +/- 2%." );
 
+ConVar tf2v_new_sentry_wrangle_location( "tf2v_new_sentry_wrangle_location", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Calculates Wrangler damage falloff based on Sentry location rather than the Engineer's." );
+ConVar tf2v_new_sentry_damage_falloff( "tf2v_new_sentry_damage_falloff", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Increases the optimal damage distance curve of a sentry to the maximum targeting range." );
 
 
 
@@ -5816,7 +5818,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			info.AddDamageType(DMG_USEDISTANCEMOD);
 
 			// Distance should be calculated from sentry
-			pAttacker = info.GetAttacker();
+			if ( tf2v_new_sentry_wrangle_location.GetBool() )
+				pAttacker = info.GetAttacker();
 		}
 		
 		// Distance falloff calculations
@@ -5844,6 +5847,13 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
 				float flOptimalDistance = 512.0;
 				
+				if ( tf2v_new_sentry_damage_falloff.GetBool())
+				{
+					// Is this damage from a sentry gun?
+					if ( dynamic_cast<CObjectSentrygun *>( pInflictor ) )
+						flOptimalDistance = 1100; // Maximum range of the sentry gun.
+				}
+
 				flCenter = RemapValClamped( flDistance / flOptimalDistance, 0.0, 2.0, 1.0, 0.0 );
 				if ( bitsDamage & DMG_NOCLOSEDISTANCEMOD )
 				{
