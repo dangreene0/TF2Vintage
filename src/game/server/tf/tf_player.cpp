@@ -5822,6 +5822,16 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				pAttacker = info.GetAttacker();
 		}
 		
+		// Newer stickybomb launchers have damage falloff nerf.
+		if ( tf2v_use_new_demo_explosion_variance.GetInt() )
+		{
+			if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER )	
+			{
+				bitsDamage |= DMG_NOCLOSEDISTANCEMOD;
+				info.AddDamageType(DMG_NOCLOSEDISTANCEMOD);
+			}
+		}
+
 		// Distance falloff calculations
 		if ( bitsDamage & DMG_USEDISTANCEMOD )
 		{
@@ -5913,7 +5923,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 							case TF_WEAPON_PIPEBOMBLAUNCHER:
 							case TF_WEAPON_GRENADELAUNCHER :
 							case TF_WEAPON_CANNON :
-								if (tf2v_use_new_demo_explosion_variance.GetBool()) // Only a 20% bonus for new explosion damage.
+								if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
 									flRandomDamage *= 0.2;
 								else if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER) // Pipes affected by the 50% bonus though!
 									flRandomDamage *= 0.5;
@@ -5921,7 +5931,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 							case TF_WEAPON_STICKBOMB:	
 								if (tf2v_use_new_caber.GetBool()) // Only new caber has an affected bonus
 								{
-									if (tf2v_use_new_demo_explosion_variance.GetBool())
+									if (tf2v_use_new_demo_explosion_variance.GetInt() == 2)
 										flRandomDamage *= 0.2; // 20% for new Demoman explosives
 									else
 										flRandomDamage *= 0.5; // 50% for old Demoman explosives
