@@ -87,6 +87,55 @@
 #define TF_INVADE_RESET_TIME			60.0f
 #define TF_INVADE_NEUTRAL_TIME			30.0f
 
+//=============================================================================
+//
+// Resource Flag defines.
+//
+
+#define TF_RESOURCE_FLAGSPAWN			"Resource.FlagSpawn"
+
+#define TF_RESOURCE_ENEMY_STOLEN		"Announcer.SD_TheirTeamHasFlag"
+#define TF_RESOURCE_ENEMY_DROPPED		"Announcer.SD_TheirTeamDroppedFlag"
+#define TF_RESOURCE_ENEMY_CAPTURED		"Announcer.SD_TheirTeamCapped"
+#define TF_RESOURCE_TEAM_STOLEN			"Announcer.SD_OurTeamHasFlag"
+#define TF_RESOURCE_TEAM_DROPPED		"Announcer.SD_OurTeamDroppedFlag"
+#define TF_RESOURCE_TEAM_CAPTURED		"Announcer.SD_OurTeamCapped"
+#define TF_RESOURCE_RETURNED			"Announcer.SD_FlagReturned"
+
+// Halloween event strings
+#define TF_RESOURCE_EVENT_ENEMY_STOLEN		"Announcer.SD_Event_TheirTeamHasFlag"
+#define TF_RESOURCE_EVENT_ENEMY_DROPPED		"Announcer.SD_Event_TheirTeamDroppedFlag"
+#define TF_RESOURCE_EVENT_TEAM_STOLEN		"Announcer.SD_Event_OurTeamHasFlag"
+#define TF_RESOURCE_EVENT_TEAM_DROPPED		"Announcer.SD_Event_OurTeamDroppedFlag"
+#define TF_RESOURCE_EVENT_RETURNED			"Announcer.SD_Event_FlagReturned"
+#define TF_RESOURCE_EVENT_NAGS				"Announcer.SD_Event_FlagNags"
+#define TF_RESOURCE_EVENT_RED_CAPPED		"Announcer.SD_Event_CappedRed"
+#define TF_RESOURCE_EVENT_BLUE_CAPPED		"Announcer.SD_Event_CappedBlu"
+
+//=============================================================================
+//
+// Robot Destruction Flag defines.
+//
+
+#define TF_RD_ENEMY_STOLEN		"RD.EnemyStolen"
+#define TF_RD_ENEMY_DROPPED		"RD.EnemyDropped"
+#define TF_RD_ENEMY_CAPTURED	"RD.EnemyCaptured"
+#define TF_RD_ENEMY_RETURNED	"RD.EnemyReturned"
+
+#define TF_RD_TEAM_STOLEN		"RD.TeamStolen"
+#define TF_RD_TEAM_DROPPED		"RD.TeamDropped"
+#define TF_RD_TEAM_CAPTURED		"RD.TeamCaptured"
+#define TF_RD_TEAM_RETURNED		"RD.TeamReturned"
+
+#define TF_RESOURCE_CAPTURED_TEAM_SCORE	1
+
+//=============================================================================
+//
+// Powerup mode defines.
+//
+
+#define TF_RUNE_INTEL_CAPTURED		"CaptureFlag.TeamCapturedExcited"
+
 #ifdef CLIENT_DLL
 	#define CCaptureFlagReturnIcon C_CaptureFlagReturnIcon
 	#define CBaseAnimating C_BaseAnimating
@@ -163,6 +212,8 @@ public:
 // Game DLL Functions
 #ifdef GAME_DLL
 	virtual void	Activate( void );
+
+	static CCaptureFlag*	Create( const Vector& vecOrigin, const char *pszModelName, int nFlagType );
 
 	// Input handlers
 	void			InputEnable( inputdata_t &inputdata );
