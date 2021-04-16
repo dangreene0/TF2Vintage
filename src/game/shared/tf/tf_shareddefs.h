@@ -1012,7 +1012,8 @@ enum {
 	TF_FLAGEVENT_PICKUP = 1,
 	TF_FLAGEVENT_CAPTURE,
 	TF_FLAGEVENT_DEFEND,
-	TF_FLAGEVENT_DROPPED
+	TF_FLAGEVENT_DROPPED,
+	TF_FLAGEVENT_RETURNED
 };
 
 //-----------------------------------------------------------------------------

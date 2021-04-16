@@ -597,6 +597,15 @@ void CCaptureFlag::ResetMessage( void )
 	// Output.
 	m_outputOnReturn.FireOutput( this, this );
 
+	IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_flag_event" );
+	if ( event )
+	{
+		event->SetInt( "eventtype", TF_FLAGEVENT_RETURNED );
+		event->SetInt( "priority", 8 );
+		event->SetInt( "team", GetTeamNumber() );
+		gameeventmanager->FireEvent( event );
+	}
+
 	DestroyReturnIcon();
 #endif
 }
@@ -828,6 +837,8 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 		event->SetInt( "player", pPlayer->entindex() );
 		event->SetInt( "eventtype", TF_FLAGEVENT_PICKUP );
 		event->SetInt( "priority", 8 );
+		event->SetInt( "home", ( nOldFlagStatus == TF_FLAGINFO_NONE ) ? 1 : 0 );
+		event->SetInt( "team", GetTeamNumber() );
 		gameeventmanager->FireEvent( event );
 	}
 
@@ -1061,6 +1072,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		event->SetInt( "player", pPlayer->entindex() );
 		event->SetInt( "eventtype", TF_FLAGEVENT_CAPTURE );
 		event->SetInt( "priority", 9 );
+		event->SetInt( "team", GetTeamNumber() );
 		gameeventmanager->FireEvent( event );
 	}
 
