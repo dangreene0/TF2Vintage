@@ -240,7 +240,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 			{
 				SetCollisionGroup( COLLISION_GROUP_DEBRIS );
 
-				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
+				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, nDamage, DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
 				pTFVictim->TakeDamage( info );
 
 				if ( pAttacker && pTFVictim->GetTeamNumber() != pAttacker->GetTeamNumber() )
@@ -306,32 +306,33 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	// Set up our era specific flare settings.
 	if ( nWeaponMode == TF_FLARE_MODE_NORMAL )
 	{
-		if (tf2v_use_new_flare.GetInt() == 0) // Original flare did 20 damage, compared to 30.
-			nDamage *= (2 / 3);
+		int nEraFlare = tf2v_use_new_flare.GetInt();
+		if (nEraFlare == 0) // Original flare did 20 damage, compared to 30.
+			nDamage = GetDamage() * (2 / 3);
 
 		if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )	
 		{
-			switch (tf2v_use_new_flare.GetInt())
+			switch (nEraFlare)
 			{
-				case 0:
-				case 1:
-					// Don't do anything else.
-					break;
-				case 2:
-					// Minicrit hit a burning player.
+			case 0:
+			case 1:
+				// Don't do anything else.
+				break;
+			case 2:
+				// Minicrit hit a burning player.
+				nDamageType |= DMG_MINICRITICAL;
+				break;
+			case 3:
+				// Minicrit hit a burning player from mid to long range. (Mininum 800Hu)
+				// We're calculating this using the hangtime of the projectile and the time it would take to go 800Hu.
+				if ( gpGlobals->curtime >= ( m_flCreateTime + ( TF_FLARE_SPEED / 800) ) )
 					nDamageType |= DMG_MINICRITICAL;
-					break;
-				case 3:
-					// Minicrit hit a burning player from mid to long range. (Mininum 800Hu)
-					// We're calculating this using the hangtime of the projectile and the time it would take to go 800Hu.
-					if ( gpGlobals->curtime >= ( m_flCreateTime + ( TF_FLARE_SPEED / 800) ) )
-						nDamageType |= DMG_MINICRITICAL;
-					break;
-				case 4:
-				default:
-					// Critical hit a burning player.
-					SetCritical( true );
-					break;	
+				break;
+			case 4:
+			default:
+				// Critical hit a burning player.
+				SetCritical( true );
+				break;	
 			}
 		}
 		
