@@ -860,8 +860,8 @@ bool CTFWeaponBase::Deploy( void )
 
 		if (tf2v_use_new_axtinguisher.GetInt() == 2)
 			CALL_ATTRIB_HOOK_FLOAT( flDeployTime, mult_single_wep_deploy_time_axtinguisher_2 );
-		else if (tf2v_use_new_axtinguisher.GetInt() == 3)
-			CALL_ATTRIB_HOOK_FLOAT( flDeployTime, mult_single_wep_deploy_time_axtinguisher_3 );
+		else if (tf2v_use_new_axtinguisher.GetInt() == 3 && pPlayer->GetLastWeapon() )
+			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer->GetLastWeapon(), flDeployTime, mult_single_wep_deploy_time_axtinguisher_3 );
 
 		if ( pPlayer->GetLastWeapon() )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer->GetLastWeapon(), flDeployTime, mult_switch_from_wep_deploy_time );
