@@ -172,7 +172,7 @@ public:
 
 	void			Think( void );
 	
-	void			SetFlagStatus( int iStatus );
+	void			SetFlagStatus( int iStatus, CBasePlayer *pNewOwner = NULL );
 	int				GetFlagStatus( void ) { return m_nFlagStatus; };
 	void			ResetFlagReturnTime( void ) { m_flResetTime = 0; }
 	void			SetFlagReturnIn( float flTime )
@@ -212,6 +212,7 @@ public:
 	float			GetReturnProgress( void );
 
 	void			UpdateGlowEffect( void );
+	virtual bool	ShouldHideGlowEffect( void );
 
 #endif
 
@@ -305,9 +306,12 @@ private:
 	IMaterial	*m_pReturnProgressMaterial_Full;		
 
 	int			m_nOldFlagStatus;
+	EHANDLE		m_hOldOwner;
 
-	int			m_iGlowEffectHandle;
+	CGlowObject			*m_pGlowEffect;
+	CGlowObject			*m_pCarrierGlowEffect;
 
+	bool		m_bOldGlowEnabled;
 #endif
 
 	DECLARE_DATADESC();

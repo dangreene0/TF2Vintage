@@ -195,6 +195,8 @@ CCaptureFlag::CCaptureFlag()
 {
 #ifdef CLIENT_DLL
 	m_pPaperTrailEffect = NULL;
+	m_pGlowEffect = NULL;
+	m_pCarrierGlowEffect = NULL;
 #else
 	m_hReturnIcon = NULL;
 	m_pGlowTrail = NULL;
@@ -332,6 +334,7 @@ void CCaptureFlag::Precache( void )
 void CCaptureFlag::OnPreDataChanged( DataUpdateType_t updateType )
 {
 	m_nOldFlagStatus = m_nFlagStatus;
+	m_bOldGlowEnabled = m_bGlowEnabled;
 }
 
 //-----------------------------------------------------------------------------
@@ -339,14 +342,25 @@ void CCaptureFlag::OnPreDataChanged( DataUpdateType_t updateType )
 //-----------------------------------------------------------------------------
 void CCaptureFlag::OnDataChanged( DataUpdateType_t updateType )
 {
+	bool bUpdateGlow = false;
+
 	if ( m_nOldFlagStatus != m_nFlagStatus )
 	{
+		bUpdateGlow = true;
+	}
+	else if ( m_hOldOwner.Get() != GetOwnerEntity() )
+	{
+		bUpdateGlow = true;
+		m_hOldOwner = GetOwnerEntity();
+	}
+	else if ( m_bOldGlowEnabled != m_bGlowEnabled )
+	{
+		bUpdateGlow = true;
+	}
+
+	if ( bUpdateGlow )
+	{
 		UpdateGlowEffect();
-		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
-		if ( pEvent )
-		{
-			gameeventmanager->FireEventClientSide( pEvent );
-		}
 	}
 }
 #endif
@@ -431,21 +445,69 @@ void CCaptureFlag::Spawn( void )
 // Manage glow effect
 void CCaptureFlag::UpdateGlowEffect( void )
 {
-	if ( !GameRules() || GameRules()->AllowGlowOutlinesFlags() )
+	if ( !m_pGlowEffect )
 	{
-		if ( !g_GlowObjectManager.HasGlowEffect( this ) )
-		{
-			m_iGlowEffectHandle = g_GlowObjectManager.RegisterGlowObject( this, Vector( 0.76f, 0.76f, 0.76f ) , 1.0f, true, true, 0 );
-		}
-
-		Vector vecColor;
-		TFGameRules()->GetTeamGlowColor( GetTeamNumber(), vecColor.x, vecColor.y, vecColor.z );
-		g_GlowObjectManager.SetColor( m_iGlowEffectHandle, vecColor );
-		
+		m_pGlowEffect = new CGlowObject( this, Vector( 0.76f, 0.76f, 0.76f ), 1.0, true );
 	}
 
+	if ( m_pGlowEffect )
+	{
+		if ( ShouldHideGlowEffect() )
+		{
+			m_pGlowEffect->SetEntity( NULL );
+		}
+		else
+		{
+			m_pGlowEffect->SetEntity( this );
+
+			Vector vecColor;
+			TeamplayRoundBasedRules()->GetTeamGlowColor( GetTeamNumber(), vecColor.x, vecColor.y, vecColor.z );
+			m_pGlowEffect->SetColor( vecColor );
+		}
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CCaptureFlag::ShouldHideGlowEffect( void )
+{
+	if ( !IsGlowEnabled() )
+	{
+		return true;
+	}
+
+	if ( TFGameRules() && !TFGameRules()->AllowGlowOutlinesFlags() )
+	{
+		return true;
+	}
+
+	// If the opposite team stole our intel we need to hide the glow
+	bool bIsHiddenTeam = false;
+	C_TFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
+	if ( pLocalPlayer )
+	{
+		if ( m_nGameType == TF_FLAGTYPE_CTF )
+		{
+			// In CTF the flag is the team of where it was originally sitting
+			bIsHiddenTeam = ( pLocalPlayer->GetTeamNumber() == GetTeamNumber() );
+		}
+		else
+		{
+			// In non-CTF control the flag changes to the team that's carrying it
+			bIsHiddenTeam = ( pLocalPlayer->GetTeamNumber() != TEAM_SPECTATOR && pLocalPlayer->GetTeamNumber() != GetTeamNumber() );
+		}
+	}
+
+	bool bHide = IsStolen() && bIsHiddenTeam;
+
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+	{
+		bHide = IsHome();
+	}
+
+	return ( IsDisabled() || bHide || IsEffectActive( EF_NODRAW ) );
+}
 #endif
 
 #ifdef GAME_DLL
@@ -473,6 +535,25 @@ void CCaptureFlag::Activate( void )
 		m_iOriginalTeam = GetTeamNumber();
 
 	m_nSkin = GetIntelSkin(GetTeamNumber());
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CCaptureFlag *CCaptureFlag::Create( const Vector& vecOrigin, const char *pszModelName, int nFlagType )
+{
+	CCaptureFlag *pFlag = static_cast< CCaptureFlag* >( CBaseEntity::CreateNoSpawn( "item_teamflag", vecOrigin, vec3_angle, NULL ) );
+	pFlag->m_iszModel = MAKE_STRING( pszModelName );
+	pFlag->m_nGameType = nFlagType;
+
+	if ( nFlagType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		pFlag->m_nUseTrailEffect = FLAG_EFFECTS_NONE;
+	}
+
+	DispatchSpawn( pFlag );
+
+	return pFlag;
 }
 #endif
 
@@ -827,7 +908,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	}
 
 	int nOldFlagStatus = m_nFlagStatus;
-	SetFlagStatus( TF_FLAGINFO_STOLEN );
+	SetFlagStatus( TF_FLAGINFO_STOLEN, pPlayer );
 	ResetFlagReturnTime();
 	ResetFlagNeutralTime();
 
@@ -1482,11 +1563,23 @@ void CCaptureFlag::ManageSpriteTrail( void )
 //-----------------------------------------------------------------------------
 // Purpose: Sets the flag status
 //-----------------------------------------------------------------------------
-void CCaptureFlag::SetFlagStatus( int iStatus )
+void CCaptureFlag::SetFlagStatus( int iStatus, CBasePlayer *pNewOwner /*= NULL*/ )
 { 
 	MDLCACHE_CRITICAL_SECTION();
 
-	m_nFlagStatus = iStatus; 
+	if ( m_nFlagStatus != iStatus )
+	{
+		m_nFlagStatus = iStatus;
+
+		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
+		if ( pEvent )
+		{
+			pEvent->SetInt( "userid", pNewOwner ? pNewOwner->GetUserID() : -1 );
+			pEvent->SetInt( "entindex", entindex() );
+		
+			gameeventmanager->FireEvent( pEvent );
+		}
+	}
 
 	switch ( m_nFlagStatus )
 	{
