@@ -22,7 +22,7 @@ public:
 	DECLARE_DATADESC();
 
 	CTFObjectiveResource();
-	virtual ~CTFObjectiveResource() {}
+	virtual ~CTFObjectiveResource();
 
 	virtual void Spawn( void );
 
@@ -40,16 +40,16 @@ public:
 	void SetMannVsMachineBetweenWaves( bool bVal )			{ m_bMannVsMachineBetweenWaves = bVal; }
 	bool GetMannVsMachineIsBetweenWaves( void )				{ return m_bMannVsMachineBetweenWaves; }
 
-	void SetMannVsMachineWaveClassCount( int nIndex, int nCount );
-	void SetMannVsMachineWaveClassName( int nIndex, string_t iszClassIconName );
+	void SetMannVsMachineWaveClassCount( int nIndex, int nCount ) { m_nMannVsMachineWaveClassCounts.Set( nIndex, nCount ); }
+	void SetMannVsMachineWaveClassName( int nIndex, string_t iszClassIconName ) { m_iszMannVsMachineWaveClassNames.Set( nIndex, iszClassIconName ); }
+	string_t GetMannVsMachineWaveClassName( int nIndex )	{ return m_iszMannVsMachineWaveClassNames[ nIndex ]; }
 	void IncrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags );
 	void DecrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags );
-	void IncrementTeleporterCount();
-	void DecrementTeleporterCount();
-	int GetMannVsMachineWaveClassCount( int nIndex );
+	void IncrementTeleporterCount()							{ IncrementMannVsMachineWaveClassCount( m_iszTeleporter, MVM_CLASS_FLAG_MISSION ); }
+	void DecrementTeleporterCount()							{ DecrementMannVsMachineWaveClassCount( m_iszTeleporter, MVM_CLASS_FLAG_MISSION ); }
+	int GetMannVsMachineWaveClassCount( int nIndex )		{ return m_nMannVsMachineWaveClassCounts[ nIndex ]; }
 	void SetMannVsMachineWaveClassActive( string_t iszClassIconName, bool bActive = true );
 
-	string_t GetMannVsMachineWaveClassName( int nIndex )	{ return m_iszMannVsMachineWaveClassNames[ nIndex ]; }
 	void ClearMannVsMachineWaveClassFlags( void );
 	void AddMannVsMachineWaveClassFlags( int nIndex, unsigned int iFlags );
 	unsigned int GetMannVsMachineWaveClassFlags( int nIndex ) { return m_nMannVsMachineWaveClassFlags[ nIndex ]; }
@@ -65,8 +65,7 @@ public:
 	int	 GetMannVsMachineChallengeIndex( void )				{ return m_iChallengeIndex; }
 	void SetMvMPopfileName( string_t iszMvMPopfileName )	{ m_iszMvMPopfileName = iszMvMPopfileName; }
 	string_t GetMvMPopfileName( void ) const				{ return m_iszMvMPopfileName.Get(); }
-
-	void SetMannVsMachineEventPopfileType( int nType )		{ m_nMvMEventPopfileType.Set( nType ); }
+	void SetMannVsMachineEventPopfileType( int nType )		{ m_nMvMEventPopfileType = nType; }
 
 private:
 	CNetworkVar( int, m_nMannVsMachineMaxWaveCount );
@@ -90,6 +89,8 @@ private:
 	CNetworkVar( int, m_iChallengeIndex );
 	CNetworkVar( string_t, m_iszMvMPopfileName ) ;
 	CNetworkVar( int, m_nMvMEventPopfileType );
+
+	string_t m_iszTeleporter;
 };
 
 inline CTFObjectiveResource *TFObjectiveResource()
