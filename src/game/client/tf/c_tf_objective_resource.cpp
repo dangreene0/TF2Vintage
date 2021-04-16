@@ -13,8 +13,23 @@
 #include "tier0/memdbgon.h"
 
 
-IMPLEMENT_CLIENTCLASS_DT( C_TFObjectiveResource, DT_TFObjectiveResource, CTFObjectiveResource)
-
+IMPLEMENT_CLIENTCLASS_DT( C_TFObjectiveResource, DT_TFObjectiveResource, CTFObjectiveResource )
+	RecvPropInt( RECVINFO( m_nMannVsMachineMaxWaveCount ) ),
+	RecvPropInt( RECVINFO( m_nMannVsMachineWaveCount ) ),
+	RecvPropInt( RECVINFO( m_nMannVsMachineWaveEnemyCount ) ),
+	RecvPropInt( RECVINFO( m_nMvMWorldMoney ) ),
+	RecvPropFloat( RECVINFO( m_flMannVsMachineNextWaveTime ) ),
+	RecvPropBool( RECVINFO( m_bMannVsMachineBetweenWaves ) ),
+	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassCounts ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassCounts[0] ) ) ),
+	RecvPropArray( RecvPropString( RECVINFO( m_iszMannVsMachineWaveClassNames[0] ) ), m_iszMannVsMachineWaveClassNames ),
+	RecvPropArray3( RECVINFO_ARRAY( m_nMannVsMachineWaveClassFlags ), RecvPropInt( RECVINFO( m_nMannVsMachineWaveClassFlags[0] ) ) ),
+	RecvPropArray3( RECVINFO_ARRAY( m_bMannVsMachineWaveClassActive ), RecvPropBool( RECVINFO( m_bMannVsMachineWaveClassActive[0] ) ) ),
+	RecvPropInt( RECVINFO( m_nFlagCarrierUpgradeLevel ) ),
+	RecvPropFloat( RECVINFO( m_flMvMBaseBombUpgradeTime ) ),
+	RecvPropFloat( RECVINFO( m_flMvMNextBombUpgradeTime ) ),
+	RecvPropString( RECVINFO( m_iszMvMPopfileName ) ),
+	RecvPropInt( RECVINFO( m_iChallengeIndex ) ),
+	RecvPropInt( RECVINFO( m_nMvMEventPopfileType ) ),
 END_RECV_TABLE()
 
 //-----------------------------------------------------------------------------
@@ -41,7 +56,7 @@ const char *C_TFObjectiveResource::GetGameSpecificCPCappingSwipe( int index, int
 	Assert( index < m_iNumControlPoints );
 	Assert( iCappingTeam != TEAM_UNASSIGNED );
 
-	switch (iCappingTeam)
+	switch ( iCappingTeam )
 	{
 		case TF_TEAM_RED:
 			return "sprites/obj_icons/icon_obj_cap_red";
@@ -59,7 +74,7 @@ const char *C_TFObjectiveResource::GetGameSpecificCPCappingSwipe( int index, int
 			return "sprites/obj_icons/icon_obj_cap_blu";
 			break;
 	}
-		
+
 
 	return "sprites/obj_icons/icon_obj_cap_blu";
 }
@@ -71,7 +86,7 @@ const char *C_TFObjectiveResource::GetGameSpecificCPBarFG( int index, int iOwnin
 {
 	Assert( index < m_iNumControlPoints );
 
-	switch (iOwningTeam)
+	switch ( iOwningTeam )
 	{
 		case TF_TEAM_RED:
 			return "progress_bar_red";
@@ -100,7 +115,7 @@ const char *C_TFObjectiveResource::GetGameSpecificCPBarBG( int index, int iCappi
 	Assert( index < m_iNumControlPoints );
 	Assert( iCappingTeam != TEAM_UNASSIGNED );
 
-	switch (iCappingTeam)
+	switch ( iCappingTeam )
 	{
 		case TF_TEAM_RED:
 			return "progress_bar_red";
@@ -128,7 +143,7 @@ void C_TFObjectiveResource::SetCappingTeam( int index, int team )
 	//Only do this at the start of a cap and if WE own the point.
 	//Also don't warn on a point that will do a "Last Point cap" warning.
 	//Don't play the alert for payload
-	if ( !TFGameRules()->IsInEscortMode() && GetNumControlPoints() > 0 && GetCapWarningLevel(index) != index && GetCPCapPercentage(index) == 0.0f && team != TEAM_UNASSIGNED && GetOwningTeam(index) != TEAM_UNASSIGNED )
+	if ( !TFGameRules()->IsInEscortMode() && GetNumControlPoints() > 0 && GetCapWarningLevel( index ) != index && GetCPCapPercentage( index ) == 0.0f && team != TEAM_UNASSIGNED && GetOwningTeam( index ) != TEAM_UNASSIGNED )
 	{
 		C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
 		if ( pLocalPlayer )

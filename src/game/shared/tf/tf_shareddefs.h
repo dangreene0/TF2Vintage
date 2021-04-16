@@ -1937,9 +1937,7 @@ typedef enum
 
 #define MVM_BUYBACK_COST_PER_SEC		5
 
-#define MVM_CLASS_TYPES_PER_WAVE_MAX	12
-// this is ugly, but we need to increase the max types per wave and changing the old define will break demos
-#define MVM_CLASS_TYPES_PER_WAVE_MAX_NEW ( MVM_CLASS_TYPES_PER_WAVE_MAX * 2 )
+#define MVM_CLASS_TYPES_PER_WAVE_MAX	24
 
 #define MVM_CLASS_FLAG_NONE				0
 #define MVM_CLASS_FLAG_NORMAL			(1<<0)

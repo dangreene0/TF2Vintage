@@ -326,6 +326,13 @@ void CCaptureFlag::Spawn( void )
 
 	m_bCaptured = false;
 
+	if ( TFObjectiveResource() )
+	{
+		TFObjectiveResource()->SetFlagCarrierUpgradeLevel( 0 );
+		TFObjectiveResource()->SetBaseMvMBombUpgradeTime( -1 );
+		TFObjectiveResource()->SetNextMvMBombUpgradeTime( -1 );
+	}
+
 #else
 
 	// add this element if it isn't already in the list
@@ -336,14 +343,7 @@ void CCaptureFlag::Spawn( void )
 
 #endif
 
-	if ( m_bDisabled )
-	{
-		SetDisabled( true );
-	}
-	else
-	{
-		SetDisabled( false );
-	}
+	SetDisabled( m_bDisabled );
 }
 
 #ifdef CLIENT_DLL
@@ -443,6 +443,13 @@ void CCaptureFlag::Reset( void )
 
 	m_nSkin = GetIntelSkin(GetTeamNumber());
 	SetMoveType( MOVETYPE_NONE );
+
+	if ( TFObjectiveResource() )
+	{
+		TFObjectiveResource()->SetFlagCarrierUpgradeLevel( 0 );
+		TFObjectiveResource()->SetBaseMvMBombUpgradeTime( -1 );
+		TFObjectiveResource()->SetNextMvMBombUpgradeTime( -1 );
+	}
 #endif 
 }
 
@@ -990,8 +997,11 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 	Reset();
 
 	pPlayer->TeamFortress_SetSpeed();
-	pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_FLAGCAPTURED );
 	pPlayer->RemoveGlowEffect();
+	if ( !TFGameRules() || !TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
+	{
+		pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_FLAGCAPTURED );
+	}
 	
 	// Output.
 	m_outputOnCapture.FireOutput( this, this );
@@ -1163,6 +1173,18 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 	{
 		Reset();
 		ResetMessage();
+	}
+
+	if ( TFObjectiveResource() )
+	{
+		TFObjectiveResource()->SetFlagCarrierUpgradeLevel( 0 );
+		TFObjectiveResource()->SetBaseMvMBombUpgradeTime( -1 );
+		TFObjectiveResource()->SetNextMvMBombUpgradeTime( -1 );
+	}
+
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+	{
+		TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_BOMB_DROPPED, TF_TEAM_MVM_PLAYERS );
 	}
 
 #endif

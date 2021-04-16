@@ -22,9 +22,37 @@ public:
 	DECLARE_DATADESC();
 
 	CTFObjectiveResource();
-	virtual ~CTFObjectiveResource();
+	virtual ~CTFObjectiveResource() {}
 
 	virtual void Spawn( void );
+
+	void SetMannVsMachineMaxWaveCount( int nCount )			{ m_nMannVsMachineMaxWaveCount = nCount; }
+	int GetMannVsMachineMaxWaveCount( void )				{ return m_nMannVsMachineMaxWaveCount; }
+	void SetMannVsMachineWaveCount( int nCount )			{ m_nMannVsMachineWaveCount = nCount; }
+	int GetMannVsMachineWaveCount( void )					{ return m_nMannVsMachineWaveCount; }
+
+	void SetMannVsMachineWaveEnemyCount( int nCount )		{ m_nMannVsMachineWaveEnemyCount = nCount; }
+	int	 GetMannVsMachineWaveEnemyCount( void )				{ return m_nMannVsMachineWaveEnemyCount.Get(); }
+
+	void AddMvMWorldMoney( int nCurrency )					{ m_nMvMWorldMoney += nCurrency; }
+
+	void SetMannVsMachineNextWaveTime( float flTime )		{ m_flMannVsMachineNextWaveTime = flTime; }
+	void SetMannVsMachineBetweenWaves( bool bVal )			{ m_bMannVsMachineBetweenWaves = bVal; }
+	bool GetMannVsMachineIsBetweenWaves( void )				{ return m_bMannVsMachineBetweenWaves; }
+
+	void SetMannVsMachineWaveClassCount( int nIndex, int nCount );
+	void SetMannVsMachineWaveClassName( int nIndex, string_t iszClassIconName );
+	void IncrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags );
+	void DecrementMannVsMachineWaveClassCount( string_t iszClassIconName, unsigned int iFlags );
+	void IncrementTeleporterCount();
+	void DecrementTeleporterCount();
+	int GetMannVsMachineWaveClassCount( int nIndex );
+	void SetMannVsMachineWaveClassActive( string_t iszClassIconName, bool bActive = true );
+
+	string_t GetMannVsMachineWaveClassName( int nIndex )	{ return m_iszMannVsMachineWaveClassNames[ nIndex ]; }
+	void ClearMannVsMachineWaveClassFlags( void );
+	void AddMannVsMachineWaveClassFlags( int nIndex, unsigned int iFlags );
+	unsigned int GetMannVsMachineWaveClassFlags( int nIndex ) { return m_nMannVsMachineWaveClassFlags[ nIndex ]; }
 
 	void SetFlagCarrierUpgradeLevel( int nLevel )			{ m_nFlagCarrierUpgradeLevel = nLevel; }
 	int GetFlagCarrierUpgradeLevel( void )					{ return m_nFlagCarrierUpgradeLevel; }
@@ -51,13 +79,9 @@ private:
 	CNetworkVar( bool, m_bMannVsMachineBetweenWaves );
 
 	CNetworkArray( int, m_nMannVsMachineWaveClassCounts, MVM_CLASS_TYPES_PER_WAVE_MAX );
-	CNetworkArray( int, m_nMannVsMachineWaveClassCounts2, MVM_CLASS_TYPES_PER_WAVE_MAX );
 	CNetworkArray( string_t, m_iszMannVsMachineWaveClassNames, MVM_CLASS_TYPES_PER_WAVE_MAX );
-	CNetworkArray( string_t, m_iszMannVsMachineWaveClassNames2, MVM_CLASS_TYPES_PER_WAVE_MAX );
 	CNetworkArray( unsigned int, m_nMannVsMachineWaveClassFlags, MVM_CLASS_TYPES_PER_WAVE_MAX );
-	CNetworkArray( unsigned int, m_nMannVsMachineWaveClassFlags2, MVM_CLASS_TYPES_PER_WAVE_MAX );
 	CNetworkArray( bool, m_bMannVsMachineWaveClassActive, MVM_CLASS_TYPES_PER_WAVE_MAX );
-	CNetworkArray( bool, m_bMannVsMachineWaveClassActive2, MVM_CLASS_TYPES_PER_WAVE_MAX );
 
 	CNetworkVar( int, m_nFlagCarrierUpgradeLevel );
 	CNetworkVar( float, m_flMvMBaseBombUpgradeTime );
