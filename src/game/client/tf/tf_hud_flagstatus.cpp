@@ -575,7 +575,7 @@ void CTFHudFlagObjectives::OnTick()
 
 				CCaptureFlag *pPlayerFlag = dynamic_cast<CCaptureFlag*>(pTarget->GetItem());
 
-				if (m_pSpecCarriedImage)
+				if ( m_pSpecCarriedImage )
 				{
 					char szHudIcon[ MAX_PATH ];
 					pPlayerFlag->GetHudIcon( pPlayerFlag->GetTeamNumber(), szHudIcon, sizeof( szHudIcon ) );
