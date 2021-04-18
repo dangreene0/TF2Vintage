@@ -227,7 +227,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	Vector vecOrigin = GetAbsOrigin();
 	CTFPlayer *pTFVictim = ToTFPlayer( pOther );
 	int nDamageType = GetDamageType();
-	int nDamage = GetDamage();
+	int nDamage = ( GetDamage() != NULL ) ? GetDamage() : 30;
 
 	CTFFlareGun *pFlareGun = dynamic_cast<CTFFlareGun *>( m_hLauncher.Get() );
 	if ( pFlareGun )
@@ -308,7 +308,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	{
 		int nEraFlare = tf2v_use_new_flare.GetInt();
 		if (nEraFlare == 0) // Original flare did 20 damage, compared to 30.
-			nDamage = GetDamage() * (2 / 3);
+			nDamage *= (2 / 3);
 
 		if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )	
 		{
@@ -325,7 +325,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 			case 3:
 				// Minicrit hit a burning player from mid to long range. (Mininum 800Hu)
 				// We're calculating this using the hangtime of the projectile and the time it would take to go 800Hu.
-				if ( gpGlobals->curtime >= ( m_flCreateTime + ( TF_FLARE_SPEED / 800) ) )
+				if ( gpGlobals->curtime >= ( m_flCreateTime + ( 800 / GetProjectileSpeed() ) ) )
 					nDamageType |= DMG_MINICRITICAL;
 				break;
 			case 4:
