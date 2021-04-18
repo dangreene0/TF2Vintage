@@ -104,8 +104,8 @@ void CTFRocketLauncher::Misfire( void )
 			UTIL_TraceLine( pRocket->GetAbsOrigin(), pPlayer->EyePosition(), MASK_SOLID, pRocket, COLLISION_GROUP_NONE, &tr );
 			pRocket->Explode( &tr, pPlayer );
 			
-			if (tf2v_use_new_beggars.GetBool())
-				m_iClip1--;
+			if (!tf2v_use_new_beggars.GetBool())
+				m_iClip1++; //HACK: Since we're deducting one shot for every misfire, give the player a shot to compensate.
 		}
 	}
 #endif
