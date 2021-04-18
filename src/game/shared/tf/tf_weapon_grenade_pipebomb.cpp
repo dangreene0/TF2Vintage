@@ -332,6 +332,9 @@ PRECACHE_WEAPON_REGISTER( tf_projectile_pipe );
 LINK_ENTITY_TO_CLASS( tf_weapon_grenade_pipebomb_projectile, CTFGrenadePipebombProjectile );
 PRECACHE_WEAPON_REGISTER( tf_weapon_grenade_pipebomb_projectile );
 
+LINK_ENTITY_TO_CLASS( tf_projectile_cannonball, CTFGrenadePipebombProjectile );
+PRECACHE_WEAPON_REGISTER( tf_projectile_cannonball );
+
 //-----------------------------------------------------------------------------
 // Purpose:
 // PIPEBOMB = STICKY
