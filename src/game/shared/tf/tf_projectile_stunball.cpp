@@ -53,7 +53,7 @@ CTFStunBall::~CTFStunBall()
 #ifdef GAME_DLL
 CTFStunBall *CTFStunBall::Create( CBaseEntity *pWeapon, const Vector &vecOrigin, const QAngle &vecAngles, const Vector &vecVelocity, CBaseCombatCharacter *pOwner, CBaseEntity *pScorer, const AngularImpulse &angVelocity, const CTFWeaponInfo &weaponInfo )
 {
-	CTFStunBall *pStunBall = static_cast<CTFStunBall *>( CBaseEntity::CreateNoSpawn( "tf_projectile_stunball", vecOrigin, vecAngles, pOwner ) );
+	CTFStunBall *pStunBall = static_cast<CTFStunBall *>( CBaseEntity::CreateNoSpawn( "tf_projectile_stun_ball", vecOrigin, vecAngles, pOwner ) );
 
 	if ( pStunBall )
 	{
