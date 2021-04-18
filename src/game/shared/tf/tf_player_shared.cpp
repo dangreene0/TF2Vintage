@@ -5282,19 +5282,28 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 		return;	
 	}
 
-	// No Bonk/Cola/Popper active, regen our meter
-	if ( m_flEnergyDrinkMeter >= 100.0f )
-			return;
-
+	// No Bonk/Cola/Popper active, regen our meter	
 	m_flEnergyDrinkMeter = Min( m_flEnergyDrinkMeter + ( m_flEnergyDrinkRegenRate * gpGlobals->frametime ), 100.0f );
 
 	if ( m_pOuter->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX_DRINK ) )
 	{
-		if ( m_flEnergyDrinkMeter >= 100.0f )
+		// Full ammo, full meter, nothing else to do.
+		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
 			return;
 
-		if ( m_pOuter->GetAmmoCount( TF_AMMO_SPECIAL2 ) != m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) )
+		// We have ammo to use it, reset our meter.
+		if ( m_flEnergyDrinkMeter < 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
+		{
+			m_flEnergyDrinkMeter = 100.0f;
 			return;
+		}
+	
+		// Another failsafe in case our meter is full but our ammo is not.
+		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) != m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
+		{
+			m_pOuter->SetAmmoCount( TF_AMMO_GRENADES2, m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) );
+			return;
+		}
 	}
 	
 }
