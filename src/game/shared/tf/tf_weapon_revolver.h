@@ -54,7 +54,7 @@ public:
 	virtual bool	Deploy(void);
 	virtual bool	Holster(CBaseCombatWeapon *pSwitchTo);
 
-	virtual const char *GetEffectLabelText(void) { return "#TF_CRITS"; }
+	virtual const char* GetEffectLabelText(void) { return "#TF_CRITS"; }
 
 
 private:

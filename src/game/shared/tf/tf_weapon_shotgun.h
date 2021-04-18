@@ -172,7 +172,7 @@ public:
 	virtual bool	Holster( CBaseCombatWeapon *pSwitchTo );
 	virtual void	Detach( void );
 
-	virtual const char *GetEffectLabelText( void ) { return "#TF_REVENGE"; }
+	virtual const char* GetEffectLabelText( void ) { return "#TF_REVENGE"; }
 
 #ifdef GAME_DLL
 	virtual void	OnSentryKilled( class CObjectSentrygun *pSentry );

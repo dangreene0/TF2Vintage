@@ -150,8 +150,8 @@ abstract_class ITFItemMeterUser
 public:
 	virtual float		GetEffectBarProgress( void ) = 0;
 	virtual int			GetEffectCount( void ) = 0;
-	virtual const char *GetEffectLabelText( void ) = 0;
-	virtual const char *GetEffectIconName( void ) = 0;
+	virtual const char* GetEffectLabelText( void ) = 0;
+	virtual const char* GetEffectIconName( void ) = 0;
 	virtual bool		EffectMeterShouldFlash( void ) = 0;
 	virtual bool		EffectMeterShouldBeep( void ) = 0;
 };
@@ -365,8 +365,8 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	void				CheckEffectBarRegen( void );
 	virtual float		GetEffectBarProgress( void );
 	virtual void		SetEffectBarProgress( float flEffectBarRegenTime ) { m_flEffectBarRegenTime = flEffectBarRegenTime; }
-	virtual const char *GetEffectLabelText( void ) { return ""; }
-	virtual const char *GetEffectIconName( void ) { return ""; }
+	virtual const char* GetEffectLabelText( void ) { return ""; }
+	virtual const char* GetEffectIconName( void ) { return ""; }
 	void				ReduceEffectBarRegenTime( float flTime ) { m_flEffectBarRegenTime -= flTime; }
 	virtual bool		EffectMeterShouldFlash( void ) { return false; }
 
