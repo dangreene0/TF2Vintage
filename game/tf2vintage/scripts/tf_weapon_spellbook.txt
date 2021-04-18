@@ -18,7 +18,7 @@
 	"AutoSwitchTo"			"0"
 
 	// Ammo & Clip
-	"primary_ammo"			"TF_AMMO_GRENADES3"
+	"primary_ammo"			"TF_AMMO_SPECIAL3"
 	"secondary_ammo"		"None"
 	clip_size			"-1"
 	default_clip			"1"

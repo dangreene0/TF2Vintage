@@ -5287,21 +5287,23 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 
 	if ( m_pOuter->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX_DRINK ) )
 	{
+		// TF_AMMO_SPECIAL2 = Ammo used by the Bonk Energy drink script.
+
 		// Full ammo, full meter, nothing else to do.
-		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
+		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_SPECIAL2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) ) )
 			return;
 
 		// We have ammo to use it, reset our meter.
-		if ( m_flEnergyDrinkMeter < 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
+		if ( m_flEnergyDrinkMeter < 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_SPECIAL2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) ) )
 		{
 			m_flEnergyDrinkMeter = 100.0f;
 			return;
 		}
 	
 		// Another failsafe in case our meter is full but our ammo is not.
-		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_GRENADES2 ) != m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) ) )
+		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_SPECIAL2 ) != m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) ) )
 		{
-			m_pOuter->SetAmmoCount( TF_AMMO_GRENADES2, m_pOuter->GetMaxAmmo( TF_AMMO_GRENADES2 ) );
+			m_pOuter->SetAmmoCount( TF_AMMO_SPECIAL2, m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) );
 			return;
 		}
 	}

@@ -90,6 +90,11 @@ bool CAmmoPack::MyTouch( CBasePlayer *pPlayer )
 			bSuccess = true;
 		}
 		
+		int iMaxGrenade3 = pTFPlayer->GetMaxAmmo( TF_AMMO_GRENADES3 );
+		if ( pPlayer->GiveAmmo( ceil(iMaxGrenade3 * PackRatios[GetPowerupSize()]), TF_AMMO_GRENADES3, true ) )
+		{
+			bSuccess = true;
+		}
 
 		if (pTFPlayer->m_Shared.AddToSpyCloakMeter( ceil( 100.0f * PackRatios[GetPowerupSize()] ) ))
 		{
