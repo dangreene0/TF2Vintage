@@ -88,6 +88,7 @@ void CTFProjectile_Flare::Precache()
 	PrecacheTeamParticles( "pyrovision_flaregun_trail_crit_%s", true );
 	PrecacheTeamParticles( "pyrovision_scorchshot_trail_%s", true );
 	PrecacheTeamParticles( "pyrovision_scorchshot_trail_crit_%s", true );
+	PrecacheParticleSystem( "drg_manmelter_projectile" );
 
 	PrecacheScriptSound( "TFPlayer.FlareImpact" );
 
@@ -591,6 +592,10 @@ void CTFProjectile_Flare::CreateTrails( void )
 	{
 		const char *pszFormat = m_bCritical ? "scorchshot_trail_crit_%s" : "scorchshot_trail_%s";
 		pszEffectName = ConstructTeamParticle( pszFormat, GetTeamNumber(), false );
+	}
+	else if (pLauncher && pLauncher->IsEnergyWeapon()) // Manmelter
+	{
+		pszEffectName = "drg_manmelter_projectile";
 	}
 	else // Standard flare
 	{
