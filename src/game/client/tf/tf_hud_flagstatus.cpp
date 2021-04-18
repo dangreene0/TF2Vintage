@@ -500,63 +500,67 @@ void CTFHudFlagObjectives::OnTick()
 		}
 	}
 
-	// are we playing captures for rounds?
-	if ( tf_flag_caps_per_round.GetInt() > 0 )
+	// Hide the capture counter on Special Delivery.
+	if (!TFGameRules() || (TFGameRules() && !TFGameRules()->IsInSpecialDeliveryMode()))
 	{
-		C_TFTeam *pTeam = GetGlobalTFTeam( TF_TEAM_BLUE );
-		if ( pTeam )
+		// are we playing captures for rounds?
+		if ( tf_flag_caps_per_round.GetInt() > 0 )
 		{
-			SetDialogVariable( "bluescore", pTeam->GetFlagCaptures() );
-		}
+			C_TFTeam *pTeam = GetGlobalTFTeam( TF_TEAM_BLUE );
+			if ( pTeam )
+			{
+				SetDialogVariable( "bluescore", pTeam->GetFlagCaptures() );
+			}
 
-		pTeam = GetGlobalTFTeam( TF_TEAM_RED );
-		if ( pTeam )
-		{
-			SetDialogVariable( "redscore", pTeam->GetFlagCaptures() );
-		}
-		
-		pTeam = GetGlobalTFTeam( TF_TEAM_GREEN );
-		if ( pTeam )
-		{
-			SetDialogVariable( "greenscore", pTeam->GetFlagCaptures() );
-		}
-		
-		pTeam = GetGlobalTFTeam( TF_TEAM_YELLOW );
-		if ( pTeam )
-		{
-			SetDialogVariable( "yellowscore", pTeam->GetFlagCaptures() );
-		}
+			pTeam = GetGlobalTFTeam( TF_TEAM_RED );
+			if ( pTeam )
+			{
+				SetDialogVariable( "redscore", pTeam->GetFlagCaptures() );
+			}
+			
+			pTeam = GetGlobalTFTeam( TF_TEAM_GREEN );
+			if ( pTeam )
+			{
+				SetDialogVariable( "greenscore", pTeam->GetFlagCaptures() );
+			}
+			
+			pTeam = GetGlobalTFTeam( TF_TEAM_YELLOW );
+			if ( pTeam )
+			{
+				SetDialogVariable( "yellowscore", pTeam->GetFlagCaptures() );
+			}
 
-		SetPlayingToLabelVisible( true );
-		SetDialogVariable( "rounds", tf_flag_caps_per_round.GetInt() );
-	}
-	else // we're just playing straight score
-	{
-		C_TFTeam *pTeam = GetGlobalTFTeam( TF_TEAM_BLUE );
-		if ( pTeam )
-		{
-			SetDialogVariable( "bluescore", pTeam->Get_Score() );
+			SetPlayingToLabelVisible( true );
+			SetDialogVariable( "rounds", tf_flag_caps_per_round.GetInt() );
 		}
+		else // we're just playing straight score
+		{
+			C_TFTeam *pTeam = GetGlobalTFTeam( TF_TEAM_BLUE );
+			if ( pTeam )
+			{
+				SetDialogVariable( "bluescore", pTeam->Get_Score() );
+			}
 
-		pTeam = GetGlobalTFTeam( TF_TEAM_RED );
-		if ( pTeam )
-		{
-			SetDialogVariable( "redscore", pTeam->Get_Score() );
-		}
-		
-		pTeam = GetGlobalTFTeam( TF_TEAM_GREEN );
-		if ( pTeam )
-		{
-			SetDialogVariable( "greenscore", pTeam->Get_Score() );
-		}
-		
-		pTeam = GetGlobalTFTeam( TF_TEAM_YELLOW );
-		if ( pTeam )
-		{
-			SetDialogVariable( "yellowscore", pTeam->Get_Score() );
-		}
+			pTeam = GetGlobalTFTeam( TF_TEAM_RED );
+			if ( pTeam )
+			{
+				SetDialogVariable( "redscore", pTeam->Get_Score() );
+			}
+			
+			pTeam = GetGlobalTFTeam( TF_TEAM_GREEN );
+			if ( pTeam )
+			{
+				SetDialogVariable( "greenscore", pTeam->Get_Score() );
+			}
+			
+			pTeam = GetGlobalTFTeam( TF_TEAM_YELLOW );
+			if ( pTeam )
+			{
+				SetDialogVariable( "yellowscore", pTeam->Get_Score() );
+			}
 
-		SetPlayingToLabelVisible( false );
+			SetPlayingToLabelVisible( false );
+		}
 	}
 
 	// check the local player to see if they're spectating, OBS_MODE_IN_EYE, and the target entity is carrying the flag
@@ -599,6 +603,7 @@ void CTFHudFlagObjectives::OnTick()
 			m_pSpecCarriedImage->SetVisible( false );
 		}
 	}
+
 }
 
 //-----------------------------------------------------------------------------

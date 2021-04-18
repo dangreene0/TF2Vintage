@@ -991,7 +991,7 @@ CCaptureFlag *CTFBot::GetFlagToFetch( void )
 		if ( HasTheFlag(/* 0, 0 */) && pFlag->GetOwnerEntity() == this )
 			return pFlag;
 
-		if ( pFlag->GetGameType() > TF_FLAGTYPE_CTF && pFlag->GetGameType() <= TF_FLAGTYPE_INVADE )
+		if ( pFlag->GetGameType() > TF_FLAGTYPE_CTF && pFlag->GetGameType() <= TF_FLAGTYPE_RESOURCE_CONTROL )
 		{
 			if ( pFlag->GetTeamNumber() != GetEnemyTeam( this ) )
 				flags.AddToTail( pFlag );

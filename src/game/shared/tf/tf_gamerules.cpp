@@ -2003,6 +2003,11 @@ void CTFGameRules::SetupOnRoundRunning( void )
 		pPlayer->TeamFortress_SetSpeed();
 		pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_ROUND_START );
 	}
+	
+	// Start the announcement for Special Delivery
+	if ( IsInSpecialDeliveryMode() )
+		BroadcastSound( 255, "Announcer.SD_RoundStart" );
+	
 }
 
 //-----------------------------------------------------------------------------

@@ -313,6 +313,15 @@ void CCaptureFlag::Precache( void )
 	PrecacheScriptSound( TF_INVADE_TEAM_DROPPED );
 	PrecacheScriptSound( TF_INVADE_TEAM_CAPTURED );
 	PrecacheScriptSound( TF_INVADE_FLAG_RETURNED );
+	
+	PrecacheScriptSound( TF_RESOURCE_FLAGSPAWN );
+	PrecacheScriptSound( TF_RESOURCE_ENEMY_STOLEN	);
+	PrecacheScriptSound( TF_RESOURCE_ENEMY_DROPPED );
+	PrecacheScriptSound( TF_RESOURCE_ENEMY_CAPTURED );
+	PrecacheScriptSound( TF_RESOURCE_TEAM_STOLEN );
+	PrecacheScriptSound( TF_RESOURCE_TEAM_DROPPED );
+	PrecacheScriptSound( TF_RESOURCE_TEAM_CAPTURED );
+	PrecacheScriptSound( TF_RESOURCE_RETURNED );
 
 	PrecacheParticleSystem( GetPaperEffect() );
 
@@ -573,6 +582,7 @@ int CCaptureFlag::GetIntelSkin(int iTeamNum, bool bPickupSkin)
 	case TF_TEAM_YELLOW:
 		return bPickupSkin ? 9 : 7;
 		break;
+	case TEAM_UNASSIGNED:
 	default:
 		return bPickupSkin ? 5 : 2;
 		break;
@@ -674,6 +684,16 @@ void CCaptureFlag::ResetMessage( void )
 			EmitSound( filter, entindex(), TF_INVADE_FLAG_RETURNED );
 		}
 	}
+	else if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	{
+		// This is a neutral flag, so tell everyone.
+		TFGameRules()->BroadcastSound(255, TF_RESOURCE_RETURNED);
+		
+		// Returned sound
+		CPASAttenuationFilter filter( this, TF_RESOURCE_FLAGSPAWN );
+		EmitSound( filter, entindex(), TF_RESOURCE_FLAGSPAWN );
+	}
+
 
 	// Output.
 	m_outputOnReturn.FireOutput( this, this );
@@ -732,7 +752,8 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 		return;
 	}
 
-	if ( m_nGameType == TF_FLAGTYPE_INVADE && GetTeamNumber() != TEAM_UNASSIGNED )
+	// Don't allow us to touch the flag until it's neutral.
+	if ( ( m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL ) && GetTeamNumber() != TEAM_UNASSIGNED )
 	{
 		if ( pOther->GetTeamNumber() != GetTeamNumber() )
 		{
@@ -901,8 +922,38 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 				EmitSound( filter, entindex(), TF_INVADE_TEAM_STOLEN );
 			}
 		}
+	}
+	else if (m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	{
+		// Only do notifications when a neutral flag has been taken.
+		if ( GetTeamNumber() == TEAM_UNASSIGNED )
+		{
+			// Tell our team we picked up the flag.
+			TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerPickup" );
+			TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_PlayerTeamPickup" );
 
-		// set the flag's team to match the player's team
+			for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+			{
+				if ( iTeam != pPlayer->GetTeamNumber() )
+				{
+					TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamPickup" );
+
+					CTeamRecipientFilter filter( iTeam, true );
+					EmitSound( filter, entindex(), TF_RESOURCE_ENEMY_STOLEN );
+				}
+				else
+				{
+					CTeamRecipientFilter filter( iTeam, true );
+					EmitSound( filter, entindex(), TF_RESOURCE_TEAM_STOLEN );
+				}
+			}	
+		}
+	}
+	
+	// Neutral flags: Set team.
+	if (m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	{
+		// Set the flag to be the carrier's team.
 		ChangeTeam( pPlayer->GetTeamNumber() );
 		m_nSkin = ( GetTeamNumber() == TEAM_UNASSIGNED ) ? 2 : (GetTeamNumber() - 2);
 	}
@@ -1140,13 +1191,55 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
 
 		// This was added by request for the "push" map -danielmm8888
-		if (tf_flag_caps_per_round.GetInt() > 0)
+		if ( tf_flag_caps_per_round.GetInt() > 0 )
 		{
-			TFTeamMgr()->IncrementFlagCaptures(pPlayer->GetTeamNumber());
+			TFTeamMgr()->IncrementFlagCaptures( pPlayer->GetTeamNumber() );
+		}
+		else
+		{
+			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_CTF_CAPTURED_TEAM_FRAGS );
+		}
+	}
+	else if (m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	{
+		// Pretty much the Invasion code with some tweaks.
+		
+		// Handle messages to the screen.
+		TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerCapture" );
+		TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_PlayerTeamCapture" );
+
+		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+		{
+			if ( iTeam != pPlayer->GetTeamNumber() )
+			{
+				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamCapture" );
+
+				CTeamRecipientFilter filter( iTeam, true );
+				EmitSound( filter, entindex(), TF_RESOURCE_ENEMY_CAPTURED );
+			}
+			else
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				EmitSound( filter, entindex(), TF_RESOURCE_TEAM_CAPTURED );
+			}
 		}
 
-	}
+		// Reward the player
+		pPlayer->IncrementFragCount( TF_INVADE_CAPTURED_FRAGS );
 
+		// Reward the team
+		TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
+
+		if ( tf_flag_caps_per_round.GetInt() > 0 )
+		{
+			TFTeamMgr()->IncrementFlagCaptures( pPlayer->GetTeamNumber() );
+		}
+		else
+		{
+			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_CTF_CAPTURED_TEAM_FRAGS );
+		}
+	}
+	
 	IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_flag_event" );
 	if ( event )
 	{
@@ -1304,6 +1397,33 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 
 		SetFlagReturnIn( TF_INVADE_RESET_TIME );
 		SetFlagNeutralIn( TF_INVADE_NEUTRAL_TIME );
+	}
+	else if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	{
+		if ( bMessage  )
+		{
+			// Handle messages to the screen.
+			TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerFlagDrop" );
+			TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_FlagDrop" );
+
+			for (int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam)
+			{
+				if (iTeam != pPlayer->GetTeamNumber())
+				{
+					TFTeamMgr()->TeamCenterPrint(iTeam, "#TF_Invade_FlagDrop");
+
+					CTeamRecipientFilter filter(iTeam, true);
+					EmitSound(filter, entindex(), TF_RESOURCE_ENEMY_DROPPED);
+				}
+				else
+				{
+					CTeamRecipientFilter filter(iTeam, true);
+					EmitSound(filter, entindex(), TF_RESOURCE_TEAM_DROPPED);
+				}
+			}
+		}
+		SetFlagReturnIn( TF_RESOURCE_RESET_TIME );
+		SetFlagNeutralIn( TF_RESOURCE_NEUTRAL_TIME );
 	}
 	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
@@ -1480,7 +1600,7 @@ void CCaptureFlag::Think( void )
 			}
 		}
 
-		if ( m_nGameType == TF_FLAGTYPE_INVADE )
+		if ( m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
 		{
 			if ( m_flResetTime && gpGlobals->curtime > m_flResetTime )
 			{

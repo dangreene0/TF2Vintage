@@ -112,6 +112,9 @@
 #define TF_RESOURCE_EVENT_RED_CAPPED		"Announcer.SD_Event_CappedRed"
 #define TF_RESOURCE_EVENT_BLUE_CAPPED		"Announcer.SD_Event_CappedBlu"
 
+#define TF_RESOURCE_RESET_TIME			45.0f
+#define TF_RESOURCE_NEUTRAL_TIME		45.0f
+
 //=============================================================================
 //
 // Robot Destruction Flag defines.
