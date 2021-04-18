@@ -384,7 +384,7 @@ int CObjectSapper::OnTakeDamage( const CTakeDamageInfo &info )
 			return 0;
 
 		int nDamageAppliesToSapper = 0;
-		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetAttacker(), nDamageAppliesToSapper, set_dmg_apply_to_sapper );
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetWeapon(), nDamageAppliesToSapper, set_dmg_apply_to_sapper );
 		if( nDamageAppliesToSapper == 0 )
 			return 0;
 	}
