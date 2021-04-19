@@ -4137,7 +4137,7 @@
 		{
 			"name"	"TF2V_COSMETIC_HAT"
 			"prefab"	"hat_attachment"
-			"year"			"2009"
+			"year"			"2007"
 			"item_quality" "normal"
 			"used_by_classes"
 			{
@@ -6349,7 +6349,7 @@
 		{
 			"name"			"The Splendid Screen"
 			"prefab"			"weapon_shield"
-			"first_sale_date"	"2011"
+			"year"	"2011"
 			"item_logname" "splendid_screen"
 			"item_iconname" "splendid_screen"
 			"item_name"		"#TF_SplendidScreen"
@@ -7043,7 +7043,7 @@
 		{
 			"name"	"The Diamondback"
 			"prefab"			"weapon_revolver"
-			"first_sale_date"	"2011"
+			"year"	"2011"
 			"item_name"	"#TF_DEX_Revolver"
 			"item_description"	"#TF_DEX_Revolver_Desc"
 			"propername"	"1"
@@ -7161,7 +7161,7 @@
 		{
 			"name"	"The Eureka Effect"
 			"prefab"			"weapon_wrench"
-			"first_sale_date"	"2011"
+			"year"	"2011"
 			"item_name"	"#TF_Wrenchmotron"
 			"item_description"	"#TF_Wrenchmotron_Desc"
 			"item_logname"	"eureka_effect"
@@ -7244,7 +7244,7 @@
 		{
 			"name"	"The Phlogistinator"
 			"prefab"	"weapon_flamethrower"
-			"first_sale_date"	"2011"
+			"year"	"2011"
 			"item_logname"	"phlogistinator"
 			"item_iconname"	"phlogistinator"
 			"item_name"	"#TF_Phlogistinator"
@@ -7866,7 +7866,7 @@
 		{
 			"name"			"The Loose Cannon"
 			"prefab"		"weapon_demo_cannon"
-			"first_sale_date"	"2012"
+			"year"	"2012"
 		}
 		"997"
 		{
@@ -7935,7 +7935,7 @@
 		{
 			"name"	"The Classic"
 			"prefab"	"weapon_sniperrifle"
-			"first_sale_date"		"2014"
+			"year"		"2014"
 			"item_class"	"tf_weapon_sniperrifle_classic"
 			"item_logname"	"the_classic"
 			"item_iconname"	"the_classic"
