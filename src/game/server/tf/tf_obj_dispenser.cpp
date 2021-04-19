@@ -306,6 +306,11 @@ void CObjectDispenser::OnGoActive( void )
 
 	BaseClass::OnGoActive();
 
+	PlayActiveSound();
+}
+
+void CObjectDispenser::PlayActiveSound()
+{
 	EmitSound( "Building_Dispenser.Idle" );
 }
 

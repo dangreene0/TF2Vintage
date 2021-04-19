@@ -100,6 +100,8 @@ private:
 
 	void ResetHealingTargets( void );
 
+	virtual void PlayActiveSound( void );
+
 protected:
 	
 	// Entities currently being touched by this trigger
