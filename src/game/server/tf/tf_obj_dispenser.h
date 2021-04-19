@@ -58,6 +58,8 @@ public:
 	virtual float GetDispenserRadius( void );
 	virtual float GetHealRate( void );
 	virtual float GetAmmoRate( void );
+
+	virtual int	DispenseMetal( CTFPlayer *pPlayer );
 	virtual int GetAvailableMetal( void ) const { return m_iAmmoMetal; }
 
 	virtual void StartTouch( CBaseEntity *pOther );
@@ -67,7 +69,7 @@ public:
 
 	virtual int GetBaseHealth( void );
 
-	bool DispenseAmmo( CTFPlayer *pPlayer );
+	virtual bool DispenseAmmo( CTFPlayer *pPlayer );
 
 	void StartHealing( CBaseEntity *pOther );
 	void StopHealing( CBaseEntity *pOther );

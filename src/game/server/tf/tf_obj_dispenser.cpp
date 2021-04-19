@@ -533,6 +533,22 @@ void CObjectDispenser::FinishUpgrading( void )
 	BaseClass::FinishUpgrading();
 }
 
+int CObjectDispenser::DispenseMetal( CTFPlayer *pPlayer )
+{
+	// Cart dispenser has infinite metal.
+	int iMetalToGive = DISPENSER_DROP_METAL + 10 * ( GetUpgradeLevel() - 1 );
+
+	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+		iMetalToGive = Min( m_iAmmoMetal.Get(), iMetalToGive );
+
+	int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, false, TF_AMMO_SOURCE_DISPENSER );
+
+	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+		m_iAmmoMetal -= iMetal;
+
+	return iMetal;
+}
+
 bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 {
 	int iTotalPickedUp = 0;
@@ -552,23 +568,12 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 	int iSecondary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_SECONDARY ) * flAmmoRate ), TF_AMMO_SECONDARY, false, TF_AMMO_SOURCE_DISPENSER );
 	iTotalPickedUp += iSecondary;
 
-	// Cart dispenser has infinite metal.
-	int iMetalToGive = DISPENSER_DROP_METAL + 10 * ( GetUpgradeLevel() - 1 );
-
-	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
-		iMetalToGive = Min( m_iAmmoMetal.Get(), iMetalToGive );
-
-	if ( CAttributeManager::AttribHookValue<int>( 0, "no_metal_from_dispensers_while_active", pPlayer->GetActiveWeapon() ) == 0 )
 	// metal
 	int nNoMetalFromDispenserWhileActive = 0;
 	CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer->GetActiveWeapon(), nNoMetalFromDispenserWhileActive, no_metal_from_dispensers_while_active );
 	if ( nNoMetalFromDispenserWhileActive == 0 )
 	{
-		int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, false, TF_AMMO_SOURCE_DISPENSER );
-		iTotalPickedUp += iMetal;
-
-		if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
-			m_iAmmoMetal -= iMetal;
+		iTotalPickedUp += DispenseMetal( pPlayer );;
 	}
 
 	if ( iTotalPickedUp > 0 )
