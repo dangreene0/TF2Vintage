@@ -2280,29 +2280,23 @@ const char *CTFWeaponBase::GetTracerType( void )
 		PerTeamVisuals_t *pVisuals = pItemDef->GetVisuals( TEAM_UNASSIGNED );
 		if( pVisuals && pVisuals->GetTracerFX() )
 		{
-			Q_snprintf( m_szTracerName, MAX_TRACER_NAME, "%s", pVisuals->GetTracerFX() );
-		}
-	
-		if (GetOwner()->GetTeamNumber())
-		{
-			// If we have team specific, check those too.	
-			pVisuals = pItemDef->GetVisuals( GetOwner()->GetTeamNumber() );
-			if ( pVisuals && pVisuals->GetTracerFX() )
+			if (GetOwner()->GetTeamNumber())
 			{
-				// Make these for the right team.
 				switch (GetOwner()->GetTeamNumber())
 				{
-					case TF_TEAM_RED:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
-						break;
-					case TF_TEAM_BLUE:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "blue");
-						break;
-					default:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
-						break;
+				case TF_TEAM_RED:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
+					break;
+				case TF_TEAM_BLUE:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "blue");
+					break;
+				default:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
+					break;
 				}
 			}
+			else
+				Q_snprintf( m_szTracerName, MAX_TRACER_NAME, "%s", pVisuals->GetTracerFX() );
 		}
 	}
 	

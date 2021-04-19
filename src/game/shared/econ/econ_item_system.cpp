@@ -1024,6 +1024,19 @@ void CEconItemSchema::Precache( void )
 			if ( pVisuals->GetTracerFX() )
 			{
 				PrecacheParticleSystem( pVisuals->GetTracerFX() );
+				
+				//Since these get adjusted we need to do each one manually as a char.
+				char pTracerEffect[128];
+				char pTracerEffectCrit[128];
+				Q_snprintf( pTracerEffect, sizeof(pTracerEffect), "%s_red", pVisuals->GetTracerFX() );
+				Q_snprintf( pTracerEffectCrit, sizeof(pTracerEffectCrit), "%s_red_crit", pVisuals->GetTracerFX() );
+				PrecacheParticleSystem( pTracerEffect );
+				PrecacheParticleSystem( pTracerEffectCrit );
+
+				Q_snprintf( pTracerEffect, sizeof(pTracerEffect), "%s_blue", pVisuals->GetTracerFX() );
+				Q_snprintf( pTracerEffectCrit, sizeof(pTracerEffectCrit), "%s_blue_crit", pVisuals->GetTracerFX() );
+				PrecacheParticleSystem( pTracerEffect );
+				PrecacheParticleSystem( pTracerEffectCrit );
 			}
 
 		}
