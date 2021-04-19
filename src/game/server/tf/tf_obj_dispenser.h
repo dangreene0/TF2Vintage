@@ -78,8 +78,6 @@ public:
 	void RemoveHealingTarget( CBaseEntity *pOther );
 	bool IsHealingTarget( CBaseEntity *pTarget );
 
-	void ResetHealingTargets( void );
-
 	bool CouldHealTarget( CBaseEntity *pTarget );
 
 	Vector GetHealOrigin( void );
@@ -100,15 +98,18 @@ private:
 	void StartUpgrading( void );
 	void FinishUpgrading( void );
 
+	void ResetHealingTargets( void );
 
-	//CNetworkArray( EHANDLE, m_hHealingTargets, MAX_DISPENSER_HEALING_TARGETS );
-
-
+protected:
+	
 	// Entities currently being touched by this trigger
 	CUtlVector< EHANDLE >	m_hTouchingEntities;
 
 	CNetworkVar( int, m_iAmmoMetal );
 	CNetworkVar( bool, m_bStealthed );
+
+	bool m_bPlayRefillSound;
+	bool m_bPlayAmmoPickupSound;
 
 	// Time when the upgrade animation will complete
 	float m_flUpgradeCompleteTime;

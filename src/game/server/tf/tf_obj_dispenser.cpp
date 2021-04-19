@@ -148,6 +148,8 @@ CObjectDispenser::CObjectDispenser()
 	UseClientSideAnimation();
 
 	m_hTouchingEntities.Purge();
+	m_bPlayRefillSound = true;
+	m_bPlayAmmoPickupSound = true;
 
 	SetType( OBJ_DISPENSER );
 }
@@ -541,7 +543,7 @@ int CObjectDispenser::DispenseMetal( CTFPlayer *pPlayer )
 	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
 		iMetalToGive = Min( m_iAmmoMetal.Get(), iMetalToGive );
 
-	int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, false, TF_AMMO_SOURCE_DISPENSER );
+	int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, !m_bPlayAmmoPickupSound, TF_AMMO_SOURCE_DISPENSER );
 
 	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
 		m_iAmmoMetal -= iMetal;
@@ -560,12 +562,12 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 	if ( nNoPrimaryAmmoFromDispensers == 0 )
 	{
 		// primary
-		int iPrimary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_PRIMARY ) * flAmmoRate ), TF_AMMO_PRIMARY, false, TF_AMMO_SOURCE_DISPENSER );
+		int iPrimary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_PRIMARY ) * flAmmoRate ), TF_AMMO_PRIMARY, !m_bPlayAmmoPickupSound, TF_AMMO_SOURCE_DISPENSER );
 		iTotalPickedUp += iPrimary;
 	}
 
 	// secondary
-	int iSecondary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_SECONDARY ) * flAmmoRate ), TF_AMMO_SECONDARY, false, TF_AMMO_SOURCE_DISPENSER );
+	int iSecondary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_SECONDARY ) * flAmmoRate ), TF_AMMO_SECONDARY, !m_bPlayAmmoPickupSound, TF_AMMO_SOURCE_DISPENSER );
 	iTotalPickedUp += iSecondary;
 
 	// metal
@@ -576,12 +578,11 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 		iTotalPickedUp += DispenseMetal( pPlayer );;
 	}
 
-	if ( iTotalPickedUp > 0 )
+	if ( iTotalPickedUp > 0 && m_bPlayAmmoPickupSound )
 	{
 		if (pPlayer->m_Shared.InCond( TF_COND_STEALTHED ))
 		{
-			CRecipientFilter filter;
-			filter.AddRecipient(pPlayer);
+			CSingleUserRecipientFilter filter( pPlayer );
 			EmitSound(filter, entindex(), "BaseCombatCharacter.AmmoPickup");
 		}
 		else
@@ -650,7 +651,8 @@ void CObjectDispenser::RefillThink( void )
 
 		m_iAmmoMetal = Min( m_iAmmoMetal + iToRefill, DISPENSER_MAX_METAL_AMMO );
 
-		EmitSound( "Building_Dispenser.GenerateMetal" );
+		if( m_bPlayRefillSound )
+			EmitSound( "Building_Dispenser.GenerateMetal" );
 	}
 
 	SetContextThink( &CObjectDispenser::RefillThink, gpGlobals->curtime + 6, REFILL_CONTEXT );
