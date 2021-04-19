@@ -538,7 +538,10 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 	int iTotalPickedUp = 0;
 	float flAmmoRate = GetAmmoRate();
 
-	if ( CAttributeManager::AttribHookValue<int>( 0, "no_primary_ammo_from_dispensers", pPlayer->GetActiveWeapon() ) == 0 )
+	int nNoPrimaryAmmoFromDispensers = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer->GetActiveWeapon(), nNoPrimaryAmmoFromDispensers, no_primary_ammo_from_dispensers );
+
+	if ( nNoPrimaryAmmoFromDispensers == 0 )
 	{
 		// primary
 		int iPrimary = pPlayer->GiveAmmo( floor( pPlayer->GetMaxAmmo( TF_AMMO_PRIMARY ) * flAmmoRate ), TF_AMMO_PRIMARY, false, TF_AMMO_SOURCE_DISPENSER );
@@ -556,6 +559,10 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 		iMetalToGive = Min( m_iAmmoMetal.Get(), iMetalToGive );
 
 	if ( CAttributeManager::AttribHookValue<int>( 0, "no_metal_from_dispensers_while_active", pPlayer->GetActiveWeapon() ) == 0 )
+	// metal
+	int nNoMetalFromDispenserWhileActive = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer->GetActiveWeapon(), nNoMetalFromDispenserWhileActive, no_metal_from_dispensers_while_active );
+	if ( nNoMetalFromDispenserWhileActive == 0 )
 	{
 		int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, false, TF_AMMO_SOURCE_DISPENSER );
 		iTotalPickedUp += iMetal;
@@ -608,7 +615,7 @@ float CObjectDispenser::GetHealRate( void )
 
 float CObjectDispenser::GetAmmoRate( void )
 {
-	float flAmmoRate = g_flDispenserHealRates[GetUpgradeLevel() - 1];
+	float flAmmoRate = g_flDispenserAmmoRates[GetUpgradeLevel() - 1];
 
 	if ( GetOwner() )
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( GetOwner(), flAmmoRate, mult_dispenser_rate );
