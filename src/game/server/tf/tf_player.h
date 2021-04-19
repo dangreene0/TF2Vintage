@@ -507,7 +507,7 @@ public:
 	void				ValidateWeaponSlots( void );
 	void				ValidateWearableSlots( void );
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
-	void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
+	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
 	void				ManageRandomWeapons( TFPlayerClassData_t *pData );
 	void				ManageBuilderWeapons( TFPlayerClassData_t *pData );
 	void				ManageGrenades( TFPlayerClassData_t *pData );

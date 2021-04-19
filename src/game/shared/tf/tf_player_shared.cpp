@@ -146,9 +146,9 @@ extern ConVar tf2v_randomizer;
 extern ConVar tf2v_random_weapons;
 #endif
 
-ConVar tf2v_legacy_weapons( "tf2v_legacy_weapons", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Disables all new weapons as well as Econ Item System." );
+ConVar tf2v_legacy_weapons( "tf2v_legacy_weapons", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "(PLACEHOLDER) Disables all new weapons as well as Econ Item System." );
 ConVar tf2v_force_year_weapons( "tf2v_force_year_weapons", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Limit weapons based on year." );
-ConVar tf2v_allowed_year_weapons( "tf2v_allowed_year_weapons", "2020", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum year allowed for items." );
+ConVar tf2v_allowed_year_weapons( "tf2v_allowed_year_weapons", "2021", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum year allowed for items." );
 
 extern ConVar tf2v_assault_ctf_rules;
 
@@ -3868,14 +3868,6 @@ void CTFPlayerShared::CalculateDisguiseWearables(void)
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::RecalcDisguiseWeapon(int iSlot /*= 0*/)
 {
-	// If we're using legacy weapons, calculate the disguise weapon using that logic instead.
-	if (tf2v_legacy_weapons.GetBool() || (tf2v_force_year_weapons.GetBool() && tf2v_allowed_year_weapons.GetInt() <= 2007))
-	{
-#ifdef CLIENT_DLL
-		RecalcDisguiseWeaponLegacy();
-#endif
-		return;
-	}
 
 	CTFPlayer *pDisguiseTarget = ToTFPlayer(GetDisguiseTarget());
 	if ( !pDisguiseTarget )

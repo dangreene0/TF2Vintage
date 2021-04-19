@@ -1813,8 +1813,8 @@ void CTFPlayer::GiveDefaultItems()
 	// Give weapons.
 	if ( ( tf2v_randomizer.GetBool() || tf2v_random_weapons.GetBool() ) && !m_bRegenerating ) 
 		ManageRandomWeapons( pData );
-	else if (tf2v_legacy_weapons.GetBool() || (tf2v_force_year_weapons.GetBool() && tf2v_allowed_year_weapons.GetInt() <= 2007))
-		ManageRegularWeaponsLegacy( pData );
+	//else if (tf2v_legacy_weapons.GetBool() || (tf2v_force_year_weapons.GetBool() && tf2v_allowed_year_weapons.GetInt() <= 2007))
+	//	ManageRegularWeaponsLegacy( pData );
 	else if ( !tf2v_randomizer.GetBool() )
 		ManageRegularWeapons( pData );
 	
@@ -2290,10 +2290,10 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			if ( !tf2v_allow_mod_weapons.GetBool() )	// Checks if it's a custom weapon.
 				bIsCustomContent = pItemDef->is_custom_content;
 				
-			if ( !tf2v_allow_cut_weapons.GetBool() )	// Checks if it's a custom weapon.
+			if ( !tf2v_allow_cut_weapons.GetBool() )	// Checks if it's a cut weapon.
 				bIsCutContent = pItemDef->is_cut_content;
 				
-			if ( !tf2v_allow_multiclass_weapons.GetBool() )	// Checks if it's a custom weapon.
+			if ( !tf2v_allow_multiclass_weapons.GetBool() )	// Checks if it's a multiclass custom weapon.
 				bIsMultiClassItem = pItemDef->is_multiclass_item;
 				
 			if ( tf2v_force_year_weapons.GetBool() )
@@ -2373,71 +2373,6 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
 		m_hActiveWeapon->WeaponSound( DEPLOY );
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData )
-{
-	
-	for (int iWeapon = 0; iWeapon < TF_PLAYER_WEAPON_COUNT; ++iWeapon)
-	{
-		// Only allow for melee items if we enable it or are in a special gamemode.
-		if ( ( TFGameRules()->IsInDRMode() || tf2v_force_melee.GetBool() ) && (iWeapon != TF_LOADOUT_SLOT_MELEE) )
-			continue;
-
-		if ( pData->m_aWeapons[iWeapon] != TF_WEAPON_NONE )
-		{
-			int iWeaponID = pData->m_aWeapons[iWeapon];
-			
-			const char *pszWeaponName = WeaponIdToClassname( iWeaponID );
-
-			CTFWeaponBase *pWeapon = (CTFWeaponBase *)Weapon_GetSlot( iWeapon );
-
-			//If we already have a weapon in this slot but is not the same type then nuke it (changed classes)
-			if ( pWeapon && pWeapon->GetWeaponID() != iWeaponID )
-			{
-				Weapon_Detach( pWeapon );
-				UTIL_Remove( pWeapon );
-			}
-
-			pWeapon = Weapon_OwnsThisID( iWeaponID );
-
-			if ( pWeapon )
-			{
-				pWeapon->ChangeTeam( GetTeamNumber() );
-				pWeapon->GiveDefaultAmmo();
-
-				if ( m_bRegenerating == false )
-				{
-					pWeapon->WeaponReset();
-				}
-			}
-			else
-			{
-				pWeapon = (CTFWeaponBase *)GiveNamedItem( pszWeaponName );
-
-				if ( pWeapon )
-				{
-					pWeapon->DefaultTouch( this );
-				}
-			}
-		}
-		else
-		{
-			//I shouldn't have any weapons in this slot, so get rid of it
-			CTFWeaponBase *pCarriedWeapon = (CTFWeaponBase *)Weapon_GetSlot( iWeapon );
-
-			//Don't nuke builders since they will be nuked if we don't need them later.
-			if ( pCarriedWeapon && pCarriedWeapon->GetWeaponID() != TF_WEAPON_BUILDER )
-			{
-				Weapon_Detach( pCarriedWeapon );
-				GetViewModel( pCarriedWeapon->m_nViewModelIndex, false )->SetWeaponModel( NULL, NULL );
-				UTIL_Remove( pCarriedWeapon );
-			}
-		}
 	}
 }
 
