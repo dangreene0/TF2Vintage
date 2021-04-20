@@ -660,17 +660,17 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, const char *itemName )
 		return;
 
 	CEconItemDefinition *pItem = GetItemSchema()->GetItemDefinitionByName( itemName );
-	CEconItemView itemView( pItem->index );
-
+	if ( !pItem )
+		return;
+	
 	char const *pszEntName = pItem->GetClassName();
 	CEconEntity *pEcon = dynamic_cast<CEconEntity *>( CreateEntityByName( pszEntName ) );
-	if ( pEcon && pItem )
-	{
-		pEcon->SetItem( itemView );
-	}
 
-	if ( pEcon && pItem )
+	if ( pEcon )
 	{
+		CEconItemView itemView( pItem->index );
+		pEcon->SetItem( itemView );
+
 		// If it's a weapon, remove the current one, and give us this one.
 		CBaseCombatWeapon *pExisting = pBot->Weapon_OwnsThisType( pItem->GetClassName() );
 		if ( pExisting )
