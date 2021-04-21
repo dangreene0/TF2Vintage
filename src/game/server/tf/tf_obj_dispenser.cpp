@@ -545,12 +545,12 @@ int CObjectDispenser::DispenseMetal( CTFPlayer *pPlayer )
 	// Cart dispenser has infinite metal.
 	int iMetalToGive = DISPENSER_DROP_METAL + 10 * ( GetUpgradeLevel() - 1 );
 
-	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+	if ( ( GetObjectFlags() & OF_DOESNT_HAVE_A_MODEL ) == 0 )
 		iMetalToGive = Min( m_iAmmoMetal.Get(), iMetalToGive );
 
 	int iMetal = pPlayer->GiveAmmo( iMetalToGive, TF_AMMO_METAL, !m_bPlayAmmoPickupSound, TF_AMMO_SOURCE_DISPENSER );
 
-	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+	if ( ( GetObjectFlags() & OF_DOESNT_HAVE_A_MODEL ) == 0 )
 		m_iAmmoMetal -= iMetal;
 
 	return iMetal;
@@ -636,7 +636,7 @@ float CObjectDispenser::GetAmmoRate( void )
 
 void CObjectDispenser::RefillThink( void )
 {
-	if ( GetObjectFlags() & OF_IS_CART_OBJECT )
+	if ( GetObjectFlags() & OF_DOESNT_HAVE_A_MODEL )
 		return;
 
 	if ( IsDisabled() || IsUpgrading() || IsRedeploying() )
@@ -931,7 +931,7 @@ LINK_ENTITY_TO_CLASS( mapobj_cart_dispenser, CObjectCartDispenser );
 //-----------------------------------------------------------------------------
 void CObjectCartDispenser::Spawn( void )
 {
-	SetObjectFlags( OF_IS_CART_OBJECT );
+	SetObjectFlags( OF_DOESNT_HAVE_A_MODEL );
 
 	m_takedamage = DAMAGE_NO;
 

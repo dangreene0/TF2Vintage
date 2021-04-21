@@ -623,7 +623,7 @@ void CBaseObject::InitializeMapPlacedObject( void )
 {
 	m_bWasMapPlaced = true;
 
-	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+	if ( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
 		SpawnControlPanels();
 
 	// Spawn with full health.
@@ -874,7 +874,10 @@ void CBaseObject::DeterminePlaybackRate( void )
 		SetPlaybackRate( 1.0 );
 	}
 
-	StudioFrameAdvance();
+	if ( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
+	{
+		StudioFrameAdvance();
+	}
 }
 
 #define OBJ_UPGRADE_DURATION	1.5f
@@ -1552,7 +1555,8 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 	// been attached to (could be a vehicle which supplies a different
 	// place for the control panel)
 	// NOTE: We must also spawn it before FinishedBuilding can be called
-	SpawnControlPanels();
+	if( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
+		SpawnControlPanels();
 
 	// Tell the object we've been built on that we exist
 	if ( IsBuiltOnAttachment() )
