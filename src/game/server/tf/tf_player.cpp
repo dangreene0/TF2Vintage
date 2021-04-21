@@ -2381,7 +2381,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			else					  // Issue by entity ID.
 			{
 			    CEconItemView econItem( iItemID );
-				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( "tf_wearable", 0, &econItem ) );	
+				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pItem->GetEntityName(), 0, &econItem ) );	
 			}
 			if ( pEntity )
 			{
