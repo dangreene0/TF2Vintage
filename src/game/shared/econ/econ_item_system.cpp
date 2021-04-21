@@ -1127,6 +1127,15 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 	{
 		ParseItems( pReskinItems );
 	}
+	
+	// Everything below should be largely static and not change much.
+
+	// Special is for special top secret items.
+	KeyValues *pSpecialItems = pKVData->FindKey( "specialitems" );
+	if ( pSpecialItems )
+	{
+		ParseItems( pSpecialItems );
+	}
 
 	// Stock Variants is for v/w variants.
 	KeyValues *pStockVariants = pKVData->FindKey( "stockvariants" );
@@ -1135,11 +1144,18 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 		ParseItems( pStockVariants );
 	}
 	
-	// Special is for special items, like medals and zombies.
-	KeyValues *pSpecialItems = pKVData->FindKey( "specialitems" );
-	if ( pSpecialItems )
+	// Medals is well, player medals.
+	KeyValues *pMedals = pKVData->FindKey( "medals" );
+	if ( pMedals )
 	{
-		ParseItems( pSpecialItems );
+		ParseItems( pMedals );
+	}
+	
+	// Holiday is for content relating to events, like Halloween or Christmas.
+	KeyValues *pHoliday = pKVData->FindKey( "holiday" );
+	if ( pHoliday )
+	{
+		ParseItems( pHoliday );
 	}
 #endif
 }

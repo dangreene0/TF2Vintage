@@ -6306,7 +6306,7 @@ const char *pszTF2VHideousEasterEgg[] =
 	"https://wiki.teamfortress.com/wiki/Western_Wear",
 };
 
-static void cc_tf2v_hideous()
+static void cc_tf2v_hideous(void)
 {
 	if ( steamapicontext && steamapicontext->SteamFriends() )
 	{
@@ -6314,3 +6314,4 @@ static void cc_tf2v_hideous()
 	}
 }
 static ConCommand hideous( "hideous", cc_tf2v_hideous, "", FCVAR_NONE );
+

@@ -10001,6 +10001,73 @@
 			"model_player"		"models/workshop/weapons/c_models/c_invasion_wrangler/c_invasion_wrangler.mdl"
 		}
 	}
+	"specialitems"
+	{
+		"30670"
+		{
+			"name"	"Golden Wrench"
+			"prefab"		"weapon_wrench weapon_special"
+			"year"	"2010"
+			"item_name"		"#TF_Unique_Golden_Wrench"
+			"propername"	"1"
+			"item_logname"	"wrench_golden"
+			"item_iconname"	"wrench_golden"
+			"image_inventory"	"backpack/weapons/c_models/c_wrench/gold_wrench"
+			"model_player"	"models/weapons/c_models/c_wrench/gold_wrench.mdl"
+			"attributes"
+			{
+				"turn to gold"
+				{
+					"attribute_class"	"set_turn_to_gold"
+					"value" "1"
+				}
+			}
+		}
+		"30671"
+		{
+			"name"	"Valve Rocket Launcher"
+			"prefab"	"weapon_rocketlauncher weapon_special"
+			"year"			"2007"
+			"attributes"
+			{
+				"damage bonus"
+				{
+					"attribute_class"	"mult_dmg"
+					"value"				"10100"
+				}
+				"clip size bonus"	
+				{
+					"attribute_class"	"mult_clipsize"
+					"value" 			"1100"
+				}
+				"fire rate bonus"
+				{
+					"attribute_class"	"mult_postfiredelay"
+					"value" 			"0.25"
+				}
+				"heal on hit for rapidfire"
+				{
+					"attribute_class"	"add_onhit_addhealth"
+					"value"				"250"
+				}
+				"critboost on kill"
+				{
+					"attribute_class"	"add_onkill_critboost_time"
+					"value"				"10"
+				}
+				"move speed bonus"
+				{
+					"attribute_class"	"mult_player_movespeed"
+					"value"				"2"
+				}
+				"Projectile speed increased""
+				{
+					"attribute_class"	"mult_projectile_speed"
+					"value"				"2"
+				}
+			}
+		}
+	}
 	"stockvariants"
 	{
 		"70000"
@@ -10371,9 +10438,8 @@
 			"attach_to_hands"	"0"
 		}
 	}
-	"specialitems"
-	{
-		
+	"medals"
+	{	
 		"121"
 		{
 			"name"	"The Devanon Special"
@@ -10444,26 +10510,9 @@
 				"use_per_class_bodygroups" "1"
 			}
 		}
-		"30670"
-		{
-			"name"	"Golden Wrench"
-			"prefab"		"weapon_wrench weapon_special"
-			"year"	"2010"
-			"item_name"		"#TF_Unique_Golden_Wrench"
-			"propername"	"1"
-			"item_logname"	"wrench_golden"
-			"item_iconname"	"wrench_golden"
-			"image_inventory"	"backpack/weapons/c_models/c_wrench/gold_wrench"
-			"model_player"	"models/weapons/c_models/c_wrench/gold_wrench.mdl"
-			"attributes"
-			{
-				"turn to gold"
-				{
-					"attribute_class"	"set_turn_to_gold"
-					"value" "1"
-				}
-			}
-		}
+	}
+	"holiday"
+	{
 		"5617"
 		{
 			"name"		"Zombie Scout"
