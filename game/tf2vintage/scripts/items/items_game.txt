@@ -10060,7 +10060,7 @@
 					"attribute_class"	"mult_player_movespeed"
 					"value"				"2"
 				}
-				"Projectile speed increased""
+				"Projectile speed increased"
 				{
 					"attribute_class"	"mult_projectile_speed"
 					"value"				"2"
