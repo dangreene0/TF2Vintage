@@ -1813,8 +1813,6 @@ void CTFPlayer::GiveDefaultItems()
 	// Give weapons.
 	if ( ( tf2v_randomizer.GetBool() || tf2v_random_weapons.GetBool() ) && !m_bRegenerating ) 
 		ManageRandomWeapons( pData );
-	//else if (tf2v_legacy_weapons.GetBool() || (tf2v_force_year_weapons.GetBool() && tf2v_allowed_year_weapons.GetInt() <= 2007))
-	//	ManageRegularWeaponsLegacy( pData );
 	else if ( !tf2v_randomizer.GetBool() )
 		ManageRegularWeapons( pData );
 	
@@ -2275,6 +2273,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			bool bIsCutContent = false;
 			bool bIsMultiClassItem = false;
 			bool bIsSpecialRestricted = false;
+			bool bStockItem = false;
 			
 			// Only run these checks when necessary.
 			
@@ -2296,7 +2295,10 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			if ( !tf2v_allow_multiclass_weapons.GetBool() )	// Checks if it's a multiclass custom weapon.
 				bIsMultiClassItem = pItemDef->is_multiclass_item;
 				
-			if ( tf2v_force_year_weapons.GetBool() )
+			if ( pItemDef->baseitem )	// Check if this is a stock item.
+				bStockItem = true;
+			
+			if ( tf2v_force_year_weapons.GetBool() && !bStockItem )
 			{
 				if ( tf2v_allowed_year_weapons.GetInt() <= 2007 )
 				{
@@ -2338,6 +2340,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			if ( !bWhiteListedWeapon || bIsReskin || bHolidayRestrictedItem || bIsSpecialRestricted || bIsDemoknight || bIsCutContent || bIsMultiClassItem ) // If the weapon is banned, swap for a stock weapon.
 			{
 				pItem = GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), iSlot, 0 );
+				bStockItem = true;
 			}
 
 			CTFBot *myBot = ToTFBot( this );
@@ -2359,7 +2362,27 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				}
 			}
 			
-			CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
+			bool bUseAlternateEntity = false;
+			int iItemID = -1;
+			if ( tf2v_legacy_weapons.GetBool() && bStockItem )
+			{
+				iItemID = TranslateLegacyID(pItem->GetItemDefIndex());
+				if (iItemID != -1)
+				{
+					bUseAlternateEntity = true;
+				}
+			}
+			
+			CEconEntity *pEntity = NULL;
+			if (!bUseAlternateEntity) // Issue by slot.
+			{
+				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
+			}
+			else					  // Issue by entity ID.
+			{
+			    CEconItemView econItem( iItemID );
+				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( "tf_wearable", 0, &econItem ) );	
+			}
 			if ( pEntity )
 			{
 				pEntity->GiveTo( this );
@@ -2437,23 +2460,41 @@ void CTFPlayer::ManageRandomWeapons( TFPlayerClassData_t *pData )
 					break;
 			}
 		}
-
-		int iPreset = RandomInt( 0, pInv->GetNumPresets( iClass, iSlot ) - 1 );
-
+		
+		
+		// Roll us a random weapon, and make sure it's a nonspecial item.
+		bool bValidWeapon = false;
 		CEconItemView *pItem = NULL;
-
-		// Engineers always get PDAs
-		// Spies should get their disguise PDA
-		if ( ( ( m_PlayerClass.GetClassIndex() == TF_CLASS_ENGINEER ) && ( iSlot == TF_LOADOUT_SLOT_PDA1  || iSlot == TF_LOADOUT_SLOT_PDA2 ) ) || ( ( m_PlayerClass.GetClassIndex() == TF_CLASS_SPY ) && ( iSlot == TF_LOADOUT_SLOT_PDA1  ) ) )
+		while (!bValidWeapon)
 		{
-			pItem = GetLoadoutItem( m_PlayerClass.GetClassIndex(), iSlot );
-		}
-		else
-		{
-			// Give us the item
-			pItem = pInv->GetItem( iClass, iSlot, iPreset );
-		}
+			int iPreset = RandomInt( 0, pInv->GetNumPresets( iClass, iSlot ) - 1 );
 
+			// Engineers always get PDAs
+			// Spies should get their disguise PDA
+			if ( ( ( m_PlayerClass.GetClassIndex() == TF_CLASS_ENGINEER ) && ( iSlot == TF_LOADOUT_SLOT_PDA1 || iSlot == TF_LOADOUT_SLOT_PDA2 ) ) || ( ( m_PlayerClass.GetClassIndex() == TF_CLASS_SPY ) && ( iSlot == TF_LOADOUT_SLOT_PDA1  ) ) )
+			{
+				pItem = GetLoadoutItem( m_PlayerClass.GetClassIndex(), iSlot );
+			}
+			else
+			{
+				// Give us the item
+				pItem = pInv->GetItem( iClass, iSlot, iPreset );
+			}
+
+			if ( pItem )
+			{
+				CEconItemDefinition *pItemDef = pItem->GetStaticData();
+				// If it's special or a variant of a stock item, reroll.
+				if ( pItemDef && ( pItemDef->specialitem || pItemDef->stockvariant ) )
+				{
+					continue;
+				}
+			}
+
+			// If we've gotten here, it means we either don't have an item in this slot or an item that passes the check.
+			bValidWeapon = true;
+		}
+		
 		if ( pItem )
 		{
 			const char *pszClassname = pItem->GetEntityName();
@@ -2820,6 +2861,31 @@ void CTFPlayer::ManageVIPMedal( TFPlayerClassData_t *pData )
     }
 
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: Used for translating c_model stock items to v/w model items.
+//-----------------------------------------------------------------------------
+int CTFPlayer::TranslateLegacyID(int iItemID)
+{
+	// Using a switch would have been slightly faster, but less modular.
+	CEconItemDefinition *pItemDef = NULL;
+	pItemDef = GetItemSchema()->GetItemDefinition(iItemID);
+	if (pItemDef && pItemDef->baseitem)
+	{
+		// We're a baseitem, good.
+		int nTranslatedID = iItemID + 70000;
+		// Increase the ID by 70000 since that's where our v/w models are.
+		pItemDef = NULL; // Reset this, because we need to check it again.
+		pItemDef = GetItemSchema()->GetItemDefinition(nTranslatedID);
+		if (pItemDef && pItemDef->stockvariant)
+		{
+			return nTranslatedID; // This is the new item ID we swap to.
+		}
+
+	}
+	return -1; // Return -1 to show an error.
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

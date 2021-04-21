@@ -1128,6 +1128,13 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 		ParseItems( pReskinItems );
 	}
 
+	// Stock Variants is for v/w variants.
+	KeyValues *pStockVariants = pKVData->FindKey( "stockvariants" );
+	if ( pStockVariants )
+	{
+		ParseItems( pStockVariants );
+	}
+	
 	// Special is for special items, like medals and zombies.
 	KeyValues *pSpecialItems = pKVData->FindKey( "specialitems" );
 	if ( pSpecialItems )

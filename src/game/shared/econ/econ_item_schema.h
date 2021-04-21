@@ -478,6 +478,7 @@ public:
 		is_reskin = false;
 		specialitem = false;
 		demoknight = false;
+		stockvariant = false;
 		drop_type = DROPTYPE_NONE;
 		year = 2005; // Generic value for hiding the year. (No items came out before 2006)
 		is_custom_content = false;
@@ -646,6 +647,7 @@ public:
 	bool is_reskin;
 	bool specialitem;
 	bool demoknight;
+	bool stockvariant;
 	int drop_type;
 	int  year;
 	bool is_custom_content;

@@ -2598,8 +2598,8 @@
 			}
 			"visuals"
 			{
-				"sound_single_shot"	"Weapon_Soda_Popper.Single"
-				"sound_burst"	"Weapon_Soda_Popper.SingleCrit"
+				"sound_single_shot"    "Weapon_Soda_Popper.Single"
+				"sound_burst"    "Weapon_Soda_Popper.SingleCrit"
 				"muzzle_flash"	"muzzle_bignasty"
 				"tracer_effect"	"bullet_bignasty_tracer01"
 				"animation_replacement"
@@ -9999,6 +9999,376 @@
 			"propername"		"1"
 			"image_inventory"		"backpack/workshop/weapons/c_models/c_invasion_wrangler/c_invasion_wrangler"
 			"model_player"		"models/workshop/weapons/c_models/c_invasion_wrangler/c_invasion_wrangler.mdl"
+		}
+	}
+	"stockvariants"
+	{
+		"70000"
+		{
+			"name"	"TF_WEAPON_BAT VARIANT"
+			"prefab"	"weapon_bat"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_bat.mdl"
+			"model_player"	"models/weapons/v_models/v_bat_scout.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70001"
+		{
+			"name"	"TF_WEAPON_BOTTLE VARIANT"
+			"prefab"	"weapon_bottle"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_bottle.mdl"
+			"model_player"	"models/weapons/v_models/v_bottle_demoman.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70002"
+		{
+			"name"	"TF_WEAPON_FIREAXE VARIANT"
+			"prefab"	"weapon_fireaxe"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_fireaxe.mdl"
+			"model_player"	"models/weapons/v_models/v_fireaxe_pyro.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70003"
+		{
+			"name"	"TF_WEAPON_CLUB VARIANT"
+			"prefab"	"weapon_club"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_machete.mdl"
+			"model_player"	"models/weapons/v_models/v_machete_sniper.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70004"
+		{
+			"name"	"TF_WEAPON_KNIFE VARIANT"
+			"prefab"	"weapon_knife"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_knife.mdl"
+			"model_player"	"models/weapons/v_models/v_knife_spy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70005"
+		{
+			"name"	"TF_WEAPON_FISTS VARIANT"
+			"prefab"	"weapon_fists"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_player"	"models/weapons/v_models/v_fist_heavy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70006"
+		{
+			"name"	"TF_WEAPON_SHOVEL VARIANT"
+			"prefab"	"weapon_shovel"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_shovel.mdl"
+			"model_player"	"models/weapons/v_models/v_shovel_soldier.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70007"
+		{
+			"name"	"TF_WEAPON_WRENCH VARIANT"
+			"prefab"	"weapon_wrench"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_wrench.mdl"
+			"model_player"	"models/weapons/v_models/v_wrench_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70008"
+		{
+			"name"	"TF_WEAPON_BONESAW VARIANT"
+			"prefab"	"weapon_bonesaw"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_bonesaw.mdl"
+			"model_player"	"models/weapons/v_models/v_bonesaw_medic.mdl"
+		}
+		"70009"
+		{
+			"name"	"TF_WEAPON_SHOTGUN_PRIMARY VARIANT"
+			"prefab"	"weapon_shotgun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"item_slot"	"primary"
+			"used_by_classes"
+			{
+				"engineer"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_shotgun.mdl"
+			"model_player"	"models/weapons/v_models/v_shotgun_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70010"
+		{
+			"name"	"TF_WEAPON_SHOTGUN_SOLDIER VARIANT"
+			"prefab"	"weapon_shotgun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"item_slot"	"secondary"
+			"used_by_classes"
+			{
+				"soldier"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_shotgun.mdl"
+			"model_player"	"models/weapons/v_models/v_shotgun_soldier.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70011"
+		{
+			"name"	"TF_WEAPON_SHOTGUN_HWG VARIANT"
+			"prefab"	"weapon_shotgun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"item_slot"	"secondary"
+			"used_by_classes"
+			{
+				"heavy"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_shotgun.mdl"
+			"model_player"	"models/weapons/v_models/v_shotgun_heavy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70012"
+		{
+			"name"	"TF_WEAPON_SHOTGUN_PYRO VARIANT"
+			"prefab"	"weapon_shotgun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"item_slot"	"secondary"
+			"used_by_classes"
+			{
+				"pyro"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_shotgun.mdl"
+			"model_player"	"models/weapons/v_models/v_shotgun_pyro.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70013"
+		{
+			"name"	"TF_WEAPON_SCATTERGUN VARIANT"
+			"prefab"	"weapon_scattergun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_scattergun.mdl"
+			"model_player"	"models/weapons/v_models/v_scattergun_scout.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70014"
+		{
+			"name"	"TF_WEAPON_SNIPERRIFLE VARIANT"
+			"prefab"	"weapon_sniperrifle"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_sniperrifle.mdl"
+			"model_player"	"models/weapons/v_models/v_sniperrifle_sniper.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70015"
+		{
+			"name"	"TF_WEAPON_MINIGUN VARIANT"
+			"prefab"	"weapon_minigun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_minigun.mdl"
+			"model_player"	"models/weapons/v_models/v_minigun_heavy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70016"
+		{
+			"name"	"TF_WEAPON_SMG VARIANT"
+			"prefab"	"weapon_smg"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_smg.mdl"
+			"model_player"	"models/weapons/v_models/v_smg_sniper.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70017"
+		{
+			"name"	"TF_WEAPON_SYRINGEGUN_MEDIC VARIANT"
+			"prefab"	"weapon_syringegun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_syringegun.mdl"
+			"model_player"	"models/weapons/v_models/v_syringegun_medic.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70018"
+		{
+			"name"	"TF_WEAPON_ROCKETLAUNCHER VARIANT"
+			"prefab"	"weapon_rocketlauncher"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_rocketlauncher.mdl"
+			"model_player"	"models/weapons/v_models/v_rocketlauncher_soldier.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70019"
+		{
+			"name"	"TF_WEAPON_GRENADELAUNCHER VARIANT"
+			"prefab"	"weapon_grenade_launcher"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_grenadelauncher.mdl"
+			"model_player"	"models/weapons/v_models/v_grenadelauncher_demo.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70020"
+		{
+			"name"	"TF_WEAPON_STICKYBOMB_LAUNCHER VARIANT"
+			"prefab"	"weapon_stickybomb_launcher"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_stickybomb_launcher.mdl"
+			"model_player"	"models/weapons/v_models/v_stickybomb_launcher_demo.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70021"
+		{
+			"name"	"TF_WEAPON_FLAMETHROWER VARIANT"
+			"prefab"	"weapon_flamethrower"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_flamethrower.mdl"
+			"model_player"	"models/weapons/v_models/v_flamethrower_pyro.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70022"
+		{
+			"name"	"TF_WEAPON_PISTOL VARIANT"
+			"prefab"	"weapon_pistol"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"used_by_classes"
+			{
+				"engineer"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_pistol.mdl"
+			"model_player"	"models/weapons/v_models/v_pistol_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70023"
+		{
+			"name"	"TF_WEAPON_PISTOL_SCOUT VARIANT"
+			"prefab"	"weapon_pistol"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"used_by_classes"
+			{
+				"scout"	"1"
+			}
+			"model_world"	"models/weapons/w_models/w_pistol.mdl"
+			"model_player"	"models/weapons/v_models/v_pistol_scout.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70024"
+		{
+			"name"	"TF_WEAPON_REVOLVER VARIANT"
+			"prefab"	"weapon_revolver"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_revolver.mdl"
+			"model_player"	"models/weapons/v_models/v_revolver_spy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70025"
+		{
+			"name"	"TF_WEAPON_PDA_ENGINEER_BUILD VARIANT"
+			"prefab"	"weapon_pda_engineer_build"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_builder.mdl"
+			"model_player"	"models/weapons/v_models/v_builder_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70026"
+		{
+			"name"	"TF_WEAPON_PDA_ENGINEER_DESTROY VARIANT"
+			"prefab"	"weapon_pda_engineer_destroy"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_pda_engineer.mdl"
+			"model_player"	"models/weapons/v_models/v_pda_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70027"
+		{
+			"name"	"TF_WEAPON_PDA_SPY VARIANT"
+			"prefab"	"weapon_pda_spy"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_cigarette_case.mdl"
+			"model_player"	"models/weapons/v_models/v_pda_spy.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70028"
+		{
+			"name"	"TF_WEAPON_BUILDER VARIANT"
+			"prefab"	"weapon_builder"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_toolbox.mdl"
+			"model_player"	"models/weapons/v_models/v_toolbox_engineer.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70029"
+		{
+			"name"	"TF_WEAPON_MEDIGUN VARIANT"
+			"prefab"	"weapon_medigun"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_medigun.mdl"
+			"model_player"	"models/weapons/v_models/v_medigun_medic.mdl"
+			"attach_to_hands"	"0"
+		}
+		"70735"
+		{
+			"name"	"TF_WEAPON_BUILDER_SPY VARIANT"
+			"prefab"	"weapon_builder_spy"
+			"item_quality" "normal"
+			"year"			"2007"
+			"stockvariant"	"1"
+			"model_world"	"models/weapons/w_models/w_sapper.mdl"
+			"model_player"	"models/weapons/v_models/v_sapper_spy.mdl"
+			"attach_to_hands"	"0"
 		}
 	}
 	"specialitems"

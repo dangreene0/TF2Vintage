@@ -120,9 +120,11 @@ void CTFInventory::LoadInventory()
 #ifdef CLIENT_DLL
 	bool bReskinsEnabled = CommandLine()->CheckParm( "-showreskins" );
 	bool bSpecialsEnabled = CommandLine()->CheckParm( "-goldenboy" );
+	bool bCacheStockVariants = false;
 #else
 	bool bReskinsEnabled = true;
 	bool bSpecialsEnabled = true;
+	bool bCacheStockVariants = true;
 #endif
 
 	FOR_EACH_MAP( GetItemSchema()->m_Items, i )
@@ -161,7 +163,7 @@ void CTFInventory::LoadInventory()
 						#endif
 							m_Items[iClass][iSlot][0] = pNewItem;
 						}
-						else if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
+						else if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) && ( pItemDef->stockvariant == 0 || bCacheStockVariants ) )
 						{
 							CEconItemView *pNewItem = new CEconItemView( iItemID );
 
