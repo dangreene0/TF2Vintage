@@ -661,7 +661,10 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, const char *itemName )
 
 	CEconItemDefinition *pItem = GetItemSchema()->GetItemDefinitionByName( itemName );
 	if ( !pItem )
+	{
+		Msg( "Failed to create an item named %s\n", itemName );
 		return;
+	}
 	
 	char const *pszEntName = pItem->GetClassName();
 	CEconEntity *pEcon = dynamic_cast<CEconEntity *>( CreateEntityByName( pszEntName ) );
@@ -686,11 +689,7 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, const char *itemName )
 	}
 	else
 	{
-		extern ConVar tf_bot_use_items;
-		if ( !tf_bot_use_items.GetInt() )
-		{
-			Msg( "Failed to create an item named %s\n", itemName );
-		}
+		Msg( "Failed to create an item named %s\n", itemName );
 	}
 }
 
@@ -728,6 +727,12 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, CEconItemView *pItem )
 //------------------------------------------------------------------------------
 void cc_bot_equip( const CCommand &args )
 {
+	extern ConVar tf_bot_use_items;
+	if ( !tf_bot_use_items.GetInt() )
+	{
+		return;
+	}
+
 	CUtlVector<CTFPlayer *> bots;
 	if ( args.ArgC() < 3 )
 	{

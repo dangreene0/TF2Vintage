@@ -172,7 +172,7 @@ void CTFKnife::PrimaryAttack( void )
 	}
 	else
 	{
-		if( flDisguiseSpeed > 0.1f )
+		if( flDisguiseSpeed > 0.15f )
 			pPlayer->RemoveDisguise();
 
 		SetContextThink( &CTFKnife::DisguiseOnKill, gpGlobals->curtime + flDisguiseSpeed, "DisguiseOnKill" );
