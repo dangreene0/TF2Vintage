@@ -3955,7 +3955,7 @@ void CTFPlayerShared::RecalcDisguiseWeapon(int iSlot /*= 0*/)
 
 	if ( pDisguiseWeaponInfo )
 	{
-		m_iDisguiseWeaponModelIndex = modelinfo->GetModelIndex(m_DisguiseItem.GetWorldDisplayModel());
+		m_iDisguiseWeaponModelIndex = modelinfo->GetModelIndex( m_DisguiseItem.GetWorldDisplayModel( m_nDisguiseClass ) );
 	}
 
 #endif
