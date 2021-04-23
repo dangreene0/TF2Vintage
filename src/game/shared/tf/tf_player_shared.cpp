@@ -1453,15 +1453,6 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 		}
 	}
 
-	if ( !InCond( TF_COND_HEALTH_OVERHEALED ) && m_pOuter->GetHealth() > m_pOuter->GetMaxHealth() )
-	{
-		AddCond( TF_COND_HEALTH_OVERHEALED, PERMANENT_CONDITION );
-	}
-	else if ( InCond( TF_COND_HEALTH_OVERHEALED ) && m_pOuter->GetHealth() <= m_pOuter->GetMaxHealth() )
-	{
-		RemoveCond( TF_COND_HEALTH_OVERHEALED );
-	}
-
 	if ( bDecayHealth )
 	{
 		// If we're not being buffed, our health drains back to our max
