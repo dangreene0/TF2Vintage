@@ -5102,7 +5102,14 @@ bool CTFPlayerShared::HasDemoShieldEquipped( void ) const
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::CalcChargeCrit( bool bForceCrit )
 {
-	if (m_flChargeMeter <= 33.0f || bForceCrit)
+#ifdef GAME_DLL
+	int nDemoChargeDamagePenalty = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( m_pOuter, nDemoChargeDamagePenalty, lose_demo_charge_on_damage_when_charging );
+	if ( nDemoChargeDamagePenalty && m_flChargeMeter <= 75.0f )
+	{
+		m_iNextMeleeCrit = kCritType_MiniCrit;
+	}
+	else if (m_flChargeMeter <= 40.0f || bForceCrit)
 	{
 		m_iNextMeleeCrit = kCritType_Crit;
 	}
@@ -5111,7 +5118,6 @@ void CTFPlayerShared::CalcChargeCrit( bool bForceCrit )
 		m_iNextMeleeCrit = kCritType_MiniCrit;
 	}
 
-#ifdef GAME_DLL
 	m_pOuter->SetContextThink( &CTFPlayer::RemoveMeleeCrit, gpGlobals->curtime + 0.3f, "RemoveMeleeCrit" );
 #endif
 }
