@@ -2391,8 +2391,8 @@ void CBaseObject::Killed( const CTakeDamageInfo &info )
 				CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
 				if ( pItemDef )
 				{
-					if ( pItemDef->GetItemIcon() )
-						killer_weapon_name = pItemDef->GetItemIcon();
+					if ( pItemDef->GetIconName() )
+						killer_weapon_name = pItemDef->GetIconName();
 
 					if ( pItemDef->GetLogName() )
 						killer_weapon_log_name = pItemDef->GetLogName();

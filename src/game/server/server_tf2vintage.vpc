@@ -404,6 +404,11 @@ $Project "Server (TF)"
 					$File "tf\player_vs_environment\tf_base_boss.cpp"
 					$File "tf\player_vs_environment\tf_base_boss.h"
 				}
+
+				$File "$SRCDIR\game\shared\tf\tf_robot_destruction_robot.cpp"
+				$File "$SRCDIR\game\shared\tf\tf_robot_destruction_robot.h"
+				$File "tf\player_vs_environment\tf_robot_destruction_robot_behaviors.cpp"
+				$File "tf\player_vs_environment\tf_robot_destruction_robot_behaviors.h"
 			}
 
 			$Folder	"Shared"

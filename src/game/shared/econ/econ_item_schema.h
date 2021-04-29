@@ -557,7 +557,7 @@ public:
 
 		return NULL;
 	}
-	char const *GetItemIcon( void ) const
+	char const *GetIconName( void ) const
 	{
 		if ( item_iconname && item_iconname[0] != '\0' )
 			return item_iconname;
