@@ -31,6 +31,7 @@ ConVar cl_flag_return_size( "cl_flag_return_size", "20", FCVAR_CHEAT );
 #else
 #include "tf_player.h"
 #include "tf_team.h"
+#include "tf_bot.h"
 #include "tf_objective_resource.h"
 #include "tf_gamestats.h"
 #include "func_respawnroom.h"
@@ -44,6 +45,7 @@ ConVar cl_flag_return_height( "cl_flag_return_height", "82", FCVAR_CHEAT );
 
 #endif
 
+ConVar tf_flag_return_on_touch( "tf_flag_return_on_touch", "0", FCVAR_REPLICATED, "If this is set, your flag must be at base in order to capture the enemy flag. Remote friendly flags return to your base instantly when you touch them" );
 ConVar tf2v_assault_ctf_rules( "tf2v_assault_ctf_rules", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses reversed CTF locations and instant respawning flags. Applied on map switch." );
 
 #define FLAG_EFFECTS_NONE		0
@@ -799,15 +801,23 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 	{
 		return;
 	}
-
-	if ( pOther->GetTeamNumber() == GetTeamNumber() )
-		m_outputOnTouchSameTeam.FireOutput(this, this);
 #endif
 
-	// Does my team own this flag? If so, no touch.
-	if ( m_nGameType == TF_FLAGTYPE_CTF && pOther->GetTeamNumber() == GetTeamNumber() )
+	if ( pOther->GetTeamNumber() == GetTeamNumber() )
 	{
-		return;
+	#ifdef GAME_DLL
+		m_outputOnTouchSameTeam.FireOutput( this, this );
+	#endif
+
+		// Does my team own this flag? If so, no touch.
+		if ( m_nGameType == TF_FLAGTYPE_CTF || m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+		{
+			if ( !tf_flag_return_on_touch.GetBool() )
+				return;
+
+			if ( IsHome() || IsStolen() )
+				return;
+		}
 	}
 
 	if ( ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND || m_nGameType == TF_FLAGTYPE_TERRITORY_CONTROL ) &&
@@ -868,11 +878,20 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 #endif
 
 	// Do not allow the player to pick up multiple flags
-	if ( pPlayer->HasTheFlag() )
+	if ( pPlayer->HasTheFlag() && !( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION ) && !tf_flag_return_on_touch.GetBool() )
 		return;
 
-	// Pick up the flag.
-	PickUp( pPlayer, true );
+	if ( IsDropped() && pOther->GetTeamNumber() == GetTeamNumber() && 
+		 m_nGameType == TF_FLAGTYPE_CTF && tf_flag_return_on_touch.GetBool() )
+	{
+		Reset();
+		ResetMessage();
+	}
+	else
+	{
+		// Pick up the flag.
+		PickUp( pPlayer, true );
+	}
 }
 
 //-----------------------------------------------------------------------------
