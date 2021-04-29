@@ -3520,15 +3520,7 @@ void CTFPlayerShared::InvisibilityThink( void )
 			{
 				float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
 				float flMaxSpeed = Square( m_pOuter->MaxSpeed() );
-				if ( flMaxSpeed == 0.0f )
-				{
-					if (flSpeed >= 0.0f)
-						flTargetInvis *= 0.5f;
-				}
-				else
-				{
-					flTargetInvis *= 1.0f + ( ( flSpeed * -0.5f ) / flMaxSpeed );
-				}
+				flTargetInvis = RemapVal( flSpeed, 0, flMaxSpeed, 1.f, .5f );
 			}
 		}
 		else
@@ -5128,105 +5120,96 @@ void CTFPlayerShared::CalcChargeCrit( bool bForceCrit )
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::UpdateCloakMeter( void )
 {
-	if ( m_pOuter->IsPlayerClass( TF_CLASS_SPY ) )
+	if ( InCond( TF_COND_STEALTHED ) )
 	{
-		if ( InCond( TF_COND_STEALTHED ) )
+		if ( m_bHasMotionCloak )
 		{
-			if ( m_bHasMotionCloak )
+			float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
+			if ( flSpeed == 0.0f )
 			{
-				float flSpeed = m_pOuter->GetAbsVelocity().LengthSqr();
-				if ( flSpeed == 0.0f )
-				{
-					m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+				m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
 
-					if ( m_flCloakMeter >= 100.0f )
-						m_flCloakMeter = 100.0f;
-				}
-				else
-				{
-					float flMaxSpeed = Square( m_pOuter->MaxSpeed() );
-					if ( flMaxSpeed == 0.0f )
-					{
-						m_flCloakMeter -= m_flCloakDrainRate * gpGlobals->frametime * 1.5f;
-					}
-					else
-					{
-						m_flCloakMeter -= ( m_flCloakDrainRate * gpGlobals->frametime * 1.5f ) * Min( flSpeed / flMaxSpeed, 1.0f );
-					}
-				}
+				if ( m_flCloakMeter >= 100.0f )
+					m_flCloakMeter = 100.0f;
 			}
 			else
 			{
-				m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
-			}
-			
-			// New cloak increases debuff speed by 25%
-			if (tf2v_use_new_cloak.GetBool())
-			{
-				float flReduction = 0.75f * gpGlobals->frametime;
-				if ( InCond( TF_COND_BURNING ) )
-				{
-					// Reduce the duration of this burn 
-					m_flFlameRemoveTime -=  flReduction;
-				}
-				if ( InCond( TF_COND_BLEEDING ) )
-				{
-					for ( int i=0; i<m_aBleeds.Count(); ++i )
-					{
-						bleed_struct_t *bleed = &m_aBleeds[i];
-						bleed->m_flEndTime -= flReduction;
-					}
-				}
-				
-				// Reduce Jarate
-				if ( InCond( TF_COND_URINE ) )
-				{
-					m_flCondExpireTimeLeft.Set( TF_COND_URINE, max( m_flCondExpireTimeLeft[TF_COND_URINE] - flReduction, 0 ) );
-
-					if ( m_flCondExpireTimeLeft[TF_COND_URINE] == 0 )
-					{
-						RemoveCond( TF_COND_URINE );
-					}
-				}
-
-				// Reduce Mad Milk
-				if ( InCond( TF_COND_MAD_MILK ) )
-				{
-					m_flCondExpireTimeLeft.Set( TF_COND_MAD_MILK, max( m_flCondExpireTimeLeft[TF_COND_MAD_MILK] - flReduction, 0 ) );
-
-					if ( m_flCondExpireTimeLeft[TF_COND_MAD_MILK] == 0 )
-					{
-						RemoveCond( TF_COND_MAD_MILK );
-					}
-				}
-				
-				// Reduce Gas
-				if ( InCond( TF_COND_GAS ) )
-				{
-					m_flCondExpireTimeLeft.Set( TF_COND_GAS, max( m_flCondExpireTimeLeft[TF_COND_GAS] - flReduction, 0 ) );
-
-					if ( m_flCondExpireTimeLeft[TF_COND_GAS] == 0 )
-					{
-						RemoveCond( TF_COND_GAS );
-					}
-				}
-			}
-
-			if (m_flCloakMeter <= 0.0f)
-			{
-				m_flCloakMeter = 0.0f;
-
-				if ( !m_bHasMotionCloak )
-					FadeInvis( tf_spy_invis_unstealth_time.GetFloat() );
+				const float flMaxSpeed = Square( m_pOuter->MaxSpeed() );
+				const float flDrainRate = m_flCloakDrainRate * gpGlobals->frametime * 1.5f;
+				m_flCloakMeter -= flDrainRate * RemapValClamped( flSpeed, 0, flMaxSpeed, 0.0, 1.0 );
 			}
 		}
 		else
 		{
-			m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
-
-			if (m_flCloakMeter >= 100.0f)
-				m_flCloakMeter = 100.0f;
+			m_flCloakMeter -= gpGlobals->frametime * m_flCloakDrainRate;
 		}
+			
+		// New cloak increases debuff speed by 25%
+		if (tf2v_use_new_cloak.GetBool())
+		{
+			float flReduction = 0.75f * gpGlobals->frametime;
+			if ( InCond( TF_COND_BURNING ) )
+			{
+				// Reduce the duration of this burn 
+				m_flFlameRemoveTime -=  flReduction;
+			}
+			if ( InCond( TF_COND_BLEEDING ) )
+			{
+				for ( int i=0; i<m_aBleeds.Count(); ++i )
+				{
+					bleed_struct_t *bleed = &m_aBleeds[i];
+					bleed->m_flEndTime -= flReduction;
+				}
+			}
+				
+			// Reduce Jarate
+			if ( InCond( TF_COND_URINE ) )
+			{
+				m_flCondExpireTimeLeft.Set( TF_COND_URINE, max( m_flCondExpireTimeLeft[TF_COND_URINE] - flReduction, 0 ) );
+
+				if ( m_flCondExpireTimeLeft[TF_COND_URINE] == 0 )
+				{
+					RemoveCond( TF_COND_URINE );
+				}
+			}
+
+			// Reduce Mad Milk
+			if ( InCond( TF_COND_MAD_MILK ) )
+			{
+				m_flCondExpireTimeLeft.Set( TF_COND_MAD_MILK, max( m_flCondExpireTimeLeft[TF_COND_MAD_MILK] - flReduction, 0 ) );
+
+				if ( m_flCondExpireTimeLeft[TF_COND_MAD_MILK] == 0 )
+				{
+					RemoveCond( TF_COND_MAD_MILK );
+				}
+			}
+				
+			// Reduce Gas
+			if ( InCond( TF_COND_GAS ) )
+			{
+				m_flCondExpireTimeLeft.Set( TF_COND_GAS, max( m_flCondExpireTimeLeft[TF_COND_GAS] - flReduction, 0 ) );
+
+				if ( m_flCondExpireTimeLeft[TF_COND_GAS] == 0 )
+				{
+					RemoveCond( TF_COND_GAS );
+				}
+			}
+		}
+
+		if (m_flCloakMeter <= 0.0f)
+		{
+			m_flCloakMeter = 0.0f;
+
+			if ( !m_bHasMotionCloak )
+				FadeInvis( tf_spy_invis_unstealth_time.GetFloat() );
+		}
+	}
+	else
+	{
+		m_flCloakMeter += gpGlobals->frametime * m_flCloakRegenRate;
+
+		if (m_flCloakMeter >= 100.0f)
+			m_flCloakMeter = 100.0f;
 	}
 }
 	
