@@ -6157,10 +6157,10 @@ bool CTFPlayer::HasTheFlag(void)
 //-----------------------------------------------------------------------------
 bool CTFPlayer::IsAllowedToPickUpFlag(void)
 {
-	int bNotAllowedToPickUpFlag = 0;
-	CALL_ATTRIB_HOOK_INT(bNotAllowedToPickUpFlag, cannot_pick_up_intelligence);
+	int nNotAllowedToPickUpFlag = 0;
+	CALL_ATTRIB_HOOK_INT( nNotAllowedToPickUpFlag, cannot_pick_up_intelligence );
 
-	if (bNotAllowedToPickUpFlag > 0)
+	if ( nNotAllowedToPickUpFlag != 0 )
 		return false;
 
 	return true;

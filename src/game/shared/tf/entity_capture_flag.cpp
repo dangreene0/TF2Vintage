@@ -166,14 +166,12 @@ BEGIN_DATADESC( CCaptureFlag )
 	DEFINE_OUTPUT( m_outputOnPickUp, "OnPickUp" ),
 	DEFINE_OUTPUT( m_outputOnPickUpTeam1, "OnPickupTeam1" ),
 	DEFINE_OUTPUT( m_outputOnPickUpTeam2, "OnPickupTeam2" ),
-	DEFINE_OUTPUT( m_outputOnPickUpTeam3, "OnPickupTeam3" ),
-	DEFINE_OUTPUT( m_outputOnPickUpTeam4, "OnPickupTeam4" ),
+	DEFINE_OUTPUT( m_outputOnPickUpByTeam, "OnPickupByTeam" ),
 	DEFINE_OUTPUT( m_outputOnDrop, "OnDrop" ),
 	DEFINE_OUTPUT( m_outputOnCapture, "OnCapture" ),
 	DEFINE_OUTPUT( m_outputOnCapTeam1, "OnCapTeam1"),
 	DEFINE_OUTPUT( m_outputOnCapTeam2, "OnCapTeam2" ),
-	DEFINE_OUTPUT( m_outputOnCapTeam3, "OnCapTeam3" ),
-	DEFINE_OUTPUT( m_outputOnCapTeam4, "OnCapTeam4" ),
+	DEFINE_OUTPUT( m_outputOnCapByTeam, "OnCapByTeam" ),
 	DEFINE_OUTPUT( m_outputOnTouchSameTeam, "OnTouchSameTeam"),
 
 #endif
@@ -371,6 +369,9 @@ void CCaptureFlag::OnDataChanged( DataUpdateType_t updateType )
 	{
 		UpdateGlowEffect();
 	}
+
+	if ( updateType == DATA_UPDATE_CREATED )
+		CreateSiren();
 }
 #endif
 
@@ -403,6 +404,7 @@ void CCaptureFlag::Spawn( void )
 #ifdef GAME_DLL
 	m_bDisabled = m_bStartDisabled;
 	m_bStartDisabled = false;
+	m_flTimeToSetPoisonous = 0.0f;
 
 	// Don't allow the intelligence to fade.
 	m_flFadeScale = 0.0f;
@@ -447,6 +449,24 @@ void CCaptureFlag::Spawn( void )
 #endif
 
 	SetDisabled( m_bDisabled );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CCaptureFlag::UpdateOnRemove( void )
+{
+#ifndef GAME_DLL
+	DestroySiren();
+#endif
+
+	CTFPlayer *pOwnerPlayer = ToTFPlayer( GetOwnerEntity() );
+	if ( pOwnerPlayer )
+	{
+		pOwnerPlayer->SetItem( NULL );
+	}
+
+	BaseClass::UpdateOnRemove();
 }
 
 #ifdef CLIENT_DLL
@@ -516,6 +536,38 @@ bool CCaptureFlag::ShouldHideGlowEffect( void )
 	}
 
 	return ( IsDisabled() || bHide || IsEffectActive( EF_NODRAW ) );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::CreateSiren( void )
+{
+	if ( m_hSirenEffect )
+		return;
+
+	int iAttachment = LookupAttachment( "siren" );
+	if ( iAttachment > -1 )
+	{
+		char const *pszEffectName = "cart_flashinglight";
+		if ( GetTeamNumber() == TF_TEAM_RED )
+		{
+			pszEffectName = "cart_flashinglight_red";
+		}
+		m_hSirenEffect = ParticleProp()->Create( pszEffectName, PATTACH_POINT_FOLLOW, iAttachment );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::DestroySiren( void )
+{
+	if ( m_hSirenEffect )
+	{
+		ParticleProp()->StopEmission( m_hSirenEffect );
+		m_hSirenEffect = NULL;
+	}
 }
 #endif
 
@@ -637,14 +689,14 @@ void CCaptureFlag::ResetMessage( void )
 			if ( iTeam == GetTeamNumber() )
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_CTF_ENEMY_RETURNED );
+				PlaySound( filter, TF_CTF_ENEMY_RETURNED );
 
 				TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_YOUR_FLAG_RETURNED );
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_CTF_TEAM_RETURNED );
+				PlaySound( filter, TF_CTF_TEAM_RETURNED );
 
 				TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_ENEMY_FLAG_RETURNED );
 			}
@@ -652,7 +704,7 @@ void CCaptureFlag::ResetMessage( void )
 
 		// Returned sound
 		CPASAttenuationFilter filter( this, TF_CTF_FLAGSPAWN );
-		EmitSound( filter, entindex(), TF_CTF_FLAGSPAWN );
+		PlaySound( filter, TF_CTF_FLAGSPAWN );
 	}
 	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
@@ -663,14 +715,21 @@ void CCaptureFlag::ResetMessage( void )
 				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_AD_FlagReturned" );
 
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_TEAM_RETURNED );
+				PlaySound( filter, TF_AD_TEAM_RETURNED );
 			}
 			else
 			{
 				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_AD_FlagReturned" );
 
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_ENEMY_RETURNED );
+				if ( TFGameRules()->IsMannVsMachineMode() )
+				{
+					PlaySound( filter, TF_MVM_AD_ENEMY_RETURNED );
+				}
+				else
+				{
+					PlaySound( filter, TF_AD_ENEMY_RETURNED );
+				}
 			}
 		}
 	}
@@ -681,19 +740,24 @@ void CCaptureFlag::ResetMessage( void )
 			TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_FlagReturned" );
 
 			CTeamRecipientFilter filter( iTeam, true );
-			EmitSound( filter, entindex(), TF_INVADE_FLAG_RETURNED );
+			PlaySound( filter, TF_INVADE_FLAG_RETURNED );
 		}
 	}
 	else if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
+		const char *pszSound = TF_RESOURCE_RETURNED;
+		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
+		{
+			//TODO: TFGameRules()->StartSomeTimerForDoomsdayEvent();
+			pszSound = TF_RESOURCE_EVENT_RETURNED;
+		}
 		// This is a neutral flag, so tell everyone.
-		TFGameRules()->BroadcastSound(255, TF_RESOURCE_RETURNED);
+		TFGameRules()->BroadcastSound( 255, pszSound );
 		
 		// Returned sound
 		CPASAttenuationFilter filter( this, TF_RESOURCE_FLAGSPAWN );
-		EmitSound( filter, entindex(), TF_RESOURCE_FLAGSPAWN );
+		PlaySound( filter, TF_RESOURCE_FLAGSPAWN );
 	}
-
 
 	// Output.
 	m_outputOnReturn.FireOutput( this, this );
@@ -772,12 +836,26 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 		return;
 	}
 
+	if ( !pPlayer->IsAllowedToPickUpFlag() )
+	{
+		return;
+	}
+
+#ifdef GAME_DLL
+	if ( TFGameRules()->IsMannVsMachineMode() )
+	{
+		// skip all the restrictions and let bots pick up the flag
+		PickUp( pPlayer, true );
+		return;
+	}
+#endif
+
 	// Is the touching player about to teleport?
 	if ( pPlayer->m_Shared.InCond( TF_COND_SELECTED_TO_TELEPORT ) )
 		return;
 
-	// Don't let invulnerable players pickup flags
-	if ( pPlayer->m_Shared.InCond( TF_COND_INVULNERABLE ) )
+	// Don't let invulnerable players pickup flags, except in PD
+	if ( pPlayer->m_Shared.IsInvulnerable() && m_nGameType != TF_FLAGTYPE_PLAYER_DESTRUCTION )
 		return;
 
 	// Don't let bonked players pickup flags
@@ -785,7 +863,7 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 		return;
 
 #ifdef GAME_DLL
-	if ( PointInRespawnRoom(pPlayer,pPlayer->WorldSpaceCenter()) )
+	if ( PointInRespawnRoom( pPlayer, pPlayer->WorldSpaceCenter() ) )
 		return;
 #endif
 
@@ -809,11 +887,58 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	if ( !TFGameRules()->FlagsMayBeCapped() )
 		return;
 
+	if ( TFGameRules()->IsMannVsMachineMode() )
+	{
+		if ( pPlayer->HasTheFlag() )
+			return;
+	}
+
 #ifdef GAME_DLL
 	if ( !m_bAllowOwnerPickup )
 	{
 		if ( m_hPrevOwner.Get() && m_hPrevOwner.Get() == pPlayer ) 
 		{
+			return;
+		}
+	}
+
+	if ( TFGameRules()->IsMannVsMachineMode() && pPlayer->IsBot() )
+	{
+		CTFBot *pBot = assert_cast<CTFBot *>( pPlayer );
+
+		if ( ( pBot->m_nBotAttrs & CTFBot::AttributeType::IGNOREFLAG ) != 0 )
+			return;
+
+		
+	}
+
+	if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		if ( pPlayer->HasItem() && ( pPlayer->GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG ) && pPlayer->GetItem() != this )
+		{
+			//CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
+
+			CCaptureFlag* pOtherFlag = static_cast<CCaptureFlag *>( pPlayer->GetItem() );
+			pOtherFlag->AddPointValue( m_nPointValue );
+			UTIL_Remove( this );
+
+			return;
+		}
+	}
+	else if ( m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		if ( pPlayer->HasItem() && ( pPlayer->GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG ) && pPlayer->GetItem() != this )
+		{
+			CCaptureFlag* pOtherFlag = static_cast<CCaptureFlag *>( pPlayer->GetItem() );
+			pOtherFlag->AddPointValue( m_nPointValue );
+			UTIL_Remove( this );
+
+			/*if ( CTFPlayerDestructionLogic::GetPlayerDestructionLogic() )
+			{
+				CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->CalcTeamLeader( pPlayer->GetTeamNumber() );
+				CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->PlayPropPickupSound( pPlayer );
+			}*/
+
 			return;
 		}
 	}
@@ -866,14 +991,14 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			if ( iTeam != pPlayer->GetTeamNumber() )
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_CTF_ENEMY_STOLEN );
+				PlaySound( filter, TF_CTF_ENEMY_STOLEN );
 
 				TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_YOUR_FLAG_TAKEN );
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_CTF_TEAM_STOLEN );
+				PlaySound( filter, TF_CTF_TEAM_STOLEN );
 
 				// exclude the guy who just picked it up
 				filter.RemoveRecipient( pPlayer );
@@ -892,12 +1017,19 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			if ( iTeam != pPlayer->GetTeamNumber() )
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_ENEMY_STOLEN );
+				if ( TFGameRules()->IsMannVsMachineMode() )
+				{
+					PlaySound( filter, TF_MVM_AD_ENEMY_STOLEN );
+				}
+				else
+				{
+					PlaySound( filter, TF_AD_ENEMY_STOLEN );
+				}
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_TEAM_STOLEN );
+				PlaySound( filter, TF_AD_TEAM_STOLEN );
 			}
 		}
 	}
@@ -914,12 +1046,12 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamPickup" );
 
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_INVADE_ENEMY_STOLEN );
+				PlaySound( filter, TF_INVADE_ENEMY_STOLEN );
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_INVADE_TEAM_STOLEN );
+				PlaySound( filter, TF_INVADE_TEAM_STOLEN );
 			}
 		}
 	}
@@ -932,22 +1064,62 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerPickup" );
 			TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_PlayerTeamPickup" );
 
+			bool bEventMap = TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY );
+			if ( bEventMap )
+			{
+				//TODO: TFGameRules()->InvalidateSomeTimerForDoomsdayEvent();
+			}
+
 			for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 			{
+				const char *pszSound = TF_RESOURCE_ENEMY_STOLEN;
+
 				if ( iTeam != pPlayer->GetTeamNumber() )
 				{
-					TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamPickup" );
+					if ( bEventMap )
+					{
+						pszSound = TF_RESOURCE_EVENT_ENEMY_STOLEN;
+					}
 
-					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_RESOURCE_ENEMY_STOLEN );
+					TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamPickup" );
 				}
 				else
 				{
-					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_RESOURCE_TEAM_STOLEN );
+					pszSound = TF_RESOURCE_TEAM_STOLEN;
+					if ( bEventMap )
+					{
+						pszSound = TF_RESOURCE_EVENT_TEAM_STOLEN;
+					}
 				}
-			}	
+
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, pszSound, iTeam );
+			}
 		}
+	}
+	else if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+		{
+			if ( iTeam != pPlayer->GetTeamNumber() )
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_ENEMY_STOLEN, iTeam );
+			}
+			else
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_TEAM_STOLEN, iTeam );
+			}
+		}
+	}
+	else if ( m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		/*if ( CTFPlayerDestructionLogic::GetPlayerDestructionLogic() )
+		{
+			CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->CalcTeamLeader( pPlayer->GetTeamNumber() );
+			CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->PlayPropPickupSound( pPlayer );
+		}*/
 	}
 	
 	// Neutral flags: Set team.
@@ -955,8 +1127,25 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	{
 		// Set the flag to be the carrier's team.
 		ChangeTeam( pPlayer->GetTeamNumber() );
-		m_nSkin = ( GetTeamNumber() == TEAM_UNASSIGNED ) ? 2 : (GetTeamNumber() - 2);
+		m_nSkin = GetIntelSkin( GetTeamNumber(), true );
 	}
+
+	if ( TFGameRules() && TFGameRules()->IsPowerupMode() && m_flTimeToSetPoisonous == 0.f )
+	{
+		m_flTimeToSetPoisonous = gpGlobals->curtime + 90.f;
+	}
+
+	if ( m_nFlagStatus == TF_FLAGINFO_NONE )
+	{
+		m_flLastResetDuration = m_flMaxResetTime;
+	}
+	else
+	{
+		m_flLastResetDuration = m_flResetTime - gpGlobals->curtime;
+	}
+
+	// Remember that this is when the item was picked up.
+	m_flLastPickupTime = gpGlobals->curtime;
 
 	int nOldFlagStatus = m_nFlagStatus;
 	SetFlagStatus( TF_FLAGINFO_STOLEN, pPlayer );
@@ -988,15 +1177,11 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 		case TF_TEAM_BLUE:
 			m_outputOnPickUpTeam2.FireOutput(this, this);
 			break;
-			
-		case TF_TEAM_GREEN:
-			m_outputOnPickUpTeam3.FireOutput(this, this);
-			break;
-
-		case TF_TEAM_YELLOW:
-			m_outputOnPickUpTeam4.FireOutput(this, this);
-			break;
 	}
+
+	variant_t value{};
+	value.SetInt( pPlayer->GetTeamNumber() );
+	m_outputOnPickUpByTeam.FireOutput( value, this, this );
 
 	DestroyReturnIcon();
 
@@ -1060,6 +1245,38 @@ void CCaptureFlag::DestroyReturnIcon( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::AddPointValue( int nPoints )
+{ 
+	m_nPointValue += nPoints;
+
+	if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
+		if ( pEvent )
+		{
+			pEvent->SetInt( "userid", m_hPrevOwner && m_hPrevOwner->IsPlayer() ? ToBasePlayer( m_hPrevOwner )->GetUserID() : -1 );
+			pEvent->SetInt( "entindex", entindex() );
+			gameeventmanager->FireEvent( pEvent );
+
+			// The return time is determined by how many points are in the flag, so update that. 
+			m_flLastResetDuration = m_flMaxResetTime.Get();
+		}
+
+		if ( nPoints > 0 )
+		{
+			pEvent = gameeventmanager->CreateEvent( "teamplay_flag_event" );
+			if ( pEvent )
+			{
+				pEvent->SetInt( "player", m_hPrevOwner && m_hPrevOwner->IsPlayer() ? ToBasePlayer( m_hPrevOwner )->entindex() : -1 );
+				pEvent->SetInt( "eventtype", TF_FLAGEVENT_PICKUP );
+				gameeventmanager->FireEvent( pEvent );
+			}
+		}
+	}
+}
 #endif
 
 //-----------------------------------------------------------------------------
@@ -1096,14 +1313,21 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 				if ( iTeam != pPlayer->GetTeamNumber() )
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_CTF_ENEMY_CAPTURED );
+					PlaySound( filter, TF_CTF_ENEMY_CAPTURED );
 
 					TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_YOUR_FLAG_CAPTURED );
 				}
 				else
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_CTF_TEAM_CAPTURED );
+					if ( TFGameRules() && TFGameRules()->IsPowerupMode() )
+					{
+						PlaySound( filter, TF_RUNE_INTEL_CAPTURED );
+					}
+					else
+					{	
+						PlaySound( filter, TF_CTF_TEAM_CAPTURED );
+					}
 
 					TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_ENEMY_FLAG_CAPTURED );
 				}
@@ -1144,18 +1368,25 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_AD_AttackersSecuredPoint" );
 
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_ENEMY_CAPTURED );
+				if ( TFGameRules()->IsMannVsMachineMode() )
+				{
+					PlaySound( filter, TF_MVM_AD_ENEMY_CAPTURED );
+				}
+				else
+				{
+					PlaySound( filter, TF_AD_ENEMY_CAPTURED );
+				}
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_AD_TEAM_CAPTURED );
+				PlaySound( filter, TF_AD_TEAM_CAPTURED );
 			}
 		}
 
 		// Capture sound
 		CBroadcastRecipientFilter filter;
-		EmitSound( filter, entindex(), TF_AD_CAPTURED_SOUND );
+		PlaySound( filter, TF_AD_CAPTURED_SOUND );
 
 		// Reward the player
 		pPlayer->IncrementFragCount( TF_AD_CAPTURED_FRAGS );
@@ -1175,12 +1406,12 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamCapture" );
 
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_INVADE_ENEMY_CAPTURED );
+				PlaySound( filter, TF_INVADE_ENEMY_CAPTURED );
 			}
 			else
 			{
 				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_INVADE_TEAM_CAPTURED );
+				PlaySound( filter, TF_INVADE_TEAM_CAPTURED );
 			}
 		}
 
@@ -1197,7 +1428,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		}
 		else
 		{
-			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_CTF_CAPTURED_TEAM_FRAGS );
+			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
 		}
 	}
 	else if (m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
@@ -1208,19 +1439,26 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerCapture" );
 		TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_PlayerTeamCapture" );
 
-		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
 		{
-			if ( iTeam != pPlayer->GetTeamNumber() )
+			TFGameRules()->BroadcastSound( 255, ( pPlayer->GetTeamNumber() == TF_TEAM_RED ) ? TF_RESOURCE_EVENT_RED_CAPPED : TF_RESOURCE_EVENT_BLUE_CAPPED );
+		}
+		else
+		{
+			for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 			{
-				TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamCapture" );
+				if ( iTeam != pPlayer->GetTeamNumber() )
+				{
+					TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_OtherTeamCapture" );
 
-				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_RESOURCE_ENEMY_CAPTURED );
-			}
-			else
-			{
-				CTeamRecipientFilter filter( iTeam, true );
-				EmitSound( filter, entindex(), TF_RESOURCE_TEAM_CAPTURED );
+					CTeamRecipientFilter filter( iTeam, true );
+					PlaySound( filter, TF_RESOURCE_ENEMY_CAPTURED );
+				}
+				else
+				{
+					CTeamRecipientFilter filter( iTeam, true );
+					PlaySound( filter, TF_RESOURCE_TEAM_CAPTURED );
+				}
 			}
 		}
 
@@ -1236,8 +1474,32 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		}
 		else
 		{
-			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_CTF_CAPTURED_TEAM_FRAGS );
+			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
 		}
+	}
+	else if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+		{
+			if ( iTeam != pPlayer->GetTeamNumber() )
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_ENEMY_CAPTURED, iTeam );
+			}
+			else
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_TEAM_CAPTURED, iTeam );
+			}
+		}
+
+		// Score points!
+		/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		{
+			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( pPlayer->GetTeamNumber(), m_nPointValue.Get(), SCORE_REACTOR_CAPTURED, pPlayer );
+			CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
+			m_nPointValue = 0;
+		}*/
 	}
 	
 	IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_flag_event" );
@@ -1248,6 +1510,11 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		event->SetInt( "priority", 9 );
 		event->SetInt( "team", GetTeamNumber() );
 		gameeventmanager->FireEvent( event );
+	}
+
+	if ( IsPoisonous() )
+	{
+		pPlayer->m_Shared.RemoveCond( TF_COND_MARKEDFORDEATH );
 	}
 
 	SetFlagStatus( TF_FLAGINFO_NONE );
@@ -1281,15 +1548,11 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		case TF_TEAM_BLUE:
 			m_outputOnCapTeam2.FireOutput(this, this);
 			break;
-
-		case TF_TEAM_GREEN:
-			m_outputOnCapTeam3.FireOutput(this, this);
-			break;
-
-		case TF_TEAM_YELLOW:
-			m_outputOnCapTeam4.FireOutput(this, this);
-			break;
 	}
+
+	variant_t value{};
+	value.SetInt( pPlayer->GetTeamNumber() );
+	m_outputOnCapByTeam.FireOutput( value, this, this );
 
 	m_bCaptured = true;
 	SetNextThink( gpGlobals->curtime + TF_FLAG_THINK_TIME );
@@ -1351,14 +1614,14 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 				if ( iTeam != pPlayer->GetTeamNumber() )
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_CTF_ENEMY_DROPPED );
+					PlaySound( filter, TF_CTF_ENEMY_DROPPED );
 
 					TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_YOUR_FLAG_DROPPED );
 				}
 				else
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_CTF_TEAM_DROPPED );
+					PlaySound( filter, TF_CTF_TEAM_DROPPED );
 
 					TFGameRules()->SendHudNotification( filter, HUD_NOTIFY_ENEMY_FLAG_DROPPED );
 				}
@@ -1385,12 +1648,12 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 					TFTeamMgr()->TeamCenterPrint( iTeam, "#TF_Invade_FlagDrop" );
 
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_INVADE_ENEMY_DROPPED );
+					PlaySound( filter, TF_INVADE_ENEMY_DROPPED );
 				}
 				else
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_INVADE_TEAM_DROPPED );
+					PlaySound( filter, TF_INVADE_TEAM_DROPPED );
 				}
 			}
 		}
@@ -1406,22 +1669,19 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 			TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerFlagDrop" );
 			TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_FlagDrop" );
 
-			for (int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam)
+			const char *pszSound = TF_RESOURCE_TEAM_DROPPED;
+			if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
 			{
-				if (iTeam != pPlayer->GetTeamNumber())
-				{
-					TFTeamMgr()->TeamCenterPrint(iTeam, "#TF_Invade_FlagDrop");
-
-					CTeamRecipientFilter filter(iTeam, true);
-					EmitSound(filter, entindex(), TF_RESOURCE_ENEMY_DROPPED);
-				}
-				else
-				{
-					CTeamRecipientFilter filter(iTeam, true);
-					EmitSound(filter, entindex(), TF_RESOURCE_TEAM_DROPPED);
-				}
+				pszSound = TF_RESOURCE_EVENT_TEAM_DROPPED;
 			}
+
+			// We only care about our own team dropping it
+			int iTeam = pPlayer->GetTeamNumber();
+
+			CTeamRecipientFilter filter( iTeam, true );
+			PlaySound( filter, pszSound, iTeam );
 		}
+
 		SetFlagReturnIn( TF_RESOURCE_RESET_TIME );
 		SetFlagNeutralIn( TF_RESOURCE_NEUTRAL_TIME );
 	}
@@ -1434,18 +1694,32 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 				if ( iTeam != pPlayer->GetTeamNumber() )
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_AD_ENEMY_DROPPED );
+					if ( TFGameRules()->IsMannVsMachineMode() )
+					{
+						PlaySound( filter, TF_MVM_AD_ENEMY_DROPPED );
+					}
+					else
+					{
+						PlaySound( filter, TF_AD_ENEMY_DROPPED );
+					}
 				}
 				else
 				{
 					CTeamRecipientFilter filter( iTeam, true );
-					EmitSound( filter, entindex(), TF_AD_TEAM_DROPPED );
+					PlaySound( filter, TF_AD_TEAM_DROPPED );
 				}
 			}
 		}
 
 		SetFlagReturnIn( TF_AD_RESET_TIME );
 	}
+
+	if ( IsPoisonous() )
+	{
+		pPlayer->m_Shared.RemoveCond( TF_COND_MARKEDFORDEATH );
+	}
+
+	m_nSkin = GetIntelSkin( GetTeamNumber() );
 
 	// Reset the flag's angles.
 	SetAbsAngles( m_vecResetAng );
@@ -1458,7 +1732,10 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 	// Output.
 	m_outputOnDrop.FireOutput( this, this );
 
-	CreateReturnIcon();	
+	if ( !TFGameRules()->IsMannVsMachineMode() || ( m_flMaxResetTime.Get() < 600 ) )
+	{
+		CreateReturnIcon();
+	}
 
 	HandleFlagDroppedInDetectionZone( pPlayer );	
 
@@ -1547,6 +1824,13 @@ void CCaptureFlag::SetDisabled( bool bDisabled )
 		SetTouch( &CCaptureFlag::FlagTouch );
 		SetThink( &CCaptureFlag::Think );
 		SetNextThink( gpGlobals->curtime );
+
+	#ifdef GAME_DLL
+		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) && ( GetTeamNumber() == TEAM_UNASSIGNED ) )
+		{
+			//TODO: TFGameRules()->StartSomeTimerForDoomsdayEvent();
+		}
+	#endif
 	}
 
 #ifdef CLIENT_DLL
@@ -1600,6 +1884,14 @@ void CCaptureFlag::Think( void )
 			}
 		}
 
+		if ( TFGameRules()->IsMannVsMachineMode() && m_bReturnBetweenWaves )
+		{
+			if ( TFGameRules()->InSetup() || ( TFObjectiveResource() && TFObjectiveResource()->GetMannVsMachineIsBetweenWaves() ) )
+			{
+				Reset();
+			}
+		}
+
 		if ( m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
 		{
 			if ( m_flResetTime && gpGlobals->curtime > m_flResetTime )
@@ -1616,7 +1908,7 @@ void CCaptureFlag::Think( void )
 
 				// reset the team to the original team setting (when it spawned)
 				ChangeTeam( m_iOriginalTeam );
-				m_nSkin = ( GetTeamNumber() == TEAM_UNASSIGNED ) ? 2 : (GetTeamNumber() - 2);
+				m_nSkin = GetIntelSkin( GetTeamNumber() );
 
 				ResetFlagNeutralTime();
 			}
@@ -1632,6 +1924,20 @@ void CCaptureFlag::Think( void )
 		m_nSkin = GetIntelSkin( GetTeamNumber() );
 	}
 
+	if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	{
+		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
+		{
+			// TODO
+		}
+	}
+
+	CTFPlayer *pPlayer = ToTFPlayer( GetPrevOwner() );
+	if ( IsStolen() && TFGameRules() && TFGameRules()->IsPowerupMode() && IsPoisonous() && !pPlayer->m_Shared.InCond( TF_COND_MARKEDFORDEATH ) )
+	{
+		pPlayer->m_Shared.AddCond( TF_COND_MARKEDFORDEATH );
+	}
+
 	SetNextThink( gpGlobals->curtime + TF_FLAG_THINK_TIME );
 }
 
@@ -1642,7 +1948,7 @@ void CCaptureFlag::ManageSpriteTrail( void )
 {
 	if ( m_nFlagStatus == TF_FLAGINFO_STOLEN )
 	{
-		if ( ( m_nUseTrailEffect == FLAG_EFFECTS_ALL || m_nUseTrailEffect == FLAG_EFFECTS_COLORONLY ) )
+		if ( m_nUseTrailEffect == FLAG_EFFECTS_ALL || m_nUseTrailEffect == FLAG_EFFECTS_COLORONLY )
 		{
 			if ( GetPrevOwner() /*&& GetPrevOwner() != CBasePlayer::GetLocalPlayer() */ )
 			{
@@ -1664,6 +1970,14 @@ void CCaptureFlag::ManageSpriteTrail( void )
 							m_pGlowTrail->SetLifeTime( 0.69999999 );
 							m_pGlowTrail->SetTransmit( false );
 							m_pGlowTrail->SetParent( this );
+						}
+					}
+					else
+					{
+						if ( m_pGlowTrail )
+						{
+							m_pGlowTrail->Remove();
+							m_pGlowTrail = NULL;
 						}
 					}
 				}
@@ -1770,6 +2084,42 @@ int CCaptureFlag::UpdateTransmitState()
 	return SetTransmitState( FL_EDICT_ALWAYS );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::PlaySound( IRecipientFilter& filter, char const *pszString, int iTeam /*= TEAM_ANY */ )
+{
+	if ( TFGameRules()->IsMannVsMachineMode() )
+	{
+		// Don't play bomb announcements unless we're at least 5 seconds into a wave in MVM
+		if ( !( TFGameRules()->State_Get() == GR_STATE_RND_RUNNING && gpGlobals->curtime - TFGameRules()->GetLastRoundStateChangeTime() >= 5.0f ) )
+		{
+			return;
+		}
+
+		if ( !V_strcmp( pszString, TF_MVM_AD_ENEMY_RETURNED ) )
+		{
+			EmitSound( filter, entindex(), pszString );
+		}
+	}
+	else if ( TFGameRules()->IsInSpecialDeliveryMode() && ( !V_strcmp( pszString, TF_RESOURCE_TEAM_DROPPED ) || !V_strcmp( pszString, TF_RESOURCE_EVENT_TEAM_DROPPED ) ) )
+	{
+		// Rate limit certain flag sounds in Special Delivery
+		if ( iTeam == TEAM_ANY || gpGlobals->curtime >= m_flNextTeamSoundTime[ iTeam ]  )
+		{
+			EmitSound( filter, entindex(), pszString );
+
+			if ( iTeam != TEAM_ANY )
+			{
+				m_flNextTeamSoundTime[ iTeam ] = gpGlobals->curtime + 20.0f;
+			}
+		}
+	}
+	else
+	{
+		EmitSound( filter, entindex(), pszString );
+	}
+}
 
 #else
 
@@ -1791,10 +2141,10 @@ void CCaptureFlag::ManageTrailEffects( void )
 {
 	if ( m_nFlagStatus == TF_FLAGINFO_STOLEN )
 	{
-		if (!m_nUseTrailEffect)
+		if ( m_nUseTrailEffect == FLAG_EFFECTS_NONE || m_nUseTrailEffect == FLAG_EFFECTS_COLORONLY )
 			return;
 
-		if ( GetPrevOwner() && (m_nUseTrailEffect == FLAG_EFFECTS_ALL || m_nUseTrailEffect == FLAG_EFFECTS_PAPERONLY) )
+		if ( GetPrevOwner() )
 		{
 			CTFPlayer *pPlayer = ToTFPlayer( GetPrevOwner() );
 

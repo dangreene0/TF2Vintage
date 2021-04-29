@@ -414,6 +414,8 @@ public:
 	virtual bool	IsCompetitiveMode( void ) { return m_bCompetitiveMode; };
 	virtual bool	IsInHybridCTF_CPMode( void ) { return m_bPlayingHybrid_CTF_CP; };
 	virtual bool	IsInSpecialDeliveryMode( void ) { return m_bPlayingSpecialDeliveryMode; };
+	virtual bool	IsPowerupMode( void ) { return m_bPowerupMode; }
+	void			SetPowerupMode( bool bValue );
 	bool			UsePlayerReadyStatusMode( void );
 
 	bool			GetMannVsMachineAlarmStatus( void ) const { return m_bMannVsMachineAlarmStatus; }

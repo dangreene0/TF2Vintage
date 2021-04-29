@@ -61,6 +61,11 @@
 #define TF_AD_TEAM_CAPTURED			"AttackDefend.TeamCaptured"
 #define TF_AD_TEAM_RETURNED			"AttackDefend.TeamReturned"
 
+#define TF_MVM_AD_ENEMY_STOLEN		"MVM.AttackDefend.EnemyStolen"
+#define TF_MVM_AD_ENEMY_DROPPED		"MVM.AttackDefend.EnemyDropped"
+#define TF_MVM_AD_ENEMY_CAPTURED	"MVM.AttackDefend.EnemyCaptured"
+#define TF_MVM_AD_ENEMY_RETURNED	"MVM.AttackDefend.EnemyReturned"
+
 #define TF_AD_CAPTURED_SOUND		"AttackDefend.Captured"
 
 #define TF_AD_CAPTURED_FRAGS		30
@@ -199,6 +204,8 @@ public:
 	void			Precache( void );
 	void			Spawn( void );
 
+	void			UpdateOnRemove( void ) OVERRIDE;
+
 	void			FlagTouch( CBaseEntity *pOther );
 
 	bool			IsDisabled( void );
@@ -243,12 +250,14 @@ public:
 	}
 	bool			IsCaptured( void ){ return m_bCaptured; }
 
-	int				UpdateTransmitState( void );
+	int				UpdateTransmitState( void ) OVERRIDE;
 
 	void			ManageSpriteTrail( void );
 
 	void			CreateReturnIcon( void );
 	void			DestroyReturnIcon( void );
+
+	void			AddPointValue( int nPoints );
 
 #else // CLIENT DLL Functions
 
@@ -256,6 +265,9 @@ public:
 
 	virtual void	OnPreDataChanged( DataUpdateType_t updateType );
 	virtual void	OnDataChanged( DataUpdateType_t updateType );
+
+	void			CreateSiren( void );
+	void			DestroySiren( void );
 
 	CNewParticleEffect	*m_pPaperTrailEffect;
 
@@ -295,6 +307,8 @@ public:
 private:
 #ifdef GAME_DLL
 	void			SetGlowEnabled( bool bGlowEnabled ) { m_bGlowEnabled = bGlowEnabled; }
+
+	void			PlaySound( IRecipientFilter& filter, char const *pszString, int iTeam = TEAM_ANY );
 #endif
 
 	bool			IsGlowEnabled( void ) { return m_bGlowEnabled; }
@@ -333,16 +347,14 @@ private:
 
 	COutputEvent	m_outputOnReturn;	// Fired when the flag is returned via timer.
 	COutputEvent	m_outputOnPickUp;	// Fired when the flag is picked up.
-	COutputEvent	m_outputOnPickUpTeam1;	
-	COutputEvent	m_outputOnPickUpTeam2;	
-	COutputEvent	m_outputOnPickUpTeam3;	
-	COutputEvent	m_outputOnPickUpTeam4;	
+	COutputEvent	m_outputOnPickUpTeam1;	// Kept for compatibility
+	COutputEvent	m_outputOnPickUpTeam2;	// Kept for compatibility
+	COutputInt		m_outputOnPickUpByTeam;	// Fired when the flag is picked up by any team
 	COutputEvent	m_outputOnDrop;		// Fired when the flag is dropped.
 	COutputEvent	m_outputOnCapture;	// Fired when the flag is captured.
-	COutputEvent	m_outputOnCapTeam1;	
-	COutputEvent	m_outputOnCapTeam2;
-	COutputEvent	m_outputOnCapTeam3;	
-	COutputEvent	m_outputOnCapTeam4;	
+	COutputEvent	m_outputOnCapTeam1;	// Kept for compatibility
+	COutputEvent	m_outputOnCapTeam2; // Kept for compatibility
+	COutputInt		m_outputOnCapByTeam;	// Fired when the flag is captured by any team
 	COutputEvent	m_outputOnTouchSameTeam;
 
 	string_t		m_iszHudIcon;
@@ -352,6 +364,8 @@ private:
 
 	bool			m_bAllowOwnerPickup;
 	bool			m_bCaptured;
+
+	float			m_flNextTeamSoundTime[TF_TEAM_COUNT];
 
 	CSpriteTrail	*m_pGlowTrail;
 #else
@@ -364,6 +378,8 @@ private:
 
 	CGlowObject			*m_pGlowEffect;
 	CGlowObject			*m_pCarrierGlowEffect;
+
+	HPARTICLEFFECT		m_hSirenEffect;
 
 	bool		m_bOldGlowEnabled;
 #endif
