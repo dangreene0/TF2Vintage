@@ -6102,7 +6102,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 
 	// Make sure we're not building damage off of ourself or fall damage
-	if ( ( pAttacker != this && !( bitsDamage & DMG_FALL ) ) & ( !tf2v_use_new_buff_charges.GetBool() ) )
+	if ( ( pAttacker != this && !( bitsDamage & DMG_FALL ) ) && ( !tf2v_use_new_buff_charges.GetBool() ) )
 	{
 		// Build rage on damage taken
 		m_Shared.SetRageMeter(info.GetDamage() / (TF_BUFF_DEFENSE_COUNT / 100), TF_BUFF_DEFENSE);
@@ -6113,7 +6113,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	int nLoseHypeOnDamage = 0;
 	CALL_ATTRIB_HOOK_INT(nLoseHypeOnDamage, lose_hype_on_take_damage );
 	if ( nLoseHypeOnDamage != 0 )
-	m_Shared.RemoveHypeMeter( ( info.GetDamage() * nLoseHypeOnDamage ) );
+		m_Shared.RemoveHypeMeter( ( info.GetDamage() * nLoseHypeOnDamage ) );
 	
 	// If we lose demo charge, reduce our charge level.
 	if ( m_Shared.InCond(TF_COND_SHIELD_CHARGE) )
