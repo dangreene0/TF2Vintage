@@ -186,6 +186,8 @@ discord::AchievementManager& Core::AchievementManager()
 }
 
 #include <tier0/memdbgoff.h>
+#include <tier0/memalloc.h>
+
 void *Core::operator new( size_t nSize )
 {
     MEM_ALLOC_CREDIT();
