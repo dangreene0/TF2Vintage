@@ -16,7 +16,7 @@
 	#include "tf_obj_dispenser.h"
 #else
 	#include "c_obj_dispenser.h"
-	#include "NextBot\c_NextBot.h"
+	#include "NextBot/c_NextBot.h"
 #endif
 
 #include "props_shared.h"
