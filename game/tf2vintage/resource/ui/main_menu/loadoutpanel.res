@@ -316,7 +316,7 @@
 	"weaponbutton6"
 	{
 		"ControlName"	"CTFAdvItemButton"
-		"fieldName"		"weaponbutton5"		
+		"fieldName"		"weaponbutton6"		
 		"xpos"			"c140"
 		"ypos"			"292"
 		"zpos"			"-1"		
