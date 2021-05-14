@@ -2343,7 +2343,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				bStockItem = true;
 			}
 
-			CTFBot *myBot = ToTFBot( this );
+			/*CTFBot *myBot = ToTFBot( this );
 			if ( myBot )
 			{
 				char szItemDefIndex[16];
@@ -2360,7 +2360,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 					if ( ( flGenuineChance/100.f ) > RandomFloat() )
 						pItem->SetItemQuality( QUALITY_GENUINE );
 				}
-			}
+			}*/
 			
 			bool bUseAlternateEntity = false;
 			int iItemID = -1;
