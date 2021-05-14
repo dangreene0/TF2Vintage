@@ -5182,25 +5182,25 @@
 			"model_player"	"models/workshop/weapons/c_models/c_powerjack/c_powerjack.mdl"
 			"attributes"
 			{
-				"heal on kill"
+				"provide on active"
 				{
-					"attribute_class"	"heal_on_kill"
-					"value"	"25"
+					"attribute_class"	"provide_on_active"
+					"value" "1"
 				}
 				"move speed bonus"
 				{
 					"attribute_class"	"mult_player_movespeed"
 					"value" "1.15"
 				}
+				"heal on kill"
+				{
+					"attribute_class"	"heal_on_kill"
+					"value"	"25"
+				}
 				"dmg taken increased"
 				{
 					"attribute_class"	"mult_dmgtaken"
 					"value"	"1.2"
-				}
-				"provide on active"
-				{
-					"attribute_class"	"provide_on_active"
-					"value" "1"
 				}
 			}
 			"visuals"
