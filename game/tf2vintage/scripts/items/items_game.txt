@@ -491,14 +491,6 @@
 				"sound_special1"	"Weapon_Tomislav.WindUp"
 				"sound_special2"	"Weapon_Tomislav.WindDown"
 			}
-			"visuals_red"
-			{
-				"skin" "0"
-			}
-			"visuals_blu"
-			{
-				"skin" "1"
-			}
 		}
 		"weapon_long_heatmaker"
 		{
@@ -5190,20 +5182,25 @@
 			"model_player"	"models/workshop/weapons/c_models/c_powerjack/c_powerjack.mdl"
 			"attributes"
 			{
+				"heal on kill"
+				{
+					"attribute_class"	"heal_on_kill"
+					"value"	"25"
+				}
+				"move speed bonus"
+				{
+					"attribute_class"	"mult_player_movespeed"
+					"value" "1.15"
+				}
+				"dmg taken increased"
+				{
+					"attribute_class"	"mult_dmgtaken"
+					"value"	"1.2"
+				}
 				"provide on active"
 				{
 					"attribute_class"	"provide_on_active"
 					"value" "1"
-				}
-				"heal on kill"
-				{
-					"attribute_class"	"heal_on_kill"
-					"value"	"75"
-				}
-				"dmg from melee increased"
-				{
-					"attribute_class"	"dmg_from_melee"
-					"value"	"1.2"
 				}
 			}
 			"visuals"
@@ -6841,14 +6838,6 @@
 			"name"	"The Soda Popper"
 			"prefab" "weapon_soda_popper"
 			"year"	"2011"
-			"visuals_red"
-			{
-				"skin" "0"
-			}
-			"visuals_blu"
-			{
-				"skin" "1"
-			}
 		}
 		"449"
 		{
