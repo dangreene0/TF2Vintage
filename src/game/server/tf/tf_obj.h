@@ -205,13 +205,15 @@ public:
 	virtual void	OnGoActive( void );
 	virtual void	OnGoInactive( void );
 
-	// Disabling
+	// EMP Disabling
 	bool			IsDisabled( void ) { return m_bDisabled; }
 	void			UpdateDisabledState( void );
 	void			SetDisabled( bool bDisabled );
 	virtual void	OnStartDisabled( void );
 	virtual void	OnEndDisabled( void );
-	void			OnEMP(void);
+	void			AddEMP(void);
+	void			EMPThink(void);
+	bool			HasEMP( void ) { return m_flEMPTime > 0; }
 
 	// Animation
 	virtual void	PlayStartupAnimation( void );

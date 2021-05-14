@@ -237,7 +237,8 @@ void CObjectSentrygun::MakeCarriedObject( CTFPlayer *pPlayer )
 void CObjectSentrygun::OnStopWrangling( void )
 {
 	// Wait 3 seconds before resuming function
-	m_flRecoveryTime = gpGlobals->curtime + WRANGLER_RECOVERY_TIME;
+	if (m_flRecoveryTime <= gpGlobals->curtime )
+		m_flRecoveryTime = gpGlobals->curtime + WRANGLER_RECOVERY_TIME;
 	
 	// Add the pointing down effect, and pause operation.
 	PointDown();
@@ -254,7 +255,8 @@ void CObjectSentrygun::OnRemoveSapper( void )
 void CObjectSentrygun::SapperRecovery( void )
 {
 	// Wait 0.5 seconds before resuming function
-	m_flRecoveryTime = gpGlobals->curtime + SAPPER_RECOVERY_TIME;
+	if (m_flRecoveryTime <= gpGlobals->curtime )
+		m_flRecoveryTime = gpGlobals->curtime + SAPPER_RECOVERY_TIME;
 	
 	// Add the pointing down effect, and pause operation.
 	PointDown();
@@ -299,15 +301,10 @@ void CObjectSentrygun::SentryThink( void )
 			break;
 
 		case SENTRY_STATE_WRANGLED_RECOVERY:
-			if ( gpGlobals->curtime > m_flRecoveryTime )
-			{
-				m_iState.Set( SENTRY_STATE_SEARCHING );
-			}
-			break;
-
 		case SENTRY_STATE_SAPPER_RECOVERY:
 			if ( gpGlobals->curtime > m_flRecoveryTime )
 			{
+				m_flRecoveryTime = 0;
 				m_iState.Set( SENTRY_STATE_SEARCHING );
 			}
 			break;

@@ -705,6 +705,13 @@ void CBaseObject::BaseObjectThink( void )
 		return;
 	}
 
+	// Don't allow anything if it's being EMP'd.
+	if ( HasEMP() )
+	{
+		EMPThink();
+		return;
+	}
+	
 	// If we're building, keep going
 	if ( IsBuilding() )
 	{
@@ -714,21 +721,6 @@ void CBaseObject::BaseObjectThink( void )
 	else if ( IsUpgrading() )
 	{
 		UpgradeThink();
-		return;
-	}
-	
-	// Don't allow anything if it's being EMP'd.
-	if (m_flEMPTime > 0)
-	{
-		bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
-		if (bEMPDisabled && !m_bDisabled)
-			SetDisabled( true );
-		if (!bEMPDisabled)
-		{
-			if (m_bDisabled)
-				SetDisabled( true );
-			m_flEMPTime = 0;
-		}
 		return;
 	}
 	
@@ -2598,11 +2590,21 @@ bool CBaseObject::ShowVGUIScreen( int panelIndex, bool bShow )
 //-----------------------------------------------------------------------------
 // Purpose: Overrides disabling for four seconds.
 //-----------------------------------------------------------------------------
-void CBaseObject::OnEMP( void )
+void CBaseObject::AddEMP( void )
 {
 	m_flEMPTime = gpGlobals->curtime + TF_EMP_TIME;
-	if (!m_bDisabled)
-		SetDisabled( true );
+	
+	UpdateDisabledState();	
+}
+
+void CBaseObject::EMPThink( void )
+{
+	bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
+	if (!bEMPDisabled)
+	{
+		m_flEMPTime = 0;
+		UpdateDisabledState();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -3176,17 +3178,7 @@ void CBaseObject::RotateBuildAngles( void )
 //-----------------------------------------------------------------------------
 void CBaseObject::UpdateDisabledState( void )
 {
-	// EMP overrides sapper placement.
-	if (m_flEMPTime > 0)
-	{
-		bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
-		SetDisabled(bEMPDisabled || HasSapper());
-		if (!bEMPDisabled)
-			m_flEMPTime = 0;
-		return;
-	}
-	
-	SetDisabled( HasSapper() );
+	SetDisabled( HasSapper() || HasEMP() );
 }
 
 //-----------------------------------------------------------------------------
