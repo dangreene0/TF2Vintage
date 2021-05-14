@@ -117,11 +117,15 @@ bool CTFLoadoutPanel::Init()
 	m_pItemPanel = NULL;
 	g_TFWeaponScriptParser.InitParser( "scripts/tf_weapon_*.txt", true, false );
 
+	char* chEmptyLoc = new char[32];
+	wchar_t* wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
+	sprintf(chEmptyLoc, "%ws", wcLoc);
+
 	for ( int i = 0; i < INVENTORY_ROWNUM; i++ )
 	{
 		char szWeaponButton[64];
 		Q_snprintf ( szWeaponButton, sizeof ( szWeaponButton ), "weaponbutton%i", i );
-		m_pWeaponIcons.AddToTail ( new CTFAdvItemButton ( this, szWeaponButton, "DUK" ) );
+		m_pWeaponIcons.AddToTail ( new CTFAdvItemButton ( this, szWeaponButton, chEmptyLoc) );
 	}
 
 	for ( int iClassIndex = 0; iClassIndex < TF_CLASS_COUNT_ALL; iClassIndex++ )

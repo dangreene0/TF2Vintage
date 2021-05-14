@@ -109,13 +109,17 @@ bool CTFItemPanel::Init()
 	s_pScrollButtonUp = new CTFWeaponSelectPanel(this, "ScrollButtonUp");
 	g_TFWeaponScriptParser.InitParser("scripts/tf_weapon_*.txt", true, false);
 
+	char* chEmptyLoc = new char[32];
+	wchar_t *wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
+	sprintf(chEmptyLoc, "%ws", wcLoc);
+
 	for (int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++)
 	{
-		m_pWeaponIcons.AddToTail(new CTFAdvItemButton(m_pWeaponSetPanel, "WeaponIcons", "DUK"));
+		m_pWeaponIcons.AddToTail(new CTFAdvItemButton(m_pWeaponSetPanel, "WeaponIcons", chEmptyLoc));
 	}
 	for (int i = 0; i < INVENTORY_ROWNUM_SELECTION  * 2; i++)
 	{
-		m_pSlideButtons.AddToTail(new CTFAdvItemButton(m_pWeaponSetPanel, "SlideButton", "DUK"));
+		m_pSlideButtons.AddToTail(new CTFAdvItemButton(m_pWeaponSetPanel, "SlideButton", chEmptyLoc));
 	}
 	for (int i = 0; i < INVENTORY_ROWNUM_SELECTION ; i++)
 	{
