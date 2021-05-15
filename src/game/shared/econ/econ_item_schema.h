@@ -454,7 +454,7 @@ public:
 		CLEAR_STR( item_description );
 		item_slot = -1;
 		anim_slot = -1;
-		item_quality = QUALITY_VINTAGE;
+		item_quality = QUALITY_NORMAL;
 		baseitem = false;
 		propername = false;
 		CLEAR_STR( item_logname );

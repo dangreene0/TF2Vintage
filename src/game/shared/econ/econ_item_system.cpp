@@ -281,9 +281,6 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		}
 	}
 
-	// All items are vintage quality
-	//this->item_quality = QUALITY_VINTAGE;
-
 	GET_STRING( this, pDefinition, item_logname );
 	GET_STRING( this, pDefinition, item_iconname );
 
