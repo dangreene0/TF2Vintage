@@ -48,13 +48,12 @@ private:
 	CTFAdvModelPanel *m_pClassModelPanel;
 	CModelPanel		*m_pGameModelPanel;
 	CUtlVector<CTFAdvItemButton*> m_pWeaponIcons;
-	CUtlVector<CTFAdvItemButton*> m_pSlideButtons;
-	CUtlVector<int> m_RawIDPos;
 	MESSAGE_FUNC(UpdateModelPanels, "ControlModified");
 	int	m_iCurrentClass;
 	int	m_iCurrentSlot;
 	int m_iCurrentSkin;
 	CTFItemPanel *m_pItemPanel;
+	CTFAdvButton *m_pPresetButtons[TF_MAX_PRESETS];
 };
 
 //-----------------------------------------------------------------------------

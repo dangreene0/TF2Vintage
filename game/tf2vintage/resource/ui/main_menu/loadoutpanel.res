@@ -21,7 +21,7 @@
 		"fieldName"		"BackgroundImage"
 		"xpos"			"0"
 		"ypos"			"0"	
-		"zpos"			"-200"		
+		"zpos"			"-100"		
 		"wide"			"f0"
 		"tall"			"f0"
 		"visible"		"1"
@@ -36,7 +36,7 @@
 		"fieldName"		"BackgroundHeader"
 		"xpos"			"0"
 		"ypos"			"0"
-		"zpos"			"-100"
+		"zpos"			"20"
 		"wide"			"f0"
 		"tall"			"54"
 		"visible"		"1"
@@ -52,7 +52,7 @@
 		"fieldName"		"HeaderLine"
 		"xpos"			"0"
 		"ypos"			"54"
-		"zpos"			"-99"
+		"zpos"			"21"
 		"wide"			"f0"
 		"tall"			"10"
 		"visible"		"1"
@@ -67,7 +67,7 @@
 		"fieldName"		"BackgroundFooter"
 		"xpos"			"0"
 		"ypos"			"420"
-		"zpos"			"-100"
+		"zpos"			"-3"
 		"wide"			"f0"
 		"tall"			"60"
 		"visible"		"1"
@@ -75,6 +75,21 @@
 		"image"			"loadout_bottom_gradient"
 		"tileImage"		"1"
 	}
+	
+	"FooterLine"
+	{
+		"ControlName"	"ImagePanel"
+		"fieldName"		"FooterLine"
+		"xpos"			"0"
+		"ypos"			"420"
+		"zpos"			"-2"
+		"wide"			"f0"
+		"tall"			"10"
+		"visible"		"1"
+		"enabled"		"1"
+		"image"			"loadout_solid_line"
+		"scaleImage"	"1"
+	}	
 	
 	"CaratLabel"
 	{
@@ -85,7 +100,7 @@
 		"textAlignment"	"west"
 		"xpos"			"85"
 		"ypos"			"20"
-		"zpos"			"10"
+		"zpos"			"101"
 		"wide"			"20"
 		"tall"			"15"
 		"autoResize"	"1"
@@ -104,7 +119,7 @@
 		"textAlignment"	"west"
 		"xpos"			"105"
 		"ypos"			"20"
-		"zpos"			"10"
+		"zpos"			"101"
 		"wide"			"350"
 		"tall"			"15"
 		"autoResize"	"0"
@@ -113,21 +128,6 @@
 		"enabled"			"1"
 		"fgcolor_override"	"117 107 94 255"
 	}
-	
-	"FooterLine"
-	{
-		"ControlName"	"ImagePanel"
-		"fieldName"		"FooterLine"
-		"xpos"			"0"
-		"ypos"			"420"
-		"zpos"			"-99"
-		"wide"			"f0"
-		"tall"			"10"
-		"visible"		"1"
-		"enabled"		"1"
-		"image"			"loadout_solid_line"
-		"scaleImage"	"1"
-	}	
 	
 	"TopDotted"
 	{
@@ -179,6 +179,121 @@
 		"enabled"		"1"
 	}
 	
+	"preset_0"
+	{
+		"ControlName"		"CTFAdvButton"
+		"fieldName"			"preset_0"
+		"xpos"				"c-60"
+		"ypos"				"85"
+		"zpos"				"-1"
+		"wide"				"25"
+		"tall"				"25"
+		"scaleimage"		"0"	
+		"visible"			"1"
+		"enabled"			"1"
+		"bordervisible"		"1"		
+		"command"			"loadpreset_0"
+		"SubButton"
+		{
+			"labelText"			"#TF_ItemPresetName0"
+			"textAlignment"		"center"
+			"font"				"TallTextSmall"
+			"defaultFgColor_override"		"MainMenuTextDefault"
+			"armedFgColor_override"			"MainMenuTextArmed"
+			"depressedFgColor_override"		"MainMenuTextDepressed"	
+			"border_default"	"OldAdvButtonDefault"
+			"border_armed"		"OldAdvButtonDefaultArmed"
+			"border_depressed"	"OldAdvButtonDefaultArmed"	
+		}
+	}
+	
+	"preset_1"
+	{
+		"ControlName"		"CTFAdvButton"
+		"fieldName"			"preset_1"
+		"xpos"				"c-30"
+		"ypos"				"85"
+		"zpos"				"-1"
+		"wide"				"25"
+		"tall"				"25"
+		"scaleimage"		"0"	
+		"visible"			"1"
+		"enabled"			"1"
+		"bordervisible"		"1"		
+		"command"			"loadpreset_1"
+		"SubButton"
+		{
+			"labelText"			"#TF_ItemPresetName1"
+			"textAlignment"		"center"
+			"font"				"TallTextSmall"
+			"defaultFgColor_override"		"MainMenuTextDefault"
+			"armedFgColor_override"			"MainMenuTextArmed"
+			"depressedFgColor_override"		"MainMenuTextDepressed"	
+			"border_default"	"OldAdvButtonDefault"
+			"border_armed"		"OldAdvButtonDefaultArmed"
+			"border_depressed"	"OldAdvButtonDefaultArmed"	
+		}
+
+	}
+	
+	"preset_2"
+	{
+		"ControlName"		"CTFAdvButton"
+		"fieldName"			"preset_2"
+		"xpos"				"c0"
+		"ypos"				"85"
+		"zpos"				"-1"
+		"wide"				"25"
+		"tall"				"25"
+		"scaleimage"		"0"	
+		"visible"			"1"
+		"enabled"			"1"
+		"bordervisible"		"1"		
+		"command"			"loadpreset_2"
+		"SubButton"
+		{
+			"labelText"			"#TF_ItemPresetName2"
+			"textAlignment"		"center"
+			"font"				"TallTextSmall"
+			"defaultFgColor_override"		"MainMenuTextDefault"
+			"armedFgColor_override"			"MainMenuTextArmed"
+			"depressedFgColor_override"		"MainMenuTextDepressed"	
+			"border_default"	"OldAdvButtonDefault"
+			"border_armed"		"OldAdvButtonDefaultArmed"
+			"border_depressed"	"OldAdvButtonDefaultArmed"	
+		}
+
+	}
+	
+	"preset_3"
+	{
+		"ControlName"		"CTFAdvButton"
+		"fieldName"			"preset_3"
+		"xpos"				"c30"
+		"ypos"				"85"
+		"zpos"				"-1"
+		"wide"				"25"
+		"tall"				"25"
+		"scaleimage"		"0"	
+		"visible"			"1"
+		"enabled"			"1"
+		"bordervisible"		"1"		
+		"command"			"loadpreset_3"
+		"SubButton"
+		{
+			"labelText" 		"#TF_ItemPresetName3"
+			"textAlignment"		"center"
+			"font"				"TallTextSmall"
+			"defaultFgColor_override"		"MainMenuTextDefault"
+			"armedFgColor_override"			"MainMenuTextArmed"
+			"depressedFgColor_override"		"MainMenuTextDepressed"
+			"border_default"	"OldAdvButtonDefault"
+			"border_armed"		"OldAdvButtonDefaultArmed"
+			"border_depressed"	"OldAdvButtonDefaultArmed"		
+		}
+	}
+	
+	// left side
 	"weaponbutton0"
 	{
 		"ControlName"	"CTFAdvItemButton"
@@ -267,11 +382,12 @@
 		}
 	}
 	
+	// right side
 	"weaponbutton4"
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton4"		
-		"xpos"			"c140"
+		"xpos"			"c175"
 		"ypos"			"94"		
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -293,7 +409,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton5"		
-		"xpos"			"c140"
+		"xpos"			"c175"
 		"ypos"			"160"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -315,7 +431,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton6"		
-		"xpos"			"c140"
+		"xpos"			"c175"
 		"ypos"			"226"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -337,7 +453,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton7"		
-		"xpos"			"c140"
+		"xpos"			"c175"
 		"ypos"			"292"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -360,7 +476,7 @@
 		"ControlName"	"CTFAdvModelPanel"
 		"bgcolor_override"	"255 0 0 96"
 		"xpos"			"cs-0.5"
-		"ypos"			"90"
+		"ypos"			"100"
 		"zpos"			"-2"		
 		"wide"			"370"
 		"tall"			"280"
@@ -461,7 +577,7 @@
 	{
 		"ControlName"	"CTFAdvButton"
 		"fieldName"		"BackButton"
-		"xpos"			"c160"
+		"xpos"			"c-280"
 		"ypos"			"437"
 		"zpos"			"-1"
 		"wide"			"100"
@@ -472,7 +588,7 @@
 		
 		"SubButton"
 		{
-			"labelText" 		"#GameUI_Close"
+			"labelText" 		"#TF_Back"
 			"textAlignment"		"center"
 			"font"				"HudFontSmallBold"
 			"border_default"	"OldAdvButtonDefault"
@@ -501,7 +617,7 @@
 		"fieldName"			"classselection"
 		"xpos"				"c-220"
 		"ypos"				"r112"
-		"zpos"				"40"
+		"zpos"				"-40"
 		"wide"				"440"
 		"tall"				"44"
 		"visible"			"1"
@@ -732,120 +848,6 @@
 				"image" 			"class_icons/spy"	
 				"imagewidth"		"44"
 			}
-		}
-	}
-	
-	"preset_a"
-	{
-		"ControlName"		"CTFAdvButton"
-		"fieldName"			"preset_a"
-		"xpos"				"c-60"
-		"ypos"				"35"
-		"zpos"				"100"
-		"wide"				"25"
-		"tall"				"25"
-		"scaleimage"		"0"	
-		"visible"			"1"
-		"enabled"			"1"
-		"bordervisible"		"1"		
-		"command"			"loadpreset_0"
-		"SubButton"
-		{
-			"labelText"			"#TF_ItemPresetName0"
-			"textAlignment"		"center"
-			"font"				"TallTextSmall"
-			"defaultFgColor_override"		"MainMenuTextDefault"
-			"armedFgColor_override"			"MainMenuTextArmed"
-			"depressedFgColor_override"		"MainMenuTextDepressed"	
-			"border_default"	"OldAdvButtonDefault"
-			"border_armed"		"OldAdvButtonDefaultArmed"
-			"border_depressed"	"OldAdvButtonDefaultArmed"	
-		}
-	}
-	
-	"preset_b"
-	{
-		"ControlName"		"CTFAdvButton"
-		"fieldName"			"preset_b"
-		"xpos"				"c-30"
-		"ypos"				"35"
-		"zpos"				"100"
-		"wide"				"25"
-		"tall"				"25"
-		"scaleimage"		"0"	
-		"visible"			"1"
-		"enabled"			"1"
-		"bordervisible"		"1"		
-		"command"			"loadpreset_1"
-		"SubButton"
-		{
-			"labelText"			"#TF_ItemPresetName1"
-			"textAlignment"		"center"
-			"font"				"TallTextSmall"
-			"defaultFgColor_override"		"MainMenuTextDefault"
-			"armedFgColor_override"			"MainMenuTextArmed"
-			"depressedFgColor_override"		"MainMenuTextDepressed"	
-			"border_default"	"OldAdvButtonDefault"
-			"border_armed"		"OldAdvButtonDefaultArmed"
-			"border_depressed"	"OldAdvButtonDefaultArmed"	
-		}
-
-	}
-	
-	"preset_c"
-	{
-		"ControlName"		"CTFAdvButton"
-		"fieldName"			"preset_c"
-		"xpos"				"c30"
-		"ypos"				"35"
-		"zpos"				"100"
-		"wide"				"25"
-		"tall"				"25"
-		"scaleimage"		"0"	
-		"visible"			"1"
-		"enabled"			"1"
-		"bordervisible"		"1"		
-		"command"			"loadpreset_2"
-		"SubButton"
-		{
-			"labelText"			"#TF_ItemPresetName2"
-			"textAlignment"		"center"
-			"font"				"TallTextSmall"
-			"defaultFgColor_override"		"MainMenuTextDefault"
-			"armedFgColor_override"			"MainMenuTextArmed"
-			"depressedFgColor_override"		"MainMenuTextDepressed"	
-			"border_default"	"OldAdvButtonDefault"
-			"border_armed"		"OldAdvButtonDefaultArmed"
-			"border_depressed"	"OldAdvButtonDefaultArmed"	
-		}
-
-	}
-	
-	"preset_d"
-	{
-		"ControlName"		"CTFAdvButton"
-		"fieldName"			"preset_d"
-		"xpos"				"c60"
-		"ypos"				"35"
-		"zpos"				"100"
-		"wide"				"25"
-		"tall"				"25"
-		"scaleimage"		"0"	
-		"visible"			"1"
-		"enabled"			"1"
-		"bordervisible"		"1"		
-		"command"			"loadpreset_3"
-		"SubButton"
-		{
-			"labelText" 		"#TF_ItemPresetName3"
-			"textAlignment"		"center"
-			"font"				"TallTextSmall"
-			"defaultFgColor_override"		"MainMenuTextDefault"
-			"armedFgColor_override"			"MainMenuTextArmed"
-			"depressedFgColor_override"		"MainMenuTextDepressed"
-			"border_default"	"OldAdvButtonDefault"
-			"border_armed"		"OldAdvButtonDefaultArmed"
-			"border_depressed"	"OldAdvButtonDefaultArmed"		
 		}
 	}
 	

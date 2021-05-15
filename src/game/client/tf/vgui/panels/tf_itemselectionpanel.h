@@ -137,21 +137,19 @@ public:
 	void Show();
 	void DefaultLayout();
 	void GameLayout();
-	void SetWeaponPreset(int iClass, int iSlot, int iPreset);
 	void SetCurrentClassAndSlot(int iClass, int iSlot);
-	void SetCurrentSlot(int iSlot) { m_iCurrentSlot = iSlot; };
-	int  GetAnimSlot(CEconItemDefinition *pItemDef, int iClass);
-	void SetSlotAndPreset(int iSlot, int iPreset);
-	void SlideColumn(int iCol, int iDir);
-	void ResetRows();
+	void SetupItemsPage( int page );
+	void SetupItem( int iItem );
 
 private:
-	CModelPanel		*m_pGameModelPanel;
 	CTFWeaponSelectPanel *m_pWeaponSetPanel;
 	CUtlVector<CTFAdvItemButton*> m_pWeaponIcons;
-	CUtlVector<CTFAdvItemButton*> m_pSlideButtons;
-	CUtlVector<int> m_RawIDPos;
 	//MESSAGE_FUNC(UpdateModelPanels, "ControlModified");
+	CExLabel *m_pItemSlotLabel;
+
+	int m_nPage;
+	int m_nPageCount;
+
 	int	m_iCurrentClass;
 	int	m_iCurrentSlot;
 	int m_iCurrentSkin;
@@ -167,6 +165,14 @@ class CTFWeaponSelectPanel : public vgui::EditablePanel
 public:
 	CTFWeaponSelectPanel(vgui::Panel* parent, const char *panelName);
 	void OnCommand(const char* command);
+	void ApplySettings( KeyValues *inResourceData );
+
+	int m_nItemColumns;
+	int m_nItemRows;
+	int m_nItemXSpace;
+	int m_nItemYSpace;
+	int m_nItemWidth;
+	int m_nItemHeight;
 };
 
 #endif // TFMAINMENUITEMSELECTIONPANEL_H
