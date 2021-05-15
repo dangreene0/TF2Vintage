@@ -128,6 +128,12 @@ bool CTFLoadoutPanel::Init()
 		m_pWeaponIcons.AddToTail ( new CTFAdvItemButton ( this, szWeaponButton, chEmptyLoc) );
 	}
 
+	// TODO - don't use varargs?
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		m_pPresetButtons[i] = new CTFAdvButton( this, VarArgs( "preset_%d", i ), VarArgs( "TF_ItemPresetName%d", i ) );
+	}
+
 	for ( int iClassIndex = 0; iClassIndex < TF_CLASS_COUNT_ALL; iClassIndex++ )
 	{
 		if ( pszClassModels[iClassIndex][0] != '\0' )
@@ -168,6 +174,14 @@ void CTFLoadoutPanel::SetCurrentClass(int iClass)
 		MAINMENU_ROOT->HidePanel(ITEMSELCTION_MENU);
 	}
 
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		if( i == GetTFInventory()->GetCurrentLoadoutSlot( iClass ))
+			m_pPresetButtons[i]->SetSelected( true );
+		else
+			m_pPresetButtons[i]->SetSelected( false );
+	}
+	
 	m_iCurrentClass = iClass;
 	m_iCurrentSlot = g_aClassLoadoutSlots[iClass][0];
 	DefaultLayout();
@@ -289,7 +303,6 @@ int CTFLoadoutPanel::GetAnimSlot( CEconItemDefinition *pItemDef, int iClass )
 		const char *pszClassname = TranslateWeaponEntForClass( pItemDef->GetClassName(), iClass );
 		_WeaponData *pWeaponInfo = g_TFWeaponScriptParser.GetTFWeaponInfo( pszClassname );
 		Assert( pWeaponInfo );
-
 		iSlot = pWeaponInfo->m_iWeaponType;
 	}
 
@@ -586,14 +599,27 @@ void CTFLoadoutPanel::DefaultLayout()
 				}
 			}
 
+			CTFAdvItemButton *m_pWeaponButton = m_pWeaponIcons[iRow];
 			CEconItemDefinition *pItemData = pItem ? pItem->GetStaticData() : NULL;
 			if (pItemData)
 			{
-				CTFAdvItemButton *m_pWeaponButton = m_pWeaponIcons[iRow];
 				m_pWeaponButton->SetItemDefinition( pItemData );
 				m_pWeaponButton->GetButton()->SetSelected( (iColumn == iWeaponPreset) );
+				m_pWeaponButton->SetVisible( true );
+			}
+			else
+			{
+				m_pWeaponButton->SetVisible( false );
 			}
 		}
+	}
+
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		if ( i == GetTFInventory()->GetCurrentLoadoutSlot( iClassIndex ) )
+			m_pPresetButtons[i]->SetSelected( true );
+		else
+			m_pPresetButtons[i]->SetSelected( false );
 	}
 };
 
