@@ -1136,13 +1136,6 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 	{
 		ParseItems( pSpecialItems );
 	}
-
-	// Stock Variants is for v/w variants.
-	KeyValues *pStockVariants = pKVData->FindKey( "stockvariants" );
-	if ( pStockVariants )
-	{
-		ParseItems( pStockVariants );
-	}
 	
 	// Medals is well, player medals.
 	KeyValues *pMedals = pKVData->FindKey( "medals" );

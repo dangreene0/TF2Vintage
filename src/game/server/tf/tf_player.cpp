@@ -141,7 +141,6 @@ extern ConVar tf2v_allow_disguiseweapons;
 extern ConVar tf2v_use_new_cloak;
 extern ConVar tf2v_use_new_cleaners;
 
-extern ConVar tf2v_legacy_weapons;
 extern ConVar tf2v_force_year_weapons;
 extern ConVar tf2v_allowed_year_weapons;
 extern ConVar tf2v_new_flame_damage;
@@ -2362,27 +2361,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				}
 			}*/
 			
-			bool bUseAlternateEntity = false;
-			int iItemID = -1;
-			if ( tf2v_legacy_weapons.GetBool() && bStockItem )
-			{
-				iItemID = TranslateLegacyID(pItem->GetItemDefIndex());
-				if (iItemID != -1)
-				{
-					bUseAlternateEntity = true;
-				}
-			}
-			
-			CEconEntity *pEntity = NULL;
-			if (!bUseAlternateEntity) // Issue by slot.
-			{
-				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
-			}
-			else					  // Issue by entity ID.
-			{
-			    CEconItemView econItem( iItemID );
-				pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pItem->GetEntityName(), 0, &econItem ) );	
-			}
+			CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
 			if ( pEntity )
 			{
 				pEntity->GiveTo( this );
@@ -2485,7 +2464,7 @@ void CTFPlayer::ManageRandomWeapons( TFPlayerClassData_t *pData )
 			{
 				CEconItemDefinition *pItemDef = pItem->GetStaticData();
 				// If it's special or a variant of a stock item, reroll.
-				if ( pItemDef && ( pItemDef->specialitem || pItemDef->stockvariant ) )
+				if ( pItemDef && ( pItemDef->specialitem ) )
 				{
 					continue;
 				}
@@ -2864,6 +2843,7 @@ void CTFPlayer::ManageVIPMedal( TFPlayerClassData_t *pData )
 
 //-----------------------------------------------------------------------------
 // Purpose: Used for translating c_model stock items to v/w model items.
+// Currently not in use as we don't have any v/w model items.
 //-----------------------------------------------------------------------------
 int CTFPlayer::TranslateLegacyID(int iItemID)
 {
@@ -2877,7 +2857,7 @@ int CTFPlayer::TranslateLegacyID(int iItemID)
 		// Increase the ID by 70000 since that's where our v/w models are.
 		pItemDef = NULL; // Reset this, because we need to check it again.
 		pItemDef = GetItemSchema()->GetItemDefinition(nTranslatedID);
-		if (pItemDef && pItemDef->stockvariant)
+		if (pItemDef)
 		{
 			return nTranslatedID; // This is the new item ID we swap to.
 		}
