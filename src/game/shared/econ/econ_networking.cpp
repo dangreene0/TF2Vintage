@@ -298,12 +298,35 @@ void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity
 	if ( !SteamNetworkingSockets() )
 		return;
 
+	CSteamID steamID = identity.GetSteamID();
 	if ( net_steamcnx_debug.GetBool() )
 	{
 		ConColorMsg( STEAM_CNX_COLOR, "Initiate %llx\n", steamID.ConvertToUint64() );
 	}
 
-	
+#if defined( GAME_DLL )
+	CSteamSocket *pSocket = OpenConnection( steamID, hConnection );
+	if ( pSocket )
+	{
+		CProtobufMsg<CServerHelloMsg> msg;
+		CSteamID remoteID = steamgameserverapicontext->SteamGameServer()->GetSteamID();
+
+		uint unVersion = 0;
+		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
+		if ( fh && filesystem->Tell( fh ) > 0 )
+		{
+			char version[48];
+			filesystem->ReadLine( version, sizeof( version ), fh );
+			unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen( version ) + 1 );
+		}
+		filesystem->Close( fh );
+
+		msg.Body().set_version( unVersion );
+		msg.Body().set_steamid( remoteID.ConvertToUint64() );
+
+		SendMessage( steamID, k_EServerHelloMsg, msg.Body() );
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
