@@ -51,6 +51,9 @@ public:
 	virtual bool ProcessMessage( INetPacket *pPacket )
 	{
 		CProtobufMsg<CServerHelloMsg> msg( pPacket );
+
+		CSteamID serverID( msg.Body().steamid() );
+		DbgVerify( serverID.BGameServerAccount() );
 		
 	#if defined( CLIENT_DLL )
 		CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
@@ -71,10 +74,7 @@ public:
 			pPlayer->GetSteamID( &playerID );
 			reply.Body().set_steamid( playerID.ConvertToUint64() );
 
-			CSteamID serverID( msg.Body().steamid() );
-			Assert( serverID.BGameServerAccount() );
-
-			g_pEconNetwork->BSendMessage( serverID, k_EClientHelloMsg, reply.Body() );
+			g_pEconNetwork->SendMessage( serverID, k_EClientHelloMsg, reply.Body() );
 		}
 
 		filesystem->Close( fh );
@@ -99,6 +99,8 @@ public:
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
 		if ( fh && filesystem->Tell( fh ) > 0 )
 		{
+			CProtobufMsg<CClientHelloMsg> msg( pPacket );
+
 			char version[48];
 			filesystem->ReadLine( version, sizeof( version ), fh );
 
