@@ -153,7 +153,7 @@ ConVar tf2v_allow_cosmetics( "tf2v_allow_cosmetics", "0", FCVAR_NOTIFY, "Enable 
 ConVar tf2v_random_classes( "tf2v_random_classes", "0", FCVAR_NOTIFY, "Makes players spawn with random classes." );
 ConVar tf2v_random_weapons( "tf2v_random_weapons", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout." );
 ConVar tf2v_unrestrict_random_weapons( "tf2v_unrestrict_random_weapons", "1", FCVAR_NOTIFY, "Allows random weapons and randomizer to select items from every class or the current class." );
-ConVar tf2v_allow_reskins( "tf2v_allow_reskins", "0", FCVAR_NOTIFY, "Allows players to use reskin items." );
+ConVar tf2v_allow_reskins( "tf2v_allow_reskins", "1", FCVAR_NOTIFY, "Allows players to use reskin items." );
 ConVar tf2v_allow_demoknights( "tf2v_allow_demoknights", "1", FCVAR_NOTIFY, "Allows players to use Demoknight content." );
 ConVar tf2v_allow_mod_weapons( "tf2v_allow_mod_weapons", "1", FCVAR_NOTIFY, "Allows players to use non-standard TF2 weapons." );
 ConVar tf2v_allow_cut_weapons( "tf2v_allow_cut_weapons", "1", FCVAR_NOTIFY, "Allows players to use cut TF2 weapons." );
@@ -1802,6 +1802,11 @@ void CTFPlayer::GiveDefaultItems()
 	}
 
 	RemoveAllAmmo();
+	
+	// If we got the Dead Ringer for some reason, disable it.
+	CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>( Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
+	if ( pInvis && pInvis->HasFeignDeath() )
+		pInvis->CleanUpInvisibility();
 
 	// Give ammo. Must be done before weapons, so weapons know the player has ammo for them.
 	for ( int iAmmo = 0; iAmmo < TF_AMMO_COUNT; ++iAmmo )
@@ -2240,6 +2245,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	// Validate our inventory.
 	ValidateWearables();
 	ValidateWeapons( true );
+	ValidateWeaponSlots();
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2336,7 +2342,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 					bHolidayRestrictedItem = false;
 			}
 			
-			if ( !bWhiteListedWeapon || bIsReskin || bHolidayRestrictedItem || bIsSpecialRestricted || bIsDemoknight || bIsCutContent || bIsMultiClassItem ) // If the weapon is banned, swap for a stock weapon.
+			if  ( !bWhiteListedWeapon || bIsReskin || bHolidayRestrictedItem || bIsSpecialRestricted || bIsDemoknight || bIsCutContent || bIsMultiClassItem ) // If the weapon is banned, swap for a stock weapon.
 			{
 				pItem = GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), iSlot, 0 );
 				bStockItem = true;
@@ -2369,8 +2375,11 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 		}
 	}
 
+	// Check if we still have any items (such as wearables) we shouldn't have.
+	ValidateWeaponSlots();
 	// We may have added weapons that make others invalid. Recheck.
 	ValidateWeapons( false );
+	
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
