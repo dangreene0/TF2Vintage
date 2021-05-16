@@ -533,19 +533,29 @@ void CEconNetworking::SessionStatusChanged( SteamNetConnectionStatusChangedCallb
 	switch ( pStatus->m_info.m_eState )
 	{
 		case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
-		case k_ESteamNetworkingConnectionState_ClosedByPeer:
 		{
-			ConColorMsg( STEAM_CNX_COLOR, "Closing connection with %s (%s)", 
+			ConColorMsg( STEAM_CNX_COLOR, "Connection forcibly closed with %s (%s)!\n", 
 						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str(),
 						 SteamNetworkingIPAddrRender( pStatus->m_info.m_addrRemote ).c_str() );
+
+			DevMsg( "Connection %s end reason: %s\n", pStatus->m_info.m_szConnectionDescription, pStatus->m_info.m_szEndDebug );
 
 			SteamNetworkingSockets()->CloseConnection( pStatus->m_hConn, 0, NULL, false );
 			break;
 		}
 
+		case k_ESteamNetworkingConnectionState_ClosedByPeer:
+		{
+			ConColorMsg( STEAM_CNX_COLOR, "Closing connection with %s.\n", 
+						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str() );
+
+			SteamNetworkingSockets()->CloseConnection( pStatus->m_hConn, 0, NULL, true );
+			break;
+		}
+
 		case k_ESteamNetworkingConnectionState_Connecting:
 		{
-			ConColorMsg( STEAM_CNX_COLOR, "Accepting connection from %s (%s)", 
+			ConColorMsg( STEAM_CNX_COLOR, "Accepting connection from %s (%s).\n", 
 						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str(),
 						 SteamNetworkingIPAddrRender( pStatus->m_info.m_addrRemote ).c_str() );
 
@@ -555,9 +565,15 @@ void CEconNetworking::SessionStatusChanged( SteamNetConnectionStatusChangedCallb
 
 		case k_ESteamNetworkingConnectionState_Connected:
 		{
-			ConColorMsg( STEAM_CNX_COLOR, "Connected to %s (%s)", 
-						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str(),
-						 SteamNetworkingIPAddrRender( pStatus->m_info.m_addrRemote ).c_str() );
+			ConColorMsg( STEAM_CNX_COLOR, "Connected to %s.\n", 
+						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str() );
+
+		#if defined( GAME_DLL )
+			SteamNetworkingIdentity remoteID = pStatus->m_info.m_identityRemote;
+			HSteamNetConnection hConnection = pStatus->m_hConn;
+
+			OnClientConnected( remoteID, hConnection );
+		#endif
 		}
 
 		case k_ESteamNetworkingConnectionState_FindingRoute:
