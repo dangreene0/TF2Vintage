@@ -2606,7 +2606,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 		bool bNoQuota = false;
 		int nSkill = tf_bot_difficulty.GetInt();
 
-		for ( int i=0; i < args.ArgC(); ++i )
+		for ( int i=1; i < args.ArgC(); ++i )
 		{
 			int nParsedSkill = NameToDifficulty( args[i] );
 			int nParsedNumBots = V_atoi( args[i] );
