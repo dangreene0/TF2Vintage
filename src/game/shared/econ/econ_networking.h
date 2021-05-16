@@ -56,9 +56,7 @@ public:
 #if defined( CLIENT_DLL )
 	virtual void ConnectToServer( SteamNetworkingIdentity const &identity ) = 0;
 #endif
-	virtual bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData ) = 0;
-	virtual bool RecvData( void *pubDest, uint32 cubDest ) = 0;
-	virtual bool BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
+	virtual bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
 };
 
 extern IEconNetworking *g_pEconNetwork;

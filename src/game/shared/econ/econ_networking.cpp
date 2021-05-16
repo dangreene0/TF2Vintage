@@ -77,10 +77,7 @@ public:
 
 	void ProcessDataFromConnection( HSteamNetConnection hConn );
 
-	bool SendData( CSteamID const &targetID, void const *pubData, uint32 cubData ) OVERRIDE;
-	bool RecvData( void *pubDest, uint32 cubDest ) OVERRIDE;
-
-	bool BSendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
+	bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
 
 #ifdef CLIENT_DLL
 	virtual void Update( float frametime );
@@ -335,10 +332,6 @@ CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, HSteamNe
 	if ( !SteamNetworkingSockets() )
 		return nullptr;
 
-#if defined( CLIENT_DLL )
-	m_hServerConnection = hConnection;
-#endif
-
 	FOR_EACH_VEC( m_vecSockets, i )
 	{
 		if ( m_vecSockets[i].GetSteamID() == steamID )
@@ -457,54 +450,7 @@ void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CEconNetworking::SendData( CSteamID const &targetID, void const *pubData, uint32 cubData )
-{
-	if ( !SteamNetworkingSockets() )
-		return false;
-
-#if defined( GAME_DLL )
-	CSteamSocket *pSock = FindConnectionForID( targetID );
-	if ( pSock == nullptr )
-		return false;
-
-	HSteamNetConnection hConn = pSock->GetConnection();
-	if ( hConn == k_HSteamNetConnection_Invalid )
-		return false;
-
-	return SteamNetworkingSockets()->SendMessageToConnection( hConn, pubData, cubData, k_nSteamNetworkingSend_Reliable, NULL ) == k_EResultOK;
-#else
-	return SteamNetworkingSockets()->SendMessageToConnection( m_hServerConnection, pubData, cubData, k_nSteamNetworkingSend_Reliable, NULL ) == k_EResultOK;
-#endif
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CEconNetworking::RecvData( void *pubDest, uint32 cubDest )
-{
-	if ( !SteamNetworkingSockets() )
-		return false;
-
-	if ( m_hPollGroup == k_HSteamNetPollGroup_Invalid )
-		return false;
-
-	SteamNetworkingMessage_t *message;
-	int nNumMessages = SteamNetworkingSockets()->ReceiveMessagesOnPollGroup( m_hPollGroup, &message, 1 );
-	if( nNumMessages != 0 )
-	{
-		Assert( message->GetSize() <= cubDest );
-		V_memcpy( pubDest, message->GetData(), cubDest );
-
-		message->Release();
-	}
-
-	return nNumMessages == 1;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CEconNetworking::BSendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg )
+bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg )
 {
 #if defined( GAME_DLL )
 	CSteamSocket *pSock = FindConnectionForID( targetID );
