@@ -48,7 +48,7 @@ class CServerHelloHandler : public IMessageHandler
 public:
 	CServerHelloHandler() {}
 
-	virtual bool ProcessPacket( INetPacket *pPacket )
+	virtual bool ProcessMessage( INetPacket *pPacket )
 	{
 		CProtobufMsg<CServerHelloMsg> msg( pPacket );
 		
@@ -93,7 +93,7 @@ class CClientHelloHandler : public IMessageHandler
 public:
 	CClientHelloHandler() {}
 
-	virtual bool ProcessPacket( INetPacket *pPacket )
+	virtual bool ProcessMessage( INetPacket *pPacket )
 	{
 	#if defined( GAME_DLL )
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
