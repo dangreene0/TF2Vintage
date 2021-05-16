@@ -2633,7 +2633,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 			}
 			else if ( nNumBots == 1 )
 			{
-				pszBotName = args[i];
+				pszBotName = args[i] != NULL ? args[i] : GetRandomBotName();
 			}
 			else
 			{
