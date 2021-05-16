@@ -3792,7 +3792,7 @@
 		"weapon_reskin"
 		{
 			"is_reskin"			"1"
-			"item_quality" "unique"
+			"item_quality" "genuine"
 		}
 		"weapon_cutcontent"
 		{
