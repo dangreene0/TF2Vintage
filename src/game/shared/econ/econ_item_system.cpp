@@ -346,6 +346,14 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		}
 	}
 
+	// Initialize all visuals for next section.
+	for (int i = 0; i < TF_TEAM_COUNT; i++)
+	{
+		if (i == TEAM_SPECTATOR)
+			continue;
+
+		visual[i] = NULL;
+	}
 
 	FOR_EACH_SUBKEY( pDefinition, pSubData )
 	{
@@ -428,31 +436,24 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 				attributes.AddToTail( attribute );
 			}
 		}
-		else for (int i = 0; i < TF_TEAM_COUNT; i++)
+		else if (!V_strnicmp(pSubData->GetName(), "visuals", 7))
 		{
-			if (i == TEAM_SPECTATOR || i == TF_TEAM_NPC)
-				continue; // Deliberate skip.
-
-			if (!V_stricmp(pSubData->GetName(), g_TeamVisualSections[i]))
+			// Figure out what team is this meant for.
+			int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT);
+			if (iVisuals == TEAM_UNASSIGNED)
 			{
-				if (i == TEAM_UNASSIGNED) // Unassigned should always be the first to be parsed here.
+				// Hacky: for standard visuals block, assign it to all teams at once.
+				for (int team = 0; team < TF_TEAM_COUNT; team++)
 				{
-					// Hacky: for standard visuals block, assign it to all teams at once.
-					for (int team = 0; team < TF_TEAM_COUNT; team++)
-					{
-						if (team == TEAM_SPECTATOR)
-							continue;
+					if (team == TEAM_SPECTATOR)
+						continue;
 
-						visual[team] = NULL;
-						ParseVisuals(pSubData, team);
-					}
-					continue;
+					ParseVisuals(pSubData, team);
 				}
-				else // After unassigned comes team parsings.
-				{
-					ParseVisuals(pSubData, i);
-					continue;
-				}
+			}
+			else if (iVisuals != -1 && iVisuals != TEAM_SPECTATOR)
+			{
+				ParseVisuals(pSubData, iVisuals);
 			}
 		}
 	}
@@ -467,7 +468,7 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 	if (visual[iIndex]) // If we have data already in here, load the previous data before adding new stuff.
 		pVisuals = visual[iIndex];
 	else
-		pVisuals = new PerTeamVisuals_t;
+		pVisuals = new PerTeamVisuals_t; // Build ourselves a fresh visual file.
 
 	FOR_EACH_SUBKEY( pKVData, pVisualData )
 	{
