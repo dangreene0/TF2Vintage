@@ -1772,15 +1772,20 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 {
 	if ( pItem1 && pItem2 )
 	{
+
 		// Item might have different entities for each class (i.e. shotgun).
 		int iClass = m_PlayerClass.GetClassIndex();
-		const char *pszClass1 = TranslateWeaponEntForClass( pItem1->GetEntityName(), iClass );
-		const char *pszClass2 = TranslateWeaponEntForClass( pItem2->GetEntityName(), iClass );
+		const char* pszClass1 = TranslateWeaponEntForClass(pItem1->GetEntityName(), iClass);
+		const char* pszClass2 = TranslateWeaponEntForClass(pItem2->GetEntityName(), iClass);
 
-		if ( V_strcmp( pszClass1, pszClass2 ) != 0 )
+		if (V_strcmp(pszClass1, pszClass2) != 0)
 			return false;
 
-		return ( pItem1->GetItemDefIndex() == pItem2->GetItemDefIndex() );
+		// In case we're something other than a weapon, or checking the weapon doesn't work.
+		int nItemIndex1 = pItem1->GetItemDefIndex();
+		int nItemIndex2 = pItem2->GetItemDefIndex();
+		if (nItemIndex1 && nItemIndex2)
+			return (nItemIndex1 == nItemIndex2);
 	}
 
 	return false;
