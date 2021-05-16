@@ -21,17 +21,6 @@ public:
 	virtual bool ProcessMessage( INetPacket *pPacket ) = 0;
 };
 
-class CBaseMsgHandler : public IMessageHandler
-{
-public:
-	CBaseMsgHandler();
-
-	virtual bool ProcessMessage( INetPacket *pPacket )	{ return false; }
-	void QueueWork( INetPacket *pPacket );
-private:
-	HCoroutine m_hCoroutine;
-};
-
 
 void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
 #define REG_ECON_MSG_HANDLER( classType, msgType, msgName ) \
@@ -41,6 +30,8 @@ void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandle
 		public: \
 			CReg##classType() { RegisterEconNetworkMessageHandler( msgType, &s_##msgName##Handler ); } \
 		} g_Reg##classType
+
+bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, INetPacket *pPacket );
 
 
 

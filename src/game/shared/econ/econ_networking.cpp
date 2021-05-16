@@ -434,7 +434,7 @@ void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 		CNetPacket *pPacket = new CNetPacket;
 		pPacket->InitFromMemory( pData, cubMsgSize );
 
-		if ( !pPacket->Hdr().has_protocol_version() || pPacket->Hdr().protocol_version() != STEAM_CNX_PROTO_VERSION )
+		if ( pPacket->Hdr().protocol_version() != STEAM_CNX_PROTO_VERSION )
 		{
 			SteamNetConnectionInfo_t info;
 			if( SteamNetworkingSockets()->GetConnectionInfo( hConn, &info ) )
@@ -446,13 +446,12 @@ void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 			continue;
 		}
 
-		CBaseMsgHandler *pHandler = NULL;
+		IMessageHandler *pHandler = NULL;
 		unsigned nIndex = m_MessageTypes.Find( pPacket->MsgType() );
 		if ( nIndex != m_MessageTypes.InvalidIndex() )
-			pHandler = (CBaseMsgHandler *)m_MessageTypes[nIndex];
+			pHandler = m_MessageTypes[nIndex];
 
-		if ( pHandler )
-			pHandler->QueueWork( pPacket );
+		QueueEconNetworkMessageWork( pHandler, pPacket );
 
 		pPacket->Release();
 		messages[i]->Release();

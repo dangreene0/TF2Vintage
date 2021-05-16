@@ -15,37 +15,35 @@ struct WorkItem_t
 	INetPacket *m_pPacket;
 };
 
-static void WorkThread( void *pvParam )
+// Queue is the wrong word
+bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, INetPacket *pPacket )
 {
-	WorkItem_t *pWork = (WorkItem_t*)pvParam;
-	IMessageHandler *pHandler = pWork->m_pHandler;
-	INetPacket *pPacket = pWork->m_pPacket;
+	if ( pHandler == nullptr || pPacket == nullptr )
+		return false;
 
-	pHandler->ProcessMessage( pPacket );
+	const auto WorkThread = [ ] ( void *pvParam ) {
+		WorkItem_t *pWork = (WorkItem_t *)pvParam;
+		INetPacket *pPacket = pWork->m_pPacket;
 
-	pPacket->Release();
+		pPacket->AddRef();
+
+		while ( !pWork->m_pHandler->ProcessMessage( pPacket ) )
+			ThreadSleep(25);
+
+		pPacket->Release();
+	};
+
+	WorkItem_t work{pHandler, pPacket};
+	HCoroutine hCoroutine = Coroutine_Create( WorkThread, &work );
+	Coroutine_Continue( hCoroutine, "process packet" );
+
+	return true;
 }
-
-
-CBaseMsgHandler::CBaseMsgHandler()
-	: m_hCoroutine( NULL )
-{
-}
-
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CBaseMsgHandler::QueueWork( INetPacket *pPacket )
-{
-	WorkItem_t work{this, pPacket};
-	pPacket->AddRef();
-
-	m_hCoroutine = Coroutine_Create( WorkThread, &work );
-	Coroutine_Continue( m_hCoroutine, "process packet" );
-}
-
-class CServerHelloHandler : public CBaseMsgHandler
+class CServerHelloHandler : public IMessageHandler
 {
 public:
 	CServerHelloHandler() {}
@@ -87,15 +85,16 @@ public:
 };
 REG_ECON_MSG_HANDLER( CServerHelloHandler, k_EServerHelloMsg, CServerHelloMsg );
 
-class CClientHelloHandler : public CBaseMsgHandler
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CClientHelloHandler : public IMessageHandler
 {
 public:
 	CClientHelloHandler() {}
 
 	virtual bool ProcessPacket( INetPacket *pPacket )
 	{
-		CProtobufMsg<CClientHelloMsg> msg( pPacket );
-		
 	#if defined( GAME_DLL )
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
 		if ( fh && filesystem->Tell( fh ) > 0 )
