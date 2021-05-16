@@ -3794,7 +3794,7 @@
 		"weapon_reskin"
 		{
 			"is_reskin"			"1"
-			"item_quality" "genuine"
+			"item_quality" "rarity1"
 		}
 		"weapon_cutcontent"
 		{
