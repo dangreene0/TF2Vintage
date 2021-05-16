@@ -47,9 +47,15 @@ public:
 		m_pBody = AllocMsg();
 	}
 	CProtobufMsg( INetPacket *pPacket )
-		: m_pPacket( NULL )
+		: m_pPacket( pPacket )
 	{
-		InitMsgFromNetwork( this, pPacket );
+		m_pPacket->AddRef();
+
+		m_pBody = AllocMsg();
+		Assert( m_pBody );
+
+		m_pBody->ParseFromArray( pPacket->Data() + sizeof( MsgHdr_t ), 
+								 pPacket->Size() - sizeof( MsgHdr_t ) );
 	}
 	virtual ~CProtobufMsg()
 	{
@@ -64,7 +70,12 @@ public:
 		}
 	}
 
-	static TProtoMsg *AllocMsg( void )
+	INetPacket *NetPacket( void ) const { return m_pPacket; }
+	TProtoMsg &Body( void ) { return *m_pBody; }
+	TProtoMsg const &Body( void ) const { return *m_pBody; }
+
+protected:
+	TProtoMsg *AllocMsg( void )
 	{
 		if ( !sm_bRegisteredPool )
 		{
@@ -78,27 +89,11 @@ public:
 		return pMsg;
 	}
 
-	static void FreeMsg( TProtoMsg *pObj )
+	void FreeMsg( TProtoMsg *pObj )
 	{
 		Destruct<TProtoMsg>( pObj );
 		sm_MsgPool->Free( (void *)pObj );
 	}
-
-	static bool InitMsgFromNetwork( CProtobufMsg<TProtoMsg> *pMsg, INetPacket *pPacket )
-	{
-		pMsg->m_pPacket = pPacket;
-		pMsg->NetPacket()->AddRef();
-
-		pMsg->m_pBody = AllocMsg();
-		Assert( pMsg->m_pBody );
-
-		return pMsg->Body().ParseFromArray( (void *)pPacket->Data() + sizeof( MsgHdr_t ), 
-											(int)pPacket->Size() - sizeof( MsgHdr_t ) );
-	}
-
-	INetPacket *NetPacket( void ) const { return m_pPacket; }
-	TProtoMsg &Body( void ) { return *m_pBody; }
-	TProtoMsg const &Body( void ) const { return *m_pBody; }
 
 private:
 	INetPacket *m_pPacket;
