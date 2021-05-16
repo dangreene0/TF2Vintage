@@ -1213,17 +1213,7 @@ void CEconItemSchema::ParseAttributes( KeyValues *pKVData )
 void CEconItemSchema::ClientConnected( edict_t *pClient )
 {
 #if defined( GAME_DLL )
-	if ( engine->IsDedicatedServer() )
-	{
-		if ( !pClient || pClient->IsFree() )
-			return;
-
-		CSteamID const *playerID = engine->GetClientSteamID( pClient );
-		if ( playerID == NULL )
-			return;
-
-		g_pEconNetwork->OnClientConnected( *playerID );
-	}
+	
 #endif
 }
 

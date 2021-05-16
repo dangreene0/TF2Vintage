@@ -64,7 +64,7 @@ public:
 	virtual bool Init( void );
 	virtual void Shutdown( void );
 
-	void OnClientConnected( CSteamID const &steamID ) OVERRIDE;
+	void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) OVERRIDE;
 	void OnClientDisconnected( CSteamID const &steamID ) OVERRIDE;
 
 #if defined( GAME_DLL )
@@ -110,10 +110,6 @@ class CNetPacket : public INetPacket
 	friend class CRefCountAccessor;
 	static CUtlMemoryPool *sm_MsgPool;
 	static bool sm_bRegisteredPool;
-#pragma push_macro("new")
-#undef new
-	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
-#pragma pop_macro("new")
 public:
 	CNetPacket()
 	{
@@ -126,6 +122,11 @@ public:
 	byte *MutableData( void ) { return (byte*)m_pMsg->m_pData; }
 	virtual uint32 Size( void ) const { return m_pMsg->m_cbSize; }
 	CProtobufMsgHdr const &Hdr( void ) const { return *m_Hdr.m_ProtoHdr; }
+
+#pragma push_macro("new")
+	#undef new
+	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
+#pragma pop_macro("new")
 
 protected:
 	virtual ~CNetPacket()
@@ -164,7 +165,7 @@ protected:
 
 		m_Hdr.m_ProtoHdr = AllocProtoHdr();
 		m_Hdr.m_ProtoHdr->set_protocol_version( STEAM_CNX_PROTO_VERSION );
-		m_Hdr.m_ProtoHdr->set_protocol_type( k_EProtocolTCP );
+		m_Hdr.m_ProtoHdr->set_protocol_type( k_EProtocolProtobuf );
 
 		m_pMsg = SteamNetworkingUtils()->AllocateMessage( size + sizeof( MsgHdr_t ) );
 		Q_memcpy( m_pMsg->m_pData, &m_Hdr, sizeof( MsgHdr_t ) );
@@ -281,16 +282,11 @@ void CEconNetworking::Shutdown( void )
 
 //-----------------------------------------------------------------------------
 // Purpose: 
-//
-// TODO:    Get rid of the ifdefs
 //-----------------------------------------------------------------------------
-void CEconNetworking::OnClientConnected( CSteamID const &steamID )
+void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection )
 {
 #if defined( GAME_DLL )
 	if ( !steamgameserverapicontext->SteamGameServer() )
-		return;
-#else
-	if ( !steamapicontext->SteamUser() )
 		return;
 #endif
 

@@ -13,19 +13,17 @@
 #include <google/protobuf/message.h>
 #include "econ_messages.pb.h"
 #include "tier1/mempool.h"
+#include "steam/steamnetworkingtypes.h"
 
-struct SteamNetworkingIdentity;
+#define ECON_SERVER_PORT 27200
+
+
 typedef uint32 MsgType_t;
-
-#define ECON_SERVER_PORT 27200 //constexpr uint16 g_nServerPort =
-
-// Use this to determine how a message was sent over the
-// wire, if required. Don't rely on this value being present,
-// or what the value is!
+// Currently only using protobuf
 enum EProtocolType
-{	// Currently only a TCP type is implemented
-	k_EProtocolTCP		= 1,
-	k_EProtocolUDP		= 2
+{
+	k_EProtocolStruct		= 1,
+	k_EProtocolProtobuf		= 2
 };
 
 struct MsgHdr_t
@@ -53,7 +51,7 @@ public:
 abstract_class IEconNetworking
 {
 public:
-	virtual void OnClientConnected( CSteamID const &steamID ) = 0;
+	virtual void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
 #if defined( CLIENT_DLL )
 	virtual void ConnectToServer( SteamNetworkingIdentity const &identity ) = 0;
