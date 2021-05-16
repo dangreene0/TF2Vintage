@@ -430,34 +430,29 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		}
 		else for (int i = 0; i < TF_TEAM_COUNT; i++)
 		{
-			if (i == TEAM_SPECTATOR)
-				continue;
-
-			if (!V_stricmp(pSubData->GetName(), "visuals_mvm_boss"))
+			if (i == TEAM_SPECTATOR || i == TF_TEAM_NPC)
 				continue; // Deliberate skip.
 
-			if (i == TEAM_UNASSIGNED) // Unassigned should always be the first to be parsed here.
+			if (!V_stricmp(pSubData->GetName(), g_TeamVisualSections[i]))
 			{
-				if (!V_stricmp(pSubData->GetName(), "visuals"))
+				if (i == TEAM_UNASSIGNED) // Unassigned should always be the first to be parsed here.
 				{
-					visual[TEAM_UNASSIGNED] = NULL;
-					ParseVisuals(pSubData, TEAM_UNASSIGNED);
-				}
-				continue;
-			}
-			else // After unassigned comes team parsings.
-			{
-				if (!V_stricmp(pSubData->GetName(), g_TeamVisualSections[i]))
-				{
-					// Figure out what team is this meant for.
-					int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT);
-					if (iVisuals != -1)
+					// Hacky: for standard visuals block, assign it to all teams at once.
+					for (int team = 0; team < TF_TEAM_COUNT; team++)
 					{
-						visual[iVisuals] = NULL;
-						ParseVisuals(pSubData, iVisuals);
+						if (team == TEAM_SPECTATOR)
+							continue;
+
+						visual[team] = NULL;
+						ParseVisuals(pSubData, team);
 					}
+					continue;
 				}
-				continue;
+				else // After unassigned comes team parsings.
+				{
+					ParseVisuals(pSubData, i);
+					continue;
+				}
 			}
 		}
 	}
@@ -469,8 +464,8 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 {
 
 	PerTeamVisuals_t* pVisuals;
-	if (iIndex != TEAM_UNASSIGNED && visual[TEAM_UNASSIGNED])
-		pVisuals = visual[TEAM_UNASSIGNED];
+	if (visual[iIndex]) // If we have data already in here, load the previous data before adding new stuff.
+		pVisuals = visual[iIndex];
 	else
 		pVisuals = new PerTeamVisuals_t;
 
