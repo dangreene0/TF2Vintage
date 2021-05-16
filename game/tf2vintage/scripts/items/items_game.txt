@@ -2391,6 +2391,8 @@
 		"weapon_flaregun"
 		{
 			"item_class"	"tf_weapon_flaregun"
+			"item_logname" "flaregun"
+			"item_iconname" "flaregun"
 			"item_type_name"	"#TF_Weapon_Flaregun"
 			"item_name"	"#TF_Unique_Achievement_Flaregun"
 			"item_description"	"#TF_Unique_Achievement_Flaregun_desc"
