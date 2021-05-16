@@ -428,34 +428,36 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 				attributes.AddToTail( attribute );
 			}
 		}
-		else if ( !V_stricmp( pSubData->GetName(), "visuals_mvm_boss" ) )
+		else for (int i = 0; i < TF_TEAM_COUNT; i++)
 		{
-			// Deliberately skipping this.
-		}
-		else if ( !V_strnicmp( pSubData->GetName(), "visuals", 7 ) )
-		{
-			// Figure out what team is this meant for.
-			int iVisuals = UTIL_StringFieldToInt( pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT );
+			if (i == TEAM_SPECTATOR)
+				continue;
 
-			if ( iVisuals != -1 )
+			if (!V_stricmp(pSubData->GetName(), "visuals_mvm_boss"))
+				continue; // Deliberate skip.
+
+			if (i == TEAM_UNASSIGNED) // Unassigned should always be the first to be parsed here.
 			{
-				if ( iVisuals == TEAM_UNASSIGNED )
+				if (!V_stricmp(pSubData->GetName(), "visuals"))
 				{
-					// Hacky: for standard visuals block, assign it to all teams at once.
-					for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+					visual[TEAM_UNASSIGNED] = NULL;
+					ParseVisuals(pSubData, TEAM_UNASSIGNED);
+				}
+				continue;
+			}
+			else // After unassigned comes team parsings.
+			{
+				if (!V_stricmp(pSubData->GetName(), g_TeamVisualSections[i]))
+				{
+					// Figure out what team is this meant for.
+					int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT);
+					if (iVisuals != -1)
 					{
-						if ( i == TEAM_SPECTATOR )
-							continue;
-
-						visual[i] = NULL;
-						ParseVisuals( pSubData, i );
+						visual[iVisuals] = NULL;
+						ParseVisuals(pSubData, iVisuals);
 					}
 				}
-				else
-				{
-					visual[ iVisuals ] = NULL;
-					ParseVisuals( pSubData, iVisuals );
-				}
+				continue;
 			}
 		}
 	}
@@ -465,7 +467,12 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 
 void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 {
-	PerTeamVisuals_t *pVisuals = new PerTeamVisuals_t;
+
+	PerTeamVisuals_t* pVisuals;
+	if (iIndex != TEAM_UNASSIGNED && visual[TEAM_UNASSIGNED])
+		pVisuals = visual[TEAM_UNASSIGNED];
+	else
+		pVisuals = new PerTeamVisuals_t;
 
 	FOR_EACH_SUBKEY( pKVData, pVisualData )
 	{
