@@ -107,6 +107,7 @@ class CNetPacket : public INetPacket
 	friend class CRefCountAccessor;
 	static CUtlMemoryPool *sm_MsgPool;
 	static bool sm_bRegisteredPool;
+	static CThreadFastMutex sm_MemPoolMutex;
 public:
 	CNetPacket()
 	{
@@ -133,26 +134,6 @@ protected:
 
 		if( m_Hdr.m_ProtoHdr )
 			FreeProtoHdr( m_Hdr.m_ProtoHdr );
-	}
-
-	static CProtobufMsgHdr *AllocProtoHdr( void )
-	{
-		if ( !sm_bRegisteredPool )
-		{
-			Assert( sm_MsgPool == NULL );
-			sm_MsgPool = new CUtlMemoryPool( sizeof( CProtobufMsgHdr ), 1 );
-			sm_bRegisteredPool = true;
-		}
-
-		CProtobufMsgHdr *pMsg = (CProtobufMsgHdr *)sm_MsgPool->Alloc();
-		Construct<CProtobufMsgHdr>( pMsg );
-		return pMsg;
-	}
-
-	static void FreeProtoHdr( CProtobufMsgHdr *pObj )
-	{
-		Destruct<CProtobufMsgHdr>( pObj );
-		sm_MsgPool->Free( (void *)pObj );
 	}
 
 	friend class CEconNetworking;
@@ -184,6 +165,28 @@ protected:
 	}
 
 private:
+	CProtobufMsgHdr *AllocProtoHdr( void )
+	{
+		if ( !sm_bRegisteredPool )
+		{
+			AUTO_LOCK( sm_MemPoolMutex );
+			Assert( sm_MsgPool == NULL );
+
+			sm_MsgPool = new CUtlMemoryPool( sizeof( CProtobufMsgHdr ), 1 );
+			sm_bRegisteredPool = true;
+		}
+
+		CProtobufMsgHdr *pMsg = (CProtobufMsgHdr *)sm_MsgPool->Alloc();
+		Construct<CProtobufMsgHdr>( pMsg );
+		return pMsg;
+	}
+
+	void FreeProtoHdr( CProtobufMsgHdr *pObj )
+	{
+		Destruct<CProtobufMsgHdr>( pObj );
+		sm_MsgPool->Free( (void *)pObj );
+	}
+
 	SteamNetworkingMessage_t *m_pMsg;
 	MsgHdr_t m_Hdr;
 
@@ -208,6 +211,11 @@ private:
 	uint m_cRefCount;
 };
 DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 0, UTLMEMORYPOOL_GROW_FAST );
+
+CUtlMemoryPool *CNetPacket::sm_MsgPool;
+bool CNetPacket::sm_bRegisteredPool;
+CThreadFastMutex CNetPacket::sm_MemPoolMutex;
+
 
 static void NetworkingSessionStatusChanged(SteamNetConnectionStatusChangedCallback_t *);
 
