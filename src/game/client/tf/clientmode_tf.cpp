@@ -51,6 +51,7 @@
 #include "usermessages.h"
 #include "utlvector.h"
 #include "props_shared.h"
+#include "sourcevr/isourcevirtualreality.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -63,12 +64,14 @@ ConVar fov_desired( "fov_desired", "75", FCVAR_ARCHIVE | FCVAR_USERINFO, "Sets t
 
 ConVar tf_hud_no_crosshair_on_scope_zoom( "tf_hud_no_crosshair_on_scope_zoom", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL );
 
-
+// This was cl_hud_minmode
 void HUDMinModeChangedCallBack( IConVar *var, const char *pOldString, float flOldValue )
 {
+	GetClientModeTFNormal()->SetHUDStyle( (int)flOldValue );
+
 	engine->ExecuteClientCmd( "hud_reloadscheme" );
 }
-ConVar cl_hud_minmode( "cl_hud_minmode", "0", FCVAR_ARCHIVE, "Set to 1 to turn on the advanced minimalist HUD mode.", HUDMinModeChangedCallBack );
+ConVar cl_hud_style( "cl_hud_style", "0", FCVAR_ARCHIVE, "Determines which hud style to use (0 - Default, 1 - MinMode, 2 - Xbox, 3 - VR).", HUDMinModeChangedCallBack );
 
 IClientMode *g_pClientMode = NULL;
 
@@ -273,6 +276,9 @@ void CTFModeManager::LevelShutdown( void )
 //-----------------------------------------------------------------------------
 ClientModeTFNormal::ClientModeTFNormal()
 {
+	// TODO: this should be done in mode manager?
+	m_pHudStyle = TF_HUDSTYLE_DEFAULT;
+
 	m_pMenuEngyBuild = NULL;
 	m_pMenuEngyDestroy = NULL;
 	m_pMenuSpyDisguise = NULL;
@@ -748,6 +754,19 @@ int ClientModeTFNormal::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, 
 #endif
 
 	return BaseClass::HandleSpectatorKeyInput( down, keynum, pszCurrentBinding );
+}
+
+//----------------------------------------------------------------------------
+// Purpose: Let the client mode set some vgui conditions
+//-----------------------------------------------------------------------------
+void ClientModeTFNormal::ComputeVguiResConditions( KeyValues *pkvConditions ) 
+{
+	if ( GetHUDStyle() == TF_HUDSTYLE_MINMODE )
+		pkvConditions->FindKey( "if_minmode", true );
+	else if ( GetHUDStyle() == TF_HUDSTYLE_XBOX )
+		pkvConditions->FindKey( "if_xbox", true );
+	else if ( GetHUDStyle() == TF_HUDSTYLE_VR && UseVR() )
+		pkvConditions->FindKey( "if_vr", true );
 }
 
 // FIXME: This is causing crashes for Linux and I don't know why

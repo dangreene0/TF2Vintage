@@ -27,6 +27,8 @@
 #include "c_tf_player.h"
 #include "c_tf_weapon_builder.h"
 
+#include "clientmode_tf.h"
+
 #define SELECTION_TIMEOUT_THRESHOLD		2.5f	// Seconds
 #define SELECTION_FADEOUT_TIME			3.0f
 
@@ -1130,8 +1132,8 @@ void CHudWeaponSelection::FireGameEvent( IGameEvent *event )
 		int nUpdateType = event->GetInt( "updateType" );
 		bool bIsCreationUpdate = ( nUpdateType == DATA_UPDATE_CREATED );
 		// Don't demo selection in minmode
-		ConVarRef cl_hud_minmode( "cl_hud_minmode", true );
-		if ( !cl_hud_minmode.IsValid() || cl_hud_minmode.GetBool() == false )
+		bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
+		if ( !m_bIsHudMinMode )
 		{
 			if ( !bIsCreationUpdate )
 			{
