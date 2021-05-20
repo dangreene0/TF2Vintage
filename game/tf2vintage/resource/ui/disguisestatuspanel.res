@@ -33,14 +33,11 @@
 		"ControlName"		"CTFImagePanel"
 		"fieldName"		"DisguiseStatusBG"
 		"xpos"			"10"
-		"xpos_minmode"			"10"
 		"ypos"			"30"
-		"ypos_minmode"			"48"
 		"zpos"			"-1"
 		"wide"			"200"
-		"wide_minmode"			"140"
 		"tall"	 		"32"
-		"tall_minmode"	 		"22"
+
 		"autoResize"		"0"
 		"pinCorner"		"0"
 		"visible"		"1"
@@ -57,7 +54,15 @@
 		"src_corner_width"		"23"
 			
 		"draw_corner_width"		"5"				// screen size of the corners ( and sides ), proportional
-		"draw_corner_height" 	"5"	
+		"draw_corner_height" 	"5"
+		
+		"if_minmode"
+		{
+			"xpos"			"10"
+			"ypos"			"48"
+			"wide"			"140"
+			"tall"	 		"22"
+		}
 	}
 
 	"DisguiseNameLabel"
@@ -65,11 +70,8 @@
 		"ControlName"	"Label"
 		"fieldName"		"DisguiseNameLabel"
 		"font"			"HudFontMediumSmallSecondary"
-		"font_minmode"	"TFFontMedium"
 		"xpos"			"52"
-		"xpos_minmode"	"34"
 		"ypos"			"31"
-		"ypos_minmode"	"51"
 		"zpos"			"1"
 		"wide"			"110"
 		"tall"			"24"
@@ -81,6 +83,13 @@
 		"textAlignment"		"North-West"
 		"dulltext"		"0"
 		"brighttext"		"0"
+		
+		"if_minmode"
+		{
+			"font"	"TFFontMedium"
+			"xpos"	"34"
+			"ypos"	"51"
+		}
 	}
 	
 	"WeaponNameLabel"
@@ -88,11 +97,8 @@
 		"ControlName"	"Label"
 		"fieldName"		"WeaponNameLabel"
 		"font"			"HUDFontSmall"
-		"font_minmode"	"TFFontMedium"
 		"xpos"			"52"
-		"xpos_minmode"	"34"
 		"ypos"			"45"
-		"ypos_minmode"	"58"
 		"zpos"			"1"
 		"wide"			"110"
 		"tall"			"24"
@@ -104,6 +110,13 @@
 		"textAlignment"		"North-West"
 		"dulltext"		"0"
 		"brighttext"		"0"
+		
+		"if_minmode"
+		{
+			"font"	"TFFontMedium"
+			"xpos"	"34"
+			"ypos"	"58"
+		}
 	}
 	
 	"SpectatorGUIHealth"
@@ -111,9 +124,7 @@
 		"ControlName"		"EditablePanel"
 		"fieldName"		"SpectatorGUIHealth"
 		"xpos"			"20"
-		"xpos_minmode"	"10"
 		"ypos"			"30"
-		"ypos_minmode"	"45"
 		"wide"			"32"
 		"tall"			"32"
 		"visible"		"1"
@@ -123,6 +134,11 @@
 		"TFFont"		"HudFontSmall"
 		"HealthDeathWarningColor"	"HUDDeathWarning"
 		"TextColor"		"HudOffWhite"
-	}	
-	
+
+		"if_minmode"
+		{
+			"xpos"	"10"
+			"ypos"	"45"
+		}
+	}
 }

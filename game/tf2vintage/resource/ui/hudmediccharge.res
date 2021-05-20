@@ -29,7 +29,6 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
-		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		"#TF_Ubercharge"
@@ -37,6 +36,11 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"HudFontSmallest"
+
+		"if_minmode"
+		{
+			"visible"	"0"
+		}
 	}
 	
 	"ChargeMeter"
@@ -45,9 +49,7 @@
 		"fieldName"		"ChargeMeter"
 		"font"			"Default"
 		"xpos"			"30"
-		"xpos_minmode"			"10"
 		"ypos"			"38"
-		"ypos_minmode"			"23"
 		"zpos"			"2"
 		"wide"			"86"
 		"tall"			"8"				
@@ -58,6 +60,12 @@
 		"textAlignment"	"Left"
 		"dulltext"		"0"
 		"brighttext"	"0"
+
+		"if_minmode"
+		{
+			"xpos"			"10"
+			"ypos"			"23"
+		}
 	}		
 	
 	"HealthClusterIcon"
@@ -69,9 +77,13 @@
 		"wide"			"36"
 		"tall"			"36"
 		"visible"		"1"
-		"visible_minmode"		"0"
 		"enabled"		"1"
 		"image"			"../hud/ico_health_cluster"
-		"scaleImage"	"1"	
+		"scaleImage"	"1"
+
+		"if_minmode"
+		{
+			"visible"		"0"
+		}
 	}		
 }

@@ -35,21 +35,25 @@
 	{
 		"ControlName"	"CTFImagePanel"
 		"fieldName"		"WeaponBucket"
-		"xpos"			"10"	[$WIN32]
-		"xpos_minmode"	"0"	[$WIN32]
-		"ypos"			"20"	[$WIN32]
-		"ypos_minmode"	"0"	[$WIN32]
+		"xpos"			"10"
+		"ypos"			"20"
 		"xpos"			"0"	[$X360]
 		"ypos"			"0"	[$X360]
 		"zpos"			"2"
 		"wide"			"120"
-		"wide_minmode"	"37"
 		"tall"			"60"
-		"tall_minmode"	"37"
 		"visible"		"1"
 		"enabled"		"1"
 		"image"			""
-		"scaleImage"	"1"	
+		"scaleImage"	"1"
+
+		"if_minmode"
+		{
+			"xpos"	"0"
+			"ypos"	"0"
+			"wide"	"37"
+			"tall"	"37"
+		}
 	}
 	"WeaponLabel"
 	{
@@ -63,7 +67,6 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
-		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		""
@@ -71,6 +74,11 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"Default"
+
+		"if_minmode"
+		{
+			"visible"		"0"
+		}
 	}
 	"WeaponNumber"
 	{
@@ -84,7 +92,6 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
-		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		""
@@ -92,6 +99,11 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"HudFontSmallest"
+
+		"if_minmode"
+		{
+			"visible"		"0"
+		}
 	}
 	"WeaponLabel"
 	{
@@ -105,7 +117,6 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
-		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		""
@@ -113,5 +124,10 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"Default"
+
+		"if_minmode"
+		{
+			"visible"		"0"
+		}
 	}
 }

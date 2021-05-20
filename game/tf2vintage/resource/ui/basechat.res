@@ -8,11 +8,15 @@
 		"enabled"				"1"
 		"xpos"					"10"
 		"ypos"					"280"
-		"ypos_minmode"			"270"
 		"wide"					"290"
 		"tall"					"108"
-		"tall_minmode"			"108"
 		"PaintBackgroundType"	"2"
+		
+		"if_minmode"
+		{
+			"tall"	"108"
+			"ypos"	"270"
+		}
 	}
 
 	"HudChatHistory"
@@ -53,7 +57,6 @@
 		"fieldName"				"ChatFiltersButton"
 		"xpos"					"256"
 		"ypos"					"90"
-		"ypos_minmode"			"90"
 		"wide"					"30"
 		"tall"					"10"
 		"autoResize"			"1"
@@ -66,5 +69,10 @@
 		"dulltext"				"0"
 		"brighttext"			"0"
 		"Default"				"0"
+		
+		"if_minmode"
+		{
+			"ypos"	"90"
+		}
 	}
 }

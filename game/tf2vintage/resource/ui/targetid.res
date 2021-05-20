@@ -77,11 +77,8 @@
 		"ControlName"		"Label"
 		"fieldName"		"TargetNameLabel"
 		"font"			"HudFontMediumSmallSecondary"
-		"font_minmode"	"TFFontLarge"
 		"xpos"			"34"
-		"xpos_minmode"	"30"
 		"ypos"			"7"
-		"ypos_minmode"	"8"
 		"zpos"			"1"
 		"wide"			"640"
 		"tall"			"24"
@@ -93,17 +90,21 @@
 		"textAlignment"		"North-West"
 		"dulltext"		"0"
 		"brighttext"		"0"
+		
+		"if_minmode"
+		{
+			"font"	"TFFontLarge"
+			"xpos"	"30"
+			"ypos"	"8"
+		}
 	}
 	"TargetDataLabel"
 	{	
 		"ControlName"		"Label"
 		"fieldName"		"TargetDataLabel"
 		"font"			"TFFontMedium"
-		"font_minmode"	"DefaultVerySmall"
 		"xpos"			"34"
-		"xpos_minmode"	"30"
-		"ypos"			"19"	[$WIN32]
-		"ypos_minmode"	"14"	[$WIN32]
+		"ypos"			"19"
 		"ypos"			"22"	[$X360]
 		"ypos_hidef"		"25"	[$X360]
 		"zpos"			"1"
@@ -117,15 +118,20 @@
 		"textAlignment"		"Left"
 		"dulltext"		"0"
 		"brighttext"		"0"
+		
+		"if_minmode"
+		{
+			"font"	"DefaultVerySmall"
+			"xpos"	"30"
+			"ypos"	"14"
+		}
 	}
 	"SpectatorGUIHealth"
 	{
 		"ControlName"		"EditablePanel"
 		"fieldName"		"SpectatorGUIHealth"
 		"xpos"			"3"
-		"xpos_minmode"	"0"
 		"ypos"			"2"
-		"ypos_minmode"	"0"
 		"wide"			"32"
 		"tall"			"32"
 		"visible"		"1"
@@ -135,24 +141,34 @@
 		"TFFont"		"HudFontSmall"
 		"HealthDeathWarningColor"	"HUDDeathWarning"
 		"TextColor"		"HudOffWhite"
+		
+		"if_minmode"
+		{
+			"xpos"	"0"
+			"ypos"	"0"
+		}
 	}
 	"AvatarImage"
 	{
 		"ControlName"	"CAvatarImagePanel"
 		"fieldName"		"AvatarImage"
 		"xpos"			"32"
-		"xpos_minmode"	"26"
 		"ypos"			"12"
-		"ypos_minmode"	"8"
 		"zpos"			"1"
 		"wide"			"14"
-		"wide_minmode"	"11"
 		"tall"			"14"
-		"tall_minmode"	"11"
 		"visible"		"1"
 		"enabled"		"1"
 		"image"			""
 		"scaleImage"	"1"	
 		"color_outline"	"52 48 45 255"
+		
+		"if_minmode"
+		{
+			"xpos"	"26"
+			"ypos"	"8"
+			"wide"	"11"
+			"tall"	"11"
+		}
 	}	
 }
