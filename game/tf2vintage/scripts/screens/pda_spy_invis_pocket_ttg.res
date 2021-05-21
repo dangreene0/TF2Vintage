@@ -1,4 +1,4 @@
-"pda_panel_spy_invis_pocket_ttg.res"
+"pda_spy_invis.res"
 {
 	"InvisProgress"
 	{
