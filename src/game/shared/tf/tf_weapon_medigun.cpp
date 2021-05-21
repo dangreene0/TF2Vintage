@@ -209,10 +209,6 @@ void CWeaponMedigun::Precache()
 {
 	BaseClass::Precache();
 
-	int iType = GetMedigunType();
-
-	PrecacheScriptSound( g_pszMedigunHealSounds[iType] );
-
 	PrecacheScriptSound( "WeaponMedigun.NoTarget" );
 	PrecacheScriptSound( "WeaponMedigun.Charged" );
 	PrecacheScriptSound( "WeaponMedigun.HealingDetach" );
@@ -230,10 +226,16 @@ void CWeaponMedigun::Precache()
 	PrecacheTeamParticles( "vaccinator_%s_buff3" );
 
 	// Precache charge sounds.
-	for ( int i = 0; i < TF_CHARGE_COUNT; i++ )
+	for (int i = 0; i < TF_MEDIGUN_COUNT; i++)
 	{
-		PrecacheScriptSound( g_MedigunEffects[i].sound_enable );
-		PrecacheScriptSound( g_MedigunEffects[i].sound_disable );
+		PrecacheScriptSound(g_pszMedigunHealSounds[i]);
+	}
+
+	// Precache charge sounds.
+	for ( int j = 0; j < TF_CHARGE_COUNT; j++ )
+	{
+		PrecacheScriptSound( g_MedigunEffects[j].sound_enable );
+		PrecacheScriptSound( g_MedigunEffects[j].sound_disable );
 	}
 }
 
