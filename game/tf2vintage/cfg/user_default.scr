@@ -194,18 +194,13 @@ DESCRIPTION INFO_OPTIONS
 		{ CATEGORY }
 	}
 
-	"cl_hud_style"
+	"cl_hud_minmode"
 	{
-		"Determines which hud style to use"
-		{ LIST
-			"Defautl HUD Layout"                "0"
-			"HUD Minimal Model Layout"          "1"
-			"XBOX Console Style HUD Layout"		"2"
-			"VR Friendly HUD Layour (WIP)"		"3"
-		}
+		"#GameUI_EnableHUDMinMode"
+		"#Tooltip_EnableHUDMinMode"
+		{ BOOL }
 		{ "0" }
 	}
-
 	"tf_use_min_viewmodels"
 	{
 		"#TF_use_min_viewmodels_option"
