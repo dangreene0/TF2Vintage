@@ -5,20 +5,16 @@
 		"fieldName"		"HudItemEffectMeter"
 		"visible"		"1"
 		"enabled"		"1"
-		"xpos"			"90"
-		"ypos"			"r100"
+		"xpos"			"90"	[$WIN32]
+		"ypos"			"r100"	[$WIN32]
+		"xpos_minmode"	"r70"	[$WIN32]
+		"ypos_minmode"	"r74"	[$WIN32]
 		"xpos"			"r194"	[$X360]
 		"ypos"			"r74"	[$X360]
 		"wide"			"100"
 		"tall"			"100"
 		"MeterFG"		"White"
 		"MeterBG"		"Gray"
-		
-		"if_minmode"
-		{
-			"xpos"	"r70"
-			"ypos"	"r74"
-		}
 	}
 	
 	"ItemEffectMeterBG"
@@ -31,6 +27,7 @@
 		"wide"			"76"
 		"tall"			"44"
 		"visible"		"1"
+		"visible_minmode"	"0"
 		"enabled"		"1"
 		"image"			"../hud/misc_ammo_area_blue"
 		"scaleImage"	"1"	
@@ -38,12 +35,7 @@
 		"teambg_2_lodef"	"../hud/misc_ammo_area_red_lodef"
 		"teambg_3"		"../hud/misc_ammo_area_blue"
 		"teambg_3_lodef"	"../hud/misc_ammo_area_blue_lodef"		
-		"proportionalToParent"	"1"
-		
-		"if_minmode"
-		{
-			"visible"			"0"
-		}
+		"proportionalToParent"	"1"		
 	}
 	
 	"ItemEffectMeterLabel"
@@ -75,8 +67,11 @@
 		"font"					"Default"
 		"xpos"					"25"
 		"ypos"					"r23"
+		"ypos_minmode"			"0"
+		"xpos_minmode"			"0"
 		"zpos"					"2"
 		"wide"					"40"
+		"wide_minmode"			"50"
 		"tall"					"6"				
 		"autoResize"			"0"
 		"pinCorner"				"0"
@@ -86,13 +81,6 @@
 		"dulltext"				"0"
 		"brighttext"			"0"
 		"proportionalToParent"	"1"	
-		
-		"if_minmode"
-		{
-			"ypos"			"0"
-			"xpos"			"0"
-			"wide"			"50"
-		}
 	}					
 	
 	"ItemEffectMeterCount"

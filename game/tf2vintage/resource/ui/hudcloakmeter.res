@@ -31,7 +31,7 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
-
+		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		"#TF_Cloak"
@@ -39,11 +39,6 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"TFFontSmall"
-		
-		"if_minmode"
-		{
-			"visible"		"0"
-		}
 	}
 
 	"CloakMeter"
@@ -53,6 +48,7 @@
 		"font"			"Default"
 		"xpos"			"25"
 		"ypos"			"23"
+		"ypos_minmode"	"18"
 		"zpos"			"2"
 		"wide"			"40"
 		"tall"			"6"				
@@ -63,10 +59,5 @@
 		"textAlignment"	"Left"
 		"dulltext"		"0"
 		"brighttext"	"0"
-		
-		"if_minmode"
-		{
-			"ypos"	"0"
-		}
 	}					
 }

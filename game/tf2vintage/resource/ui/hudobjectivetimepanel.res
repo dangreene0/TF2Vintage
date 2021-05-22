@@ -5,25 +5,21 @@
 		"ControlName"	"ScalableImagePanel"
 		"fieldName"		"TimePanelBG"
 		"xpos"			"16"
+		"xpos_minmode"	"35"
 		"xpos_hidef"	"108"
 		"xpos_lodef"	"108"
 		"ypos"			"9"
 		"zpos"			"2"
 		"wide"			"78"
+		"wide_minmode"	"38"
 		"wide_lodef"	"90"
 		"tall"			"33"
+		"tall_minmode"	"23"
 		"tall_lodef"	"38"
 		"visible"		"1"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_black_bg"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"xpos"	"35"
-			"wide"	"38"
-			"tall"	"23"
-		}
+		"scaleImage"		"1"	
 	}
 	"TimePanelProgressBar"
 	{
@@ -41,6 +37,7 @@
 		"tall"				"20"
 		"tall_lodef"		"25"	
 		"visible"			"1"
+		"visible_minmode"	"0"
 		"enabled"			"1"
 		"scaleImage"			"1"
 		"image"				"../hud/objectives_timepanel_progressbar"
@@ -48,11 +45,6 @@
 		"color_inactive"		"TimerProgress.InActive"
 		"color_warning"			"TimerProgress.Warning"
 		"percent_warning"		"0.75"
-
-		"if_minmode"
-		{
-			"visible"	"0"
-		}
 	}
 	"WaitingForPlayersLabel"
 	{
@@ -62,6 +54,7 @@
 		"xpos_hidef"	"0"
 		"xpos_lodef"	"0"
 		"ypos"			"34"
+		"ypos_minmode"	"24"
 		"ypos_hidef"	"41"
 		"ypos_lodef"	"41"
 		"zpos"			"5"
@@ -81,11 +74,6 @@
 		"font"			"ClockSubTextTiny"
 		"font_hidef"	"HudFontSmall"
 		"font_lodef"	"HudFontSmall"
-
-		"if_minmode"
-		{
-			"ypos"	"24"
-		}
 	}			
 	"WaitingForPlayersBG"
 	{
@@ -99,15 +87,11 @@
 		"zpos"			"1"
 		"wide"			"78"
 		"tall"			"20"
+		"tall_minmode"	"0"
 		"visible"		"0"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_suddendeath"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"tall"	"0"
-		}
+		"scaleImage"		"1"	
 	}
 	"OvertimeLabel"
 	{
@@ -117,6 +101,7 @@
 		"xpos_hidef"	"0"
 		"xpos_lodef"	"0"
 		"ypos"			"33"
+		"ypos_minmode"	"24"
 		"ypos_hidef"	"41"
 		"ypos_lodef"	"41"
 		"zpos"			"5"
@@ -136,11 +121,6 @@
 		"font"			"ClockSubText"
 		"font_hidef"	"HudFontSmall"
 		"font_lodef"	"HudFontSmall"
-
-		"if_minmode"
-		{
-			"ypos"	"24"
-		}
 	}			
 	"OvertimeBG"
 	{
@@ -154,15 +134,11 @@
 		"zpos"			"1"
 		"wide"			"78"
 		"tall"			"20"
+		"tall_minmode"	"0"
 		"visible"		"0"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_suddendeath"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"tall"	"0"
-		}
+		"scaleImage"		"1"	
 	}
 	"SuddenDeathLabel"
 	{
@@ -172,6 +148,7 @@
 		"xpos_hidef"	"0"
 		"xpos_lodef"	"0"
 		"ypos"			"33"
+		"ypos_minmode"	"24"
 		"ypos_hidef"	"41"
 		"ypos_lodef"	"41"
 		"zpos"			"5"
@@ -191,11 +168,6 @@
 		"font"			"ClockSubTextSuddenDeath"
 		"font_hidef"	"HudFontSmall"
 		"font_lodef"	"HudFontSmall"
-
-		"if_minmode"
-		{
-			"ypos"	"24"
-		}
 	}			
 	"SuddenDeathBG"
 	{
@@ -209,15 +181,11 @@
 		"zpos"			"1"
 		"wide"			"78"
 		"tall"			"20"
+		"tall_minmode"	"0"
 		"visible"		"0"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_suddendeath"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"tall"	"0"
-		}
+		"scaleImage"		"1"	
 	}	
 	"SetupLabel"
 	{
@@ -227,6 +195,7 @@
 		"xpos_hidef"	"0"
 		"xpos_lodef"	"0"
 		"ypos"			"33"
+		"ypos_minmode"	"24"
 		"ypos_hidef"	"41"
 		"ypos_lodef"	"41"
 		"zpos"			"5"
@@ -244,14 +213,9 @@
 		"brighttext"		"0"
 		"wrap"			"0"
 		"font"			"ClockSubText"
+		"font_minmode"	"ClockSubTextSuddenDeath"
 		"font_hidef"	"HudFontSmall"
 		"font_lodef"	"HudFontSmall"
-
-		"if_minmode"
-		{
-			"ypos"	"24"
-			"font"	"ClockSubTextSuddenDeath"
-		}
 	}	
 	"SetupBG"
 	{
@@ -265,15 +229,11 @@
 		"zpos"			"1"
 		"wide"			"78"
 		"tall"			"20"
+		"tall_minmode"	"0"
 		"visible"		"0"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_suddendeath"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"tall"	"0"
-		}
+		"scaleImage"		"1"	
 	}	
 	
 	"ServerTimeLimitLabel"
@@ -284,6 +244,7 @@
 		"xpos_hidef"	"0"
 		"xpos_lodef"	"0"
 		"ypos"			"33"
+		"ypos_minmode"	"24"
 		"ypos_hidef"	"41"
 		"ypos_lodef"	"41"
 		"zpos"			"5"
@@ -301,14 +262,9 @@
 		"brighttext"		"0"
 		"wrap"			"0"
 		"font"			"ClockSubText"
+		"font_minmode"	"ClockSubTextSuddenDeath"
 		"font_hidef"	"HudFontSmall"
 		"font_lodef"	"HudFontSmall"
-
-		"if_minmode"
-		{
-			"ypos"	"24"
-			"font"	"ClockSubTextSuddenDeath"
-		}
 	}	
 	"ServerTimeLimitLabelBG"
 	{
@@ -322,14 +278,10 @@
 		"zpos"			"1"
 		"wide"			"78"
 		"tall"			"20"
+		"tall_minmode"	"0"
 		"visible"		"0"
 		"enabled"		"1"
 		"image"			"../hud/objectives_timepanel_suddendeath"	
-		"scaleImage"		"1"
-
-		"if_minmode"
-		{
-			"tall"	"0"
-		}
+		"scaleImage"		"1"	
 	}	
 }

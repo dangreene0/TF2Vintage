@@ -7,16 +7,12 @@
 		"enabled"		"1"
 		"xpos"			"r216"
 		"ypos"			"r57"
+		"xpos_minmode"	"r52"
+		"ypos_minmode"	"r68"
 		"wide"			"100"
 		"tall"			"50"
 		"MeterFG"		"White"
 		"MeterBG"		"Gray"
-		
-		"if_minmode"
-		{
-			"xpos"	"r52"
-			"ypos"	"r68"
-		}
 	}
 	
 	"ItemEffectMeterBG"
@@ -29,18 +25,14 @@
 		"wide"			"100"
 		"tall"			"50"
 		"visible"		"1"
+		"visible_minmode"	"0"
 		"enabled"		"1"
 		"image"			"../hud/misc_ammo_area_horiz2_blue"
 		"scaleImage"	"1"	
 		"teambg_2"		"../hud/misc_ammo_area_horiz2_red"
 		"teambg_2_lodef"	"../hud/misc_ammo_area_red_lodef"
 		"teambg_3"		"../hud/misc_ammo_area_horiz2_blue"
-		"teambg_3_lodef"	"../hud/misc_ammo_area_blue_lodef"
-		
-		"if_minmode"
-		{
-			"visible"			"0"
-		}
+		"teambg_3_lodef"	"../hud/misc_ammo_area_blue_lodef"				
 	}
 	
 	"ItemEffectMeterLabel"
@@ -55,6 +47,10 @@
 		"autoResize"			"1"
 		"pinCorner"				"2"
 		"visible"				"1"
+		"visible_minmode"		"1"
+		"ypos_minmode"			"0"
+		"xpos_minmode"			"0"
+		"textAlignment_minmode"			"west"
 		"enabled"				"1"
 		"tabPosition"			"0"
 		"labelText"				"#TF_ENERGYDRINK"
@@ -62,14 +58,6 @@
 		"dulltext"				"0"
 		"brighttext"			"0"
 		"font"					"TFFontSmall"
-
-		"if_minmode"
-		{
-			"visible"		"1"
-			"ypos"			"0"
-			"xpos"			"0"
-			"textAlignment"			"west"
-		}
 	}
 
 	"ItemEffectMeter"
@@ -79,8 +67,11 @@
 		"font"					"Default"
 		"xpos"					"45"
 		"ypos"					"23"
+		"ypos_minmode"			"0"
+		"xpos_minmode"			"0"
 		"zpos"					"2"
 		"wide"					"30"
+		"wide_minmode"			"50"
 		"tall"					"5"				
 		"autoResize"			"0"
 		"pinCorner"				"0"
@@ -89,13 +80,6 @@
 		"textAlignment"			"Left"
 		"dulltext"				"0"
 		"brighttext"			"0"
-		
-		"if_minmode"
-		{
-			"ypos"			"0"
-			"xpos"			"0"
-			"wide"			"50"
-		}
 	}
 	
 	"ItemEffectMeterLabel2"
@@ -110,6 +94,9 @@
 		"autoResize"			"1"
 		"pinCorner"				"2"
 		"visible"				"0"
+		"visible_minmode"		"0"
+		"ypos_minmode"			"0"
+		"xpos_minmode"			"-10"
 		"enabled"				"1"
 		"tabPosition"			"0"
 		"labelText"				"#TF_KILLCOMBO"
@@ -117,13 +104,6 @@
 		"dulltext"				"0"
 		"brighttext"			"0"
 		"font"					"TFFontSmall"
-		
-		"if_minmode"
-		{
-			"ypos"			"0"
-			"xpos"			"-10"
-			"visible"			"0"
-		}
 	}
 	
 	"KillComboClassIcon1"
@@ -135,14 +115,10 @@
 		"wide"			"12"
 		"tall"			"12"
 		"visible"		"0"
+		"visible_minmode"		"0"
 		"enabled"		"1"
 		"image"			"../HUD/leaderboard_class_scout"
-		"scaleImage"	"1"
-		
-		"if_minmode"
-		{
-			"visible"			"0"
-		}
+		"scaleImage"	"1"	
 	}
 	"KillComboClassIcon2"
 	{
@@ -153,14 +129,10 @@
 		"wide"			"12"
 		"tall"			"12"
 		"visible"		"0"
+		"visible_minmode"		"0"
 		"enabled"		"1"
 		"image"			"../HUD/leaderboard_class_scout"
 		"scaleImage"	"1"	
-		
-		"if_minmode"
-		{
-			"visible"			"0"
-		}
 	}
 	"KillComboClassIcon3"
 	{
@@ -171,13 +143,9 @@
 		"wide"			"12"
 		"tall"			"12"
 		"visible"		"0"
+		"visible_minmode"		"0"
 		"enabled"		"1"
 		"image"			"../HUD/leaderboard_class_scout"
 		"scaleImage"	"1"	
-		
-		"if_minmode"
-		{
-			"visible"			"0"
-		}
 	}
 }

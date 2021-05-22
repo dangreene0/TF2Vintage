@@ -5,7 +5,7 @@
 		"ControlName"		"CExLabel"
 		"fieldName"		"CapCountdownLabel"
 		"font"			"HudFontMedium"
-
+		"font_minmode"		"HudFontMediumSmall"
 		"xpos"			"0"
 		"ypos"			"0"
 		"zpos"			"1"
@@ -20,10 +20,5 @@
 		"textAlignment"		"center"
 		"fgcolor"		"235 226 202 255"
 		"bgcolor"		"235 226 202 255"
-
-		"if_minmode"
-		{
-			"font"		"HudFontMediumSmall"
-		}
 	}
 }

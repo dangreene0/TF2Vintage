@@ -95,6 +95,7 @@
 		"autoResize"	"1"
 		"pinCorner"		"2"
 		"visible"		"1"
+		"visible_minmode"		"0"
 		"enabled"		"1"
 		"tabPosition"	"0"
 		"labelText"		"test"
@@ -102,11 +103,6 @@
 		"dulltext"		"0"
 		"brighttext"	"0"
 		"font"			"Default"
-
-		"if_minmode"
-		{
-			"visible"		"0"
-		}
 	}
 	"WeaponIcon"
 	{

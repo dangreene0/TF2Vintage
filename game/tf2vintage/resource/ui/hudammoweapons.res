@@ -6,15 +6,11 @@
 		"visible" "1"
 		"enabled" "1"
 		"xpos"	"r125"	[$WIN32]
+		"xpos_minmode"	"r105"	[$WIN32]
 		"ypos"	"r65"	[$WIN32]
+		"ypos_minmode"	"r46"	[$WIN32]
 		"wide"	"204"
 		"tall"	"135"
-		
-		"if_minmode"
-		{
-			"xpos"	"r105"
-			"ypos"	"r46"
-		}
 	}
 	
 	"HudWeaponAmmoBG"
@@ -22,7 +18,9 @@
 		"ControlName"	"CTFImagePanel"
 		"fieldName"		"HudWeaponAmmoBG"
 		"xpos"			"24"
+		"xpos_minmode"	"48"
 		"ypos"			"10"
+		"ypos_minmode"	"17"
 		"zpos"			"1"
 		"wide"			"90"
 		"tall"			"45"
@@ -36,19 +34,15 @@
 		"teambg_2_lodef"	"../hud/ammo_red_bg_lodef"
 		"teambg_3"		"../hud/ammo_blue_bg"
 		"teambg_3_lodef"	"../hud/ammo_blue_bg_lodef"	
-		
-		"if_minmode"
-		{
-			"xpos"	"r105"
-			"ypos"	"r46"
-		}
 	}	
 	"HudWeaponLowAmmoImage"
 	{
 		"ControlName"	"ImagePanel"
 		"fieldName"		"HudWeaponLowAmmoImage"
 		"xpos"			"24"
+		"xpos_minmode"	"48"
 		"ypos"			"10"
+		"ypos_minmode"	"17"
 		"zpos"			"0"
 		"wide"			"90"
 		"tall"			"45"
@@ -59,35 +53,25 @@
 		"teambg_2"		"../hud/ammo_red_bg"
 		"teambg_2_lodef"	"../hud/ammo_red_bg_lodef"
 		"teambg_3"		"../hud/ammo_blue_bg"
-		"teambg_3_lodef"	"../hud/ammo_blue_bg_lodef"
-		
-		"if_minmode"
-		{
-			"xpos"	"48"
-			"ypos"	"17"
-		}
+		"teambg_3_lodef"	"../hud/ammo_blue_bg_lodef"					
 	}
 	"WeaponBucket"
 	{
 		"ControlName"	"ImagePanel"
 		"fieldName"		"WeaponBucket"
 		"xpos"			"0"	[$WIN32]
+		"xpos_minmode"	"15" [$WIN32]
 		"ypos"			"-20" [$WIN32]
+		"ypos_minmode"	"10" [$WIN32]
 		"zpos"			"2"
 		"wide"			"100"
+		"wide_minmode"	"37"
 		"tall"			"100"
+		"tall_minmode"	"37"
 		"visible"		"1"
 		"enabled"		"1"
 		"image"			""
-		"scaleImage"	"1"
-		
-		"if_minmode"
-		{
-			"xpos"	"15"
-			"ypos"	"10"
-			"wide"	"37"
-			"tall"	"37"
-		}
+		"scaleImage"	"1"	
 	}
 	"AmmoInClip"
 	{
@@ -96,22 +80,19 @@
 		"font"			"HudFontGiantBold"
 		"fgcolor"		"TanLight"
 		"xpos"			"24"
+		"xpos_minmode"	"28"
 		"ypos"			"10"
+		"ypos_minmode"	"12"
 		"zpos"			"5"
 		"wide"			"55"
 		"tall"			"40"
+		"tall_minmode"	"38"
 		"tall_lodef"	"45"
 		"visible"		"0"
 		"enabled"		"1"
 		"textAlignment"	"south-east"	
 		"labelText"		"%Ammo%"
 		
-		"if_minmode"
-		{
-			"xpos"	"28"
-			"ypos"	"12"
-			"tall"	"38"
-		}
 	}		
 	"AmmoInClipShadow"
 	{
@@ -120,25 +101,22 @@
 		"font"			"HudFontGiantBold"
 		"fgcolor"		"Black"
 		"xpos"			"25"
+		"xpos_minmode"	"29"
 		"xpos_hidef"	"2"
 		"ypos"			"11"
+		"ypos_minmode"	"12"
 		"ypos_hidef"	"2"
 		"ypos_lodef"	"2"
 		"zpos"			"5"
 		"wide"			"55"
 		"tall"			"40"
+		"tall_minmode"	"39"
 		"tall_lodef"	"45"
 		"visible"		"0"
 		"enabled"		"1"
 		"textAlignment"	"south-east"	
 		"labelText"		"%Ammo%"
 		
-		"if_minmode"
-		{
-			"xpos"	"29"
-			"ypos"	"12"
-			"tall"	"39"
-		}
 	}						
 	"AmmoInReserve"
 	{
@@ -146,8 +124,10 @@
 		"fieldName"		"AmmoInReserve"
 		"font"			"HudFontMediumSmall"
 		"font_lodef"	"HudFontMedium"
+		"font_minmode"	"HudFontSmall"
 		"fgcolor"		"TanLight"
 		"xpos"			"79"
+		"xpos_minmode"	"85"
 		"ypos"			"18"
 		"ypos_lodef"	"10"
 		"zpos"			"7"
@@ -158,12 +138,6 @@
 		"enabled"		"1"
 		"textAlignment"	"south-west"		
 		"labelText"		"%AmmoInReserve%"
-		
-		"if_minmode"
-		{
-			"font"	"HudFontSmall"
-			"xpos"	"85"
-		}
 	}		
 	"AmmoInReserveShadow"
 	{
@@ -171,8 +145,10 @@
 		"fieldName"		"AmmoInReserveShadow"
 		"font"			"HudFontMediumSmall"
 		"font_lodef"	"HudFontMedium"
+		"font_minmode"	"HudFontSmall"
 		"fgcolor"		"TransparentBlack"
 		"xpos"			"80"
+		"xpos_minmode"	"86"
 		"ypos"			"19"
 		"ypos_lodef"	"11"
 		"zpos"			"7"
@@ -183,13 +159,7 @@
 		"enabled"		"1"
 		"textAlignment"	"south-west"		
 		"labelText"		"%AmmoInReserve%"
-		
-		"if_minmode"
-		{
-			"font"	"HudFontSmall"
-			"xpos"	"86"
-		}
-	}
+	}									
 	"AmmoNoClip"
 	{
 		"ControlName"	"CExLabel"
@@ -202,17 +172,14 @@
 		"wide"			"84"
 		"wide_lodef"	"83"
 		"tall"			"40"
+		"tall_minmode"	"36"
 		"tall_lodef"	"45"
 		"visible"		"0"
 		"enabled"		"1"
 		"textAlignment"	"south-east"		
 		"labelText"		"%Ammo%"
 		
-		"if_minmode"
-		{
-			"tall"	"36"
-		}
-	}
+	}	
 	"AmmoNoClipShadow"
 	{
 		"ControlName"	"CExLabel"
@@ -229,15 +196,12 @@
 		"wide"			"84"
 		"wide_lodef"	"83"
 		"tall"			"40"
+		"tall_minmode"	"36"
 		"tall_lodef"	"45"
 		"visible"		"0"
 		"enabled"		"1"
 		"textAlignment"	"south-east"		
 		"labelText"		"%Ammo%"
-
-		"if_minmode"
-		{
-			"tall"	"36"
-		}
+		
 	}									
 }
