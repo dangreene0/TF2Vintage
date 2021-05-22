@@ -1,4 +1,4 @@
-"pda_spy_invis.res"
+"pda_spy_invis_pocket_hm.res"
 {
 	"InvisProgress"
 	{
