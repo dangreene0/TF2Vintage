@@ -9,6 +9,7 @@
 	nomodels 	1 
 	nohimodel 	1	
 	nocrosshair 	0 
+	nodegraph 1
 	GameData	"tf2v.fgd"
 	hidden_maps 
 	{ 
