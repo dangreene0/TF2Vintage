@@ -73,7 +73,7 @@ public:
 	virtual void	ComputeVguiResConditions( KeyValues *pkvConditions ) OVERRIDE;
 
 	virtual int		GetHUDStyle() { return m_pHudStyle; }
-	virtual void	SetHUDStyle( int HudStyle ) { m_pHudStyle = HudStyle; }
+	virtual void	SetHUDStyle( int HudStyle );
 	virtual bool	IsHUDMinMode() { if ( GetHUDStyle() == TF_HUDSTYLE_MINMODE ) return true; return false; };
 	
 private:
@@ -85,7 +85,7 @@ private:
 
 private:
 
-	int m_pHudStyle;
+	ETFHudStyle m_pHudStyle;
 
 	CHudMenuEngyBuild *m_pMenuEngyBuild;
 	CHudMenuEngyDestroy *m_pMenuEngyDestroy;

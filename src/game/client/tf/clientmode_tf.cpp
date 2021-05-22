@@ -65,13 +65,7 @@ ConVar fov_desired( "fov_desired", "75", FCVAR_ARCHIVE | FCVAR_USERINFO, "Sets t
 ConVar tf_hud_no_crosshair_on_scope_zoom( "tf_hud_no_crosshair_on_scope_zoom", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL );
 
 // This was cl_hud_minmode
-void HUDMinModeChangedCallBack( IConVar *var, const char *pOldString, float flOldValue )
-{
-	GetClientModeTFNormal()->SetHUDStyle( (int)flOldValue );
-
-	engine->ExecuteClientCmd( "hud_reloadscheme" );
-}
-ConVar cl_hud_style( "cl_hud_style", "0", FCVAR_ARCHIVE, "Determines which hud style to use (0 - Default, 1 - MinMode, 2 - Xbox, 3 - VR).", HUDMinModeChangedCallBack );
+ConVar cl_hud_style( "cl_hud_style", "0", FCVAR_ARCHIVE, "Determines which hud style to use (0 - Default, 1 - MinMode, 2 - Xbox, 3 - VR)." );
 
 IClientMode *g_pClientMode = NULL;
 
@@ -276,8 +270,8 @@ void CTFModeManager::LevelShutdown( void )
 //-----------------------------------------------------------------------------
 ClientModeTFNormal::ClientModeTFNormal()
 {
-	// TODO: this should be done in mode manager?
-	m_pHudStyle = TF_HUDSTYLE_DEFAULT;
+	// TODO: find a better way to reload the hud
+	SetHUDStyle( cl_hud_style.GetInt() );
 
 	m_pMenuEngyBuild = NULL;
 	m_pMenuEngyDestroy = NULL;
@@ -767,6 +761,39 @@ void ClientModeTFNormal::ComputeVguiResConditions( KeyValues *pkvConditions )
 		pkvConditions->FindKey( "if_xbox", true );
 	else if ( GetHUDStyle() == TF_HUDSTYLE_VR && UseVR() )
 		pkvConditions->FindKey( "if_vr", true );
+}
+
+//----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void ClientModeTFNormal::SetHUDStyle( int HudStyle ) 
+{
+	int HudChoice = cl_hud_style.GetBool();
+	switch ( HudChoice )
+	{
+	case TF_HUDSTYLE_DEFAULT:
+		ConColorMsg( COLOR_EYEBALLBOSS_TEXT, "[TFClientMode] Using Classic HUD type.\n" );
+		m_pHudStyle = TF_HUDSTYLE_DEFAULT;
+		break;
+	case TF_HUDSTYLE_MINMODE:
+		ConColorMsg( COLOR_EYEBALLBOSS_TEXT, "[TFClientMode] Using Minimal HUD Style.\n" );
+		m_pHudStyle = TF_HUDSTYLE_MINMODE;
+		break;
+	case TF_HUDSTYLE_XBOX:
+		ConColorMsg( COLOR_EYEBALLBOSS_TEXT, "[TFClientMode] Using Console Style Hud.\n" );
+		m_pHudStyle = TF_HUDSTYLE_XBOX;
+		break;
+	case TF_HUDSTYLE_VR:
+		ConColorMsg( COLOR_EYEBALLBOSS_TEXT, "[TFClientMode] Using VR HUD Style.\n" );
+		m_pHudStyle = TF_HUDSTYLE_VR;
+		break;
+	default:
+		ConColorMsg( COLOR_EYEBALLBOSS_TEXT, "[TFClientMode] Unknow HUD Type.\n" );
+		m_pHudStyle = TF_HUDSTYLE_DEFAULT;
+		break;
+	}
+
+	//engine->ExecuteClientCmd( "hud_reloadscheme" );
 }
 
 // FIXME: This is causing crashes for Linux and I don't know why
