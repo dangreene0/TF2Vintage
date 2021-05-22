@@ -19,7 +19,6 @@
 #include "tf_shareddefs.h"
 #include "tf_hud_notification_panel.h"
 #include "tf_hud_freezepanel.h"
-#include "clientmode_tf.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -86,8 +85,8 @@ void CHudNotificationPanel::ApplySchemeSettings( IScheme *pScheme )
 void CHudNotificationPanel::MsgFunc_HudNotify( bf_read &msg )
 {
 	// Ignore notifications in minmode
-	bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-	if ( m_bIsHudMinMode )
+	ConVarRef cl_hud_minmode( "cl_hud_minmode", true );
+	if ( cl_hud_minmode.IsValid() && cl_hud_minmode.GetBool() )
 		return;
 
 	int iType = msg.ReadByte();
@@ -104,8 +103,8 @@ void CHudNotificationPanel::MsgFunc_HudNotify( bf_read &msg )
 void CHudNotificationPanel::MsgFunc_HudNotifyCustom( bf_read &msg )
 {
 	// Ignore notifications in minmode
-	bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-	if ( m_bIsHudMinMode )
+	ConVarRef cl_hud_minmode( "cl_hud_minmode", true );
+	if ( cl_hud_minmode.IsValid() && cl_hud_minmode.GetBool() )
 		return;
 
 	// Reload the base

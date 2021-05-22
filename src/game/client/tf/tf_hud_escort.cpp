@@ -10,10 +10,10 @@
 #include "tf_gamerules.h"
 #include "iclientmode.h"
 #include "vgui_controls/AnimationController.h"
-#include "clientmode_tf.h"
 
 using namespace vgui;
 
+extern ConVar cl_hud_minmode;
 extern ConVar mp_blockstyle;
 extern ConVar mp_capstyle;
 
@@ -168,8 +168,7 @@ void CTFHudEscort::PerformLayout( void )
 		int x, y, wide, tall;
 		m_pEscortItemImage->GetBounds( x, y, wide, tall );
 
-		bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-		float flHeightMult = ( m_bMultipleTrains || m_bIsHudMinMode ) ? 0.15f : 0.20f;
+		float flHeightMult = ( m_bMultipleTrains || cl_hud_minmode.GetBool() ) ? 0.15f : 0.20f;
 		int iSwoopHeight = ScreenHeight() * flHeightMult;
 
 		m_pCapHighlightImage->SetBounds( x + CAP_BOX_INDENT_X, y - iSwoopHeight + CAP_BOX_INDENT_Y, wide - ( CAP_BOX_INDENT_X * 2 ), iSwoopHeight );
@@ -376,15 +375,14 @@ void CTFHudEscort::OnTick( void )
 	if ( !IsVisible() )
 		return;
 
-	bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-	if ( m_bIsHudMinMode && !m_bMinHud )
+	if ( cl_hud_minmode.GetBool() && !m_bMinHud )
 	{
 		InvalidateLayout( true, true );
 		UpdateAlarmAnimations();
 		m_bMinHud = true;
 		//return; 
 	}
-	else if ( !m_bIsHudMinMode && m_bMinHud )
+	else if ( !cl_hud_minmode.GetBool() && m_bMinHud )
 	{
 		InvalidateLayout( true, true );
 		UpdateAlarmAnimations();

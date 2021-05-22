@@ -24,15 +24,6 @@ class CTFFreezePanel;
 class CTFClientScoreBoardDialog;
 #endif
 
-// Hud Styles 
-enum ETFHudStyle
-{
-	TF_HUDSTYLE_DEFAULT = 0,	// Default Hud
-	TF_HUDSTYLE_MINMODE,
-	TF_HUDSTYLE_XBOX,
-	TF_HUDSTYLE_VR,				// UNTESTED
-};
-
 class ClientModeTFNormal : public ClientModeShared 
 {
 DECLARE_CLASS( ClientModeTFNormal, ClientModeShared );
@@ -69,12 +60,6 @@ public:
 
 	virtual int		HudElementKeyInput( int down, ButtonCode_t keynum, const char *pszCurrentBinding );
 	virtual int		HandleSpectatorKeyInput( int down, ButtonCode_t keynum, const char *pszCurrentBinding );
-
-	virtual void	ComputeVguiResConditions( KeyValues *pkvConditions ) OVERRIDE;
-
-	virtual int		GetHUDStyle() { return m_pHudStyle; }
-	virtual void	SetHUDStyle( int HudStyle ) { m_pHudStyle = HudStyle; }
-	virtual bool	IsHUDMinMode() { if ( GetHUDStyle() == TF_HUDSTYLE_MINMODE ) return true; return false; };
 	
 private:
 	
@@ -84,8 +69,6 @@ private:
 	void			PrintTextToChat( const char *msg );
 
 private:
-
-	int m_pHudStyle;
 
 	CHudMenuEngyBuild *m_pMenuEngyBuild;
 	CHudMenuEngyDestroy *m_pMenuEngyDestroy;

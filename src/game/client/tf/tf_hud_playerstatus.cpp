@@ -16,7 +16,7 @@
 #include <vgui/ISurface.h>
 #include <vgui/IImage.h>
 #include <vgui_controls/Label.h>
-#include "clientmode_tf.h"
+
 #include "hud_numericdisplay.h"
 #include "c_team.h"
 #include "tf_shareddefs.h"
@@ -640,9 +640,8 @@ void CTFHudPlayerStatus::ApplySchemeSettings( IScheme *pScheme )
 
 	// HACK: Work around the scheme application order failing
 	// to reload the player class hud element's scheme in minmode.
-	// Ignore notifications in minmode
-	bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-	if ( m_bIsHudMinMode )
+	ConVarRef cl_hud_minmode( "cl_hud_minmode", true );
+	if ( cl_hud_minmode.IsValid() && cl_hud_minmode.GetBool() )
 	{
 		m_pHudPlayerClass->InvalidateLayout( false, true );
 	}

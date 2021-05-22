@@ -10,13 +10,16 @@
 
 #if defined( CLIENT_DLL )
 #include "c_tf_player.h"
-#include "clientmode_tf.h"
 #else
 #include "tf_player.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
+
+#ifndef GAME_DLL
+extern ConVar cl_hud_minmode;
+#endif
 
 IMPLEMENT_NETWORKCLASS_ALIASED( TFPowerupBottle, DT_TFPowerupBottle )
 BEGIN_NETWORK_TABLE( CTFPowerupBottle, DT_TFPowerupBottle )
@@ -197,8 +200,7 @@ bool CTFPowerupBottle::AllowedToUse() const
 const char* CTFPowerupBottle::GetEffectLabelText( void )
 {
 #ifndef GAME_DLL
-	bool m_bIsHudMinMode = GetClientModeTFNormal() && GetClientModeTFNormal()->IsHUDMinMode();
-	if ( m_bIsHudMinMode )
+	if ( cl_hud_minmode.GetBool() )
 	{
 		return "#TF_PVE_UsePowerup_MinMode";
 	}
