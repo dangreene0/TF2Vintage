@@ -6,6 +6,7 @@
 #endif
 
 #include "gamestringpool.h"
+#include "tier0/vprof.h"
 #include "econ_item_interface.h"
 
 
