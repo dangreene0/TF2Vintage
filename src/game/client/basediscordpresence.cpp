@@ -36,12 +36,9 @@ bool CBaseDiscordPresence::Init()
 	if ( !cl_discord_presence_enabled.GetBool() )
 		return true;
 
-	if( g_pDiscord == NULL )
-	{
-		auto result = discord::Core::Create( V_atoi64( cl_discord_appid.GetString() ), DiscordCreateFlags_Default, &g_pDiscord );
-		if ( result != discord::Result::Ok )
-			return true;
-	}
+	auto result = discord::Core::Create( V_atoi64( cl_discord_appid.GetString() ), DiscordCreateFlags_NoRequireDiscord, &g_pDiscord );
+	if ( result != discord::Result::Ok )
+		return true;
 
 	return InitPresence();
 }
@@ -57,8 +54,12 @@ void CBaseDiscordPresence::Shutdown()
 
 void CBaseDiscordPresence::Update( float frametime )
 {
+	if ( g_pDiscord == NULL )
+		return;
+
 	UpdatePresence();
 
+	// Update every other tick
 	if ( gpGlobals->tickcount % 2 )
 		g_pDiscord->RunCallbacks();
 }

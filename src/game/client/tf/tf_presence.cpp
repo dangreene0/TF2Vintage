@@ -605,6 +605,9 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 		Q_strncpy( m_szServerInfo, event->GetString( "address" ), DISCORD_FIELD_MAXLEN );
 	}
 
+	if ( g_pDiscord == NULL )
+		return;
+
 	if ( C_BasePlayer::GetLocalPlayer() == nullptr )
 		return;
 
@@ -687,6 +690,9 @@ bool CTFDiscordPresence::Init( void )
 bool CTFDiscordPresence::InitPresence( void )
 {
 	m_updateThrottle.Start( 30.0f );
+
+	if ( g_pDiscord == NULL )
+		return true;
 
 	g_pDiscord->SetLogHook(
 	#ifdef DEBUG
@@ -859,7 +865,10 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 		steamapicontext->SteamFriends()->SetRichPresence( "steam_display", GetLevelName() );
 	}
 
-	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	if( g_pDiscord )
+	{
+		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -889,7 +898,11 @@ void CTFDiscordPresence::ResetPresence( void )
 	m_Activity.SetDetails( "Main Menu" );
 	m_Activity.GetAssets().SetLargeImage( "tf2v_drp_logo" );
 	m_Activity.GetTimestamps().SetStart( m_iCreationTimestamp );
-	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+
+	if( g_pDiscord )
+	{
+		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	}
 }
 
 //-----------------------------------------------------------------------------
