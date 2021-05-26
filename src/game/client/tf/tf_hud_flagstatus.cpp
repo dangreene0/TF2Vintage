@@ -672,7 +672,11 @@ void CTFHudFlagObjectives::UpdateStatus( void )
 				m_pCarriedImage->SetVisible( true );
 			}
 
-			g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutline" );
+			ConVarRef cl_hud_console( "cl_hud_console" );
+			if ( cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+				g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutlineConsole" );
+			else
+				g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutline" );
 
 			if ( m_pCapturePoint )
 			{
@@ -706,7 +710,12 @@ void CTFHudFlagObjectives::UpdateStatus( void )
 		if ( m_bCarryingFlag )
 		{
 			m_bCarryingFlag = false;
-			g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutline" );
+
+			ConVarRef cl_hud_console( "cl_hud_console" );
+			if ( cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+				g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutlineConsole" );
+			else
+				g_pClientMode->GetViewportAnimationController()->StartAnimationSequence( "FlagOutline" );
 		}
 
 		m_bFlagAnimationPlayed = false;
