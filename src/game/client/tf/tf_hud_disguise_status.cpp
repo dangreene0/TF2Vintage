@@ -240,7 +240,7 @@ void CDisguiseStatus::Paint(void)
 	if (tf2v_enable_disguise_text.GetBool())
 	{
 		int xpos = 0;
-		int ypos = -100;
+		int ypos = -10;
 
 		#define MAX_DISGUISE_STATUS_LENGTH	128
 		wchar_t szStatus[MAX_DISGUISE_STATUS_LENGTH];
