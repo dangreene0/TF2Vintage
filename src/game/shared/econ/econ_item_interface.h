@@ -159,9 +159,14 @@ private:
 };
 
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
 template <typename TIterator>
 bool FindAttribute( TIterator const *pAttributeIterator, CEconAttributeDefinition const *pAttrDef )
 {
+	VPROF_BUDGET( __FUNCTION__, VPROF_BUDGETGROUP_FINDATTRIBUTE );
+
 	if ( pAttrDef == NULL )
 		return false;
 
@@ -171,9 +176,14 @@ bool FindAttribute( TIterator const *pAttributeIterator, CEconAttributeDefinitio
 	return func.Found();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
 template <typename TArg, typename TIterator, typename TOut>
 bool FindAttribute( TIterator const *pAttributeIterator, CEconAttributeDefinition const *pAttrDef, TOut *pOutput )
 {
+	VPROF_BUDGET( __FUNCTION__, VPROF_BUDGETGROUP_FINDATTRIBUTEUNSAFE );
+
 	if ( pAttrDef == NULL )
 		return false;
 
