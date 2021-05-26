@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2002, Valve LLC, All rights reserved. ============
 //
 // Purpose: HUD Target ID element
 //
@@ -240,7 +240,7 @@ void CDisguiseStatus::Paint(void)
 	if (tf2v_enable_disguise_text.GetBool())
 	{
 		int xpos = 0;
-		int ypos = 0;
+		int ypos = 100;
 
 		#define MAX_DISGUISE_STATUS_LENGTH	128
 		wchar_t szStatus[MAX_DISGUISE_STATUS_LENGTH];
