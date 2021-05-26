@@ -29,6 +29,7 @@ game_sounds_manifest
 	"precache_file"  	"scripts/game_sounds_passtime.txt"
 	
 	// TF2V Sound scripts
-	"precache_file"		"scripts/game_sounds_ui_tf2v.txt"	
-	"preload_file"  	"scripts/game_sounds_player_tf2v.txt"	
+	"precache_file"		"scripts/game_sounds_ui_tf2v.txt"
+	"precache_file"  	"scripts/game_sounds_weapons_tf2v.txt"
+	"preload_file"  	"scripts/game_sounds_player_tf2v.txt"
 }
