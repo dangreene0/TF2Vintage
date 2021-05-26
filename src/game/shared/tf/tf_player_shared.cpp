@@ -1410,6 +1410,9 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 				m_iDisguiseHealth += nFakeHealthToAdd;
 			}
 
+			// Track health prior to healing
+			int nPrevHealth = m_pOuter->GetHealth();
+
 			// Cap it to the max we'll boost a player's health
 			nHealthToAdd = clamp( nHealthToAdd, 0, ( iBoostMax - m_pOuter->GetHealth() ) );
 			m_pOuter->TakeHealth( nHealthToAdd, DMG_IGNORE_MAXHEALTH );			
@@ -1424,7 +1427,13 @@ void CTFPlayerShared::ConditionGameRulesThink(void)
 					if ( pHealer && IsAlly( pHealer ) )
 					{
 						CTFPlayer *pScorer = ToTFPlayer( m_aHealers[i].pScorer );
-						CTF_GameStats.Event_PlayerHealedOther( pScorer, flHealAmount );
+						if( pScorer )
+						{
+							if ( iBoostMax - nPrevHealth > 1/* || gpGlobals->curtime - m_pOuter->GetLastDamageReceivedTime() <= 1.f */)
+							{
+								CTF_GameStats.Event_PlayerHealedOther( pScorer, flHealAmount );
+							}
+						}
 					}
 					else
 					{
