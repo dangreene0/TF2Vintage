@@ -117,6 +117,10 @@ stats.txt
 gamestate.txt
 voice_ban.dt
 textwindow_temp.html
+viewed.res
+tf2_playerstats.dmx
+tf_inventory.txt
+game/*/vpk/*
 game/*/demos/*
 game/*/materials/vgui/logos/ui/*
 game/*/materials/vgui/logos/ui/andre.vmt

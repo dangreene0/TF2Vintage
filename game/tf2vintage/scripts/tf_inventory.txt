@@ -271,7 +271,7 @@
 		{
 			"primary"		"0"
 			"secondary"		"0"
-			"melee"		"0"
+			"melee"		"1"
 			"pda"		"0"
 			"pda2"		"0"
 			"building"		"0"

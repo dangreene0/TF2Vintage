@@ -6,7 +6,7 @@
 		"fieldName"			"AdvItemButton"
 		"xpos"				"0"
 		"ypos"				"0"
-		"zpos"				"6"
+		"zpos"				"999"
 		"wide"				"1"
 		"tall"				"1"
 		"visible"			"1"
