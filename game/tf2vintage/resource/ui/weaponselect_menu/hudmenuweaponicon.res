@@ -39,8 +39,8 @@
 		"xpos_minmode"	"0"	[$WIN32]
 		"ypos"			"20"	[$WIN32]
 		"ypos_minmode"	"0"	[$WIN32]
-		"xpos"			"0"	[$X360]
-		"ypos"			"0"	[$X360]
+		"xpos_console"	"0"
+		"ypos_console"	"0"
 		"zpos"			"2"
 		"wide"			"120"
 		"wide_minmode"	"37"

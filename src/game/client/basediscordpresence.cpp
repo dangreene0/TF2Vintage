@@ -16,18 +16,27 @@ IRichPresenceClient *rpc = NULL;
 #ifndef POSIX
 static CBaseDiscordPresence s_presence;
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CBaseDiscordPresence::CBaseDiscordPresence()
 	: CAutoGameSystemPerFrame( "Discord RPC" )
 {
 	m_szMapName[0] = '\0';
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CBaseDiscordPresence::~CBaseDiscordPresence()
 {
 	if ( g_pDiscord )
 		delete g_pDiscord;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CBaseDiscordPresence::Init()
 {
 	if ( rpc == NULL )
@@ -36,16 +45,17 @@ bool CBaseDiscordPresence::Init()
 	if ( !cl_discord_presence_enabled.GetBool() )
 		return true;
 
-	if( g_pDiscord == NULL )
-	{
-		auto result = discord::Core::Create( V_atoi64( cl_discord_appid.GetString() ), DiscordCreateFlags_Default, &g_pDiscord );
-		if ( result != discord::Result::Ok )
-			return true;
-	}
+	Assert( g_pDiscord == NULL );
+	auto result = discord::Core::Create( V_atoi64( cl_discord_appid.GetString() ), DiscordCreateFlags_NoRequireDiscord, &g_pDiscord );
+	if ( result != discord::Result::Ok )
+		return true;
 
 	return InitPresence();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CBaseDiscordPresence::Shutdown()
 {
 	if ( g_pDiscord )
@@ -55,10 +65,17 @@ void CBaseDiscordPresence::Shutdown()
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CBaseDiscordPresence::Update( float frametime )
 {
+	if ( g_pDiscord == NULL )
+		return;
+
 	UpdatePresence();
 
+	// Update every other tick
 	if ( gpGlobals->tickcount % 2 )
 		g_pDiscord->RunCallbacks();
 }

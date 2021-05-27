@@ -6,6 +6,7 @@
 		"fieldName"			"ObjectiveStatusEscort"
 		"xpos"				"c-200"
 		"ypos"				"r150"
+		"ypos_console"		"r170"
 		"zpos"				"1"
 		"wide"				"400"
 		"tall"				"150"

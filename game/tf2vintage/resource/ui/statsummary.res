@@ -279,7 +279,7 @@
 				"ypos_lodef"			"49"
 				"zpos"			"5"
 				"wide"			"150" [$WIN32]
-				"wide"			"170" [$X360]
+				"wide_console"	"170"
 				"tall"			"20"
 				"autoResize"	"0"
 				"pinCorner"		"0"
@@ -1829,7 +1829,7 @@
 			"autoResize"	"0"
 			"pinCorner"		"0"
 			"visible"		"1"	[$WIN32]
-			"visible"		"0"	[$X360]
+			"visible_console"		"0"
 			"enabled"		"1"
 		}							
 		"RecordsSubBG1"
@@ -1872,7 +1872,7 @@
 			"autoResize"	"0"
 			"pinCorner"		"0"
 			"visible"		"0"	[$WIN32]
-			"visible"		"1"	[$X360]
+			"visible_console"		"1"
 			"enabled"		"1"
 		}	
 		"OverallRecord1Label"
@@ -2699,42 +2699,7 @@
 		"brighttext"	"0"
 		"Command"		"vguicancel"
 	}
-	"Footer" [$X360]
-	{
-		"ControlName"		"CTFFooter"
-		"fieldName"			"Footer"
-		"bgcolor"			"TanDarker"
-		"paintbackground"	"1"
-		"tall"				"100"
-		"tall_lodef"				"60"
-		"center"			"1"
-		"buttonoffsety"		"20"
-		"buttonoffsety_lodef"		"5"
-		"button_separator"	"10"
-		"button_separator_lodef"	"2"
-		"fonttext"			"MatchmakingDialogMenuLarge"
-		"fonttext_lodef"			"MatchmakingDialogMenuSmall"
-		"buttongap"			"50"
-		"textadjust"		"3"
-		"textadjust_lodef"		"0"
-		"zpos"				"6"
-		"fgcolor"			"HudOffWhite" 	
-		
-		"button"
-		{
-			"name"		"back"
-			"text"		"#GameUI_Back"
-			"icon"		"#GameUI_Icons_B_BUTTON"	
-		}
-		
-		"button"
-		{
-			"name"		"nexttip"
-			"text"		"#TF_NextTip_360"
-			"icon"		"#GameUI_Icons_A_BUTTON"	
-		}
-	}		
-	"TitleBanner" [$X360]
+	"TitleBanner"
 	{
 		"ControlName"	"ImagePanel"
 		"xpos"			"0"

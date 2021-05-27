@@ -95,7 +95,7 @@ public:
 		return true;
 	}
 
-	operator float() { return m_flOut; }
+	operator float() const { return m_flOut; }
 
 private:
 	EHANDLE m_hOwner;
@@ -128,7 +128,7 @@ public:
 		return false;
 	}
 
-	operator string_t &() { return m_pOut; }
+	operator string_t const &() const { return m_pOut; }
 
 private:
 	EHANDLE m_hOwner;

@@ -86,4 +86,13 @@
 	"name" "Mega Baboon"
 	"name" "Kill Me"
 	"name" "Glorified Toaster with Legs"
+	"name" "John Spartan"
+	"name" "Leeloo Dallas Multipass"
+	"name" "Sho'nuff"
+	"name" "Bruce Leroy"
+	"name" "CAN YOUUUUUUUUU DIG IT?!?!?!?!"
+	"name" "Big Gulp, Huh?"
+	"name" "Stupid Hot Dog"
+	"name" "I'm your huckleberry"
+	"name" "The Crocketeer"
 }

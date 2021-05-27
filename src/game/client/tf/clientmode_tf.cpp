@@ -51,6 +51,7 @@
 #include "usermessages.h"
 #include "utlvector.h"
 #include "props_shared.h"
+#include "weapon_selection.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -66,9 +67,43 @@ ConVar tf_hud_no_crosshair_on_scope_zoom( "tf_hud_no_crosshair_on_scope_zoom", "
 
 void HUDMinModeChangedCallBack( IConVar *var, const char *pOldString, float flOldValue )
 {
+	ConVarRef cl_hud_console( "cl_hud_console" );
+	if ( cl_hud_console.GetBool() )
+		cl_hud_console.SetValue( false );
+
+	// Brute force, but i'm not feeling good to edit the whole build menu res files
+	ConVarRef tf_build_menu_controller_mode( "tf_build_menu_controller_mode" );
+	if ( tf_build_menu_controller_mode.GetBool() )
+		tf_build_menu_controller_mode.SetValue( false );
+
+	// Force Console Fast Switch
+	ConVarRef hud_fastswitch( "hud_fastswitch" );
+	if ( hud_fastswitch.GetInt() == HUDTYPE_PLUS )
+		hud_fastswitch.SetValue( HUDTYPE_BUCKETS );
+
 	engine->ExecuteClientCmd( "hud_reloadscheme" );
 }
 ConVar cl_hud_minmode( "cl_hud_minmode", "0", FCVAR_ARCHIVE, "Set to 1 to turn on the advanced minimalist HUD mode.", HUDMinModeChangedCallBack );
+
+// New TF2v cvars starts here
+void HUDConsoleModeChangedCallBack( IConVar *var, const char *pOldString, float flOldValue )
+{
+	if ( cl_hud_minmode.GetBool() )
+		cl_hud_minmode.SetValue( false );
+
+	// Brute force, but i'm not feeling good to edit the whole build menu res files
+	ConVarRef tf_build_menu_controller_mode( "tf_build_menu_controller_mode" );
+	if ( tf_build_menu_controller_mode.GetBool() )
+		tf_build_menu_controller_mode.SetValue( true );
+
+	// Force Console Fast Switch
+	ConVarRef hud_fastswitch( "hud_fastswitch" );
+	if ( hud_fastswitch.GetInt() < HUDTYPE_PLUS )
+		hud_fastswitch.SetValue( HUDTYPE_PLUS );
+
+	engine->ExecuteClientCmd( "hud_reloadscheme" );
+}
+ConVar cl_hud_console( "cl_hud_console", "0", FCVAR_ARCHIVE, "Set to 1 to turn on the console HUD mode.", HUDConsoleModeChangedCallBack );
 
 IClientMode *g_pClientMode = NULL;
 
