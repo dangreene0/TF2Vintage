@@ -1330,10 +1330,16 @@ void CTFPlayer::Spawn()
 		SetDesiredPlayerClassIndex( RandomInt( TF_FIRST_NORMAL_CLASS, TF_LAST_NORMAL_CLASS ) );
 	}
 
-	if ( ( TFGameRules()->IsInVSHMode() && ( GetTeamNumber() == TF_TEAM_PLAYER_BOSS ) ) )
+	if ( TFGameRules() )
 	{
-		// Random boss character.
-		SetDesiredPlayerClassIndex( RandomInt( TF_FIRST_BOSS_CLASS, TF_LAST_BOSS_CLASS ) );
+		if ( TFGameRules()->IsInVSHMode() && ( GetTeamNumber() == TF_TEAM_PLAYER_BOSS ) )
+		{
+			// Random boss character.
+			SetDesiredPlayerClassIndex( RandomInt( TF_FIRST_BOSS_CLASS, TF_LAST_BOSS_CLASS ) );
+		}
+		
+		// Spawn some balls to play with!
+		TFGameRules()->CheckBallSpawns(this);
 	}
 
 	

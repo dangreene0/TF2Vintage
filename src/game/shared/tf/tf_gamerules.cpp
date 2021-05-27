@@ -1189,6 +1189,13 @@ CTFGameRules::CTFGameRules()
 	char szCommand[32];
 	Q_snprintf( szCommand, sizeof( szCommand ), "exec %s.cfg\n", STRING( gpGlobals->mapname ) );
 	engine->ServerCommand( szCommand );
+	
+	
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
 
 #else // GAME_DLL
 
@@ -1804,6 +1811,15 @@ bool CTFGameRules::ShouldCreateEntity( const char *pszClassName )
 
 void CTFGameRules::CleanUpMap( void )
 {
+#ifdef GAME_DLL
+	// Clean up balls.
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
+#endif
+
 	BaseClass::CleanUpMap();
 
 	if ( HLTVDirector() )
@@ -5643,6 +5659,15 @@ void CTFGameRules::RemovePlayerFromQueue( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 void CTFGameRules::RoundRespawn( void )
 {
+#ifdef GAME_DLL
+	// Clean up balls.
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
+#endif
+
 	// remove any buildings, grenades, rockets, etc. the player put into the world
 	for ( int i = 1; i <= MAX_PLAYERS; i++ )
 	{
@@ -7144,6 +7169,106 @@ bool CTFGameRules::ShouldBalanceTeams( void )
 	return BaseClass::ShouldBalanceTeams();
 }
 
+
+ConVar tf_birthday_ball_chance( "tf_birthday_ball_chance", "100", FCVAR_REPLICATED, "Percent chance of a birthday beach ball spawning at each round start" );
+#ifdef GAME_DLL
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CTFGameRules::CheckBallSpawns( CTFPlayer *pPlayer )
+{
+	// Birthday Beach Ball.
+	if (IsBirthday() && !m_bActiveBeachBall)
+	{
+		if ( pPlayer->GetTeamNumber() == TF_TEAM_BLUE && RandomInt( 0, 100 ) < tf_birthday_ball_chance.GetInt() )
+		{
+			// Grab the player's coordinates.
+			Vector vecOrigin = pPlayer->GetAbsOrigin();
+
+			// Copy of the bread spawn code, without the self-destruct.
+			CPhysicsProp* pBeachBall = static_cast<CPhysicsProp*>(CBaseAnimating::CreateNoSpawn("prop_physics_override", vecOrigin, pPlayer->GetAbsAngles(), pPlayer));
+			if (pBeachBall)
+			{
+				Vector vecRight, vecUp;
+				AngleVectors(pPlayer->GetAbsAngles(), NULL, &vecRight, &vecUp);
+
+				Vector vecImpulse(0.0f, 0.0f, 0.0f);
+				vecImpulse += vecUp * random->RandomFloat(-0.25, 0.25);
+				vecImpulse += vecRight * random->RandomFloat(-0.25, 0.25);
+				VectorNormalize(vecImpulse);
+				vecImpulse *= random->RandomFloat(-100, 100);
+				vecImpulse += pPlayer->GetAbsVelocity();
+
+				if (pBeachBall->VPhysicsGetObject())
+				{
+					AngularImpulse angImpulse(RandomFloat(-100, 100), RandomFloat(-100, 100), RandomFloat(-100, 100));
+					pBeachBall->VPhysicsGetObject()->SetVelocityInstantaneous(&vecImpulse, &angImpulse);
+				}
+
+				pBeachBall->SetAbsVelocity(vecImpulse + Vector(0.0f, 0.0f, 200.0f));
+
+				// Give the bread some health.
+				pBeachBall->SetCollisionGroup(COLLISION_GROUP_PUSHAWAY);
+				pBeachBall->AddFlag(FL_GRENADE);
+				pBeachBall->m_takedamage = DAMAGE_YES;
+				pBeachBall->SetHealth(5000);
+				pBeachBall->KeyValue("model", "models/props_gameplay/ball001.mdl");
+				pBeachBall->m_nSkin = 1;
+				DispatchSpawn(pBeachBall);
+				pBeachBall->Activate();
+				m_bActiveBeachBall = true;
+			}
+		}
+	}
+
+	// Soccer Balls.
+	if ( !m_bActiveSoccerBall[ pPlayer->GetTeamNumber() ] )
+	{
+		int nSpawnSoccerBall = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer, nSpawnSoccerBall, spawn_with_physics_toy );
+		if ( nSpawnSoccerBall )
+		{
+			// Grab the player's coordinates.
+			Vector vecOrigin = pPlayer->GetAbsOrigin();
+
+			// Copy of the bread spawn code, without the self-destruct.
+			CPhysicsProp* pSoccerBall = static_cast<CPhysicsProp*>(CBaseAnimating::CreateNoSpawn("prop_physics_override", vecOrigin, pPlayer->GetAbsAngles(), pPlayer));
+			if (pSoccerBall)
+			{
+				Vector vecRight, vecUp;
+				AngleVectors(pPlayer->GetAbsAngles(), NULL, &vecRight, &vecUp);
+
+				Vector vecImpulse(0.0f, 0.0f, 0.0f);
+				vecImpulse += vecUp * random->RandomFloat(-0.25, 0.25);
+				vecImpulse += vecRight * random->RandomFloat(-0.25, 0.25);
+				VectorNormalize(vecImpulse);
+				vecImpulse *= random->RandomFloat(-100, 100);
+				vecImpulse += pPlayer->GetAbsVelocity();
+
+				if (pSoccerBall->VPhysicsGetObject())
+				{
+					AngularImpulse angImpulse(RandomFloat(-100, 100), RandomFloat(-100, 100), RandomFloat(-100, 100));
+					pSoccerBall->VPhysicsGetObject()->SetVelocityInstantaneous(&vecImpulse, &angImpulse);
+				}
+
+				pSoccerBall->SetAbsVelocity(vecImpulse + Vector(0.0f, 0.0f, 200.0f));
+
+				// Give the bread some health.
+				pSoccerBall->SetCollisionGroup(COLLISION_GROUP_PUSHAWAY);
+				pSoccerBall->AddFlag(FL_GRENADE);
+				pSoccerBall->m_takedamage = DAMAGE_YES;
+				pSoccerBall->SetHealth(5000);
+				pSoccerBall->KeyValue("model", "models/player/items/scout/soccer_ball.mdl");
+				pSoccerBall->m_nSkin = pPlayer->GetTeamNumber()-2;
+				DispatchSpawn(pSoccerBall);
+				pSoccerBall->Activate();
+				m_bActiveSoccerBall[pPlayer->GetTeamNumber()] = true;	
+			}
+		}
+	}
+}
+#endif
+
 #ifdef CLIENT_DLL
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -7591,10 +7716,8 @@ void CTFGameRules::ModifySentChat( char *pBuf, int iBufSize )
 		}
 	}
 	
-#ifdef CLIENT_DLL
 	if ( tf2v_censor_swears.GetBool() )
 		g_BannedWords.CensorBannedWordsInplace( pBuf );
-#endif
 
 }
 

@@ -208,6 +208,14 @@ public:
 
 	virtual bool	ShouldBalanceTeams( void );
 
+#ifdef GAME_DLL
+	// Balls.
+	void			CheckBallSpawns( CTFPlayer *pPlayer );
+	bool m_bActiveBeachBall;
+	bool m_bActiveSoccerBall[TF_TEAM_COUNT];
+#endif
+
+
 	int GetGlobalAttributeCacheVersion( void ) const
 	{
 		return m_iGlobalAttributeCacheVersion;

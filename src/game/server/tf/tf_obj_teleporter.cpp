@@ -1221,6 +1221,9 @@ void CObjectTeleporter::TeleportBread( CTFPlayer *pPlayer )
 		pBread->AddFlag( FL_GRENADE );
 		pBread->m_takedamage = DAMAGE_YES;
 		pBread->SetHealth( 900 );
+		pBread->KeyValue( "model", pszModelName );
+		DispatchSpawn( pBread );
+		pBread->Activate();
 		
 		// Remove this object in 10 seconds.
 		pBread->ThinkSet( &CBaseEntity::SUB_Remove, gpGlobals->curtime + 10, "DieContext" );
