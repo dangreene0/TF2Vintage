@@ -2306,7 +2306,11 @@ void EffectsPrecache( void *pUser )
 
 	if ( gpGlobals->maxClients > 1 )
 	{
+#ifdef TF_VINTAGE
+		CBaseEntity::PrecacheScriptSound( "TFHudChat.Message" );
+#else
 		CBaseEntity::PrecacheScriptSound( "HudChat.Message" );
+#endif
 	}
 }
 
