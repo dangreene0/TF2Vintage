@@ -104,8 +104,8 @@
 		"xpos_minmode"	"30"
 		"ypos"			"19"	[$WIN32]
 		"ypos_minmode"	"14"	[$WIN32]
-		"ypos"			"22"	[$X360]
-		"ypos_hidef"		"25"	[$X360]
+		"ypos_console"			"22"
+//		"ypos_console_hidef"		"25"
 		"zpos"			"1"
 		"wide"			"280"
 		"tall"			"15"

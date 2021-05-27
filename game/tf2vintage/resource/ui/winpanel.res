@@ -380,11 +380,11 @@
 		"ControlName"		"CExLabel"
 		"fieldName"		"Player1Name"
 		"xpos"			"50"	[$WIN32]
-		"xpos"			"14"	[$X360]
+		"xpos_console"	"14"
 		"ypos"			"132"
 		"zpos"			"3"
 		"wide"			"128"	[$WIN32]
-		"wide"			"150"	[$X360]
+		"wide_console"	"150"
 		"tall"			"20"
 		"autoResize"		"0"
 		"pinCorner"		"0"
@@ -451,11 +451,11 @@
 		"ControlName"		"CExLabel"
 		"fieldName"		"Player2Name"
 		"xpos"			"50"	[$WIN32]
-		"xpos"			"14"	[$X360]
+		"xpos_console"	"14"
 		"ypos"			"154"
 		"zpos"			"3"
 		"wide"			"128"	[$WIN32]
-		"wide"			"150"	[$X360]
+		"wide_console"	"150"
 		"tall"			"20"
 		"autoResize"		"0"
 		"pinCorner"		"0"
@@ -522,11 +522,11 @@
 		"ControlName"		"CExLabel"
 		"fieldName"		"Player3Name"
 		"xpos"			"50"	[$WIN32]
-		"xpos"			"14"	[$X360]
+		"xpos_console"	"14"
 		"ypos"			"176"
 		"zpos"			"3"
 		"wide"			"128"	[$WIN32]
-		"wide"			"150"	[$X360]
+		"wide_console"	"150"
 		"tall"			"20"
 		"autoResize"		"0"
 		"pinCorner"		"0"

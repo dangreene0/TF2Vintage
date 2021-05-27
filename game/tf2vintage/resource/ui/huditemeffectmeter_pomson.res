@@ -9,8 +9,8 @@
 		"ypos"			"r92"	[$WIN32]
 		"xpos_minmode"	"r42"	[$WIN32]
 		"ypos_minmode"	"r68"	[$WIN32]
-		"xpos"			"r194"	[$X360]
-		"ypos"			"r124"	[$X360]
+		"xpos_console"	"r270"
+		"ypos_console"	"r78"
 		"wide"			"100"
 		"tall"			"50"
 		"MeterFG"		"White"

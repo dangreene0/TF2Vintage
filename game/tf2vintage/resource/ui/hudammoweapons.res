@@ -5,10 +5,12 @@
 		"fieldName" "HudWeaponAmmo"
 		"visible" "1"
 		"enabled" "1"
-		"xpos"	"r125"	[$WIN32]
-		"xpos_minmode"	"r105"	[$WIN32]
-		"ypos"	"r65"	[$WIN32]
-		"ypos_minmode"	"r46"	[$WIN32]
+		"xpos"	"r125"
+		"xpos_minmode"	"r105"
+		"ypos"	"r65"
+		"ypos_minmode"	"r46"
+		"xpos_console"	"r151"
+		"ypos_console"	"r86"
 		"wide"	"204"
 		"tall"	"135"
 	}
@@ -59,7 +61,7 @@
 	{
 		"ControlName"	"ImagePanel"
 		"fieldName"		"WeaponBucket"
-		"xpos"			"0"	[$WIN32]
+		"xpos"			"0"
 		"xpos_minmode"	"15" [$WIN32]
 		"ypos"			"-20" [$WIN32]
 		"ypos_minmode"	"10" [$WIN32]

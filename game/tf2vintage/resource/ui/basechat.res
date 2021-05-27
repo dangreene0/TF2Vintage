@@ -7,6 +7,7 @@
 		"visible"				"1"
 		"enabled"				"1"
 		"xpos"					"10"
+		"xpos_console"			"42"
 		"ypos"					"280"
 		"ypos_minmode"			"270"
 		"wide"					"290"
