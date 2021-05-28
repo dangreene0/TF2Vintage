@@ -5782,7 +5782,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 		
 		// Newer stickybomb launchers have damage falloff nerf.
-		if ( tf2v_use_new_demo_explosion_variance.GetInt() )
+		if ( tf2v_use_new_demo_explosion_variance.GetInt() > 0 )
 		{
 			if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER )	
 			{
@@ -5809,7 +5809,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			else
 			{
 				float flCenter = 0.5;
-				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ;	
+				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ; // Default is +/- 10% damage	
 				float flMin = flCenter - flCenVar;
 				float flMax = flCenter + flCenVar;
 
@@ -5819,7 +5819,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				if ( tf2v_new_sentry_damage_falloff.GetBool())
 				{
 					// Is this damage from a sentry gun?
-					if ( dynamic_cast<CObjectSentrygun *>( pInflictor ) )
+					if ( dynamic_cast<CObjectSentrygun *>( pInflictor ) != NULL )
 						flOptimalDistance = 1100; // Maximum range of the sentry gun.
 				}
 
@@ -5859,46 +5859,41 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					flRandomVal = RandomFloat( flMin, flMax );
 				}
 
-				if ( flRandomVal > 0.5 )
+				// Rocket launcher, Sticky launcher and Scattergun have different short range bonuses
+				if ( pWeapon )
 				{
-					// Rocket launcher, Sticky launcher and Scattergun have different short range bonuses
-					if ( pWeapon )
+					switch ( pWeapon->GetWeaponID() )
 					{
-						switch ( pWeapon->GetWeaponID() )
-						{
-							case TF_WEAPON_ROCKETLAUNCHER:
-							case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
-							case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
-							case TF_WEAPON_DIRECTHIT:
-								// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
+						case TF_WEAPON_ROCKETLAUNCHER:
+						case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
+						case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
+						case TF_WEAPON_DIRECTHIT:
+							// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
+							if ( flRandomVal > 0.5 )
 								flRandomDamage *= 0.5;
-								break;
-							case TF_WEAPON_SCATTERGUN:
-							case TF_WEAPON_SODA_POPPER :
-							case TF_WEAPON_PEP_BRAWLER_BLASTER :
-								// Scattergun gets 50% bonus of other weapons at short range
+							break;
+						case TF_WEAPON_SCATTERGUN:
+						case TF_WEAPON_SODA_POPPER :
+						case TF_WEAPON_PEP_BRAWLER_BLASTER :
+							// Scattergun gets 50% bonus of other weapons at short range
+							if ( flRandomVal > 0.5 )
 								flRandomDamage *= 1.5;
-								break;
-							case TF_WEAPON_PIPEBOMBLAUNCHER:
-							case TF_WEAPON_GRENADELAUNCHER :
-							case TF_WEAPON_CANNON :
+							break;
+						case TF_WEAPON_PIPEBOMBLAUNCHER:
+						case TF_WEAPON_GRENADELAUNCHER :
+						case TF_WEAPON_CANNON :
+							if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
+								flRandomDamage *= 0.2;
+							break;
+						case TF_WEAPON_STICKBOMB:
+							if (tf2v_use_new_caber.GetBool())	// New Caber has standard Demoman explosion damage variance.
+							{
 								if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
 									flRandomDamage *= 0.2;
-								else if (pWeapon->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER) // Pipes affected by the 50% bonus though!
-									flRandomDamage *= 0.5;
-								break;
-							case TF_WEAPON_STICKBOMB:	
-								if (tf2v_use_new_caber.GetBool()) // Only new caber has an affected bonus
-								{
-									if (tf2v_use_new_demo_explosion_variance.GetInt() == 2)
-										flRandomDamage *= 0.2; // 20% for new Demoman explosives
-									else
-										flRandomDamage *= 0.5; // 50% for old Demoman explosives
-								}
-								break;
-							default:
-								break;
-						}
+							}
+							break;												
+						default:
+							break;
 					}
 				}
 				else if ( ( bitsDamage & DMG_MINICRITICAL ) && ( pWeapon && pWeapon->GetWeaponID() != TF_WEAPON_CROSSBOW ) )
