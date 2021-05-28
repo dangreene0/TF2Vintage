@@ -160,6 +160,7 @@ ConVar tf2v_allow_cut_weapons( "tf2v_allow_cut_weapons", "1", FCVAR_NOTIFY, "All
 ConVar tf2v_allow_multiclass_weapons( "tf2v_allow_multiclass_weapons", "1", FCVAR_NOTIFY, "Allows players to use multi-class variants of weapons, such as shotguns." );
 
 ConVar tf2v_bonus_distance_range( "tf2v_bonus_distance_range", "10", FCVAR_NOTIFY, "Percent variation in range calculations for damage." );
+ConVar tf2v_use_linear_damage("tf2v_use_linear_damage", "0", FCVAR_NOTIFY, "Replaces the splines with linear slopes in damage calculations.");
 ConVar tf2v_enforce_whitelist( "tf2v_enforce_whitelist", "0", FCVAR_NOTIFY, "Requires items to be verified from a server whitelist." );
 
 ConVar tf2v_force_stock_weapons( "tf2v_force_stock_weapons", "0", FCVAR_NOTIFY, "Forces players to use the stock loadout." );
@@ -5794,7 +5795,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		// Distance falloff calculations
 		if ( bitsDamage & DMG_USEDISTANCEMOD )
 		{
-			float flRandomDamage = info.GetDamage() * tf_damage_range.GetFloat();
+			float flRandomDamage = info.GetDamage() * tf_damage_range.GetFloat(); // Damage range is 0.5 for 50% random damage.
 			if ( tf_damage_lineardist.GetBool() )
 			{
 				float flBaseDamage = info.GetDamage() - flRandomDamage;
@@ -5808,10 +5809,11 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			}
 			else
 			{
-				float flCenter = 0.5;
+				bool bUseLinearSlope = tf2v_use_linear_damage.GetBool();
+				float flCenter = 0.5; // Halfway, or optimal damage for 100%.
 				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ; // Default is +/- 10% damage	
-				float flMin = flCenter - flCenVar;
-				float flMax = flCenter + flCenVar;
+				float flMin = flCenter - flCenVar; // Default is .4 (.5 - .1)
+				float flMax = flCenter + flCenVar; // Default is .6 (.5 + .1)
 
 				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
 				float flOptimalDistance = 512.0;
@@ -5823,7 +5825,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 						flOptimalDistance = 1100; // Maximum range of the sentry gun.
 				}
 
-				flCenter = RemapValClamped( flDistance / flOptimalDistance, 0.0, 2.0, 1.0, 0.0 );
+				// Now we modify flCenter to get the new range we're at.
+				flCenter = RemapValClamped((flDistance / flOptimalDistance), 0.0, 2.0, 1.0, 0.0); // Spline (default)
 				if ( bitsDamage & DMG_NOCLOSEDISTANCEMOD )
 				{
 					if ( flCenter > 0.5 )
@@ -5838,7 +5841,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					// If we're a crossbow, change our falloff band so that our 100% is at long range.
 					flCenter = RemapVal( flDistance / flOptimalDistance, 0.0, 2.0, 0.0, 0.5 );
 				}
-					
+				
+				
 				flMin = ( 0.0 > (flCenter + flCenVar) ? 0.0 : (flCenter + flCenVar) ); // Our version of MAX.
 				flMax = ( 1.0 < (flCenter + flCenVar) ? 1.0 : (flCenter - flCenVar) ); // Our version of MIN.
 
@@ -5860,49 +5864,65 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				}
 
 				// Rocket launcher, Sticky launcher and Scattergun have different short range bonuses
-				if ( pWeapon )
+				if (pWeapon)
 				{
-					switch ( pWeapon->GetWeaponID() )
+					switch (pWeapon->GetWeaponID())
 					{
-						case TF_WEAPON_ROCKETLAUNCHER:
-						case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
-						case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
-						case TF_WEAPON_DIRECTHIT:
-							// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
-							if ( flRandomVal > 0.5 )
-								flRandomDamage *= 0.5;
-							break;
-						case TF_WEAPON_SCATTERGUN:
-						case TF_WEAPON_SODA_POPPER :
-						case TF_WEAPON_PEP_BRAWLER_BLASTER :
-							// Scattergun gets 50% bonus of other weapons at short range
-							if ( flRandomVal > 0.5 )
-								flRandomDamage *= 1.5;
-							break;
-						case TF_WEAPON_PIPEBOMBLAUNCHER:
-						case TF_WEAPON_GRENADELAUNCHER :
-						case TF_WEAPON_CANNON :
+					case TF_WEAPON_ROCKETLAUNCHER:
+					case TF_WEAPON_ROCKETLAUNCHER_AIRSTRIKE:
+					case TF_WEAPON_ROCKETLAUNCHER_FIREBALL:
+					case TF_WEAPON_DIRECTHIT:
+						// Rocket launcher and sticky launcher only have half the bonus of the other weapons at short range
+						if (flRandomVal > 0.5)
+							flRandomDamage *= 0.5;
+						break;
+					case TF_WEAPON_SCATTERGUN:
+					case TF_WEAPON_SODA_POPPER:
+					case TF_WEAPON_PEP_BRAWLER_BLASTER:
+						// Scattergun gets 50% bonus of other weapons at short range
+						if (flRandomVal > 0.5)
+							flRandomDamage *= 1.5;
+						break;
+					case TF_WEAPON_PIPEBOMBLAUNCHER:
+					case TF_WEAPON_GRENADELAUNCHER:
+					case TF_WEAPON_CANNON:
+						if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
+							flRandomDamage *= 0.2;
+						break;
+					case TF_WEAPON_STICKBOMB:
+						if (tf2v_use_new_caber.GetBool())	// New Caber has standard Demoman explosion damage variance.
+						{
 							if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
 								flRandomDamage *= 0.2;
-							break;
-						case TF_WEAPON_STICKBOMB:
-							if (tf2v_use_new_caber.GetBool())	// New Caber has standard Demoman explosion damage variance.
-							{
-								if (tf2v_use_new_demo_explosion_variance.GetInt() == 2) // Only a 20% bonus for new explosion damage.
-									flRandomDamage *= 0.2;
-							}
-							break;												
-						default:
-							break;
+						}
+						break;
+					default:
+						break;
 					}
-				}
-				else if ( ( bitsDamage & DMG_MINICRITICAL ) && ( pWeapon && pWeapon->GetWeaponID() != TF_WEAPON_CROSSBOW ) )
-				{
-					// If we're below .5 (100% damage) and have minicrits, bump our distance closer.
-					flRandomVal = 0.5;
+
+					// Special cases in case we're farther away than the optimal distance.
+					if (flRandomVal < 0.5)
+					{
+						if ((bitsDamage & DMG_MINICRITICAL) && (pWeapon->GetWeaponID() != TF_WEAPON_CROSSBOW))
+						{
+							// If we're farther/below .5 (100% damage) and have minicrits, make up for the distance.
+							flRandomVal = 0.5;
+						}
+						// Ambassador using the new headshot mechanics? Set the damage now if it we had falloff.
+						if ((pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER) && ( (info.GetDamageCustom() == TF_DMG_CUSTOM_HEADSHOT) && tf2v_use_new_ambassador.GetInt() == 2) )
+						{
+							flRandomVal = 0.5;
+						}
+					}
+
 				}
 
-				float flOut = SimpleSplineRemapValClamped( flRandomVal, 0, 1, -flRandomDamage, flRandomDamage );
+				float flOut;
+				if (!bUseLinearSlope)
+					flOut = SimpleSplineRemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Spline (default)
+				else
+					flOut = RemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Linear (toggle)
+
 				
 				flDamage = info.GetDamage() + flOut;
 
@@ -5913,14 +5933,6 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					Msg("Val: %.2f, Out: %.2f, Dmg: %.2f\n", flVal, flOut, info.GetDamage() + flOut );
 				}
 				*/
-			}
-			
-			// Ambassador using the new headshot mechanics? Set the damage now if it we had falloff.
-			if ( ( pWeapon && ( pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER ) ) && ( info.GetDamageCustom() == TF_DMG_CUSTOM_HEADSHOT ) && tf2v_use_new_ambassador.GetInt() == 2 )
-			{
-				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
-				if (flDistance > 512)
-					info.SetDamage( flDamage );
 			}
 
 		}
