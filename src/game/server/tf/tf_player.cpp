@@ -1772,18 +1772,21 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 {
 	if ( pItem1 && pItem2 )
 	{
-		// Allows us to check the item definition, which also works with wearables.
-		int nItemIndex1 = pItem1->GetItemDefIndex();
-		int nItemIndex2 = pItem2->GetItemDefIndex();
-		if (nItemIndex1 == nItemIndex2)
-			return true;
-
-		// Failsafe for Weapons:
+		// For Weapons:
 		// Item might have different entities for each class (i.e. shotgun).
 		int iClass = m_PlayerClass.GetClassIndex();
 		const char* pszClass1 = TranslateWeaponEntForClass(pItem1->GetEntityName(), iClass);
 		const char* pszClass2 = TranslateWeaponEntForClass(pItem2->GetEntityName(), iClass);
-		if (V_strcmp(pszClass1, pszClass2) == 0)
+		if (pszClass1 != NULL || pszClass2 != NULL) // This is a named weapon entity, check it.
+		{
+			if (V_strcmp(pszClass1, pszClass2) != 0)
+				return false;
+		}
+		
+		// Allows us to check the item definition, which also works with wearables.
+		int nItemIndex1 = pItem1->GetItemDefIndex();
+		int nItemIndex2 = pItem2->GetItemDefIndex();
+		if (nItemIndex1 == nItemIndex2)
 			return true;
 	}
 
@@ -2331,6 +2334,40 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 				}
 			}
 			
+			// Run this right before giving ourselves the item as a check if this is a fresh item.
+			CTFWeaponBase* pCurWeapon = static_cast<CTFWeaponBase*>( Weapon_GetSlot(iSlot) );
+			CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
+			CEconItemView* pCurrentLoadoutItem = NULL;
+			if (pCurWeapon)
+			{
+				pCurrentLoadoutItem = pCurWeapon->GetItem();
+			}
+			else if (pCurWearable)
+			{
+				pCurrentLoadoutItem = pCurWearable->GetItem();
+			}
+			if (pCurrentLoadoutItem)
+			{
+				if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+				{
+					// This is a new item, nuke the old one just in case we haven't done this already.
+					if (pCurWeapon)
+					{
+						// Holster our active weapon
+						if (pCurWeapon == GetActiveWeapon())
+							pCurWeapon->Holster();
+
+						Weapon_Detach(pCurWeapon);
+						UTIL_Remove(pCurWeapon);
+					}
+					else if (pCurWearable)
+					{
+						RemoveWearable(pCurWearable);
+						UTIL_Remove(pCurWearable);
+					}
+				}
+			}
+			
 			CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
 			if ( pEntity )
 			{
@@ -2657,8 +2694,22 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 				continue;
 			}
 			
+			// Run this right before giving ourselves the item as a check if this is a fresh item.
+			CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
+			CEconItemView* pCurrentLoadoutItem = NULL;
+			if (pCurWearable)
+				pCurrentLoadoutItem = pCurWearable->GetItem();
+			if (pCurrentLoadoutItem)
+			{
+				if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+				{
+					// This is a new item, nuke the old one just in case we haven't done this already.
+					RemoveWearable(pCurWearable);
+					UTIL_Remove(pCurWearable);
+				}
+			}
+			
 			CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
-
 			if ( pEntity )
 			{
 				pEntity->GiveTo( this );
