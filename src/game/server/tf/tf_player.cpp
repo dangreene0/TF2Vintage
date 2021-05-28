@@ -2016,6 +2016,92 @@ void CTFPlayer::ManageBuilderWeapons( TFPlayerClassData_t *pData )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Do real-time validation on the current slot. True means new item.
+//-----------------------------------------------------------------------------
+bool CTFPlayer::ValidateCurrentSlot(CEconItemView* pItem, int iSlot)
+{
+	CTFWeaponBase* pCurWeapon = static_cast<CTFWeaponBase*>( Weapon_GetSlot(iSlot) );
+	CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
+	CEconItemView* pCurrentLoadoutItem = NULL;
+	if (pCurWeapon)
+	{
+		pCurrentLoadoutItem = pCurWeapon->GetItem();
+	}
+	else if (pCurWearable)
+	{
+		pCurrentLoadoutItem = pCurWearable->GetItem();
+	}
+	if (pCurrentLoadoutItem)
+	{
+		if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+		{
+			// This is a new item, nuke the old one just in case we haven't done this already.
+			if (pCurWeapon)
+			{
+				ModifyWeaponMeters(pCurWeapon);
+										
+				// Holster our active weapon
+				if (pCurWeapon == GetActiveWeapon())
+				pCurWeapon->Holster();
+
+				Weapon_Detach(pCurWeapon);
+				UTIL_Remove(pCurWeapon);
+			}
+			else if (pCurWearable)
+			{
+				RemoveWearable(pCurWearable);
+				UTIL_Remove(pCurWearable);
+			}
+			return true;
+		}
+		else
+		{
+			// No need to give us the same item, so reset it.
+			if (pCurWeapon)
+			{
+				pCurWeapon->ChangeTeam( GetTeamNumber() );
+				pCurWeapon->GiveDefaultAmmo();
+				if ( m_bRegenerating == false )
+				{
+					pCurWeapon->WeaponReset();
+				}
+			}
+			return false;
+		}
+	}
+	return true; // Default failsafe.
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Modified the Weapon Meters on new items.
+//-----------------------------------------------------------------------------
+void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
+{
+	CTFWeaponInvis* pWatch = NULL;
+
+	switch (pWeapon->GetWeaponID())
+	{
+	case TF_WEAPON_BUFF_ITEM:
+		// Reset rage
+		m_Shared.ResetRageSystem();
+		break;
+	case TF_WEAPON_PEP_BRAWLER_BLASTER:
+	case TF_WEAPON_SODA_POPPER:
+		// Reset hype/boost
+		m_Shared.SetHypeMeterAbsolute(0);
+		break;
+	case TF_WEAPON_INVIS:
+		// Reset our cloak.
+		pWatch = dynamic_cast<CTFWeaponInvis*>(pWeapon);
+		if (pWatch)
+			pWatch->CleanUpInvisibility();
+		break;
+	default:
+		break;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFPlayer::ValidateWeapons( bool bRegenerate )
@@ -2042,18 +2128,8 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
 			{
 
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_BUFF_ITEM )
-				{
-					// Reset rage
-					m_Shared.ResetRageSystem();
-				}
+				ModifyWeaponMeters(pWeapon);
 				
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_PEP_BRAWLER_BLASTER || pWeapon->GetWeaponID() == TF_WEAPON_SODA_POPPER )
-				{
-					// Reset hype/boost
-					m_Shared.SetHypeMeterAbsolute( 0 );
-				}
-
 				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
 				// Either changed class or changed loadout.
 				if ( pWeapon == GetActiveWeapon() )
@@ -2102,6 +2178,9 @@ void CTFPlayer::ValidateWeaponSlots(void)
 
 			if (!ItemsMatch(pWeapon->GetItem(), pLoadoutItem, pWeapon))
 			{
+				
+				ModifyWeaponMeters(pWeapon);
+				
 				// Holster our active weapon
 				if (pWeapon == GetActiveWeapon())
 					pWeapon->Holster();
@@ -2211,7 +2290,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	CBaseCombatWeapon *pActiveWeapon = m_hActiveWeapon.Get();
 
 	// Validate our inventory.
-	ValidateWeapons( true );
+	// ValidateWeapons( true );
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2334,49 +2413,20 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 			}
 			
 			// Run this right before giving ourselves the item as a check if this is a fresh item.
-			CTFWeaponBase* pCurWeapon = static_cast<CTFWeaponBase*>( Weapon_GetSlot(iSlot) );
-			CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
-			CEconItemView* pCurrentLoadoutItem = NULL;
-			if (pCurWeapon)
+			bool bFreshEquip = ValidateCurrentSlot(pItem, iSlot);
+			if (bFreshEquip)
 			{
-				pCurrentLoadoutItem = pCurWeapon->GetItem();
-			}
-			else if (pCurWearable)
-			{
-				pCurrentLoadoutItem = pCurWearable->GetItem();
-			}
-			if (pCurrentLoadoutItem)
-			{
-				if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+				CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
+				if ( pEntity )
 				{
-					// This is a new item, nuke the old one just in case we haven't done this already.
-					if (pCurWeapon)
-					{
-						// Holster our active weapon
-						if (pCurWeapon == GetActiveWeapon())
-							pCurWeapon->Holster();
-
-						Weapon_Detach(pCurWeapon);
-						UTIL_Remove(pCurWeapon);
-					}
-					else if (pCurWearable)
-					{
-						RemoveWearable(pCurWearable);
-						UTIL_Remove(pCurWearable);
-					}
+					pEntity->GiveTo( this );
 				}
-			}
-			
-			CEconEntity* pEntity = dynamic_cast<CEconEntity*>(GiveNamedItem(pszClassname, 0, pItem));
-			if ( pEntity )
-			{
-				pEntity->GiveTo( this );
 			}
 		}
 	}
 
 	// We may have added weapons that make others invalid. Recheck.
-	ValidateWeapons( false );
+	//ValidateWeapons( false );
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
@@ -2546,7 +2596,7 @@ void CTFPlayer::ManageGrenades( TFPlayerClassData_t *pData )
 void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 {
 	// Make sure we're allowed to have something here.
-	ValidateWearables();
+	// ValidateWearables();
 
 	// Give ourselves zombie skins when it's Halloween.
 	ManagePlayerEventCosmetic( pData );
@@ -2690,24 +2740,14 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 			}
 			
 			// Run this right before giving ourselves the item as a check if this is a fresh item.
-			CTFWearable *pCurWearable = static_cast<CTFWearable *>( GetWearableForLoadoutSlot(iSlot) );
-			CEconItemView* pCurrentLoadoutItem = NULL;
-			if (pCurWearable)
-				pCurrentLoadoutItem = pCurWearable->GetItem();
-			if (pCurrentLoadoutItem)
+			bool bFreshEquip = ValidateCurrentSlot(pItem, iSlot);
+			if (bFreshEquip)
 			{
-				if ( !ItemsMatch( pCurrentLoadoutItem, pItem ) )
+				CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
+				if ( pEntity )
 				{
-					// This is a new item, nuke the old one just in case we haven't done this already.
-					RemoveWearable(pCurWearable);
-					UTIL_Remove(pCurWearable);
+					pEntity->GiveTo( this );
 				}
-			}
-			
-			CEconEntity *pEntity = dynamic_cast<CEconEntity *>( GiveNamedItem( pszClassname, 0, pItem ) );
-			if ( pEntity )
-			{
-				pEntity->GiveTo( this );
 			}
 
 		}
@@ -2715,7 +2755,7 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 	}
 
 	// Refresh to make sure we don't have something we're not supposed to.
-	ValidateWearables();
+	//ValidateWearables();
 
 }
 
