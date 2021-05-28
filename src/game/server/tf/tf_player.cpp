@@ -1632,13 +1632,6 @@ void CTFPlayer::InitClass( void )
 	m_PlayerAnimState->SetRunSpeed( GetPlayerClass()->GetMaxSpeed() );
 	m_PlayerAnimState->SetWalkSpeed( GetPlayerClass()->GetMaxSpeed() * 0.5 );
 
-	if ( m_bRegenerating )
-	{
-		CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>( Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
-		if ( pInvis && pInvis->HasFeignDeath() )
-			pInvis->CleanUpInvisibility();
-	}
-
 	// Give default items for class.
 	GiveDefaultItems();
 
@@ -1813,11 +1806,6 @@ void CTFPlayer::GiveDefaultItems()
 	}
 
 	RemoveAllAmmo();
-	
-	// If we got the Dead Ringer for some reason, disable it.
-	CTFWeaponInvis *pInvis = dynamic_cast<CTFWeaponInvis *>( Weapon_OwnsThisID( TF_WEAPON_INVIS ) );
-	if ( pInvis && pInvis->HasFeignDeath() )
-		pInvis->CleanUpInvisibility();
 
 	// Give ammo. Must be done before weapons, so weapons know the player has ammo for them.
 	for ( int iAmmo = 0; iAmmo < TF_AMMO_COUNT; ++iAmmo )
