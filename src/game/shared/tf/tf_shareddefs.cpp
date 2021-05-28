@@ -515,6 +515,49 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 	"tf_weapon_revolver",			// Spy
 	"tf_weapon_revolver_secondary",	// Engineer
 	},
+	
+	
+	{
+	"tf_wearable_demoshield",		// Base weapon to translate
+	NULL,							// Unassigned
+	NULL,							// Scout
+	"tf_wearable_razorback",		// Sniper
+	NULL,							// Soldier
+	"tf_wearable_demoshield",		// Demoman
+	NULL,							// Medic
+	NULL,							// Heavy
+	NULL,							// Pyro
+	NULL,							// Spy
+	NULL,							// Engineer
+	},
+	
+	{
+	"tf_wearable_razorback",		// Base weapon to translate
+	NULL,							// Unassigned
+	NULL,							// Scout
+	"tf_wearable_razorback",		// Sniper
+	NULL,							// Soldier
+	"tf_wearable_demoshield",		// Demoman
+	NULL,							// Medic
+	NULL,							// Heavy
+	NULL,							// Pyro
+	NULL,							// Spy
+	NULL,							// Engineer
+	},
+	
+	{
+	"tf_wearable",					// Base weapon to translate
+	NULL,							// Unassigned
+	"tf_wearable_scout",			// Scout
+	"tf_wearable_sniper",			// Sniper
+	"tf_wearable_soldier",			// Soldier
+	"tf_wearable_demoman",			// Demoman
+	"tf_wearable_medic",			// Medic
+	"tf_wearable_heavy",			// Heavy
+	"tf_wearable_pyro",				// Pyro
+	"tf_wearable_spy",				// Spy
+	"tf_wearable_engineer",			// Engineer
+	},
 };
 
 //-----------------------------------------------------------------------------
