@@ -2052,7 +2052,7 @@
 			"item_name"	"#TF_Weapon_PDA_Engineer_Destroyer"
 			"item_type_name"	"#TF_Weapon_PDA_Engineer"
 			"item_slot"	"pda2"
-			"anim_slot"	"pda
+			"anim_slot"	"pda"
 			"image_inventory"	"backpack/weapons/w_models/w_pda_engineer"
 			"model_player"	"models/weapons/c_models/c_pda_engineer/c_pda_engineer.mdl"
 			"used_by_classes"
