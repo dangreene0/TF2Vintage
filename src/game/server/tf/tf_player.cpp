@@ -5809,11 +5809,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			}
 			else
 			{
-				bool bUseLinearSlope = tf2v_use_linear_damage.GetBool();
 				float flCenter = 0.5; // Halfway, or optimal damage for 100%.
 				float flCenVar = ( tf2v_bonus_distance_range.GetFloat() / 100 ) ; // Default is +/- 10% damage	
-				float flMin = flCenter - flCenVar; // Default is .4 (.5 - .1)
-				float flMax = flCenter + flCenVar; // Default is .6 (.5 + .1)
 
 				float flDistance = Max( 1.0f, ( WorldSpaceCenter() - pAttacker->WorldSpaceCenter() ).Length() );
 				float flOptimalDistance = 512.0;
@@ -5826,7 +5823,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				}
 
 				// Now we modify flCenter to get the new range we're at.
-				flCenter = RemapValClamped((flDistance / flOptimalDistance), 0.0, 2.0, 1.0, 0.0); // Spline (default)
+				flCenter = RemapValClamped(flDistance, 0.0, (2.0 * flOptimalDistance), 1.0, 0.0); // Spline (default)
 				if ( bitsDamage & DMG_NOCLOSEDISTANCEMOD )
 				{
 					if ( flCenter > 0.5 )
@@ -5839,27 +5836,31 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_CROSSBOW )
 				{
 					// If we're a crossbow, change our falloff band so that our 100% is at long range.
-					flCenter = RemapVal( flDistance / flOptimalDistance, 0.0, 2.0, 0.0, 0.5 );
-				}
-				
-				
-				flMin = ( 0.0 > (flCenter + flCenVar) ? 0.0 : (flCenter + flCenVar) ); // Our version of MAX.
-				flMax = ( 1.0 < (flCenter + flCenVar) ? 1.0 : (flCenter - flCenVar) ); // Our version of MIN.
-
-				if ( bDebug )
-				{
-					Warning( "    RANDOM: Dist %.2f, Ctr: %.2f, Min: %.2f, Max: %.2f\n", flDistance, flCenter, flMin, flMax );
+					flCenter = RemapVal( flDistance, 0.0, (2.0 * flOptimalDistance), 0.0, 0.5 );
 				}
 
-				//Msg("Range: %.2f - %.2f\n", flMin, flMax );
 				float flRandomVal;
-
-				if ( tf_damage_disablespread.GetBool() )
+				if ( tf_damage_disablespread.GetBool() || (!flCenVar) )
 				{
+					if ( bDebug )
+					{
+						Warning( "    STATIC: Dist %.2f, Ctr: %.2f\n", flDistance, flCenter);
+					}
+
 					flRandomVal = flCenter;
 				}
 				else
 				{
+					// Use our flCenter distance, and add variance with flCenVar.
+					float flMin = Max( 0.0f, (flCenter - flCenVar));
+					float flMax = Min( 1.0f, (flCenter + flCenVar));
+
+					if ( bDebug )
+					{
+						//Msg("Range: %.2f - %.2f\n", flMin, flMax );
+						Warning( "    RANDOM: Dist %.2f, Ctr: %.2f, Min: %.2f, Max: %.2f\n", flDistance, flCenter, flMin, flMax );
+					}
+				
 					flRandomVal = RandomFloat( flMin, flMax );
 				}
 
@@ -5908,7 +5909,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 							// If we're farther/below .5 (100% damage) and have minicrits, make up for the distance.
 							flRandomVal = 0.5;
 						}
-						// Ambassador using the new headshot mechanics? Set the damage now if it we had falloff.
+						// Ambassador using the new headshot mechanics? Remove the falloff.
 						if ((pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER) && ( (info.GetDamageCustom() == TF_DMG_CUSTOM_HEADSHOT) && tf2v_use_new_ambassador.GetInt() == 2) )
 						{
 							flRandomVal = 0.5;
@@ -5918,7 +5919,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				}
 
 				float flOut;
-				if (!bUseLinearSlope)
+				if (!tf2v_use_linear_damage.GetBool())
 					flOut = SimpleSplineRemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Spline (default)
 				else
 					flOut = RemapValClamped(flRandomVal, 0, 1, -flRandomDamage, flRandomDamage); // Linear (toggle)
