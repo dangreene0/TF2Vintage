@@ -979,6 +979,7 @@
 			"item_type_name"	"#TF_Weapon_Scattergun"
 			"item_name"	"#TF_Weapon_Scattergun"
 			"item_slot"	"primary"
+			"anim_slot"	"primary"
 			"image_inventory"	"backpack/weapons/c_models/c_scattergun"
 			"model_player"	"models/weapons/c_models/c_scattergun.mdl"
 			"used_by_classes"
