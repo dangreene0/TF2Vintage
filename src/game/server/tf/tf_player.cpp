@@ -8781,6 +8781,10 @@ void CTFPlayer::ForceRespawn( void )
 
 	// remove invisibility very quickly	
 	m_Shared.FadeInvis( 0.1 );
+	
+	// Clean up any feigning.
+	m_Shared.SetFeigningDeath( false );
+	m_Shared.SetFeignReady( false );
 
 	// Stop any firing that was taking place before respawn.
 	m_nButtons = 0;
