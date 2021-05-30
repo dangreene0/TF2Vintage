@@ -2212,6 +2212,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 
 	// Validate our inventory.
 	ValidateWeapons( true );
+	ValidateWeaponSlots();
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2377,6 +2378,9 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 
 	// We may have added weapons that make others invalid. Recheck.
 	ValidateWeapons( false );
+	// Check if we still have any items (such as wearables) we shouldn't have.
+	ValidateWeaponSlots();
+	
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )
 	{
@@ -2547,6 +2551,7 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 {
 	// Make sure we're allowed to have something here.
 	ValidateWearables();
+	ValidateWearableSlots();
 
 	// Give ourselves zombie skins when it's Halloween.
 	ManagePlayerEventCosmetic( pData );
@@ -2716,6 +2721,7 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 
 	// Refresh to make sure we don't have something we're not supposed to.
 	ValidateWearables();
+	ValidateWearableSlots();
 
 }
 
