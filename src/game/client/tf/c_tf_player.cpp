@@ -3213,7 +3213,11 @@ void C_TFPlayer::UpdateSpyMask(void)
 
 				if ( !pMask->InitializeAsClientEntity( "models/player/items/spy/spyMask.mdl", RENDER_GROUP_OPAQUE_ENTITY ) )
 				{
+					pMask->AddEffects(EF_NODRAW);
+					pMask->SetMoveType(MOVETYPE_NONE);
 					pMask->Release();
+					m_hSpyMask = NULL;
+					delete pMask;
 					return;
 				}
 
@@ -3226,8 +3230,11 @@ void C_TFPlayer::UpdateSpyMask(void)
 		}
 		else if ( pMask )
 		{
+			pMask->AddEffects(EF_NODRAW);
+			pMask->SetMoveType(MOVETYPE_NONE);
 			pMask->Release();
 			m_hSpyMask = NULL;
+			delete pMask;
 		}
 	}
 	else
@@ -3238,6 +3245,7 @@ void C_TFPlayer::UpdateSpyMask(void)
 			pMask->SetMoveType(MOVETYPE_NONE);
 			pMask->Release();
 			m_hSpyMask = NULL;
+			delete pMask;
 		}	
 	}
 }
