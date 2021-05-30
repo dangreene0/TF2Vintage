@@ -490,6 +490,9 @@ public:
 	bool	m_bIsPlayerAVIP;
 	int		m_iPlayerVIPRanking;
 	
+	int		m_nPrevValidation;
+	int		GetLastValidatedClass() {return m_nPrevValidation;}
+	void	SetLastValidatedClass(int iClass) {m_nPrevValidation = iClass;}
 
 	int					StateGet( void ) const;
 
@@ -730,7 +733,7 @@ public:
 protected:
 	CTFPlayerClass		m_PlayerClass;
 	int					m_WeaponPreset[TF_CLASS_COUNT_ALL][TF_LOADOUT_SLOT_COUNT];
-
+	
 private:
 	CTFPlayerAnimState *m_PlayerAnimState;
 	int					m_iLastWeaponFireUsercmd;				// Firing a weapon.  Last usercmd we shot a bullet on.

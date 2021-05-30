@@ -1362,6 +1362,7 @@ void CTFPlayer::Spawn()
 	// So if we're in the welcome state, call its enter function to reset 
 	if ( m_Shared.InState( TF_STATE_WELCOME ) )
 	{
+		SetLastValidatedClass(m_PlayerClass.GetClassIndex());
 		StateEnterWELCOME();
 	}
 
@@ -1772,19 +1773,26 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 {
 	if ( pItem1 && pItem2 )
 	{
+		// Basic check:
+		// See what the last class we validated with was, and reject if it's different than the one we're using.
+		int iClass = m_PlayerClass.GetClassIndex();
+		if (iClass != GetLastValidatedClass())
+			return false;
+
 		// Allows us to check the item definition, which also works with wearables.
 		int nItemIndex1 = pItem1->GetItemDefIndex();
 		int nItemIndex2 = pItem2->GetItemDefIndex();
-		if (nItemIndex1 == nItemIndex2)
-			return true;
-
-		// Failsafe for Weapons:
-		// Item might have different entities for each class (i.e. shotgun).
-		int iClass = m_PlayerClass.GetClassIndex();
+		if ( (!nItemIndex1 && nItemIndex2) || (nItemIndex1 && !nItemIndex2) || ( (nItemIndex1 && nItemIndex2) && (nItemIndex1 != nItemIndex2) ) )
+			return false;
+		
+		// Failsafe:
+		// Item might have different names for each class (i.e. shotgun).
 		const char* pszClass1 = TranslateWeaponEntForClass(pItem1->GetEntityName(), iClass);
 		const char* pszClass2 = TranslateWeaponEntForClass(pItem2->GetEntityName(), iClass);
-		if (V_strcmp(pszClass1, pszClass2) == 0)
-			return true;
+		if ( (!pszClass1 && pszClass2) || (pszClass1 && !pszClass2) || ( (pszClass1 && pszClass2) && Q_stricmp( pszClass1, pszClass2 ) ) )
+			return false;
+		
+		return true;
 	}
 
 	return false;
@@ -1825,12 +1833,12 @@ void CTFPlayer::GiveDefaultItems()
 	// Give grenades.
 	if( tf_enable_grenades.GetBool() )
 		ManageGrenades( pData );
-	
-	// Update bodygroups and everything dealing with inventory processing.
-	PostInventoryApplication();
 
 	// Give a builder weapon for each object the playerclass is allowed to build
 	ManageBuilderWeapons( pData );
+	
+	// Update bodygroups and everything dealing with inventory processing.
+	PostInventoryApplication();
 
 	// Equip weapons set by tf_player_equip
 	CBaseEntity *pWeaponEntity = NULL;
@@ -2061,6 +2069,7 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 			}
 		}
 	}
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -2090,6 +2099,7 @@ void CTFPlayer::ValidateWearables( void )
 			}
 		}
 	}
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -2131,6 +2141,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	// Validate our inventory.
 	ValidateWeapons( true );
 	ValidateWearables();
+	SetLastValidatedClass(m_PlayerClass.GetClassIndex());
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
