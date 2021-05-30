@@ -627,7 +627,6 @@ CTFPlayer::CTFPlayer()
 	m_lastCalledMedic.Invalidate();
 }
 
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -883,6 +882,7 @@ CTFPlayer::~CTFPlayer()
 {
 	DestroyRagdoll();
 	m_PlayerAnimState->Release();
+	m_pAttributes = NULL;
 }
 
 

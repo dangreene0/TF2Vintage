@@ -2477,6 +2477,7 @@ C_TFPlayer::~C_TFPlayer()
 {
 	ShowNemesisIcon( false );
 	m_PlayerAnimState->Release();
+	m_pAttributes = NULL;
 }
 
 void C_TFPlayer::FireGameEvent( IGameEvent *event )
