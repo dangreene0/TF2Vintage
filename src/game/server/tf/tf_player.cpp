@@ -1780,9 +1780,9 @@ bool CTFPlayer::ItemsMatch( CEconItemView *pItem1, CEconItemView *pItem2, CTFWea
 			return false;
 
 		// Allows us to check the item definition, which also works with wearables.
-		int nItemIndex1 = pItem1->GetItemDefIndex();
-		int nItemIndex2 = pItem2->GetItemDefIndex();
-		if ( (!nItemIndex1 && nItemIndex2) || (nItemIndex1 && !nItemIndex2) || ( (nItemIndex1 && nItemIndex2) && (nItemIndex1 != nItemIndex2) ) )
+		int nItemIndex1 = -1; nItemIndex1 = pItem1->GetItemDefIndex();
+		int nItemIndex2 = -1; nItemIndex2 = pItem2->GetItemDefIndex();
+		if ( (nItemIndex1 == -1 && nItemIndex2) || (nItemIndex1 && nItemIndex2 == -1 ) || ( (nItemIndex1 != -1 && nItemIndex2 != -1) && (nItemIndex1 != nItemIndex2) ) )
 			return false;
 		
 		// Failsafe:
