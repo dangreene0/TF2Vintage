@@ -2039,17 +2039,7 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
 			{
 
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_BUFF_ITEM )
-				{
-					// Reset rage
-					m_Shared.ResetRageSystem();
-				}
-				
-				if ( pWeapon->GetWeaponID() == TF_WEAPON_PEP_BRAWLER_BLASTER || pWeapon->GetWeaponID() == TF_WEAPON_SODA_POPPER )
-				{
-					// Reset hype/boost
-					m_Shared.SetHypeMeterAbsolute( 0 );
-				}
+				ModifyWeaponMeters(pWeapon);
 
 				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
 				// Either changed class or changed loadout.
@@ -2099,6 +2089,9 @@ void CTFPlayer::ValidateWeaponSlots(void)
 
 			if (!ItemsMatch(pWeapon->GetItem(), pLoadoutItem, pWeapon))
 			{
+				
+				ModifyWeaponMeters(pWeapon);
+				
 				// Holster our active weapon
 				if (pWeapon == GetActiveWeapon())
 					pWeapon->Holster();
@@ -2201,6 +2194,35 @@ void CTFPlayer::ValidateWearableSlots( void )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Modifies the Weapon Meters on new items.
+//-----------------------------------------------------------------------------
+void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
+{
+	CTFWeaponInvis* pWatch = NULL;
+
+	switch (pWeapon->GetWeaponID())
+	{
+	case TF_WEAPON_BUFF_ITEM:
+		// Reset rage
+		m_Shared.ResetRageSystem();
+		break;
+	case TF_WEAPON_PEP_BRAWLER_BLASTER:
+	case TF_WEAPON_SODA_POPPER:
+		// Reset hype/boost
+		m_Shared.SetHypeMeterAbsolute(0);
+		break;
+	case TF_WEAPON_INVIS:
+		// Reset our cloak.
+		pWatch = dynamic_cast<CTFWeaponInvis*>(pWeapon);
+		if (pWatch)
+			pWatch->CleanUpInvisibility();
+		break;
+	default:
+		break;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
@@ -2209,7 +2231,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 
 	// Validate our inventory.
 	ValidateWeapons( true );
-	ValidateWeaponSlots();
+	ValidateWearables();
 
 	for (int iSlot = 0; iSlot < TF_PLAYER_WEAPON_COUNT; ++iSlot)
 	{
@@ -2342,7 +2364,7 @@ void CTFPlayer::ManageRegularWeapons( TFPlayerClassData_t *pData )
 	// We may have added weapons that make others invalid. Recheck.
 	ValidateWeapons( false );
 	// Check if we still have any items (such as wearables) we shouldn't have.
-	ValidateWeaponSlots();
+	ValidateWearables();
 	
 
 	if ( m_hActiveWeapon.Get() && pActiveWeapon != m_hActiveWeapon )

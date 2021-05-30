@@ -506,6 +506,7 @@ public:
 	void				ValidateWearables( void );
 	void				ValidateWeaponSlots( void );
 	void				ValidateWearableSlots( void );
+	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
 	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
 	void				ManageRandomWeapons( TFPlayerClassData_t *pData );
