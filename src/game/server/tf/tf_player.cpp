@@ -737,19 +737,24 @@ void CTFPlayer::RegenThink( void )
 	int iHealthRegenLegacy = 0;
 	CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
 	
-	// If we heal, use an algorithm similar to medic's to determine healing.
-	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
+	// If we heal, use an algorithm similar to medic's to determine healing, if new health regen is on and we're not playing PVE.
+	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() && !TFGameRules()->IsPVEModeActive() )
 	{
-		if ( TFGameRules()->IsPVEModeActive() ) // Regen is static in MVM.
-		{
 			// Scale health regen to the last time we took damage.
 			float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
 			// We use the same time table as medic, but our range is 1HP to add_health_regen instead.
 			float flScaleGeneric = RemapValClamped( flTimeSinceDamageGeneric, 5, 10, 1.0, iHealthRegen );
 
 			m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScaleGeneric;
-		}
 	}
+	else
+	{
+		// Add/subtract this as a flat number.
+		m_flAccumulatedHealthRegen += iHealthRegen;
+	}
+	
+	// Non-negotiable flat number.
+	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
 	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
 	{
@@ -763,8 +768,6 @@ void CTFPlayer::RegenThink( void )
 
 		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
 	}
-
-	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
 	int nHealthChange = 0; 
 	if ( m_flAccumulatedHealthRegen >= 1.0f )
@@ -786,7 +789,7 @@ void CTFPlayer::RegenThink( void )
 			}
 		}
 	}
-	else if ( m_flAccumulatedHealthRegen < -1.0f )
+	else if ( m_flAccumulatedHealthRegen <= -1.0f )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
 		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
