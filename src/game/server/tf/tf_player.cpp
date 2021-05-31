@@ -723,8 +723,7 @@ void CTFPlayer::RegenThink( void )
 	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 
 	// We should really only be hitting this path once
-	Assert( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime );
-	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime )
+	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) > gpGlobals->curtime )
 		return;
 
 	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
