@@ -93,6 +93,16 @@ void CTFShotgun::UpdatePunchAngles( CTFPlayer *pPlayer )
 // Weapon Scatter Gun functions.
 //
 
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+CTFScatterGun::CTFScatterGun()
+{
+	m_bReloadsSingly = true;
+	m_bAutoReload = false;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -193,9 +203,7 @@ void CTFScatterGun::Equip( CBaseCombatCharacter *pEquipTo )
 		}
 	}
 
-	int nScatterGunNoReloadSingle = 0;
-	CALL_ATTRIB_HOOK_INT( nScatterGunNoReloadSingle, set_scattergun_no_reload_single );
-	if ( nScatterGunNoReloadSingle == 1 )
+	if ( IsDoubleBarrel() )
 	{
 		m_bReloadsSingly = false;
 		m_bAutoReload = false;
@@ -213,16 +221,14 @@ void CTFScatterGun::FinishReload()
 	if ( !pOwner )
 		return;
 
-	if ( !UsesClipsForAmmo1() )
-		return;
-
-	if ( ReloadsSingly() )
+	if ( !UsesClipsForAmmo1() || ReloadsSingly() )
 		return;
 
 	m_iClip1 += Min( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount( m_iPrimaryAmmoType ) );
 
 	if ( !BaseClass::IsEnergyWeapon() )
 		pOwner->RemoveAmmo( GetMaxClip1(), m_iPrimaryAmmoType );
+
 }
 
 //-----------------------------------------------------------------------------
@@ -230,7 +236,7 @@ void CTFScatterGun::FinishReload()
 //-----------------------------------------------------------------------------
 bool CTFScatterGun::SendWeaponAnim( int iActivity )
 {
-	if ( GetTFPlayerOwner() && HasKnockback() )
+	if ( GetTFPlayerOwner() && IsDoubleBarrel() )
 	{
 		switch ( iActivity )
 		{
@@ -285,6 +291,15 @@ bool CTFScatterGun::HasKnockback() const
 	return nScatterGunHasKnockback == 1;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFScatterGun::IsDoubleBarrel() const
+{
+	int nScatterGunNoReloadSingle = 0;
+	CALL_ATTRIB_HOOK_INT(nScatterGunNoReloadSingle, set_scattergun_no_reload_single );
+	return nScatterGunNoReloadSingle == 1;
+}
 
 
 //=============================================================================
