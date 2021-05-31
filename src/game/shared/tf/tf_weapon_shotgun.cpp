@@ -100,7 +100,6 @@ void CTFShotgun::UpdatePunchAngles( CTFPlayer *pPlayer )
 CTFScatterGun::CTFScatterGun()
 {
 	m_bReloadsSingly = true;
-	m_bAutoReload = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -217,15 +216,21 @@ void CTFScatterGun::Equip( CBaseCombatCharacter *pEquipTo )
 //-----------------------------------------------------------------------------
 void CTFScatterGun::FinishReload()
 {
+	// Finish with the regular code if we're not the Double Barrel.
+	if ( !UsesClipsForAmmo1() || !IsDoubleBarrel() )
+	{
+		BaseClass::FinishReload();
+		return;
+	}
+	
 	CTFPlayer *pOwner = ToTFPlayer( GetOwner() );
 	if ( !pOwner )
 		return;
 
-	if ( !UsesClipsForAmmo1() || ReloadsSingly() )
-		return;
-
+	// Double Barrels replenish all their clip at once.
 	m_iClip1 += Min( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount( m_iPrimaryAmmoType ) );
 
+	// Downside to the double barrel is that they will discard any bullets, even unfired ones.
 	if ( !BaseClass::IsEnergyWeapon() )
 		pOwner->RemoveAmmo( GetMaxClip1(), m_iPrimaryAmmoType );
 
