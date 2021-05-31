@@ -569,7 +569,6 @@ CTFPlayer::CTFPlayer()
 	m_lifeState = LIFE_DEAD; // Start "dead".
 	m_iMaxSentryKills = 0;
 	m_flNextNameChangeTime = 0;
-	m_flAccumulatedHealthRegen = 0;
 	m_flLastHealthRegen = 0;
 	m_flNextTimeCheck = gpGlobals->curtime;
 	m_flSpawnTime = 0;
@@ -728,6 +727,19 @@ void CTFPlayer::RegenThink( void )
 	if ( ( m_flLastHealthRegen + TF_REGEN_TIME ) < gpGlobals->curtime )
 		return;
 
+	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
+	{
+		// Heal faster if we haven't been in combat for a while
+		float flTimeSinceDamage = gpGlobals->curtime - GetLastDamageTime();
+		float flScale;
+		if (tf2v_use_new_medic_regen.GetBool())
+			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
+		else
+			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
+
+		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
+	}
+	
 	// Health drain/regen attribute.
 	// If negative, drains health per second. If positive, heals based on the last time damage was taken.
 	int iHealthRegen = 0;
@@ -737,8 +749,8 @@ void CTFPlayer::RegenThink( void )
 	int iHealthRegenLegacy = 0;
 	CALL_ATTRIB_HOOK_INT( iHealthRegenLegacy, add_health_regen_passive );
 	
-	// If we heal, use an algorithm similar to medic's to determine healing, if new health regen is on and we're not playing PVE.
-	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() && !TFGameRules()->IsPVEModeActive() )
+	// If we heal, use an algorithm similar to medic's to determine healing, if new health regen is on.
+	if ( ( iHealthRegen > 0 ) && tf2v_use_new_health_regen_attrib.GetBool() )
 	{
 			// Scale health regen to the last time we took damage.
 			float flTimeSinceDamageGeneric = gpGlobals->curtime - GetLastDamageTime();
@@ -756,25 +768,13 @@ void CTFPlayer::RegenThink( void )
 	// Non-negotiable flat number.
 	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
-	if ( IsPlayerClass( TF_CLASS_MEDIC ) )
-	{
-		// Heal faster if we haven't been in combat for a while
-		float flTimeSinceDamage = gpGlobals->curtime - GetLastDamageTime();
-		float flScale;
-		if (tf2v_use_new_medic_regen.GetBool())
-			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
-		else
-			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
-
-		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
-	}
-
 	int nHealthChange = 0; 
-	if ( m_flAccumulatedHealthRegen >= 1.0f )
+	if ( m_flAccumulatedHealthRegen > 0 )
 	{
 		nHealthChange = floor( m_flAccumulatedHealthRegen );
-
-		int nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
+		int nHealthRestored = 0;
+		if (nHealthChange >= 1)
+			nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
 		if ( nHealthRestored > 0 )
 		{
 			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
@@ -789,10 +789,11 @@ void CTFPlayer::RegenThink( void )
 			}
 		}
 	}
-	else if ( m_flAccumulatedHealthRegen <= -1.0f )
+	else if ( m_flAccumulatedHealthRegen < 0 )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
-		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+		if (nHealthChange <= -1)
+			TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
 	}
 
 	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
@@ -1357,9 +1358,6 @@ void CTFPlayer::Spawn()
 	CreateViewModel( 1 );
 	// Make sure it has no model set, in case it had one before
 	GetViewModel( 1 )->SetWeaponModel( NULL, NULL );
-	
-	m_Shared.SetFeignReady( false );
-	m_Shared.SetHasRecoiled( false );
 
 	// Kind of lame, but CBasePlayer::Spawn resets a lot of the state that we initially want on.
 	// So if we're in the welcome state, call its enter function to reset 
@@ -1483,6 +1481,11 @@ void CTFPlayer::Spawn()
 	m_Shared.SetShieldChargeMeter( 100.0f );
 
 	m_bDiedWithBombHead = false;
+	
+	m_flAccumulatedHealthRegen = 0;
+
+	m_Shared.SetFeignReady( false );
+	m_Shared.SetFeigningDeath( false );
 
 	// This makes the surrounding box always the same size as the standing collision box
 	// helps with parts of the hitboxes that extend out of the crouching hitbox, eg with the
@@ -8362,6 +8365,7 @@ void CTFPlayer::StateEnterACTIVE()
 	m_flLastAction = gpGlobals->curtime;
 	m_bIsIdle = false;
 
+	m_flLastHealthRegen = gpGlobals->curtime;
 	SetContextThink( &CTFPlayer::RegenThink, gpGlobals->curtime + TF_REGEN_TIME, "RegenThink" );
 }
 
