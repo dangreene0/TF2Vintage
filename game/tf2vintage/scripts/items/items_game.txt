@@ -8878,7 +8878,7 @@
 		"10587"
 		{
 			"name"	"Apoco-Fists"
-			"prefab"	"weapon_fists weapon_reskin"
+			"prefab"	"weapon_gloves weapon_reskin"
 			"year"			"2011"
 			"item_name"	"#TF_Apocofists"
 			"propername"	"1"
