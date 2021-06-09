@@ -234,6 +234,11 @@ CPanelMetaClassMgrImp::CPanelMetaClassMgrImp() : m_PanelTypeDict( true, 0, 32 )
 
 CPanelMetaClassMgrImp::~CPanelMetaClassMgrImp()
 {
+	FOR_EACH_VEC( m_MetaClassKeyValues, i )
+	{
+		m_MetaClassKeyValues[i]->deleteThis();
+	}
+	m_MetaClassKeyValues.Purge();
 }
 
 
