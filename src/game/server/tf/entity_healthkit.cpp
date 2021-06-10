@@ -74,7 +74,7 @@ bool CHealthKit::MyTouch( CBasePlayer *pPlayer )
 
 		// Don't heal the player who dropped this healthkit, recharge his lunchbox instead
 		// This only applies to the 2nd lunchbox behavior type.
-		if ( ( pTFPlayer != GetOwnerEntity() ) || tf2v_sandvich_behavior.GetInt() != 2 )
+		if ( ( pTFPlayer != GetOwnerEntity() ) || ( ( pTFPlayer == GetOwnerEntity() ) && tf2v_sandvich_behavior.GetInt() != 2 ) )
 		{
 			iHealthRestored = pTFPlayer->TakeHealth( flHealthToAdd, DMG_GENERIC );
 			//iHealthRestored = pPlayer->TakeHealth( iHealthToAdd, DMG_GENERIC );
