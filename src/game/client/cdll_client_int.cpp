@@ -1297,6 +1297,18 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	// Register user messages..
 	CUserMessageRegister::RegisterAll();
 
+#ifdef TF_VINTAGE_CLIENT
+	// ------------------------------
+	// Force CELT audio codec, instead of the one from Steam
+	// ------------------------------
+	ConVar *sv_voicecodec = NULL;
+	sv_voicecodec = g_pCVar->FindVar( "sv_voicecodec" );
+	if ( sv_voicecodec )
+	{
+		sv_voicecodec->SetValue( "vaudio_celt" );
+	}
+#endif
+
 	ClientVoiceMgr_Init();
 
 	// Embed voice status icons inside chat element
