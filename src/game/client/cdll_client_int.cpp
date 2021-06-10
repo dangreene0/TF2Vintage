@@ -1156,6 +1156,15 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	InitFbx();
 #endif
 
+	// Force cl_cloud_settings to always be 0 so it doesn't use it to reset our spray
+	ConVar *cl_cloud_settings = nullptr;
+	cl_cloud_settings = g_pCVar->FindVar( "cl_cloud_settings" );
+	if (cl_cloud_settings)
+	{
+		cl_cloud_settings->SetValue( 0 );
+		cl_cloud_settings->SetMax( 0 );
+	}
+
 	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	if ( CommandLine()->CheckParm( "-vscript" ) )
 	{
