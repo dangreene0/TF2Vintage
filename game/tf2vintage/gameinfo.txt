@@ -24,7 +24,6 @@
 	FileSystem 
 	{ 
 		SteamAppId		243750	// Source SDK Base 2013 Multiplayer	
-
 		SearchPaths 
 		{ 
 			// Firstly, mount all user customizations.  This will search for VPKs and subfolders 
@@ -60,13 +59,6 @@
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vtf.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_sounds.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"
-			
-			// Mount in missing assets from TF2
-			game_lv				"|all_source_engine_paths|../Team Fortress 2/tf/tf2_lv.vpk"
-			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_textures.vpk"
-			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_misc.vpk"
-			game+mod+vgui		"|all_source_engine_paths|../Team Fortress 2/tf/tf2_misc.vpk"
-			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_vo_english.vpk"
 						
 						
 			// We search VPK files before ordinary folders, because most files will be found in
@@ -100,6 +92,20 @@
 			// The map search pack is mounted at the top of the search path list,
 			// but only while you are connected that server and on that map.
 			game+download			"|gameinfo_path|download/"
-		}	
+		}
+
+		AdditionalContentId     440
+		AdditionalContentServerID     232250
+		AdditionalContentRoot     "tf"
+		AdditionalContentPaths
+        {
+            // Mount additional user customizations first
+            game+mod             "|content_root|custom/*"
+
+            game+mod            "|content_root|tf2_textures.vpk"
+            game+mod            "|content_root|tf2_sound_misc.vpk"
+            game+mod+vgui        "|content_root|tf2_misc.vpk"
+            game+mod            "|content_root|tf2_sound_vo_english.vpk"
+        }		
 	}		
 }

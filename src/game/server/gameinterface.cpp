@@ -607,11 +607,21 @@ static void MountAdditionalContent()
 		return;
 	}
 
-	KeyValues* pAdditionaContentId = pFileSystemInfo->FindKey( "AdditionalContentId" );
+	// Servers only: We check if the game has a server specific ID first.
+	KeyValues* pAdditionaContentId = pFileSystemInfo->FindKey( "AdditionalContentServerID" );
+	bool bLoadUsingServerID = true;
+	if ( !pAdditionaContentId )
+	{
+		// We don't have server files, fall back to checking the client's instead.
+		pAdditionaContentId = pFileSystemInfo->FindKey( "AdditionalContentId" );
+		bLoadUsingServerID = false;
+	}
+	
 	if ( !pAdditionaContentId )
 	{
 		return;
 	}
+	
 	KeyValues* pAdditionaContentRoot = pFileSystemInfo->FindKey( "AdditionalContentRoot" );
 	if ( !pAdditionaContentRoot )
 	{
@@ -619,18 +629,54 @@ static void MountAdditionalContent()
 		return;
 	}
 
+	// Make sure we have the server files first. If not, fall back to client.
+	bool bChangeToClient = false;
 	int appid = abs( pAdditionaContentId->GetInt() );
-	if ( appid )
+	if ( appid && bLoadUsingServerID )
 	{
 		if ( !steamapicontext->SteamApps() )
 		{
-			Error( "Unable to mount extra content, unkown error\n" );
-			return;
+			Warning( "Unable to mount dedicated server files, reverting to client.\n" );
+			bChangeToClient = true;
 		}
 		if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
 		{
-			Warning( "Unable to mount extra content with AppId: %i\n", appid );
+			Warning( "Unable to mount dedicated server with AppId: %i, reverting to client.\n", appid );
+			bChangeToClient = true;
+		}
+	}
+	
+	// Something isn't right with the dedicated server files, fall back to the client's files.
+	if (bChangeToClient)
+	{
+		// Reset our values.
+		appid = NULL;
+		pAdditionaContentId = NULL;
+		// Now check for the client info.
+		pAdditionaContentId = pFileSystemInfo->FindKey( "AdditionalContentId" );
+		bLoadUsingServerID = false;
+		if ( !pAdditionaContentId )
+		{
 			return;
+		}
+		appid = abs( pAdditionaContentId->GetInt() );
+	}
+	
+	if ( appid )
+	{
+		// We checked this already for servers, skip for them. Still check clients though.
+		if (!bLoadUsingServerID)
+		{
+			if ( !steamapicontext->SteamApps() )
+			{
+				Error( "Unable to mount extra content, unkown error\n" );
+				return;
+			}
+			if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
+			{
+				Warning( "Unable to mount extra content with AppId: %i\n", appid );
+				return;
+			}
 		}
 
 		char szAppDirectory[ MAX_PATH ];
