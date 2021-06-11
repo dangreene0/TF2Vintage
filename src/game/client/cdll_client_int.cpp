@@ -1178,12 +1178,13 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		{
 			V_AppendSlash( szPath, sizeof( szPath ) );
 			//V_strncat( szPath, "tf", sizeof( szPath ) );
-			if (UTIL_IsLowViolence())
-				g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_lv.vpk", szPath ), "GAME_LV" );
 			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_textures.vpk", szPath ), "GAME" );
 			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_misc.vpk", szPath ), "GAME" );
 			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_misc.vpk", szPath ), "GAME" );
-			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/tf/tf2_sound_vo_english.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/hl2/hl2_textures.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/hl2/hl2_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/hl2/hl2_sound_misc.vpk", szPath ), "GAME" );
+			g_pFullFileSystem->AddSearchPath( CFmtStr( "%s/hl2/hl2_sound_vo_english.vpk", szPath ), "GAME" );
 		}
 
 	}
