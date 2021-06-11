@@ -92,7 +92,7 @@ bool CHealthKit::MyTouch( CBasePlayer *pPlayer )
 		// Restore disguise health.
 		if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
 		{
-			float flFakeHealthToAdd = ceil( pTFPlayer->m_Shared.GetDisguiseClass() * PackRatios[ GetPowerupSize() ] );
+			float flFakeHealthToAdd = ceil( pTFPlayer->m_Shared.GetDisguiseMaxHealth() * PackRatios[ GetPowerupSize() ] );
 			CTFPlayer *pDisguiseTarget = ToTFPlayer(pTFPlayer->m_Shared.GetDisguiseTarget());
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pDisguiseTarget, flFakeHealthToAdd, mult_health_frompacks );
 
