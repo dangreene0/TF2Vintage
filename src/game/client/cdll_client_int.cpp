@@ -333,6 +333,10 @@ static ConVar s_cl_class("cl_class", "default", FCVAR_USERINFO|FCVAR_ARCHIVE, "D
 static ConVar s_cl_load_hl1_content("cl_load_hl1_content", "0", FCVAR_ARCHIVE, "Mount the content from Half-Life: Source if possible");
 #endif
 
+#ifdef TF_VINTAGE_CLIENT
+ConVar tf2v_mat_picmip( "tf2v_mat_picmip", "-10", FCVAR_ARCHIVE, "Overwrites the texture quality, from -10 to 10. Requires game restart when changed.");
+ConVar tf2v_use_alternate_mat_picmip( "tf2v_use_alternate_mat_picmip", "1", FCVAR_ARCHIVE, "Enables or disables the TF2V mat_picmips.", true, 0, true, 1);
+#endif
 
 // Physics system
 bool g_bLevelInitialized;
@@ -1437,6 +1441,37 @@ void CHLClient::PostInit()
 
 			g_pFullFileSystem->AddSearchPath( szPath, "HL1" );
 			g_pFullFileSystem->AddSearchPath( szPath, "GAME" );
+		}
+	}
+#endif
+
+#ifdef TF_VINTAGE_CLIENT
+	// HACK: mat_picmip clamps itself between -1 and 2, so this is a workaround
+	// to force our own mat_picmip on it before it has a chance to refresh it.
+	// This pretty much allows the old -10 textures back in.
+	if ( tf2v_use_alternate_mat_picmip.GetBool() ) 
+	{
+		ConVar *mat_picmip = NULL;
+		mat_picmip = g_pCVar->FindVar( "mat_picmip" );
+		ConVar *tf2v_mat_picmip = NULL;
+		tf2v_mat_picmip = g_pCVar->FindVar( "tf2v_mat_picmip" );
+		
+		if ( mat_picmip && tf2v_mat_picmip )
+		{
+			int iPicmip = tf2v_mat_picmip->GetInt();
+
+			if ( iPicmip < -10 )
+				iPicmip = -10;
+			else if ( iPicmip > 10 )
+				iPicmip = 10;
+
+			// hijack the convar's clamp values to use our own range
+			mat_picmip->SetMin( -10.0f );
+			mat_picmip->SetMax( 10.0f );
+			mat_picmip->SetValue( iPicmip );
+
+			// delete the convar
+			mat_picmip->Nuke();
 		}
 	}
 #endif

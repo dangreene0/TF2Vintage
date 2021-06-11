@@ -371,6 +371,7 @@ public:
 	void						SetDefault( const char *pszDefault );
 	void						SetMin(float min);
 	void						SetMax(float max);
+	void						Nuke(void);
 
 private:
 	// Called by CCvar when the value of a var is changing.
