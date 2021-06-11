@@ -792,7 +792,13 @@ void CTFPlayer::RegenThink( void )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
 		if (nHealthChange <= -1)
-			TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+		{
+			// TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
+			// STUPID HACK: Manually reassign the health down so we don't grunt on health drains, and make it never able to kill ourselves.
+			if ( GetHealth() > 1 )
+				SetHealth( Max( ( GetHealth() - nHealthChange ), 1 ) );
+		}
+		
 	}
 
 	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
