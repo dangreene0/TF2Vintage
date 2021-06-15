@@ -100,11 +100,11 @@
 		AdditionalContentPaths
         {
             // Mount additional user customizations first
-            game+mod             "|content_root|custom/*"
-
+            game+mod            "|content_root|custom/*"
+			game+mod			"|content_root|."
             game+mod            "|content_root|tf2_textures.vpk"
-            game+mod            "|content_root|tf2_sound_misc.vpk"
-            game+mod+vgui        "|content_root|tf2_misc.vpk"
+            game+mod       		"|content_root|tf2_misc.vpk"
+			game+mod            "|content_root|tf2_sound_misc.vpk"
             game+mod            "|content_root|tf2_sound_vo_english.vpk"
         }		
 	}		
