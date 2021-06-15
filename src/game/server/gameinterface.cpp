@@ -636,12 +636,12 @@ static void MountAdditionalContent()
 	{
 		if ( !steamapicontext->SteamApps() )
 		{
-			Warning( "Unable to mount dedicated server files, reverting to client.\n" );
+			//Warning( "Unable to mount dedicated server files, reverting to client.\n" );
 			bChangeToClient = true;
 		}
 		if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
 		{
-			Warning( "Unable to mount dedicated server with AppId: %i, reverting to client.\n", appid );
+			//Warning( "Unable to mount dedicated server with AppId: %i, reverting to client.\n", appid );
 			bChangeToClient = true;
 		}
 	}
