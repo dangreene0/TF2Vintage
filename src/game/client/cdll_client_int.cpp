@@ -1112,6 +1112,12 @@ static void MountModBoilerPlateContent()
 	g_pFullFileSystem->AddSearchPath(szAppDirectory, "MOD");
 	g_pFullFileSystem->AddSearchPath(szAppDirectory, "GAME");
 
+	char platform[MAX_PATH];
+	Q_strncpy( platform, szAppDirectory, MAX_PATH );
+	Q_StripTrailingSlash( platform );
+	Q_strncat( platform, "/../platform", MAX_PATH, MAX_PATH );
+	g_pFullFileSystem->AddSearchPath( platform, "PLATFORM" );
+
 	KeyValues* pAdditionalContent = pFileSystemInfo->FindKey("SourcemodEssentialPaths");
 	if (pAdditionalContent)
 	{
