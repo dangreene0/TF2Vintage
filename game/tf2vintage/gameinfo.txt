@@ -58,9 +58,29 @@
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vmt.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vtf.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_sounds.vpk"
-			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"
-						
-						
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"		
+		}
+
+		// Mount the game we're using to share assets with, to reduce filesize.
+		// AdditionalContentId is mandatory for both client and server, while
+		// AdditionalContentServerID is used preferentially by the server if available.
+		AdditionalContentId     440	// Team Fortress 2
+		AdditionalContentServerID     232250	// Team Fortress 2 Dedicated Server
+		AdditionalContentRoot     "tf"
+		AdditionalContentPaths
+        {
+            // Call up files to mount from another game.
+            game+mod            "|content_root|custom/*"
+			game+mod			"|content_root|."
+            game+mod            "|content_root|tf2_textures.vpk"
+            game+mod       		"|content_root|tf2_misc.vpk"
+			game+mod            "|content_root|tf2_sound_misc.vpk"
+            game+mod            "|content_root|tf2_sound_vo_english.vpk"
+        }
+
+		// These are the essential Sourcemod files, and are always loaded LAST in priority.
+		SourcemodEssentialPaths
+		{			
 			// We search VPK files before ordinary folders, because most files will be found in
 			// VPK and we can avoid making thousands of file system calls to attempt to open files
 			// in folders where they don't exist.  (Searching a VPK is much faster than making an 
@@ -93,19 +113,5 @@
 			// but only while you are connected that server and on that map.
 			game+download			"|gameinfo_path|download/"
 		}
-
-		AdditionalContentId     440
-		AdditionalContentServerID     232250
-		AdditionalContentRoot     "tf"
-		AdditionalContentPaths
-        {
-            // Mount additional user customizations first
-            game+mod            "|content_root|custom/*"
-			game+mod			"|content_root|."
-            game+mod            "|content_root|tf2_textures.vpk"
-            game+mod       		"|content_root|tf2_misc.vpk"
-			game+mod            "|content_root|tf2_sound_misc.vpk"
-            game+mod            "|content_root|tf2_sound_vo_english.vpk"
-        }		
 	}		
 }
