@@ -1863,6 +1863,15 @@ void CTFPlayer::GiveDefaultItems()
 	
 	// Manage our cosmetic items.
 	ManagePlayerCosmetics( pData );
+	
+	// Give ourselves zombie skins when it's Halloween.
+	ManagePlayerEventCosmetic( pData );
+
+	// If we're a VIP player, give a medal.
+	if( m_iPlayerVIPRanking != 0 )
+	{
+		ManageVIPMedal( pData );
+	}
 
 	// Give grenades.
 	if( tf_enable_grenades.GetBool() )
@@ -2481,15 +2490,6 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 	// Make sure we're allowed to have something here.
 	ValidateWearables();
 
-	// Give ourselves zombie skins when it's Halloween.
-	ManagePlayerEventCosmetic( pData );
-
-	// If we're a VIP player, give a medal.
-	if( m_iPlayerVIPRanking != 0 )
-	{
-		ManageVIPMedal( pData );
-	}
-
 	if (!tf2v_allow_cosmetics.GetBool())
 	{
 		// Cosmetics disabled, nuke any cosmetic wearables we have.
@@ -2644,7 +2644,7 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 void CTFPlayer::ManagePlayerEventCosmetic( TFPlayerClassData_t *pData )
 {
 	
-	// Nuke whatever is in this slot.
+	// Nuke whatever is in this slot, so it's always refreshed.
 	if (GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_EVENT ) )
 	{
 		// Check what wearable this is.
@@ -2693,6 +2693,31 @@ void CTFPlayer::ManagePlayerEventCosmetic( TFPlayerClassData_t *pData )
 			}
 		}
 	}
+	/*else if ( TFGameRules()->IsHolidayActive( kHoliday_Birthday ) ) // Birthday (2011+)
+	{
+		// Christmas hat is the next slot.
+		iSlot = 2;
+		
+		// Give us an item from the inventory.
+		pItem = GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), TF_LOADOUT_SLOT_EVENT, iSlot );
+		
+		// Birthday cap conflicts with hat, so delete our normal hat.
+		if (pItem)
+		{
+			if (GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_HAT ) )
+			{
+				// Check what wearable this is.
+				CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_HAT ) );
+						
+				if (pWearable)
+				{
+					// Delete it.
+					RemoveWearable(pWearable);
+					UTIL_Remove(pWearable);	
+				}		
+			}
+		}
+	}*/
 
 
 	// Give this item to us.
@@ -2719,28 +2744,25 @@ void CTFPlayer::ManageVIPMedal( TFPlayerClassData_t *pData )
 	int iPlayerRank = 0;
 	bool bAwardMedal = false;
 	
-	CTFPlayer *pPlayer = this;
-	if (pPlayer)
+	iPlayerRank = m_iPlayerVIPRanking;
+	bAwardMedal = ( ( Q_atoi( engine->GetClientConVarValue( entindex(), "tf2v_show_veterancy" ) ) > 0 ) && iPlayerRank != 0 );
+		
+	// Delete any medal we have here, to force it into refreshing.
+	if (GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_MEDAL ) )
 	{
-		iPlayerRank = pPlayer->m_iPlayerVIPRanking;
-		bAwardMedal = ( ( Q_atoi( engine->GetClientConVarValue( pPlayer->entindex(), "tf2v_show_veterancy" ) ) > 0 ) && iPlayerRank != 0 );
+		// Check what wearable this is.
+		CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_MEDAL ) );			
+		if (pWearable)
+		{
+			// Delete it.
+			RemoveWearable(pWearable);
+			UTIL_Remove(pWearable);	
+		}		
 	}
 	
 	// Nuke any medal we have and return.
 	if ( !bAwardMedal )
 	{
-		// No medal, just bail.
-		if ( !GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_MEDAL ) )
-			return;
-		
-		// Check our medal and remove it.
-		CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_MEDAL ) );
-			
-		if ( pWearable == nullptr )
-			return;
-
-		RemoveWearable(pWearable);
-		UTIL_Remove(pWearable);
 		return;
 	}
 	
