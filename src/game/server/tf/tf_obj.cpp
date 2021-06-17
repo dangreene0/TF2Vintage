@@ -1923,6 +1923,12 @@ int CBaseObject::OnTakeDamage( const CTakeDamageInfo &info )
 
 	float flDamage = info.GetDamage();
 	
+	// If we've been hit with an EMP attack, EMP our building.
+	if ( info.GetDamageCustom() == TF_DMG_CUSTOM_PLASMA_CHARGED )
+	{
+		AddEMP();
+	}
+	
 	// Check weapon attributes if damages change when we hit a building.
 	CBaseEntity *pWeapon = info.GetWeapon();
 	if ( pWeapon )
@@ -2432,32 +2438,36 @@ void CBaseObject::Killed( const CTakeDamageInfo &info )
 	{
 		CTFAmmoPack *pAmmoPack = CTFAmmoPack::Create(GetAbsOrigin(), GetAbsAngles(), this, "models/weapons/w_models/w_toolbox.mdl");
 
-		// Change the toolbox color to match the team.
-		switch (GetTeamNumber())
-		{
-		case TF_TEAM_RED:
-			pAmmoPack->m_nSkin = 0;
-			break;
-		case TF_TEAM_BLUE:
-			pAmmoPack->m_nSkin = 1;
-			break;
-		case TF_TEAM_GREEN:
-			pAmmoPack->m_nSkin = 2;
-			break;
-		case TF_TEAM_YELLOW:
-			pAmmoPack->m_nSkin = 3;
-			break;
-		}
-
 		if (pAmmoPack)
 		{
+
+			// Change the toolbox color to match the team.
+			switch (GetTeamNumber())
+			{
+			case TF_TEAM_RED:
+				pAmmoPack->m_nSkin = 0;
+				break;
+			case TF_TEAM_BLUE:
+				pAmmoPack->m_nSkin = 1;
+				break;
+			case TF_TEAM_GREEN:
+				pAmmoPack->m_nSkin = 2;
+				break;
+			case TF_TEAM_YELLOW:
+				pAmmoPack->m_nSkin = 3;
+				break;
+			}
+
 			pAmmoPack->SetBodygroup(1, 1);
+			const CObjectInfo* pObjectInfo = GetObjectInfo(ObjectType());
+			pAmmoPack->GiveAmmo(pObjectInfo->m_iMetalToDropInGibs, TF_AMMO_METAL);
 		}
 
 		CObjectSapper *pSapper = dynamic_cast<CObjectSapper *>(FirstMoveChild());
 		if ( pSapper )
 		{
 			pSapper->Explode();
+			UTIL_Remove(pSapper);
 		}
 	}
 	else 	// Do an explosion.

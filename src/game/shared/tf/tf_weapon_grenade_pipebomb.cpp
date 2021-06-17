@@ -786,61 +786,72 @@ int CTFGrenadePipebombProjectile::OnTakeDamage( const CTakeDamageInfo &info )
 	bool bSameTeam = ( info.GetAttacker()->GetTeamNumber() == GetTeamNumber() );
 
 
-	if ( m_bTouched && ( info.GetDamageType() & (DMG_BULLET|DMG_BUCKSHOT|DMG_BLAST|DMG_CLUB|DMG_SLASH) ) && bSameTeam == false )
+	if ( m_bTouched && bSameTeam == false )
 	{
-		Vector vecForce = info.GetDamageForce();
-		// Sticky bombs get destroyed by bullets and melee, not pushed
-		if ( m_iType == TF_GL_MODE_REMOTE_DETONATE )
+		// Do this one outside of the if/else because it's custom damage, and a convar.
+		// TODO: This would belong in a 2019 setting.
+		/* if ( info.GetDamageCustom() == TF_DMG_CUSTOM_PLASMA_CHARGED )
 		{
-			if ( info.GetDamageType() & (DMG_BULLET|DMG_BUCKSHOT|DMG_CLUB|DMG_SLASH) )
-			{
-				m_bFizzle = true;
-				Detonate();
-			}
-			else if ( info.GetDamageType() & DMG_BLAST )
-			{
-				vecForce *= tf_grenade_forcefrom_blast.GetFloat();
-			}
-		}
-		else
+			m_bFizzle = true;
+			Detonate();
+		}*/
+	
+		if ( info.GetDamageType() & (DMG_BULLET|DMG_BUCKSHOT|DMG_BLAST|DMG_CLUB|DMG_SLASH) )
 		{
-			if ( info.GetDamageType() & DMG_BULLET )
+			Vector vecForce = info.GetDamageForce();
+			// Sticky bombs get destroyed by bullets and melee, not pushed
+			if ( m_iType == TF_GL_MODE_REMOTE_DETONATE )
 			{
-				vecForce *= tf_grenade_forcefrom_bullet.GetFloat();
+				if ( info.GetDamageType() & (DMG_BULLET|DMG_BUCKSHOT|DMG_CLUB|DMG_SLASH) )
+				{
+					m_bFizzle = true;
+					Detonate();
+				}
+				else if ( info.GetDamageType() & DMG_BLAST )
+				{
+					vecForce *= tf_grenade_forcefrom_blast.GetFloat();
+				}
 			}
-			else if ( info.GetDamageType() & DMG_BUCKSHOT )
+			else
 			{
-				vecForce *= tf_grenade_forcefrom_buckshot.GetFloat();
+				if ( info.GetDamageType() & DMG_BULLET )
+				{
+					vecForce *= tf_grenade_forcefrom_bullet.GetFloat();
+				}
+				else if ( info.GetDamageType() & DMG_BUCKSHOT )
+				{
+					vecForce *= tf_grenade_forcefrom_buckshot.GetFloat();
+				}
+				else if ( info.GetDamageType() & DMG_BLAST )
+				{
+					vecForce *= tf_grenade_forcefrom_blast.GetFloat();
+				}
 			}
-			else if ( info.GetDamageType() & DMG_BLAST )
+
+			// If the force is sufficient, detach & move the grenade/pipebomb/sticky
+			float flForce = tf_pipebomb_force_to_move.GetFloat();
+			if ( vecForce.LengthSqr() > (flForce*flForce) )
 			{
-				vecForce *= tf_grenade_forcefrom_blast.GetFloat();
+				if ( VPhysicsGetObject() )
+				{
+					VPhysicsGetObject()->EnableMotion( true );
+				}
+
+				CTakeDamageInfo newInfo = info;
+				newInfo.SetDamageForce( vecForce );
+
+				VPhysicsTakeDamage( newInfo );
+
+				// The sticky will re-stick to the ground after this time expires
+				m_flMinSleepTime = gpGlobals->curtime + tf_grenade_force_sleeptime.GetFloat();
+				m_bTouched = false;
+
+				// It has moved the data is no longer valid.
+				m_bUseImpactNormal = false;
+				m_vecImpactNormal.Init();
+
+				return 1;
 			}
-		}
-
-		// If the force is sufficient, detach & move the grenade/pipebomb/sticky
-		float flForce = tf_pipebomb_force_to_move.GetFloat();
-		if ( vecForce.LengthSqr() > (flForce*flForce) )
-		{
-			if ( VPhysicsGetObject() )
-			{
-				VPhysicsGetObject()->EnableMotion( true );
-			}
-
-			CTakeDamageInfo newInfo = info;
-			newInfo.SetDamageForce( vecForce );
-
-			VPhysicsTakeDamage( newInfo );
-
-			// The sticky will re-stick to the ground after this time expires
-			m_flMinSleepTime = gpGlobals->curtime + tf_grenade_force_sleeptime.GetFloat();
-			m_bTouched = false;
-
-			// It has moved the data is no longer valid.
-			m_bUseImpactNormal = false;
-			m_vecImpactNormal.Init();
-
-			return 1;
 		}
 	}
 
