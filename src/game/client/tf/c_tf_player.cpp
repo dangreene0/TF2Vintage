@@ -3256,25 +3256,35 @@ void C_TFPlayer::UpdateSpyMask(void)
 //-----------------------------------------------------------------------------
 void C_TFPlayer::UpdatePartyHat( void )
 {
-	if ( TFGameRules() && TFGameRules()->IsBirthday() && !IsLocalPlayer() && IsAlive() &&
+	if ( TFGameRules() && TFGameRules()->IsBirthday() )
+	{
+		if ( !IsLocalPlayer() && IsAlive() &&
 		GetTeamNumber() >= FIRST_GAME_TEAM && !IsPlayerClass( TF_CLASS_UNDEFINED ) )
+		{
+			if ( m_hPartyHat )
+			{
+				m_hPartyHat->Release();
+			}
+
+			m_hPartyHat = C_PlayerAttachedModel::Create( BDAY_HAT_MODEL, this, LookupAttachment( "partyhat" ), vec3_origin, PAM_PERMANENT, 0 );
+
+			// C_PlayerAttachedModel::Create can return NULL!
+			if ( m_hPartyHat )
+			{
+				int iVisibleTeam = GetTeamNumber();
+				if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )
+				{
+					iVisibleTeam = m_Shared.GetDisguiseTeam();
+				}
+				m_hPartyHat->m_nSkin = iVisibleTeam - 2;
+			}
+		}
+	}
+	else
 	{
 		if ( m_hPartyHat )
 		{
 			m_hPartyHat->Release();
-		}
-
-		m_hPartyHat = C_PlayerAttachedModel::Create( BDAY_HAT_MODEL, this, LookupAttachment( "partyhat" ), vec3_origin, PAM_PERMANENT, 0 );
-
-		// C_PlayerAttachedModel::Create can return NULL!
-		if ( m_hPartyHat )
-		{
-			int iVisibleTeam = GetTeamNumber();
-			if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )
-			{
-				iVisibleTeam = m_Shared.GetDisguiseTeam();
-			}
-			m_hPartyHat->m_nSkin = iVisibleTeam - 2;
 		}
 	}
 }
