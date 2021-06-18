@@ -1304,7 +1304,7 @@ bool CTFWeaponBase::CalcIsAttackCriticalHelper()
 
 		// see if we should start firing crit shots
 		int iRandom = RandomInt( 0, WEAPON_RANDOM_RANGE-1 );
-		if ( iRandom <= flStartCritChance * WEAPON_RANDOM_RANGE )
+		if ( iRandom < flStartCritChance * WEAPON_RANDOM_RANGE )
 		{
 			m_flCritTime = gpGlobals->curtime + tf2v_crit_duration_rapid.GetFloat();
 			return true;
