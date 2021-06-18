@@ -4873,7 +4873,7 @@ int CTFPlayerShared::GetSequenceForDeath( CBaseAnimating *pAnim, int iDamageCust
 //-----------------------------------------------------------------------------
 float CTFPlayerShared::GetCritMult(void)
 {
-	float flRemapCritMul = RemapValClamped(m_iCritMult, 0, 255, 1.0, TF_DAMAGE_CRITMOD_MAXMULT);
+	float flRemapCritMul = RemapValClamped(m_iCritMult, 0, 255, 1.0, 4.0);
 	/*#ifdef CLIENT_DLL
 	Msg("CLIENT: Crit mult %.2f - %d\n",flRemapCritMul, m_iCritMult);
 	#else
