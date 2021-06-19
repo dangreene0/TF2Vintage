@@ -7000,6 +7000,22 @@ bool CTFPlayer::ShouldGib( const CTakeDamageInfo &info )
 	if ( nGibCvar == 2 )
 		return true;
 
+	if( info.GetWeapon() )
+	{
+		int nWillGibAlways = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetWeapon(), nWillGibAlways, kill_will_gib );
+		int nWillGibCrit = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetWeapon(), nWillGibCrit, crit_kill_will_gib );
+		if ( nWillGibAlways )
+		{
+			return true;
+		}
+		else if ( nWillGibCrit && ( info.GetDamageType() & ( DMG_CRITICAL|DMG_MINICRITICAL ) ) )
+		{
+			return true;
+		}
+	}
+	
 	if ( info.GetDamageType() & DMG_NEVERGIB )
 		return false;
 
@@ -7013,24 +7029,6 @@ bool CTFPlayer::ShouldGib( const CTakeDamageInfo &info )
 	{
 		if ( ( info.GetDamageType() & DMG_CRITICAL ) || m_iHealth < -9 )
 			return true;
-	}
-
-	if( info.GetWeapon() )
-	{
-		int nWillGibCrit = 0;
-		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetWeapon(), nWillGibCrit, crit_kill_will_gib );
-		int nWillGibAlways = 0;
-		CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetWeapon(), nWillGibAlways, kill_will_gib );
-
-		if ( nWillGibAlways == 0 )
-		{
-			if ( nWillGibCrit != 0 && info.GetDamageType() & ( DMG_CRITICAL|DMG_MINICRITICAL ) )
-				return true;
-		}
-		else
-		{
-			return true;
-		}
 	}
 
 	return false;
