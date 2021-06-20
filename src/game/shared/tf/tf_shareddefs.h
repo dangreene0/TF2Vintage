@@ -1851,7 +1851,7 @@ public:
 	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
 	{
 		CBaseEntity *pEntity = EntityFromEntityHandle( pServerEntity );
-		if ( pEntity && pEntity->IsPlayer() && pEntity->GetTeamNumber() == m_iIgnoreTeam )
+		if ( pEntity && ( pEntity->IsPlayer() || pEntity->IsCombatItem() ) && pEntity->GetTeamNumber() == m_iIgnoreTeam )
 			return false;
 
 		return BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
@@ -1876,6 +1876,26 @@ public:
 
 private:
 	int m_iIgnoreTeam;
+};
+
+class CTraceFilterIgnoreFriendlyCombatItems : public CTraceFilterSimple
+{
+	DECLARE_CLASS_GAMEROOT( CTraceFilterIgnoreFriendlyCombatItems, CTraceFilterSimple );
+public:
+	CTraceFilterIgnoreFriendlyCombatItems( IHandleEntity const *ignore, int collissionGroup, int teamNumber )
+		: CTraceFilterSimple( ignore, collissionGroup )
+	{
+		m_iIgnoreTeam = teamNumber;
+		m_bSkipBaseTrace = false;
+	}
+
+	virtual bool ShouldHitEntity( IHandleEntity *pHandleEntity, int contentsMask ) OVERRIDE;
+
+	void AlwaysHitItems( void ) { m_bSkipBaseTrace = true; }
+
+private:
+	int m_iIgnoreTeam;
+	bool m_bSkipBaseTrace;
 };
 
 // Unused
