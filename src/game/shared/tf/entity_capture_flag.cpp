@@ -330,7 +330,7 @@ void CCaptureFlag::Precache( void )
 	char tempChar[ 512 ];
 	for( int i = TF_TEAM_RED; i < TF_TEAM_COUNT; ++i )
 	{
-		GetTrailEffect( TF_TEAM_RED, tempChar, sizeof( tempChar ) );
+		GetTrailEffect( i, tempChar, sizeof( tempChar ) );
 		PrecacheModel( tempChar );
 	}
 
