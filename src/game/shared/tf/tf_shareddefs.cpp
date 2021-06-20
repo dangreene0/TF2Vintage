@@ -1143,6 +1143,22 @@ bool CTraceFilterIgnoreTeammatesAndTeamObjects::ShouldHitEntity( IHandleEntity *
 	return BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
 }
 
+
+bool CTraceFilterIgnoreFriendlyCombatItems::ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
+{
+	CBaseEntity *pEntity = EntityFromEntityHandle( pServerEntity );
+	if ( pEntity->IsCombatItem() )
+	{
+		if ( pEntity->GetTeamNumber() == m_iIgnoreTeam )
+			return false;
+
+		if ( m_bSkipBaseTrace )
+			return true;
+	}
+
+	return BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
+}
+
 //-----------------------------------------------------------------------------
 // Mediguns.
 //-----------------------------------------------------------------------------
