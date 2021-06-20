@@ -448,7 +448,7 @@ unsigned int CEconItemView::GetModifiedRGBValue( bool bAlternate )
 //-----------------------------------------------------------------------------
 int CEconItemView::GetSkin( int iTeamNum, bool bViewmodel ) const
 {
-	if (iTeamNum <= TF_TEAM_COUNT)
+	if (iTeamNum < TF_TEAM_VISUALS_COUNT)
 	{
 		//if !GetStaticData->GetVisuals( iTeamNum )->style.IsEmpty()
 		PerTeamVisuals_t *pVisuals = GetStaticData()->GetVisuals( iTeamNum );

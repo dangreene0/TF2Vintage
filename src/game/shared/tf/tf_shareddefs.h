@@ -43,6 +43,7 @@ enum
 #define TF_TEAM_MVM_PLAYERS TF_TEAM_RED
 
 #define TF_TEAM_AUTOASSIGN (TF_TEAM_COUNT + 1 )
+#define TF_TEAM_VISUALS_COUNT (TF_TEAM_COUNT + 1)
 
 extern const char *g_aTeamNames[TF_TEAM_COUNT];
 extern const char *g_aTeamNamesShort[TF_TEAM_COUNT];
