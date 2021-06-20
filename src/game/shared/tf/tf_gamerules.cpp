@@ -1344,6 +1344,8 @@ static const char *s_PreserveEnts[] =
 	"entity_suacer",
 	"info_ladder",
 	"prop_vehicle_jeep",
+	"tf_halloween_gift_pickup",
+	"tf_logic_competitive",
 	"", // END Marker
 };
 
@@ -1812,11 +1814,13 @@ bool CTFGameRules::ShouldCreateEntity( const char *pszClassName )
 void CTFGameRules::CleanUpMap( void )
 {
 #ifdef GAME_DLL
-	// Clean up balls.
-	m_bActiveBeachBall = false;
-	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
 	{
-		m_bActiveSoccerBall[i] = false;
+		CTFPlayer *pTFPlayer = ToTFPlayer( UTIL_PlayerByIndex( i ) );
+		if ( !pTFPlayer )
+			continue;
+
+		pTFPlayer->m_Shared.RemoveAllCond();
 	}
 #endif
 
@@ -1826,6 +1830,15 @@ void CTFGameRules::CleanUpMap( void )
 	{
 		HLTVDirector()->BuildCameraList();
 	}
+
+#ifdef GAME_DLL
+	// Clean up balls.
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
