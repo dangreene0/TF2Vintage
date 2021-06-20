@@ -14,7 +14,6 @@ IRichPresenceClient *rpc = NULL;
 
 
 #ifndef POSIX
-static CBaseDiscordPresence s_presence;
 
 //-----------------------------------------------------------------------------
 // Purpose: 
