@@ -1872,14 +1872,7 @@ public:
 	{
 	}
 
-	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
-	{
-		CBaseEntity *pEntity = EntityFromEntityHandle( pServerEntity );
-		if ( pEntity && (pEntity->IsPlayer() || pEntity->IsCombatItem()) && pEntity->GetTeamNumber() == m_iIgnoreTeam )
-			return false;
-
-		return BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
-	}
+	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask ) OVERRIDE;
 
 private:
 	int m_iIgnoreTeam;
