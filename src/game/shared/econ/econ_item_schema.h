@@ -444,7 +444,7 @@ public:
 
 		for ( int i = 0; i < TF_CLASS_COUNT_ALL; i++ )
 			item_slot_per_class[i] = -1;
-		for ( int team = 0; team < TF_TEAM_COUNT; team++ )
+		for ( int team = 0; team < TF_TEAM_VISUALS_COUNT; team++ )
 			visual[team] = NULL;
 
 		show_in_armory = true;
@@ -622,7 +622,7 @@ private:
 public:
 	item_def_index_t index;
 	CUtlVector<static_attrib_t> attributes;
-	PerTeamVisuals_t *visual[ TF_TEAM_COUNT ];
+	PerTeamVisuals_t *visual[ TF_TEAM_VISUALS_COUNT ];
 	int used_by_classes;
 	int item_slot_per_class[ TF_CLASS_COUNT_ALL ];
 	bool show_in_armory;

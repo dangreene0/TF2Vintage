@@ -8,7 +8,7 @@
 #define UTIL_VarArgs  VarArgs
 #endif
 
-const char *g_TeamVisualSections[TF_TEAM_COUNT] =
+const char *g_TeamVisualSections[TF_TEAM_VISUALS_COUNT] =
 {
 	"visuals",			// TEAM_UNASSIGNED
 	"",					// TEAM_SPECTATOR
@@ -16,7 +16,7 @@ const char *g_TeamVisualSections[TF_TEAM_COUNT] =
 	"visuals_blu",		// TEAM_BLUE
 	"visuals_grn",		// TEAM_GREEN
 	"visuals_ylw",		// TEAM_YELLOW
-	//"visuals_mvm_boss"	// ???
+	"visuals_mvm_boss"	// ???
 };
 
 const char *g_WearableAnimTypeStrings[NUM_WEARABLEANIM_TYPES] =
@@ -347,11 +347,8 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 	}
 
 	// Initialize all visuals for next section.
-	for (int i = 0; i < TF_TEAM_COUNT; i++)
+	for (int i = 0; i < TF_TEAM_VISUALS_COUNT; i++)
 	{
-		if (i == TEAM_SPECTATOR)
-			continue;
-
 		visual[i] = NULL;
 	}
 
@@ -439,11 +436,11 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		else if (!V_strnicmp(pSubData->GetName(), "visuals", 7))
 		{
 			// Figure out what team is this meant for.
-			int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT);
+			int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_VISUALS_COUNT);
 			if (iVisuals == TEAM_UNASSIGNED)
 			{
 				// Hacky: for standard visuals block, assign it to all teams at once.
-				for (int team = 0; team < TF_TEAM_COUNT; team++)
+				for (int team = 0; team < TF_TEAM_VISUALS_COUNT; team++)
 				{
 					if (team == TEAM_SPECTATOR)
 						continue;
@@ -980,7 +977,7 @@ void CEconItemSchema::Precache( void )
 			CBaseEntity::PrecacheModel( pItem->GetExtraWearableModel() );
 		
 		// Precache visuals.
-		for ( int i = TEAM_UNASSIGNED; i < TF_TEAM_COUNT; i++ )
+		for ( int i = TEAM_UNASSIGNED; i < TF_TEAM_VISUALS_COUNT; i++ )
 		{
 			if ( i == TEAM_SPECTATOR )
 				continue;

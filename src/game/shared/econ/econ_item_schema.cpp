@@ -28,7 +28,7 @@ CEconItemDefinition::~CEconItemDefinition()
 		pDefinition->type->UnloadEconAttributeValue( &attributes[i].value );
 	}
 
-	for ( int team = TEAM_UNASSIGNED; team < TF_TEAM_COUNT; team++ )
+	for ( int team = TEAM_UNASSIGNED; team < TF_TEAM_VISUALS_COUNT; team++ )
 	{
 		if ( visual[ team ] )
 			delete visual[ team ];
@@ -43,7 +43,7 @@ CEconItemDefinition::~CEconItemDefinition()
 //-----------------------------------------------------------------------------
 PerTeamVisuals_t *CEconItemDefinition::GetVisuals( int iTeamNum /*= TEAM_UNASSIGNED*/ )
 {
-	if ( iTeamNum > LAST_SHARED_TEAM && iTeamNum < TF_TEAM_COUNT )
+	if ( iTeamNum > LAST_SHARED_TEAM && iTeamNum < TF_TEAM_VISUALS_COUNT )
 	{
 		if ( visual[ iTeamNum ] == NULL )
 			return visual[ TEAM_UNASSIGNED ];

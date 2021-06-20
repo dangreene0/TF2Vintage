@@ -77,7 +77,7 @@ public:
 	};
 	CUtlVector<AttachedModelData_t> m_Attachments;
 
-	CMaterialReference m_aMaterials[ TF_TEAM_COUNT ];
+	CMaterialReference m_aMaterials[ TF_TEAM_VISUALS_COUNT ];
 #endif
 
 	virtual int TranslateViewmodelHandActivity( int iActivity ) { return iActivity; }
