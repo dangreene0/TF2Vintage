@@ -1123,7 +1123,9 @@ bool ConditionExpiresFast( int nCond )
 	return false;
 }
 
-
+//-----------------------------------------------------------------------------
+// Traces.
+//-----------------------------------------------------------------------------
 bool CTraceFilterIgnoreTeammatesAndTeamObjects::ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
 {
 	CBaseEntity *pEntity = EntityFromEntityHandle( pServerEntity );
