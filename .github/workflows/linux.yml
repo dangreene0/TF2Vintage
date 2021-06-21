@@ -1,0 +1,41 @@
+name: Linux
+
+on: [ push, pull_request ]
+
+jobs:
+  build:
+    runs-on:
+      ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      - name: Configure dependencies
+        run: sudo apt update && sudo apt install -y build-essential gcc-multilib g++-multilib
+
+      - name: Create project
+        run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2vintage
+      
+      - name: Download Steam runtime
+        run: |
+          cd /
+          sudo mkdir valve
+          cd valve
+          sudo wget http://media.steampowered.com/client/runtime/steam-runtime-sdk_latest.tar.xz
+          sudo tar xvf steam-runtime-sdk_latest.tar.xz
+          sudo mv steam-runtime-sdk_2013-09-05 steam-runtime
+
+      - name: Build project
+        run: |
+          sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --target="i386 amd64" --auto-upgrade
+          sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --target="i386 amd64" --auto-upgrade
+          cd src && sudo make -f TF2vintage.mak 
+        env:
+          STEAM_RUNTIME_PATH: /valve/steam-runtime
+
+      - name: Upload product
+        uses: actions/upload-artifact@v2
+        with:
+          name: TF2Vintage
+          path: game/tf2vintage/bin
