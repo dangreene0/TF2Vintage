@@ -76,7 +76,6 @@ public:
 #endif
 
 	void ProcessDataFromConnection( HSteamNetConnection hConn );
-
 	bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
 
 #ifdef CLIENT_DLL
@@ -99,122 +98,37 @@ private:
 	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
 };
 
+
+DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 128, UTLMEMORYPOOL_GROW_FAST );
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-class CNetPacket : public INetPacket
+void CNetPacket::Init( uint32 size, MsgType_t eMsg )
 {
-	friend class CRefCountAccessor;
-	static CUtlMemoryPool *sm_MsgPool;
-	static bool sm_bRegisteredPool;
-	static CThreadFastMutex sm_MemPoolMutex;
-public:
-	CNetPacket()
-	{
-		m_pMsg = NULL;
-		m_Hdr.m_eMsgType = k_EInvalidMsg;
-	}
+	m_Hdr = {eMsg, size, STEAM_CNX_PROTO_VERSION, k_EProtocolProtobuf};
 
-	virtual MsgType_t MsgType( void ) const { return m_Hdr.m_eMsgType; }
-	virtual byte const *Data( void ) const { return (byte*)m_pMsg->m_pData; }
-	byte *MutableData( void ) { return (byte*)m_pMsg->m_pData; }
-	virtual uint32 Size( void ) const { return m_pMsg->m_cbSize; }
-	CProtobufMsgHdr const &Hdr( void ) const { return *m_Hdr.m_ProtoHdr; }
+	m_pMsg = SteamNetworkingUtils()->AllocateMessage( size + sizeof( MsgHdr_t ) );
+	Q_memcpy( m_pMsg->m_pData, &m_Hdr, sizeof( MsgHdr_t ) );
 
-#pragma push_macro("new")
-	#undef new
-	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
-#pragma pop_macro("new")
+	AddRef();
+}
 
-protected:
-	virtual ~CNetPacket()
-	{
-		Assert( m_cRefCount == 0 );
-		Assert( m_pMsg == NULL );
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
+{
+	Assert( pMemory );
 
-		if( m_Hdr.m_ProtoHdr )
-			FreeProtoHdr( m_Hdr.m_ProtoHdr );
-	}
+	m_pMsg = SteamNetworkingUtils()->AllocateMessage( size );
+	Q_memcpy( m_pMsg->m_pData, pMemory, size );
 
-	friend class CEconNetworking;
-	void Init( uint32 size, MsgType_t eMsg )
-	{
-		m_Hdr = {eMsg, size};
+	Q_memcpy( &m_Hdr, m_pMsg->m_pData, sizeof( MsgHdr_t ) );
 
-		m_Hdr.m_ProtoHdr = AllocProtoHdr();
-		m_Hdr.m_ProtoHdr->set_protocol_version( STEAM_CNX_PROTO_VERSION );
-		m_Hdr.m_ProtoHdr->set_protocol_type( k_EProtocolProtobuf );
+	Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
 
-		m_pMsg = SteamNetworkingUtils()->AllocateMessage( size + sizeof( MsgHdr_t ) );
-		Q_memcpy( m_pMsg->m_pData, &m_Hdr, sizeof( MsgHdr_t ) );
-
-		AddRef();
-	}
-	void InitFromMemory( void const *pMemory, uint32 size )
-	{
-		Assert( pMemory );
-
-		m_pMsg = SteamNetworkingUtils()->AllocateMessage( size );
-		Q_memcpy( m_pMsg->m_pData, pMemory, size );
-
-		Q_memcpy( &m_Hdr, m_pMsg->m_pData, sizeof( MsgHdr_t ) );
-
-		Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
-
-		AddRef();
-	}
-
-private:
-	CProtobufMsgHdr *AllocProtoHdr( void )
-	{
-		if ( !sm_bRegisteredPool )
-		{
-			AUTO_LOCK( sm_MemPoolMutex );
-			Assert( sm_MsgPool == NULL );
-
-			sm_MsgPool = new CUtlMemoryPool( sizeof( CProtobufMsgHdr ), 1 );
-			sm_bRegisteredPool = true;
-		}
-
-		CProtobufMsgHdr *pMsg = (CProtobufMsgHdr *)sm_MsgPool->Alloc();
-		Construct<CProtobufMsgHdr>( pMsg );
-		return pMsg;
-	}
-
-	void FreeProtoHdr( CProtobufMsgHdr *pObj )
-	{
-		Destruct<CProtobufMsgHdr>( pObj );
-		sm_MsgPool->Free( (void *)pObj );
-	}
-
-	SteamNetworkingMessage_t *m_pMsg;
-	MsgHdr_t m_Hdr;
-
-	virtual int AddRef( void )
-	{
-		return ThreadInterlockedIncrement( &m_cRefCount );
-	}
-	virtual int Release( void )
-	{
-		Assert( m_cRefCount > 0 );
-		int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
-		if ( nRefCounts == 0 )
-		{
-			if( m_pMsg )
-				m_pMsg->Release();
-
-			delete this;
-		}
-
-		return nRefCounts;
-	}
-	uint m_cRefCount;
-};
-DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 0, UTLMEMORYPOOL_GROW_FAST );
-
-CUtlMemoryPool *CNetPacket::sm_MsgPool;
-bool CNetPacket::sm_bRegisteredPool;
-CThreadFastMutex CNetPacket::sm_MemPoolMutex;
+	AddRef();
+}
 
 
 static void NetworkingSessionStatusChanged(SteamNetConnectionStatusChangedCallback_t *);
@@ -304,10 +218,10 @@ void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity
 		ConColorMsg( STEAM_CNX_COLOR, "Initiate %llx\n", steamID.ConvertToUint64() );
 	}
 
-#if defined( GAME_DLL )
 	CSteamSocket *pSocket = OpenConnection( steamID, hConnection );
 	if ( pSocket )
 	{
+	#if defined( GAME_DLL )
 		CProtobufMsg<CServerHelloMsg> msg;
 		CSteamID remoteID = steamgameserverapicontext->SteamGameServer()->GetSteamID();
 
@@ -325,8 +239,8 @@ void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity
 		msg.Body().set_steamid( remoteID.ConvertToUint64() );
 
 		SendMessage( steamID, k_EServerHelloMsg, msg.Body() );
+	#endif
 	}
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -372,8 +286,8 @@ CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, HSteamNe
 		}
 	}
 
-	CSteamSocket pSock( steamID, hConnection );
-	m_vecSockets.AddToTail( pSock );
+	CSteamSocket sock( steamID, hConnection );
+	m_vecSockets.AddToTail( sock );
 
 	if ( net_steamcnx_debug.GetBool() )
 	{
@@ -437,7 +351,6 @@ void CEconNetworking::ConnectToServer( SteamNetworkingIdentity const &identity )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-// TODO: Convert
 void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 {
 	if ( !SteamNetworkingSockets() )
@@ -451,10 +364,10 @@ void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 		void *pData = malloc( cubMsgSize );
 		Q_memcpy( pData, messages[i]->GetData(), cubMsgSize );
 
-		CNetPacket *pPacket = new CNetPacket;
+		CSmartPtr<CNetPacket> pPacket( new CNetPacket );
 		pPacket->InitFromMemory( pData, cubMsgSize );
 
-		if ( pPacket->Hdr().protocol_version() != STEAM_CNX_PROTO_VERSION )
+		if ( pPacket->Hdr().m_ubProtoVer != STEAM_CNX_PROTO_VERSION )
 		{
 			SteamNetConnectionInfo_t info;
 			if( SteamNetworkingSockets()->GetConnectionInfo( hConn, &info ) )
@@ -467,15 +380,15 @@ void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
 		}
 
 		IMessageHandler *pHandler = NULL;
-		unsigned nIndex = m_MessageTypes.Find( pPacket->MsgType() );
+		unsigned nIndex = m_MessageTypes.Find( pPacket->Hdr().m_eMsgType );
 		if ( nIndex != m_MessageTypes.InvalidIndex() )
 			pHandler = m_MessageTypes[nIndex];
 
 		QueueEconNetworkMessageWork( pHandler, pPacket );
-
-		pPacket->Release();
-		messages[i]->Release();
 	}
+
+	for ( int i = 0; i < nNumMessages; ++i )
+		messages[i]->Release();
 }
 
 //-----------------------------------------------------------------------------
@@ -493,8 +406,8 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, goo
 		return false;
 #endif
 
-	CNetPacket *pPacket = new CNetPacket;
-	if ( pPacket == nullptr )
+	CSmartPtr<CNetPacket> pPacket( new CNetPacket );
+	if ( !pPacket )
 		return false;
 
 	pPacket->Init( msg.ByteSize(), eMsg );
@@ -508,7 +421,6 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, goo
 																k_nSteamNetworkingSend_Reliable, NULL ) == k_EResultOK;
 #endif
 
-	pPacket->Release();
 	return bSuccess;
 }
 
@@ -605,7 +517,7 @@ void CEconNetworking::SessionStatusChanged( SteamNetConnectionStatusChangedCallb
 			break; // Something happened, typically we closed the connection
 
 		default:
-			AssertMsg( false, "Unhandled connection state in %s", __FUNCTION__ );
+			AssertMsg( false, "Unhandled connection state!" );
 			break;
 	}
 }

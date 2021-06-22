@@ -86,6 +86,3 @@ message CUpdateInventoryMsg
 	repeated bytes inventory = 1;			// Serialized payload of the inventory for each slot of each class
 											// !TODO! this is highly unoptimal and ideally would be split up
 }
-
-// Do not remove this comment due to a bug on the Mac OS X protobuf compiler
-

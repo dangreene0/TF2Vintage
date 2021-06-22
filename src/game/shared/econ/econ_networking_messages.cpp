@@ -12,25 +12,21 @@
 struct WorkItem_t
 {
 	IMessageHandler *m_pHandler;
-	INetPacket *m_pPacket;
+	CSmartPtr<CNetPacket> m_pPacket;
 };
 
 // Queue is the wrong word
-bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, INetPacket *pPacket )
+bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, CSmartPtr<CNetPacket> const &pPacket )
 {
 	if ( pHandler == nullptr || pPacket == nullptr )
 		return false;
 
 	const auto WorkThread = [ ] ( void *pvParam ) {
 		WorkItem_t *pWork = (WorkItem_t *)pvParam;
-		INetPacket *pPacket = pWork->m_pPacket;
-
-		pPacket->AddRef();
+		CNetPacket *pPacket = pWork->m_pPacket.GetObject();
 
 		while ( !pWork->m_pHandler->ProcessMessage( pPacket ) )
 			ThreadSleep(25);
-
-		pPacket->Release();
 	};
 
 	WorkItem_t work{pHandler, pPacket};
@@ -48,7 +44,7 @@ class CServerHelloHandler : public IMessageHandler
 public:
 	CServerHelloHandler() {}
 
-	virtual bool ProcessMessage( INetPacket *pPacket )
+	virtual bool ProcessMessage( CNetPacket *pPacket )
 	{
 		CProtobufMsg<CServerHelloMsg> msg( pPacket );
 
@@ -93,7 +89,7 @@ class CClientHelloHandler : public IMessageHandler
 public:
 	CClientHelloHandler() {}
 
-	virtual bool ProcessMessage( INetPacket *pPacket )
+	virtual bool ProcessMessage( CNetPacket *pPacket )
 	{
 	#if defined( GAME_DLL )
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );

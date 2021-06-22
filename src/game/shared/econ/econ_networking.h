@@ -30,19 +30,63 @@ struct MsgHdr_t
 {
 	MsgType_t m_eMsgType;	// Message type
 	uint32 m_unMsgSize;		// Size of message without header
-	CProtobufMsgHdr *m_ProtoHdr;
+	uint8 m_ubProtoVer;
+	EProtocolType m_eProtoType;
 };
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-abstract_class INetPacket : public IRefCounted
+class CNetPacket : public IRefCounted
 {
+	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
 public:
-	virtual MsgType_t MsgType( void ) const = 0;
-	virtual byte const *Data( void ) const = 0;
-	virtual uint32 Size( void ) const = 0;
-	virtual CProtobufMsgHdr const &Hdr( void ) const = 0;
+	CNetPacket()
+	{
+		m_pMsg = NULL;
+		m_Hdr.m_eMsgType = k_EInvalidMsg;
+	}
+
+	byte const *Data( void ) const { return (byte*)m_pMsg->m_pData; }
+	byte *MutableData( void ) { return (byte*)m_pMsg->m_pData; }
+	uint32 Size( void ) const { return m_pMsg->m_cbSize; }
+	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
+
+protected:
+	virtual ~CNetPacket()
+	{
+		Assert( m_cRefCount == 0 );
+		Assert( m_pMsg == NULL );
+	}
+
+	friend class CEconNetworking;
+	void Init( uint32 size, MsgType_t eMsg );
+	void InitFromMemory( void const *pMemory, uint32 size );
+
+private:
+	SteamNetworkingMessage_t *m_pMsg;
+	MsgHdr_t m_Hdr;
+
+	friend class CRefCountAccessor;
+	virtual int AddRef( void )
+	{
+		return ThreadInterlockedIncrement( &m_cRefCount );
+	}
+	virtual int Release( void )
+	{
+		Assert( m_cRefCount > 0 );
+		int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
+		if ( nRefCounts == 0 )
+		{
+			if( m_pMsg )
+				m_pMsg->Release();
+
+			delete this;
+		}
+
+		return nRefCounts;
+	}
+	uint m_cRefCount;
 };
 
 //-----------------------------------------------------------------------------

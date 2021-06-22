@@ -7,9 +7,9 @@
 
 #include "tier1/mempool.h"
 #include "vstdlib/coroutine.h"
+#include "tier1/smartptr.h"
 
 class CNetPacket;
-class INetPacket;
 
 //-----------------------------------------------------------------------------
 // Purpose: Interface for processing network packets
@@ -18,7 +18,7 @@ abstract_class IMessageHandler
 {
 public:
 	virtual ~IMessageHandler() {}
-	virtual bool ProcessMessage( INetPacket *pPacket ) = 0;
+	virtual bool ProcessMessage( CNetPacket *pPacket ) = 0;
 };
 
 
@@ -31,8 +31,7 @@ void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandle
 			CReg##classType() { RegisterEconNetworkMessageHandler( msgType, &s_##msgName##Handler ); } \
 		} g_Reg##classType
 
-bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, INetPacket *pPacket );
-
+bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, CSmartPtr<CNetPacket> const &pPacket );
 
 
 template< class TProtoMsg >
@@ -46,33 +45,26 @@ public:
 	{
 		m_pBody = AllocMsg();
 	}
-	CProtobufMsg( INetPacket *pPacket )
+	CProtobufMsg( CNetPacket *pPacket )
 		: m_pPacket( pPacket )
 	{
-		m_pPacket->AddRef();
-
 		m_pBody = AllocMsg();
 		Assert( m_pBody );
 
-		m_pBody->ParseFromArray( pPacket->Data() + sizeof( MsgHdr_t ), 
-								 pPacket->Size() - sizeof( MsgHdr_t ) );
+		m_pBody->ParseFromArray( m_pPacket->Data() + sizeof( MsgHdr_t ), 
+								 m_pPacket->Size() - sizeof( MsgHdr_t ) );
 	}
 	virtual ~CProtobufMsg()
 	{
-		if ( m_pPacket )
-		{
-			m_pPacket->Release();
-		}
-
 		if ( m_pBody )
 		{
 			FreeMsg( m_pBody );
 		}
 	}
 
-	INetPacket *NetPacket( void ) const { return m_pPacket; }
 	TProtoMsg &Body( void ) { return *m_pBody; }
 	TProtoMsg const &Body( void ) const { return *m_pBody; }
+	TProtoMsg *operator->() { return m_pBody; }
 
 protected:
 	TProtoMsg *AllocMsg( void )
@@ -96,7 +88,7 @@ protected:
 	}
 
 private:
-	INetPacket *m_pPacket;
+	CSmartPtr<CNetPacket> m_pPacket;
 	TProtoMsg *m_pBody;
 
 	// Copying is illegal
