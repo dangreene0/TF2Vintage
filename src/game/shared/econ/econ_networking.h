@@ -97,9 +97,7 @@ abstract_class IEconNetworking
 public:
 	virtual void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
-#if defined( CLIENT_DLL )
 	virtual void ConnectToServer( SteamNetworkingIdentity const &identity ) = 0;
-#endif
 	virtual bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
 };
 

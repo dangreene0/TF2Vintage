@@ -66,14 +66,11 @@ public:
 
 	void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) OVERRIDE;
 	void OnClientDisconnected( CSteamID const &steamID ) OVERRIDE;
+	void ConnectToServer( SteamNetworkingIdentity const &identity ) OVERRIDE;
 
-#if defined( GAME_DLL )
 	CSteamSocket *OpenConnection( CSteamID const &steamID, HSteamNetConnection hConnection );
 	void CloseConnection( CSteamSocket *pSocket );
 	CSteamSocket *FindConnectionForID( CSteamID const &steamID );
-#else
-	void ConnectToServer( SteamNetworkingIdentity const &identity ) OVERRIDE;
-#endif
 
 	void ProcessDataFromConnection( HSteamNetConnection hConn );
 	bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
@@ -87,13 +84,9 @@ public:
 	void SessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus );
 
 private:
-#if defined( GAME_DLL )
 	HSteamListenSocket						m_hListenSocket;
-	CUtlVector< CSteamSocket >				m_vecSockets;
-#else
 	HSteamNetConnection						m_hServerConnection;
-#endif
-
+	CUtlVector< CSteamSocket >				m_vecSockets;
 	HSteamNetPollGroup						m_hPollGroup;
 	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
 };
@@ -140,11 +133,8 @@ CEconNetworking::CEconNetworking() :
 	CAutoGameSystemPerFrame( "EconNetworking" ),
 	m_MessageTypes( DefLessFunc( MsgType_t ) ),
 	m_hPollGroup( k_HSteamNetPollGroup_Invalid ),
-#if defined( GAME_DLL )
-	m_hListenSocket( k_HSteamListenSocket_Invalid )
-#else
+	m_hListenSocket( k_HSteamListenSocket_Invalid ),
 	m_hServerConnection( k_HSteamNetConnection_Invalid )
-#endif
 {
 }
 
@@ -187,13 +177,11 @@ bool CEconNetworking::Init( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::Shutdown( void )
 {
-#if defined( GAME_DLL )
 	FOR_EACH_VEC( m_vecSockets, i )
 	{
 		CloseConnection( &m_vecSockets[i] );
 	}
 	m_vecSockets.Purge();
-#endif
 
 	if( SteamNetworkingSockets() )
 		SteamNetworkingSockets()->DestroyPollGroup( m_hPollGroup );
@@ -258,7 +246,6 @@ void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 		ConColorMsg( STEAM_CNX_COLOR, "Terminate %llx\n", steamID.ConvertToUint64() );
 	}
 
-#if defined( GAME_DLL )
 	FOR_EACH_VEC_BACK( m_vecSockets, i )
 	{
 		if ( m_vecSockets[i].GetSteamID() == steamID )
@@ -267,10 +254,8 @@ void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 			m_vecSockets.FastRemove( i );
 		}
 	}
-#endif
 }
 
-#if defined( GAME_DLL )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -335,8 +320,6 @@ CSteamSocket *CEconNetworking::FindConnectionForID( CSteamID const &steamID )
 	return pSock;
 }
 
-#else
-
 //-----------------------------------------------------------------------------
 // Purpose: Initialize connection to server
 //-----------------------------------------------------------------------------
@@ -348,7 +331,6 @@ void CEconNetworking::ConnectToServer( SteamNetworkingIdentity const &identity )
 	Assert( m_hPollGroup != k_HSteamNetPollGroup_Invalid );
 	SteamNetworkingSockets()->SetConnectionPollGroup( m_hServerConnection, m_hPollGroup );
 }
-#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 
