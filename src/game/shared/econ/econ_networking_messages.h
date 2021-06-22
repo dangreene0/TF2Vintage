@@ -11,6 +11,8 @@
 
 class CNetPacket;
 
+extern CUtlVector<CUtlMemoryPool*> s_vecMsgPools;
+
 //-----------------------------------------------------------------------------
 // Purpose: Interface for processing network packets
 //-----------------------------------------------------------------------------
@@ -73,6 +75,8 @@ protected:
 		{
 			Assert( sm_MsgPool == NULL );
 			sm_MsgPool = new CUtlMemoryPool( sizeof( TProtoMsg ), 1 );
+			s_vecMsgPools.AddToTail( sm_MsgPool );
+
 			sm_bRegisteredPool = true;
 		}
 

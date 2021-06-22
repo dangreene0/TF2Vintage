@@ -197,6 +197,8 @@ void CEconNetworking::Shutdown( void )
 
 	if( SteamNetworkingSockets() )
 		SteamNetworkingSockets()->DestroyPollGroup( m_hPollGroup );
+
+	s_vecMsgPools.PurgeAndDeleteElements();
 }
 
 //-----------------------------------------------------------------------------

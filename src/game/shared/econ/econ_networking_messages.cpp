@@ -9,6 +9,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+CUtlVector<CUtlMemoryPool*> s_vecMsgPools;
 struct WorkItem_t
 {
 	IMessageHandler *m_pHandler;
