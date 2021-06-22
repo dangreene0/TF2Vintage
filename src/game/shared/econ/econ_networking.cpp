@@ -56,7 +56,6 @@ private:
 
 class CEconNetworking : public CAutoGameSystemPerFrame, public IEconNetworking
 {
-	friend void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
 public:
 	CEconNetworking();
 	virtual ~CEconNetworking();
@@ -82,6 +81,7 @@ public:
 #endif
 
 	void SessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus );
+	bool AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
 
 private:
 	HSteamListenSocket						m_hListenSocket;
@@ -124,7 +124,7 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 }
 
 
-static void NetworkingSessionStatusChanged(SteamNetConnectionStatusChangedCallback_t *);
+void NetworkingSessionStatusChanged(SteamNetConnectionStatusChangedCallback_t *);
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -225,8 +225,8 @@ void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity
 		}
 		filesystem->Close( fh );
 
-		msg.Body().set_version( unVersion );
-		msg.Body().set_steamid( remoteID.ConvertToUint64() );
+		msg->set_version( unVersion );
+		msg->set_steamid( remoteID.ConvertToUint64() );
 
 		SendMessage( steamID, k_EServerHelloMsg, msg.Body() );
 	#endif
@@ -506,6 +506,22 @@ void CEconNetworking::SessionStatusChanged( SteamNetConnectionStatusChangedCallb
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CEconNetworking::AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
+{
+	int nFound = m_MessageTypes.Find( eMsg );
+	if ( nFound != m_MessageTypes.InvalidIndex() )
+	{
+		Assert( nFound == m_MessageTypes.InvalidIndex() );
+		return false;
+	}
+
+	m_MessageTypes.Insert( eMsg, pHandler );
+	return true;
+}
+
 
 //-----------------------------------------------------------------------------
 static CEconNetworking g_Networking;
@@ -513,11 +529,11 @@ IEconNetworking *g_pEconNetwork = &g_Networking;
 
 void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
 {
-	g_Networking.m_MessageTypes.Insert( eMsg, pHandler );
+	g_Networking.AddMessageHandler( eMsg, pHandler );
 }
 
 
-static void NetworkingSessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus )
+void NetworkingSessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus )
 {
 	g_Networking.SessionStatusChanged( pStatus );
 }
