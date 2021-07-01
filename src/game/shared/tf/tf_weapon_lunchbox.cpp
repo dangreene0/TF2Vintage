@@ -268,6 +268,16 @@ bool CTFLunchBox::IsChocolateOrFishcake()
 	
 }
 	
+bool CTFLunchBox::IsSteak()
+{
+	int nSetLunchboxMode = 0;
+		CALL_ATTRIB_HOOK_INT( nSetLunchboxMode, set_weapon_mode );
+		if ( nSetLunchboxMode == 2 )
+			return true;
+	
+	return false;
+	
+}	
 //-----------------------------------------------------------------------------
 // Purpose: Update the sandvich bite effects
 //-----------------------------------------------------------------------------
@@ -329,7 +339,7 @@ void CTFLunchBox::Precache( void )
 //-----------------------------------------------------------------------------
 void CTFLunchBox::ApplyBiteEffects( bool bHurt )
 {
-	bool bIsSteak = ( CAttributeManager::AttribHookValue<int>( 0, "set_weapon_mode", this ) == 2);
+	bool bIsSteak = IsSteak();
 	
 	if ( !bHurt && !bIsSteak )
 		return;

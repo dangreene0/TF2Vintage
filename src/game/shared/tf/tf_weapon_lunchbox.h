@@ -51,6 +51,7 @@ public:
 	virtual void		WeaponRegenerate();
 
 	virtual bool		IsChocolateOrFishcake();
+	virtual bool		IsSteak();
 
 #ifdef GAME_DLL
 	virtual void		Precache( void );

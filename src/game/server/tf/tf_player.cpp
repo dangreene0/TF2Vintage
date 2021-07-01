@@ -10819,6 +10819,14 @@ void CTFPlayer::DoTauntAttack( void )
 				{
 					m_Shared.AddCond( TF_COND_LUNCHBOX_HEALTH_BUFF, 30.0f );
 				}
+					
+				int nLunchBoxAddsMinicrits = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pLunch, nLunchBoxAddsMinicrits, set_weapon_mode );
+				if ( pLunch->IsSteak() && !m_Shared.InCond( TF_COND_BERSERK) )
+				{
+					float flBuffaloSteakTime = 18.0f; // 16s + the 2s taunt time
+					m_Shared.AddCond( TF_COND_BERSERK, flBuffaloSteakTime );
+				}
 
 				if ( HealthFraction() <= 1.0f )
 				{
@@ -11009,14 +11017,8 @@ void CTFPlayer::ClearTauntAttack( void )
 		{
 			SpeakConceptIfAllowed( MP_CONCEPT_ATE_FOOD );
 			
-			int nLunchBoxAddsMinicrits = 0;
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nLunchBoxAddsMinicrits, set_weapon_mode );
-			if ( nLunchBoxAddsMinicrits == 2 )
-			{
-				float flBuffaloSteakTime = 16.0f;
-				m_Shared.AddCond( TF_COND_BERSERK, flBuffaloSteakTime );
+			if (m_Shared.InCond( TF_COND_BERSERK )) // If we're in berserk, automatically swap us to melee.
 				Weapon_Switch( Weapon_GetWeaponByType( TF_WPN_TYPE_MELEE ) );
-			}
 		}
 	}
 	else if ( m_iTauntAttack == TAUNTATK_SCOUT_DRINK )
