@@ -7126,9 +7126,9 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 						int iHealthRestored;
 
 						if (!tf2v_use_new_healonkill.GetBool())
-							iHealthRestored = TakeHealth( Min((float)(m_Shared.GetMaxBuffedHealth() - m_Shared.GetMaxHealth()), flHealthOnKill) , DMG_IGNORE_MAXHEALTH );
+							iHealthRestored = TakeHealth( Min((float)(m_Shared.GetMaxBuffedHealth() - GetHealth()), flHealthOnKill) , DMG_IGNORE_MAXHEALTH );
 						else
-							iHealthRestored	= TakeHealth( flHealthOnKill, DMG_GENERIC );
+							iHealthRestored	= TakeHealth( Min((float)(GetMaxHealth() - GetHealth()), flHealthOnKill), DMG_GENERIC );
 						
 						if ( iHealthRestored )
 						{
