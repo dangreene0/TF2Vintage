@@ -44,7 +44,7 @@ public:
 		m_hConn = hConnection;
 	}
 
-	CSteamID const &GetSteamID( void ) const				{ return m_identity.GetSteamID(); }
+	CSteamID GetSteamID( void ) const						{ return m_identity.GetSteamID(); }
 	HSteamNetConnection GetConnection( void ) const			{ return m_hConn; }
 	SteamNetworkingIdentity const &GetIdentity( void ) const { return m_identity; }
 
