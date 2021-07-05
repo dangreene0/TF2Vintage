@@ -17,6 +17,7 @@ struct WorkItem_t
 };
 
 // Queue is the wrong word
+// TODO: Threaded job manager
 bool QueueEconNetworkMessageWork( IMessageHandler *pHandler, CSmartPtr<CNetPacket> const &pPacket )
 {
 	if ( pHandler == nullptr || pPacket == nullptr )

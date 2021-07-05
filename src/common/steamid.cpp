@@ -399,7 +399,7 @@ bool CSteamID::SetFromStringStrict( const char *pchSteamID, EUniverse eDefaultUn
     }
     if ( unIdx > 1 )
     {
-        if ( unVal[0] < k_EUniverseMax )
+        if ( unVal[0] >= k_EUniverseInvalid && unVal[0] < k_EUniverseMax )
         {
             eUniverse = (EUniverse)unVal[0];
             if ( eUniverse == k_EUniverseInvalid )
@@ -566,10 +566,7 @@ const char * CSteamID::Render() const
 	}
 	else if ( k_EAccountTypeIndividual == m_steamid.m_comp.m_EAccountType )
 	{
-		if ( m_steamid.m_comp.m_unAccountInstance != k_unSteamUserDesktopInstance )
-			V_snprintf( pchBuf, k_cBufLen, "[U:%u:%u:%u]", m_steamid.m_comp.m_EUniverse, m_steamid.m_comp.m_unAccountID, m_steamid.m_comp.m_unAccountInstance );
-		else
-			V_snprintf( pchBuf, k_cBufLen, "[U:%u:%u]", m_steamid.m_comp.m_EUniverse, m_steamid.m_comp.m_unAccountID );
+		V_snprintf( pchBuf, k_cBufLen, "[U:%u:%u]", m_steamid.m_comp.m_EUniverse, m_steamid.m_comp.m_unAccountID );
 	}
 	else if ( k_EAccountTypeAnonUser == m_steamid.m_comp.m_EAccountType )
 	{

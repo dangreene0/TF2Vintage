@@ -60,7 +60,7 @@ void ReallyReportBadUDPPacket( const char *pszFrom, const char *pszMsgType, cons
 			ReportBadPacket( # CMsgCls, "Packet is %d bytes, must be padded to at least %d bytes.", cbPkt, k_cbSteamNetworkingMinPaddedPacketSize ); \
 			return; \
 		} \
-		const UDPPaddedMessageHdr *hdr = static_cast< const UDPPaddedMessageHdr * >( pvPkt ); \
+		const UDPPaddedMessageHdr *hdr = (const UDPPaddedMessageHdr * )( pvPkt ); \
 		int nMsgLength = LittleWord( hdr->m_nMsgLength ); \
 		if ( nMsgLength <= 0 || int(nMsgLength+sizeof(UDPPaddedMessageHdr)) > cbPkt ) \
 		{ \
@@ -161,9 +161,11 @@ bool CSteamNetworkListenSocketDirectUDP::APIGetAddress( SteamNetworkingIPAddr *p
 //
 /////////////////////////////////////////////////////////////////////////////
 
-void CSteamNetworkListenSocketDirectUDP::ReceivedFromUnknownHost( const void *pvPkt, int cbPkt, const netadr_t &adrFrom, CSteamNetworkListenSocketDirectUDP *pSock )
+void CSteamNetworkListenSocketDirectUDP::ReceivedFromUnknownHost( const RecvPktInfo_t &info, CSteamNetworkListenSocketDirectUDP *pSock )
 {
-	const uint8 *pPkt = static_cast<const uint8 *>( pvPkt );
+	const uint8 *pPkt = static_cast<const uint8 *>( info.m_pPkt );
+	int cbPkt = info.m_cbPkt;
+	const netadr_t &adrFrom = info.m_adrFrom;
 
 	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
 
@@ -194,7 +196,7 @@ void CSteamNetworkListenSocketDirectUDP::ReceivedFromUnknownHost( const void *pv
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ChallengeRequest )
 	{
-		ParsePaddedPacket( pvPkt, cbPkt, CMsgSteamSockets_UDP_ChallengeRequest, msg )
+		ParsePaddedPacket( pPkt, cbPkt, CMsgSteamSockets_UDP_ChallengeRequest, msg )
 		pSock->Received_ChallengeRequest( msg, adrFrom, usecNow );
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ConnectRequest )
@@ -204,7 +206,7 @@ void CSteamNetworkListenSocketDirectUDP::ReceivedFromUnknownHost( const void *pv
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ConnectionClosed )
 	{
-		ParsePaddedPacket( pvPkt, cbPkt, CMsgSteamSockets_UDP_ConnectionClosed, msg )
+		ParsePaddedPacket( pPkt, cbPkt, CMsgSteamSockets_UDP_ConnectionClosed, msg )
 		pSock->Received_ConnectionClosed( msg, adrFrom, usecNow );
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_NoConnection )
@@ -593,7 +595,7 @@ void CConnectionTransportUDPBase::RecvStats( const CMsgSteamSockets_UDP_Stats &m
 		m_connection.m_statsEndToEnd.ProcessMessage( msgStatsIn.stats(), usecNow );
 
 	// Spew appropriately
-	SpewVerbose( "[%s] Recv UDP stats:%s\n",
+	SpewDebug( "[%s] Recv UDP stats:%s\n",
 		ConnectionDescription(),
 		DescribeStatsContents( msgStatsIn ).c_str()
 	);
@@ -636,7 +638,7 @@ void CConnectionTransportUDPBase::TrackSentStats( UDPSendPacketContext_t &ctx )
 	}
 
 	// Spew appropriately
-	SpewVerbose( "[%s] Sent UDP stats (%s):%s\n",
+	SpewDebug( "[%s] Sent UDP stats (%s):%s\n",
 		ConnectionDescription(),
 		ctx.m_pszReason,
 		DescribeStatsContents( ctx.msg ).c_str()
@@ -892,6 +894,25 @@ void CConnectionTransportUDPBase::Received_NoConnection( const CMsgSteamSockets_
 	// If we closed the connection (the usual case), it
 	// will not be used.
 	m_connection.ConnectionState_ClosedByPeer( k_ESteamNetConnectionEnd_Misc_PeerSentNoConnection, "Received unexpected 'no connection' from peer");
+}
+
+void CConnectionTransportUDPBase::GetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow )
+{
+	CConnectionTransport::GetDetailedConnectionStatus( stats, usecNow );
+
+	// Assume that flags field has already been populated by code above
+	if ( stats.m_info.m_addrRemote.IsLocalHost() )
+	{
+		stats.m_eTransportKind = k_ESteamNetTransport_LocalHost;
+	}
+	else if ( stats.m_info.m_nFlags & k_nSteamNetworkConnectionInfoFlags_Fast )
+	{
+		stats.m_eTransportKind = k_ESteamNetTransport_UDPProbablyLocal;
+	}
+	else
+	{
+		stats.m_eTransportKind = k_ESteamNetTransport_UDP;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1310,24 +1331,34 @@ void CConnectionTransportUDP::TransportConnectionStateChanged( ESteamNetworkingC
 
 void CConnectionTransportUDP::TransportPopulateConnectionInfo( SteamNetConnectionInfo_t &info ) const
 {
-	CConnectionTransport::TransportPopulateConnectionInfo( info );
+	CConnectionTransportUDPBase::TransportPopulateConnectionInfo( info );
 
 	if ( m_pSocket )
 	{
 		const netadr_t &addr = m_pSocket->GetRemoteHostAddr();
 		NetAdrToSteamNetworkingIPAddr( info.m_addrRemote, addr );
-		if ( addr.IsLoopback() )
-			info.m_eTransportKind = k_ESteamNetTransport_LocalHost;
+		if ( addr.IsLoopback() ) // Actually "localhost"
+		{
+			info.m_nFlags |= k_nSteamNetworkConnectionInfoFlags_Fast;
+
+			// Should we turn off security flags?  not sure.  We are not really sure that
+			// the other side is "us", meaning our own process.  It could be
+			// some rogue hacker process.
+			//info.m_nFlags &= ~k_nSteamNetworkConnectionInfoFlags_Unauthenticated;
+			//info.m_nFlags &= ~k_nSteamNetworkConnectionInfoFlags_Unencrypted;
+		}
 		else if ( m_connection.m_statsEndToEnd.m_ping.m_nSmoothedPing <= 5 && IsRouteToAddressProbablyLocal( addr ) )
-			info.m_eTransportKind = k_ESteamNetTransport_UDPProbablyLocal;
-		else
-			info.m_eTransportKind = k_ESteamNetTransport_UDP;
+		{
+			info.m_nFlags |= k_nSteamNetworkConnectionInfoFlags_Fast;
+		}
 	}
 }
 
-void CConnectionTransportUDP::PacketReceived( const void *pvPkt, int cbPkt, const netadr_t &adrFrom, CConnectionTransportUDP *pSelf )
+void CConnectionTransportUDP::PacketReceived( const RecvPktInfo_t &info, CConnectionTransportUDP *pSelf )
 {
-	const uint8 *pPkt = static_cast<const uint8 *>( pvPkt );
+	const uint8 *pPkt = static_cast<const uint8 *>( info.m_pPkt );
+	int cbPkt = info.m_cbPkt;
+	const netadr_t &adrFrom = info.m_adrFrom;
 
 	SteamNetworkingMicroseconds usecNow = SteamNetworkingSockets_GetLocalTimestamp();
 
@@ -1363,7 +1394,7 @@ void CConnectionTransportUDP::PacketReceived( const void *pvPkt, int cbPkt, cons
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ConnectionClosed )
 	{
-		ParsePaddedPacket( pvPkt, cbPkt, CMsgSteamSockets_UDP_ConnectionClosed, msg )
+		ParsePaddedPacket( pPkt, cbPkt, CMsgSteamSockets_UDP_ConnectionClosed, msg )
 		pSelf->Received_ConnectionClosed( msg, usecNow );
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_NoConnection )
@@ -1373,7 +1404,7 @@ void CConnectionTransportUDP::PacketReceived( const void *pvPkt, int cbPkt, cons
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ChallengeRequest )
 	{
-		ParsePaddedPacket( pvPkt, cbPkt, CMsgSteamSockets_UDP_ChallengeRequest, msg )
+		ParsePaddedPacket( pPkt, cbPkt, CMsgSteamSockets_UDP_ChallengeRequest, msg )
 		pSelf->Received_ChallengeOrConnectRequest( "ChallengeRequest", msg.connection_id(), usecNow );
 	}
 	else if ( *pPkt == k_ESteamNetworkingUDPMsg_ConnectRequest )

@@ -670,11 +670,8 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 			nIP = ( nIPParts[0]<<24 ) + ( nIPParts[1]<<16 ) + ( nIPParts[2]<<8 ) + nIPParts[3];
 		}
 
-		SteamNetworkingIPAddr serverAdr;
-		serverAdr.SetIPv4( nIP, ECON_SERVER_PORT );
-
 		SteamNetworkingIdentity ident;
-		ident.SetIPAddr( serverAdr );
+		ident.SetIPv4Addr( nIP, ECON_SERVER_PORT );
 
 		g_pEconNetwork->ConnectToServer( ident );
 	}

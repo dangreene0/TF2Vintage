@@ -100,7 +100,7 @@ private:
 
 	// Callback to handle a packet when it doesn't match
 	// any known address
-	static void ReceivedFromUnknownHost( const void *pPkt, int cbPkt, const netadr_t &adrFrom, CSteamNetworkListenSocketDirectUDP *pSock );
+	static void ReceivedFromUnknownHost( const RecvPktInfo_t &info, CSteamNetworkListenSocketDirectUDP *pSock );
 
 	// Process packets from a source address that does not already correspond to a session
 	void Received_ChallengeRequest( const CMsgSteamSockets_UDP_ChallengeRequest &msg, const netadr_t &adrFrom, SteamNetworkingMicroseconds usecNow );
@@ -125,10 +125,11 @@ class CConnectionTransportUDPBase : public CConnectionTransport
 public:
 	CConnectionTransportUDPBase( CSteamNetworkConnectionBase &connection );
 
-	// Implements CSteamNetworkConnectionTransport
+	// Implements CConnectionTransport
 	virtual bool SendDataPacket( SteamNetworkingMicroseconds usecNow ) override;
 	virtual int SendEncryptedDataChunk( const void *pChunk, int cbChunk, SendPacketContext_t &ctx ) override;
 	virtual void SendEndToEndStatsMsg( EStatsReplyRequest eRequest, SteamNetworkingMicroseconds usecNow, const char *pszReason ) override;
+	virtual void GetDetailedConnectionStatus( SteamNetworkingDetailedConnectionStatus &stats, SteamNetworkingMicroseconds usecNow ) override;
 
 protected:
 	void Received_Data( const uint8 *pPkt, int cbPkt, SteamNetworkingMicroseconds usecNow );
@@ -157,7 +158,7 @@ class CConnectionTransportUDP final : public CConnectionTransportUDPBase
 public:
 	CConnectionTransportUDP( CSteamNetworkConnectionUDP &connection );
 
-	// Implements CSteamNetworkConnectionTransport
+	// Implements CConnectionTransport
 	virtual void TransportFreeResources() override;
 	virtual bool BCanSendEndToEndConnectRequest() const override;
 	virtual bool BCanSendEndToEndData() const override;
@@ -178,7 +179,7 @@ public:
 protected:
 	virtual ~CConnectionTransportUDP(); // Don't call operator delete directly
 
-	static void PacketReceived( const void *pPkt, int cbPkt, const netadr_t &adrFrom, CConnectionTransportUDP *pSelf );
+	static void PacketReceived( const RecvPktInfo_t &info, CConnectionTransportUDP *pSelf );
 
 	void Received_ChallengeReply( const CMsgSteamSockets_UDP_ChallengeReply &msg, SteamNetworkingMicroseconds usecNow );
 	void Received_ConnectOK( const CMsgSteamSockets_UDP_ConnectOK &msg, SteamNetworkingMicroseconds usecNow );

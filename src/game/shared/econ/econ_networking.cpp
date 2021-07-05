@@ -154,6 +154,7 @@ bool CEconNetworking::Init( void )
 		SteamNetworkingUtils()->InitRelayNetworkAccess();
 
 	SteamNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( NetworkingSessionStatusChanged );
+	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_PacketTraceMaxBytes, 2048 );
 
 #if defined( GAME_DLL )
 	if( engine->IsDedicatedServer() )

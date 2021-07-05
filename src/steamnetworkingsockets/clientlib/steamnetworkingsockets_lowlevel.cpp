@@ -52,6 +52,11 @@
 
 namespace SteamNetworkingSocketsLib {
 
+constexpr int k_msMaxPollWait = 1000;
+constexpr SteamNetworkingMicroseconds k_usecMaxTimestampDelta = k_msMaxPollWait * 1100;
+
+static void FlushSpew();
+
 int g_nSteamDatagramSocketBufferSize = 256*1024;
 
 /// Global lock for all local data structures
@@ -320,7 +325,11 @@ void LockDebugInfo::AboutToUnlock()
 	// Yelp if we held the lock for longer than the threshold.
 	if ( usecElapsedTooLong != 0 )
 	{
-		SpewWarning( "SteamNetworkingSockets lock held for %.1fms.  (Performance warning).  %s", usecElapsedTooLong*1e-3, tags );
+		SpewWarning(
+			"SteamNetworkingSockets lock held for %.1fms.  (Performance warning.)  %s\n"
+			"This is usually a symptom of a general performance problem such as thread starvation.",
+			usecElapsedTooLong*1e-3, tags
+		);
 		ETW_LongOp( "lock held", usecElapsedTooLong, tags );
 	}
 
@@ -636,10 +645,47 @@ bool IsRouteToAddressProbablyLocal( netadr_t addr )
 //
 /////////////////////////////////////////////////////////////////////////////
 
+static double s_flFakeRateLimit_Send_tokens;
+static double s_flFakeRateLimit_Recv_tokens;
+static SteamNetworkingMicroseconds s_usecFakeRateLimitBucketUpdateTime;
+
+static void InitFakeRateLimit()
+{
+	s_usecFakeRateLimitBucketUpdateTime = SteamNetworkingSockets_GetLocalTimestamp();
+	s_flFakeRateLimit_Send_tokens = (double)INT_MAX;
+	s_flFakeRateLimit_Recv_tokens = (double)INT_MAX;
+}
+
+static void UpdateFakeRateLimitTokenBuckets( SteamNetworkingMicroseconds usecNow )
+{
+	float flElapsed = ( usecNow - s_usecFakeRateLimitBucketUpdateTime ) * 1e-6;
+	s_usecFakeRateLimitBucketUpdateTime = usecNow;
+
+	if ( g_Config_FakeRateLimit_Send_Rate.Get() <= 0 )
+	{
+		s_flFakeRateLimit_Send_tokens = (double)INT_MAX;
+	}
+	else
+	{
+		s_flFakeRateLimit_Send_tokens += flElapsed*g_Config_FakeRateLimit_Send_Rate.Get();
+		s_flFakeRateLimit_Send_tokens = std::min( s_flFakeRateLimit_Send_tokens, (double)g_Config_FakeRateLimit_Send_Burst.Get() );
+	}
+
+	if ( g_Config_FakeRateLimit_Recv_Rate.Get() <= 0 )
+	{
+		s_flFakeRateLimit_Recv_tokens = (double)INT_MAX;
+	}
+	else
+	{
+		s_flFakeRateLimit_Recv_tokens += flElapsed*g_Config_FakeRateLimit_Recv_Rate.Get();
+		s_flFakeRateLimit_Recv_tokens = std::min( s_flFakeRateLimit_Recv_tokens, (double)g_Config_FakeRateLimit_Recv_Burst.Get() );
+	}
+}
+
 inline IRawUDPSocket::IRawUDPSocket() {}
 inline IRawUDPSocket::~IRawUDPSocket() {}
 
-class CRawUDPSocketImpl : public IRawUDPSocket
+class CRawUDPSocketImpl final : public IRawUDPSocket
 {
 public:
 	STEAMNETWORKINGSOCKETS_DECLARE_CLASS_OPERATOR_NEW
@@ -667,6 +713,10 @@ public:
 		WSAEVENT m_event = INVALID_HANDLE_VALUE;
 	#endif
 
+	// Implements IRawUDPSocket
+	virtual bool BSendRawPacketGather( int nChunks, const iovec *pChunks, const netadr_t &adrTo ) const override;
+	virtual void Close() override;
+
 	//// Send a packet, for really realz right now.  (No checking for fake loss or lag.)
 	inline bool BReallySendRawPacket( int nChunks, const iovec *pChunks, const netadr_t &adrTo ) const
 	{
@@ -693,14 +743,15 @@ public:
 		{
 			int cbTotal = 0;
 			for ( int i = 0 ; i < nChunks ; ++i )
-				cbTotal += (int)pChunks->iov_len;
+				cbTotal += (int)pChunks[i].iov_len;
 			ETW_UDPSendPacket( adrTo, cbTotal );
 		}
 		#endif
 
-		//const uint8 *pbPkt = (const uint8 *)pPkt;
-		//Log_Detailed( LOG_STEAMDATAGRAM_CLIENT, "%4db -> %s %02x %02x %02x %02x %02x ...\n",
-		//	cbPkt, CUtlNetAdrRender( adrTo ).String(), pbPkt[0], pbPkt[1], pbPkt[2], pbPkt[3], pbPkt[4] );
+		if ( g_Config_PacketTraceMaxBytes.Get() >= 0 )
+		{
+			TracePkt( true, adrTo, nChunks, pChunks );
+		}
 
 		#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
 			SteamNetworkingMicroseconds usecSendStart = SteamNetworkingSockets_GetLocalTimestamp();
@@ -754,6 +805,62 @@ public:
 
 		return bResult;
 	}
+
+	void TracePkt( bool bSend, const netadr_t &adrRemote, int nChunks, const iovec *pChunks ) const
+	{
+		int cbTotal = 0;
+		for ( int i = 0 ; i < nChunks ; ++i )
+			cbTotal += pChunks[i].iov_len;
+		if ( bSend )
+		{
+			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "[Trace Send] %s -> %s | %d bytes\n",
+				SteamNetworkingIPAddrRender( m_boundAddr ).c_str(), CUtlNetAdrRender( adrRemote ).String(), cbTotal );
+		}
+		else
+		{
+			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "[Trace Recv] %s <- %s | %d bytes\n",
+				SteamNetworkingIPAddrRender( m_boundAddr ).c_str(), CUtlNetAdrRender( adrRemote ).String(), cbTotal );
+		}
+		int l = std::min( cbTotal, g_Config_PacketTraceMaxBytes.Get() );
+		const uint8 *p = (const uint8 *)pChunks->iov_base;
+		int cbChunkLeft = pChunks->iov_len;
+		while ( l > 0 )
+		{
+			// How many bytes to print on thie row?
+			int row = std::min( 16, l );
+			l -= row;
+
+			char buf[256], *d = buf;
+			do {
+
+				// Check for end of this chunk
+				while ( cbChunkLeft == 0 )
+				{
+					++pChunks;
+					p = (const uint8 *)pChunks->iov_base;
+					cbChunkLeft = pChunks->iov_len;
+				}
+
+				// print the byte
+				static const char hexdigit[] = "0123456789abcdef";
+				*(d++) = ' ';
+				*(d++) = hexdigit[ *p >> 4 ];
+				*(d++) = hexdigit[ *p & 0xf ];
+
+				// Advance to next byte
+				++p;
+				--cbChunkLeft;
+			} while (--row > 0 );
+			*d = '\0';
+
+			// Emit the row
+			ReallySpewTypeFmt( k_ESteamNetworkingSocketsDebugOutputType_Msg, "    %s\n", buf );
+		}
+	}
+
+private:
+
+	void InternalAddToCleanupQueue();
 };
 
 /// We don't expect to have enough sockets, and open and close them frequently
@@ -769,7 +876,7 @@ class CPacketLagger : private IThinker
 public:
 	~CPacketLagger() { Clear(); }
 
-	void LagPacket( bool bSend, const CRawUDPSocketImpl *pSock, const netadr_t &adr, int msDelay, int nChunks, const iovec *pChunks )
+	void LagPacket( CRawUDPSocketImpl *pSock, const netadr_t &adr, int msDelay, int nChunks, const iovec *pChunks )
 	{
 		SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "LagPacket" );
 
@@ -799,22 +906,23 @@ public:
 		msDelay = std::min( msDelay, 5000 );
 		const SteamNetworkingMicroseconds usecTime = SteamNetworkingSockets_GetLocalTimestamp() + msDelay * 1000;
 
-		// Find the right place to insert the packet.
+		// Find the right place to insert the packet.  This is a dumb linear search, but in
+		// the steady state where the delay is constant, this search loop won't actually iterate,
+		// and we'll always be adding to the end of the queue
 		LaggedPacket *pkt = nullptr;
-		for ( CUtlLinkedList< LaggedPacket >::IndexType_t i = m_list.Head(); i != m_list.InvalidIndex(); i = m_list.Next( i ) )
+		for ( CUtlLinkedList< LaggedPacket >::IndexType_t i = m_list.Tail(); i != m_list.InvalidIndex(); i = m_list.Previous( i ) )
 		{
-			if ( usecTime < m_list[ i ].m_usecTime )
+			if ( usecTime >= m_list[ i ].m_usecTime )
 			{
-				pkt = &m_list[ m_list.InsertBefore( i ) ];
+				pkt = &m_list[ m_list.InsertAfter( i ) ];
 				break;
 			}
 		}
 		if ( pkt == nullptr )
 		{
-			pkt = &m_list[ m_list.AddToTail() ];
+			pkt = &m_list[ m_list.AddToHead() ];
 		}
 	
-		pkt->m_bSend = bSend;
 		pkt->m_pSockOwner = pSock;
 		pkt->m_adrRemote = adr;
 		pkt->m_usecTime = usecTime;
@@ -845,35 +953,19 @@ public:
 				break;
 
 			// Make sure socket is still in good shape.
-			const CRawUDPSocketImpl *pSock = pkt.m_pSockOwner;
-			if ( pSock->m_socket == INVALID_SOCKET || !pSock->m_callback.m_fnCallback )
+			CRawUDPSocketImpl *pSock = pkt.m_pSockOwner;
+			if ( pSock )
 			{
-				AssertMsg( false, "Lagged packet remains in queue after socket destroyed or queued for destruction!" );
-			}
-			else
-			{
-
-				// Sending, or receiving?
-				if ( pkt.m_bSend )
+				if ( pSock->m_socket == INVALID_SOCKET || !pSock->m_callback.m_fnCallback )
 				{
-					iovec temp;
-					temp.iov_len = pkt.m_cbPkt;
-					temp.iov_base = pkt.m_pkt;
-					pSock->BReallySendRawPacket( 1, &temp, pkt.m_adrRemote );
+					AssertMsg( false, "Lagged packet remains in queue after socket destroyed or queued for destruction!" );
 				}
 				else
 				{
-					// Copy data out of queue into local variables, just in case a
-					// packet is queued while we're in this function.  We don't want
-					// our list to shift in memory, and the pointer we pass to the
-					// caller to dangle.
-					char temp[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
-					memcpy( temp, pkt.m_pkt, pkt.m_cbPkt );
-					netadr_t adr( pkt.m_adrRemote );
-					pSock->m_callback( temp, pkt.m_cbPkt, adr );
+					ProcessPacket( pkt );
 				}
+				m_list.RemoveFromHead();
 			}
-			m_list.RemoveFromHead();
 		}
 
 		Schedule();
@@ -897,14 +989,12 @@ public:
 		{
 			int idxNext = m_list.Next( idx );
 			if ( m_list[idx].m_pSockOwner == pSock )
-				m_list.Remove( idx );
+				m_list[idx].m_pSockOwner = nullptr;
 			idx = idxNext;
 		}
-
-		Schedule();
 	}
 
-private:
+protected:
 
 	/// Set the next think time as appropriate
 	void Schedule()
@@ -917,8 +1007,7 @@ private:
 
 	struct LaggedPacket
 	{
-		bool m_bSend; // true for outbound, false for inbound
-		const CRawUDPSocketImpl *m_pSockOwner;
+		CRawUDPSocketImpl *m_pSockOwner;
 		netadr_t m_adrRemote;
 		SteamNetworkingMicroseconds m_usecTime; /// Time when it should be sent or received
 		int m_cbPkt;
@@ -926,9 +1015,39 @@ private:
 	};
 	CUtlLinkedList<LaggedPacket> m_list;
 
+	/// Do whatever we're supposed to do with the next packet
+	virtual void ProcessPacket( const LaggedPacket &pkt ) = 0;
 };
 
-static CPacketLagger s_packetLagQueue;
+class CPacketLaggerSend final : public CPacketLagger
+{
+public:
+	virtual void ProcessPacket( const LaggedPacket &pkt ) override
+	{
+		iovec temp;
+		temp.iov_len = pkt.m_cbPkt;
+		temp.iov_base = (void *)pkt.m_pkt;
+		pkt.m_pSockOwner->BReallySendRawPacket( 1, &temp, pkt.m_adrRemote );
+	}
+};
+
+class CPacketLaggerRecv final : public CPacketLagger
+{
+public:
+	virtual void ProcessPacket( const LaggedPacket &pkt ) override
+	{
+		// Copy data out of queue into local variables, just in case a
+		// packet is queued while we're in this function.  We don't want
+		// our list to shift in memory, and the pointer we pass to the
+		// caller to dangle.
+		char temp[ k_cbSteamNetworkingSocketsMaxUDPMsgLen ];
+		memcpy( temp, pkt.m_pkt, pkt.m_cbPkt );
+		pkt.m_pSockOwner->m_callback( RecvPktInfo_t{ temp, pkt.m_cbPkt, pkt.m_adrRemote, pkt.m_pSockOwner } );
+	}
+};
+
+static CPacketLaggerSend s_packetLagQueueSend;
+static CPacketLaggerRecv s_packetLagQueueRecv;
 
 /// Object used to wake our background thread efficiently
 #if defined( _WIN32 )
@@ -959,15 +1078,7 @@ void WakeSteamDatagramThread()
 	#endif
 }
 
-bool IRawUDPSocket::BSendRawPacket( const void *pPkt, int cbPkt, const netadr_t &adrTo ) const
-{
-	iovec temp;
-	temp.iov_len = cbPkt;
-	temp.iov_base = (void *)pPkt;
-	return BSendRawPacketGather( 1, &temp, adrTo );
-}
-
-bool IRawUDPSocket::BSendRawPacketGather( int nChunks, const iovec *pChunks, const netadr_t &adrTo ) const
+bool CRawUDPSocketImpl::BSendRawPacketGather( int nChunks, const iovec *pChunks, const netadr_t &adrTo ) const
 {
 	SteamNetworkingGlobalLock::AssertHeldByCurrentThread();
 
@@ -975,11 +1086,35 @@ bool IRawUDPSocket::BSendRawPacketGather( int nChunks, const iovec *pChunks, con
 	if ( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) <= 0 )
 		return true;
 
+	// Check simulated global rate limit.  Make sure this is fast
+	// when the limit is not in use
+	if ( unlikely( g_Config_FakeRateLimit_Send_Rate.Get() > 0 ) )
+	{
+
+		// Check if bucket already has tokens in it, which
+		// will be common.  If so, we can avoid reading the
+		// timer
+		if ( s_flFakeRateLimit_Send_tokens <= 0.0f )
+		{
+
+			// Update bucket with tokens
+			UpdateFakeRateLimitTokenBuckets( SteamNetworkingSockets_GetLocalTimestamp() );
+
+			// Still empty?
+			if ( s_flFakeRateLimit_Send_tokens <= 0.0f )
+				return true;
+		}
+
+		// Spend tokens
+		int cbTotal = 0;
+		for ( int i = 0 ; i < nChunks ; ++i )
+			cbTotal += (int)pChunks[i].iov_len;
+		s_flFakeRateLimit_Send_tokens -= cbTotal;
+	}
+
 	// Fake loss?
 	if ( RandomBoolWithOdds( g_Config_FakePacketLoss_Send.Get() ) )
 		return true;
-
-	const CRawUDPSocketImpl *self = static_cast<const CRawUDPSocketImpl *>( this );
 
 	// Fake lag?
 	int32 nPacketFakeLagTotal = g_Config_FakePacketLag_Send.Get();
@@ -995,37 +1130,44 @@ bool IRawUDPSocket::BSendRawPacketGather( int nChunks, const iovec *pChunks, con
 	{
 		int32 nDupLag = nPacketFakeLagTotal + WeakRandomInt( 0, g_Config_FakePacketDup_TimeMax.Get() );
 		nDupLag = std::max( 1, nDupLag );
-		s_packetLagQueue.LagPacket( true, self, adrTo, nDupLag, nChunks, pChunks );
+		s_packetLagQueueSend.LagPacket( const_cast<CRawUDPSocketImpl *>( this ), adrTo, nDupLag, nChunks, pChunks );
 	}
 
 	// Lag the original packet?
 	if ( nPacketFakeLagTotal > 0 )
 	{
-		s_packetLagQueue.LagPacket( true, self, adrTo, nPacketFakeLagTotal, nChunks, pChunks );
+		s_packetLagQueueSend.LagPacket( const_cast<CRawUDPSocketImpl *>( this ), adrTo, nPacketFakeLagTotal, nChunks, pChunks );
 		return true;
 	}
 
 	// Now really send it
-	return self->BReallySendRawPacket( nChunks, pChunks, adrTo );
+	return BReallySendRawPacket( nChunks, pChunks, adrTo );
 }
 
-void IRawUDPSocket::Close()
+void CRawUDPSocketImpl::InternalAddToCleanupQueue()
 {
-	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "IRawUDPSocket::Close" );
-	CRawUDPSocketImpl *self = static_cast<CRawUDPSocketImpl *>( this );
 
 	/// Clear the callback, to ensure that no further callbacks will be executed.
 	/// This marks the socket as pending destruction.
-	Assert( self->m_callback.m_fnCallback );
-	self->m_callback.m_fnCallback = nullptr;
-	Assert( self->m_socket != INVALID_SOCKET );
+	Assert( m_callback.m_fnCallback );
+	m_callback.m_fnCallback = nullptr;
+	Assert( m_socket != INVALID_SOCKET );
 
-	DbgVerify( s_vecRawSockets.FindAndFastRemove( self ) );
-	DbgVerify( !s_vecRawSocketsPendingDeletion.FindAndFastRemove( self ) );
-	s_vecRawSocketsPendingDeletion.AddToTail( self );
+	DbgVerify( s_vecRawSockets.FindAndFastRemove( this ) );
+	DbgVerify( !s_vecRawSocketsPendingDeletion.FindAndFastRemove( this ) );
+	s_vecRawSocketsPendingDeletion.AddToTail( this );
 
 	// Clean up lagged packets, if any
-	s_packetLagQueue.AboutToDestroySocket( self );
+	s_packetLagQueueSend.AboutToDestroySocket( this );
+	s_packetLagQueueRecv.AboutToDestroySocket( this );
+}
+
+void CRawUDPSocketImpl::Close()
+{
+	SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "IRawUDPSocket::Close" );
+
+	// Mark the callback as detached, and put us in the queue for cleanup when it's safe.
+	InternalAddToCleanupQueue();
 
 	// Make sure we don't delay doing this too long
 	if ( s_bManualPollMode || ( s_pThreadSteamDatagram && s_pThreadSteamDatagram->get_id() != std::this_thread::get_id() ) )
@@ -1393,6 +1535,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 	#endif
 
 	SteamNetworkingMicroseconds usecStartedLocking = SteamNetworkingSockets_GetLocalTimestamp();
+	UpdateFakeRateLimitTokenBuckets( usecStartedLocking );
 	for (;;)
 	{
 
@@ -1415,6 +1558,9 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 		SteamNetworkingMicroseconds usecElapsed = SteamNetworkingSockets_GetLocalTimestamp() - usecStartedLocking;
 		AssertMsg1( usecElapsed < 50*1000 || s_nLowLevelSupportRefCount.load(std::memory_order_acquire) <= 0 || s_bManualPollMode != bManualPoll || Plat_IsInDebugSession(), "SDR service thread gave up on lock after waiting %dms.  This directly adds to delay of processing of network packets!", int( usecElapsed/1000 ) );
 	}
+
+	// If we have spewed, flush to disk
+	FlushSpew();
 
 	// Recv socket data from any sockets that might have data, and execute the callbacks.
 	char buf[ k_cbSteamNetworkingSocketsMaxUDPMsgLen + 1024 ];
@@ -1479,7 +1625,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 			int ret = ::recvfrom( pSock->m_socket, buf, sizeof( buf ), 0, (sockaddr *)&from, &fromlen );
 
 			#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
-				SteamNetworkingMicroseconds usecRecvFromEnd = SteamNetworkingSockets_GetLocalTimestamp();
+				SteamNetworkingMicroseconds usecRecvFromEnd = SteamNetworkingSockets_GetLocalTimestamp(); // FIXME - If we add a timestamp to RecvPktInfo_t this will be free
 				if ( usecRecvFromEnd > s_usecIgnoreLongLockWaitTimeUntil )
 				{
 					SteamNetworkingMicroseconds usecRecvFromElapsed = usecRecvFromEnd - usecRecvFromStart;
@@ -1511,16 +1657,52 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 			// will tell us how many packets were processed
 			SteamNetworkingGlobalLock::AssertHeldByCurrentThread( "RecvUDPPacket" );
 
+			// Check simulated global rate limit.  Make sure this is fast
+			// when the limit is not in use
+			if ( unlikely( g_Config_FakeRateLimit_Recv_Rate.Get() > 0 ) )
+			{
+
+				// Check if bucket already has tokens in it, which
+				// will be common.  If so, we can avoid reading the
+				// timer
+				if ( s_flFakeRateLimit_Recv_tokens <= 0.0f )
+				{
+
+					// Update bucket with tokens
+					// FIXME - We could probably avoid reading the timer here
+					// If we read it in the outer loop.  Which...we probably should do
+					// and add to the context struct, since almost every packet callback
+					// currently does it.
+					UpdateFakeRateLimitTokenBuckets( SteamNetworkingSockets_GetLocalTimestamp() );
+
+					// Still empty?
+					if ( s_flFakeRateLimit_Recv_tokens <= 0.0f )
+						continue;
+				}
+
+				// Spend tokens
+				s_flFakeRateLimit_Recv_tokens -= ret;
+			}
+
 			// Check for simulating random packet loss
 			if ( RandomBoolWithOdds( g_Config_FakePacketLoss_Recv.Get() ) )
 				continue;
 
-			netadr_t adr;
-			adr.SetFromSockadr( &from );
+			RecvPktInfo_t info;
+			info.m_adrFrom.SetFromSockadr( &from );
 
 			// If we're dual stack, convert mapped IPv4 back to ordinary IPv4
 			if ( pSock->m_nAddressFamilies == k_nAddressFamily_DualStack )
-				adr.BConvertMappedToIPv4();
+				info.m_adrFrom.BConvertMappedToIPv4();
+
+			// Check for tracing
+			if ( g_Config_PacketTraceMaxBytes.Get() >= 0 )
+			{
+				iovec tmp;
+				tmp.iov_base = buf;
+				tmp.iov_len = ret;
+				pSock->TracePkt( false, info.m_adrFrom, 1, &tmp );
+			}
 
 			int32 nPacketFakeLagTotal = g_Config_FakePacketLag_Recv.Get();
 
@@ -1538,7 +1720,7 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 				iovec temp;
 				temp.iov_len = ret;
 				temp.iov_base = buf;
-				s_packetLagQueue.LagPacket( false, pSock, adr, nDupLag, 1, &temp );
+				s_packetLagQueueRecv.LagPacket( pSock, info.m_adrFrom, nDupLag, 1, &temp );
 			}
 
 			// Check for simulating lag
@@ -1547,17 +1729,16 @@ static bool PollRawUDPSockets( int nMaxTimeoutMS, bool bManualPoll )
 				iovec temp;
 				temp.iov_len = ret;
 				temp.iov_base = buf;
-				s_packetLagQueue.LagPacket( false, pSock, adr, nPacketFakeLagTotal, 1, &temp );
+				s_packetLagQueueRecv.LagPacket( pSock, info.m_adrFrom, nPacketFakeLagTotal, 1, &temp );
 			}
 			else
 			{
-				ETW_UDPRecvPacket( adr, ret );
+				ETW_UDPRecvPacket( info.m_adrFrom, ret );
 
-				//const uint8 *pbPkt = (const uint8 *)buf;
-				//Log_Detailed( LOG_STEAMDATAGRAM_CLIENT, "%s -> %4db %02x %02x %02x %02x %02x ...\n",
-				//	CUtlNetAdrRender( adr ).String(), ret, pbPkt[0], pbPkt[1], pbPkt[2], pbPkt[3], pbPkt[4] );
-
-				pSock->m_callback( buf, ret, adr );
+				info.m_pPkt = buf;
+				info.m_cbPkt = ret;
+				info.m_pSock = pSock;
+				pSock->m_callback( info );
 			}
 
 			#ifdef STEAMNETWORKINGSOCKETS_LOWLEVEL_TIME_SOCKET_CALLS
@@ -1666,7 +1847,7 @@ static bool SteamNetworkingSockets_InternalPoll( int msWait, bool bManualPoll )
 	// be explicitly waking the thread for good perf, we will notice
 	// the delay.  But not so long that a bug in some rare 
 	// shutdown race condition (or the like) will be catastrophic
-	msWait = std::min( msWait, 5000 );
+	msWait = std::min( msWait, k_msMaxPollWait );
 
 	// Poll sockets
 	if ( !PollRawUDPSockets( msWait, bManualPoll ) )
@@ -1830,16 +2011,18 @@ public:
 	}
 };
 
-static void DedicatedBoundSocketCallback( const void *pPkt, int cbPkt, const netadr_t &adrFrom, CDedicatedBoundSocket *pSock )
+static void DedicatedBoundSocketCallback( const RecvPktInfo_t &info, CDedicatedBoundSocket *pSock )
 {
 
 	// Make sure that it's from the guy we are supposed to be talking to.
-	if ( adrFrom != pSock->GetRemoteHostAddr() )
+	if ( info.m_adrFrom != pSock->GetRemoteHostAddr() )
 	{
 		// Packets from random internet hosts happen all the time,
 		// especially on a LAN where all sorts of people have broadcast
 		// discovery protocols.  So this probably isn't a bug or a problem.
-		SpewVerbose( "Ignoring stray packet from %s received on port %d.  Should only be talking to %s on that port.\n", CUtlNetAdrRender( adrFrom ).String(), pSock->GetRawSock()->m_boundAddr.m_port, CUtlNetAdrRender( pSock->GetRemoteHostAddr() ).String() );
+		SpewVerbose( "Ignoring stray packet from %s received on port %d.  Should only be talking to %s on that port.\n",
+			CUtlNetAdrRender( info.m_adrFrom ).String(), pSock->GetRawSock()->m_boundAddr.m_port,
+			CUtlNetAdrRender( pSock->GetRemoteHostAddr() ).String() );
 		return;
 	}
 
@@ -1848,7 +2031,7 @@ static void DedicatedBoundSocketCallback( const void *pPkt, int cbPkt, const net
 	// Should we use a different signature here so that the user
 	// of our API doesn't write their own useless code to check
 	// the from address?
-	pSock->m_callback( pPkt, cbPkt, adrFrom );
+	pSock->m_callback( info );
 }
 
 IBoundUDPSocket *OpenUDPSocketBoundToHost( const netadr_t &adrRemote, CRecvPacketCallback callback, SteamDatagramErrMsg &errMsg )
@@ -1858,7 +2041,7 @@ IBoundUDPSocket *OpenUDPSocketBoundToHost( const netadr_t &adrRemote, CRecvPacke
 	// Select local address to use.
 	// Since we know the remote host, let's just always use a single-stack socket
 	// with the specified family
-	int nAddressFamilies = ( adrRemote.GetType() == NA_IPV6 ) ? k_nAddressFamily_IPv6 : k_nAddressFamily_IPv4;
+	int nAddressFamilies = ( adrRemote.GetType() == k_EIPTypeV6 ) ? k_nAddressFamily_IPv6 : k_nAddressFamily_IPv4;
 
 	// Create a socket, bind it to the desired local address
 	CDedicatedBoundSocket *pTempContext = nullptr; // don't yet know the context
@@ -1918,16 +2101,16 @@ CSharedSocket::~CSharedSocket()
 	Kill();
 }
 
-void CSharedSocket::CallbackRecvPacket( const void *pPkt, int cbPkt, const netadr_t &adrFrom, CSharedSocket *pSock )
+void CSharedSocket::CallbackRecvPacket( const RecvPktInfo_t &info, CSharedSocket *pSock )
 {
 	// Locate the client
-	int idx = pSock->m_mapRemoteHosts.Find( adrFrom );
+	int idx = pSock->m_mapRemoteHosts.Find( info.m_adrFrom );
 
 	// Select the callback to invoke, ether client-specific, or the default
 	const CRecvPacketCallback &callback = ( idx == pSock->m_mapRemoteHosts.InvalidIndex() ) ? pSock->m_callbackDefault : pSock->m_mapRemoteHosts[ idx ]->m_callback;
 
 	// Execute the callback
-	callback( pPkt, cbPkt, adrFrom );
+	callback( info );
 }
 
 bool CSharedSocket::BInit( const SteamNetworkingIPAddr &localAddr, CRecvPacketCallback callbackDefault, SteamDatagramErrMsg &errMsg )
@@ -2011,9 +2194,102 @@ void CSharedSocket::RemoteHost::Close()
 
 SteamNetworkingMicroseconds g_usecLastRateLimitSpew;
 int g_nRateLimitSpewCount;
-ESteamNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel;
-static FSteamNetworkingSocketsDebugOutput s_pfnDebugOutput = nullptr;
+ESteamNetworkingSocketsDebugOutputType g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None; // Option selected by the "system" (environment variable, etc)
+ESteamNetworkingSocketsDebugOutputType g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; // Option selected by app
+ESteamNetworkingSocketsDebugOutputType g_eDefaultGroupSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; // Effective value
+FSteamNetworkingSocketsDebugOutput g_pfnDebugOutput = nullptr;
 void (*g_pfnPreFormatSpewHandler)( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap ) = SteamNetworkingSockets_DefaultPreFormatDebugOutputHandler;
+static bool s_bSpewInitted = false;
+
+static FILE *g_pFileSystemSpew;
+static SteamNetworkingMicroseconds g_usecSystemLogFileOpened;
+static bool s_bNeedToFlushSystemSpew = false;;
+
+// FIXME - probably need our own leaf lock for the spew
+
+static void InitSpew()
+{
+
+	// First time, check environment variables and set system spew level
+	if ( !s_bSpewInitted )
+	{
+		s_bSpewInitted = true;
+
+		const char *STEAMNETWORKINGSOCKETS_LOG_LEVEL = getenv( "STEAMNETWORKINGSOCKETS_LOG_LEVEL" );
+		if ( !V_isempty( STEAMNETWORKINGSOCKETS_LOG_LEVEL ) )
+		{
+			switch ( atoi( STEAMNETWORKINGSOCKETS_LOG_LEVEL ) )
+			{
+				case 0: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None; break;
+				case 1: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Warning; break;
+				case 2: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Msg; break;
+				case 3: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Verbose; break;
+				case 4: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Debug; break;
+				case 5: g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_Everything; break;
+			}
+
+			if ( g_eSystemSpewLevel > k_ESteamNetworkingSocketsDebugOutputType_None )
+			{
+
+				// What log file to use?
+				const char *pszLogFile = getenv( "STEAMNETWORKINGSOCKETS_LOG_FILE" );
+				if ( !pszLogFile )
+					pszLogFile = "steamnetworkingsockets.log" ;
+
+				// Try to open file.  Use binary mode, since we want to make sure we control
+				// when it is flushed to disk
+				g_pFileSystemSpew = fopen( pszLogFile, "wb" );
+				if ( g_pFileSystemSpew )
+				{
+					g_usecSystemLogFileOpened = SteamNetworkingSockets_GetLocalTimestamp();
+					time_t now = time(nullptr);
+					fprintf( g_pFileSystemSpew, "Log opened, time %lld %s", (long long)now, ctime( &now ) );
+
+					// if they ask for verbose, turn on some other groups, by default
+					if ( g_eSystemSpewLevel >= k_ESteamNetworkingSocketsDebugOutputType_Verbose )
+					{
+						g_ConfigDefault_LogLevel_P2PRendezvous.m_value.m_defaultValue = g_eSystemSpewLevel;
+						g_ConfigDefault_LogLevel_P2PRendezvous.m_value.Set( g_eSystemSpewLevel );
+
+						g_ConfigDefault_LogLevel_PacketGaps.m_value.m_defaultValue = g_eSystemSpewLevel-1;
+						g_ConfigDefault_LogLevel_PacketGaps.m_value.Set( g_eSystemSpewLevel-1 );
+					}
+				}
+				else
+				{
+					// Failed
+					g_eSystemSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+				}
+			}
+		}
+	}
+
+	g_eDefaultGroupSpewLevel = std::max( g_eSystemSpewLevel, g_eAppSpewLevel );
+
+}
+
+static void KillSpew()
+{
+	g_eDefaultGroupSpewLevel = g_eSystemSpewLevel = g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+	g_pfnDebugOutput = nullptr;
+	s_bSpewInitted = false;
+	s_bNeedToFlushSystemSpew = false;
+	if ( g_pFileSystemSpew )
+	{
+		fclose( g_pFileSystemSpew );
+		g_pFileSystemSpew = nullptr;
+	}
+}
+
+static void FlushSpew()
+{
+	if ( s_bNeedToFlushSystemSpew )
+	{
+		if ( g_pFileSystemSpew )
+			fflush( g_pFileSystemSpew );
+		s_bNeedToFlushSystemSpew = false;
+	}
+}
 
 
 void ReallySpewTypeFmt( int eType, const char *pMsg, ... )
@@ -2037,6 +2313,8 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 	// First time init?
 	if ( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) == 0 )
 	{
+		InitSpew();
+
 		CCrypto::Init();
 
 		// Initialize event tracing
@@ -2071,8 +2349,22 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 				V_strcpy_safe( errMsg, "WSAStartup failed" );
 				return false;
 			}
+
+			#pragma comment( lib, "winmm.lib" )
+			if ( ::timeBeginPeriod( 1 ) != 0 )
+			{
+				::WSACleanup();
+				#ifdef _XBOX_ONE
+					::CoUninitialize();
+				#endif
+				V_strcpy_safe( errMsg, "timeBeginPeriod failed" );
+				return false;
+			}
 		}
 		#endif
+
+		// Initialize fake rate limit token buckets
+		InitFakeRateLimit();
 
 		// Make sure random number generator is seeded
 		SeedWeakRandomGenerator();
@@ -2146,7 +2438,7 @@ bool BSteamNetworkingSocketsLowLevelAddRef( SteamDatagramErrMsg &errMsg )
 
 			// Static destruction is about to happen.  If we have a thread,
 			// we need to nuke it
-			s_pfnDebugOutput = nullptr;
+			KillSpew();
 			while ( s_nLowLevelSupportRefCount.load(std::memory_order_acquire) > 0 )
 				SteamNetworkingSocketsLowLevelDecRef();
 		} );
@@ -2215,16 +2507,23 @@ void SteamNetworkingSocketsLowLevelDecRef()
 	Assert( s_vecRawSocketsPendingDeletion.IsEmpty() );
 	s_vecRawSocketsPendingDeletion.Purge();
 
+	// Nuke packet lagger queues and make sure we are not registered to think
+	s_packetLagQueueRecv.Clear();
+	s_packetLagQueueSend.Clear();
+
 	// Shutdown event tracing
 	ETW_Kill();
 
 	// Nuke sockets and COM
 	#ifdef _WIN32
+		::timeEndPeriod( 1 );
 		::WSACleanup();
 	#endif
 	#ifdef _XBOX_ONE
 		::CoUninitialize();
 	#endif
+
+	KillSpew();
 }
 
 #ifdef DBGFLAG_VALIDATE
@@ -2238,14 +2537,16 @@ void SteamNetworkingSockets_SetDebugOutputFunction( ESteamNetworkingSocketsDebug
 {
 	if ( pfnFunc && eDetailLevel > k_ESteamNetworkingSocketsDebugOutputType_None )
 	{
-		SteamNetworkingSocketsLib::s_pfnDebugOutput = pfnFunc;
-		SteamNetworkingSocketsLib::g_eDefaultGroupSpewLevel = ESteamNetworkingSocketsDebugOutputType( eDetailLevel );
+		SteamNetworkingSocketsLib::g_pfnDebugOutput = pfnFunc;
+		SteamNetworkingSocketsLib::g_eAppSpewLevel = ESteamNetworkingSocketsDebugOutputType( eDetailLevel );
 	}
 	else
 	{
-		SteamNetworkingSocketsLib::s_pfnDebugOutput = nullptr;
-		SteamNetworkingSocketsLib::g_eDefaultGroupSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
+		SteamNetworkingSocketsLib::g_pfnDebugOutput = nullptr;
+		SteamNetworkingSocketsLib::g_eAppSpewLevel = k_ESteamNetworkingSocketsDebugOutputType_None;
 	}
+
+	SteamNetworkingSocketsLib::InitSpew();
 }
 
 SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
@@ -2268,7 +2569,6 @@ SteamNetworkingMicroseconds SteamNetworkingSockets_GetLocalTimestamp()
 		// we read the timer?
 		SteamNetworkingMicroseconds usecElapsed = usecResult - usecLastReturned;
 		Assert( usecElapsed >= 0 ); // Our raw timer function is not monotonic!  We assume this never happens!
-		const SteamNetworkingMicroseconds k_usecMaxTimestampDelta = k_nMillion; // one second
 		if ( usecElapsed <= k_usecMaxTimestampDelta )
 		{
 			// Should be the common case - only a relatively small of time has elapsed
@@ -2393,15 +2693,6 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_SetPreFormatDebugOu
 
 STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_DefaultPreFormatDebugOutputHandler( ESteamNetworkingSocketsDebugOutputType eType, bool bFmt, const char* pstrFile, int nLine, const char *pMsg, va_list ap )
 {
-	// Save callback.  Paranoia for unlikely but possible race condition,
-	// if we spew from more than one place in our code and stuff changes
-	// while we are formatting.
-	FSteamNetworkingSocketsDebugOutput pfnDebugOutput = s_pfnDebugOutput;
-
-	// Make sure we don't crash.
-	if ( !pfnDebugOutput )
-		return;
-
 	// Do the formatting
 	char buf[ 2048 ];
 	int szBuf = sizeof(buf);
@@ -2421,8 +2712,26 @@ STEAMNETWORKINGSOCKETS_INTERFACE void SteamNetworkingSockets_DefaultPreFormatDeb
 	// Gah, some, but not all, of our code has newlines on the end
 	V_StripTrailingWhitespaceASCII( buf );
 
+	// Spew to log file?
+	if ( eType <= g_eSystemSpewLevel && g_pFileSystemSpew )
+	{
+
+		// Write
+		SteamNetworkingMicroseconds usecLogTime = SteamNetworkingSockets_GetLocalTimestamp() - g_usecSystemLogFileOpened;
+		fprintf( g_pFileSystemSpew, "%8.3f %s\n", usecLogTime*1e-6, buf );
+
+		// Queue to flush when we we think we can afford to hit the disk synchronously
+		s_bNeedToFlushSystemSpew = true;
+
+		// Flush certain critical messages things immediately
+		if ( eType <= k_ESteamNetworkingSocketsDebugOutputType_Error )
+			FlushSpew();
+	}
+
 	// Invoke callback
-	pfnDebugOutput( eType, buf );
+	FSteamNetworkingSocketsDebugOutput pfnDebugOutput = g_pfnDebugOutput;
+	if ( pfnDebugOutput )
+		pfnDebugOutput( eType, buf );
 }
 
 

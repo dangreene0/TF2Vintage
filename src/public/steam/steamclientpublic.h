@@ -1,23 +1,11 @@
 //========= Copyright � 1996-2008, Valve LLC, All rights reserved. ============
 //
-// Purpose:
+// Declare common types used by the Steamworks SDK.
 //
 //=============================================================================
 
 #ifndef STEAMCLIENTPUBLIC_H
 #define STEAMCLIENTPUBLIC_H
-#ifdef _WIN32
-#pragma once
-#endif
-//lint -save -e1931 -e1927 -e1924 -e613 -e726
-
-// This header file defines the interface between the calling application and the code that
-// knows how to communicate with the connection manager (CM) from the Steam service 
-
-// This header file is intended to be portable; ideally this 1 header file plus a lib or dll
-// is all you need to integrate the client library into some other tree.  So please avoid
-// including or requiring other header files if possible.  This header should only describe the 
-// interface layer, no need to include anything about the implementation.
 
 #include "steamtypes.h"
 #include "steamuniverse.h"
@@ -142,6 +130,11 @@ enum EResult
 	k_EResultAccountDeleted = 114,				// account has been deleted
 	k_EResultExistingUserCancelledLicense = 115,	// A license for this already exists, but cancelled
 	k_EResultCommunityCooldown = 116,			// access is denied because of a community cooldown (probably from support profile data resets)
+	k_EResultNoLauncherSpecified = 117,			// No launcher was specified, but a launcher was needed to choose correct realm for operation.
+	k_EResultMustAgreeToSSA = 118,				// User must agree to china SSA or global SSA before login
+	k_EResultLauncherMigrated = 119,			// The specified launcher type is no longer supported; the user should be directed elsewhere
+	k_EResultSteamRealmMismatch = 120,			// The user's realm does not match the realm of the requested resource
+	k_EResultInvalidSignature = 121,			// signature check did not match
 };
 
 // Error codes for use with the voice functions
@@ -382,15 +375,9 @@ enum EChatRoomEnterResponse
 };
 
 
-typedef void (*PFNLegacyKeyRegistration)( const char *pchCDKey, const char *pchInstallPath );
-typedef bool (*PFNLegacyKeyInstalled)();
-
 const unsigned int k_unSteamAccountIDMask = 0xFFFFFFFF;
 const unsigned int k_unSteamAccountInstanceMask = 0x000FFFFF;
-// we allow 3 simultaneous user account instances right now, 1= desktop, 2 = console, 4 = web, 0 = all
-const unsigned int k_unSteamUserDesktopInstance	= 1;	 
-const unsigned int k_unSteamUserConsoleInstance	= 2;
-const unsigned int k_unSteamUserWebInstance		= 4;
+const unsigned int k_unSteamUserDefaultInstance	= 1; // fixed instance for all individual users
 
 // Special flags for Chat accounts - they go in the top 8 bits
 // of the steam ID's "instance", leaving 12 for the actual instances
@@ -471,96 +458,112 @@ enum EBroadcastUploadResult
 
 
 //-----------------------------------------------------------------------------
-// Purpose: code points for VR HMD vendors and models 
-// WARNING: DO NOT RENUMBER EXISTING VALUES - STORED IN A DATABASE
+// Purpose: Reasons a user may not use the Community Market.
+//          Used in MarketEligibilityResponse_t.
 //-----------------------------------------------------------------------------
-enum EVRHMDType
+enum EMarketNotAllowedReasonFlags
 {
-	k_eEVRHMDType_None = -1, // unknown vendor and model
+	k_EMarketNotAllowedReason_None = 0,
 
-	k_eEVRHMDType_Unknown = 0, // unknown vendor and model
+	// A back-end call failed or something that might work again on retry
+	k_EMarketNotAllowedReason_TemporaryFailure = (1 << 0),
 
-	k_eEVRHMDType_HTC_Dev = 1,	// original HTC dev kits
-	k_eEVRHMDType_HTC_VivePre = 2,	// htc vive pre
-	k_eEVRHMDType_HTC_Vive = 3,	// htc vive consumer release
-	k_eEVRHMDType_HTC_VivePro = 4,	// htc vive pro release
-	k_eEVRHMDType_HTC_ViveCosmos = 5,	// HTC Vive Cosmos
+	// Disabled account
+	k_EMarketNotAllowedReason_AccountDisabled = (1 << 1),
 
-	k_eEVRHMDType_HTC_Unknown = 20, // unknown htc hmd
+	// Locked account
+	k_EMarketNotAllowedReason_AccountLockedDown = (1 << 2),
 
-	k_eEVRHMDType_Oculus_DK1 = 21, // Oculus DK1 
-	k_eEVRHMDType_Oculus_DK2 = 22, // Oculus DK2
-	k_eEVRHMDType_Oculus_Rift = 23, // Oculus Rift
-	k_eEVRHMDType_Oculus_RiftS = 24, // Oculus Rift S
-	k_eEVRHMDType_Oculus_Quest = 25, // Oculus Quest
+	// Limited account (no purchases)
+	k_EMarketNotAllowedReason_AccountLimited = (1 << 3),
 
-	k_eEVRHMDType_Oculus_Unknown = 40, // // Oculus unknown HMD
+	// The account is banned from trading items
+	k_EMarketNotAllowedReason_TradeBanned = (1 << 4),
 
-	k_eEVRHMDType_Acer_Unknown = 50, // Acer unknown HMD
-	k_eEVRHMDType_Acer_WindowsMR = 51, // Acer QHMD Windows MR headset
+	// Wallet funds aren't tradable because the user has had no purchase
+	// activity in the last year or has had no purchases prior to last month
+	k_EMarketNotAllowedReason_AccountNotTrusted = (1 << 5),
 
-	k_eEVRHMDType_Dell_Unknown = 60, // Dell unknown HMD
-	k_eEVRHMDType_Dell_Visor = 61, // Dell Visor Windows MR headset
+	// The user doesn't have Steam Guard enabled
+	k_EMarketNotAllowedReason_SteamGuardNotEnabled = (1 << 6),
 
-	k_eEVRHMDType_Lenovo_Unknown = 70, // Lenovo unknown HMD
-	k_eEVRHMDType_Lenovo_Explorer = 71, // Lenovo Explorer Windows MR headset
+	// The user has Steam Guard, but it hasn't been enabled for the required
+	// number of days
+	k_EMarketNotAllowedReason_SteamGuardOnlyRecentlyEnabled = (1 << 7),
 
-	k_eEVRHMDType_HP_Unknown = 80, // HP unknown HMD
-	k_eEVRHMDType_HP_WindowsMR = 81, // HP Windows MR headset
-	k_eEVRHMDType_HP_Reverb = 82, // HP Reverb Windows MR headset
+	// The user has recently forgotten their password and reset it
+	k_EMarketNotAllowedReason_RecentPasswordReset = (1 << 8),
 
-	k_eEVRHMDType_Samsung_Unknown = 90, // Samsung unknown HMD
-	k_eEVRHMDType_Samsung_Odyssey = 91, // Samsung Odyssey Windows MR headset
+	// The user has recently funded his or her wallet with a new payment method
+	k_EMarketNotAllowedReason_NewPaymentMethod = (1 << 9),
 
-	k_eEVRHMDType_Unannounced_Unknown = 100, // Unannounced unknown HMD
-	k_eEVRHMDType_Unannounced_WindowsMR = 101, // Unannounced Windows MR headset
+	// An invalid cookie was sent by the user
+	k_EMarketNotAllowedReason_InvalidCookie = (1 << 10),
 
-	k_eEVRHMDType_vridge = 110, // VRIDGE tool
-	
-	k_eEVRHMDType_Huawei_Unknown = 120, // Huawei unknown HMD
-	k_eEVRHMDType_Huawei_VR2 = 121, // Huawei VR2 3DOF headset
-	k_eEVRHMDType_Huawei_EndOfRange = 129, // end of Huawei HMD range
+	// The user has Steam Guard, but is using a new computer or web browser
+	k_EMarketNotAllowedReason_UsingNewDevice = (1 << 11),
 
-	k_eEVRHmdType_Valve_Unknown = 130, // Valve Unknown HMD
-	k_eEVRHmdType_Valve_Index = 131, // Valve Index HMD
+	// The user has recently refunded a store purchase by his or herself
+	k_EMarketNotAllowedReason_RecentSelfRefund = (1 << 12),
 
+	// The user has recently funded his or her wallet with a new payment method that cannot be verified
+	k_EMarketNotAllowedReason_NewPaymentMethodCannotBeVerified = (1 << 13),
+
+	// Not only is the account not trusted, but they have no recent purchases at all
+	k_EMarketNotAllowedReason_NoRecentPurchases = (1 << 14),
+
+	// User accepted a wallet gift that was recently purchased
+	k_EMarketNotAllowedReason_AcceptedWalletGift = (1 << 15),
 };
 
 
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from an Oculus HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsOculusHMD( EVRHMDType eType )
+//
+// describes XP / progress restrictions to apply for games with duration control /
+// anti-indulgence enabled for minor Steam China users.
+//
+// WARNING: DO NOT RENUMBER
+enum EDurationControlProgress
 {
-	return eType == k_eEVRHMDType_Oculus_DK1 || eType == k_eEVRHMDType_Oculus_DK2 || eType == k_eEVRHMDType_Oculus_Rift || eType == k_eEVRHMDType_Oculus_RiftS || eType == k_eEVRHMDType_Oculus_Quest || eType == k_eEVRHMDType_Oculus_Unknown;
-}
+	k_EDurationControlProgress_Full = 0,	// Full progress
+	k_EDurationControlProgress_Half = 1,	// deprecated - XP or persistent rewards should be halved
+	k_EDurationControlProgress_None = 2,	// deprecated - XP or persistent rewards should be stopped
+
+	k_EDurationControl_ExitSoon_3h = 3,		// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControl_ExitSoon_5h = 4,		// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControl_ExitSoon_Night = 5,	// game running after day period, game should exit - steam will terminate the game soon
+};
 
 
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from a Windows MR HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsWindowsMRHeadset( EVRHMDType eType )
+//
+// describes which notification timer has expired, for steam china duration control feature
+//
+// WARNING: DO NOT RENUMBER
+enum EDurationControlNotification
 {
-	return eType >= k_eEVRHMDType_Acer_WindowsMR && eType <= k_eEVRHMDType_Unannounced_WindowsMR;
-}
+	k_EDurationControlNotification_None = 0,		// just informing you about progress, no notification to show
+	k_EDurationControlNotification_1Hour = 1,		// "you've been playing for N hours"
+	
+	k_EDurationControlNotification_3Hours = 2,		// deprecated - "you've been playing for 3 hours; take a break"
+	k_EDurationControlNotification_HalfProgress = 3,// deprecated - "your XP / progress is half normal"
+	k_EDurationControlNotification_NoProgress = 4,	// deprecated - "your XP / progress is zero"
+	
+	k_EDurationControlNotification_ExitSoon_3h = 5,	// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControlNotification_ExitSoon_5h = 6,	// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControlNotification_ExitSoon_Night = 7,// game running after day period, game should exit - steam will terminate the game soon
+};
 
 
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from a Hauwei HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsHuaweiHeadset( EVRHMDType eType )
+//
+// Specifies a game's online state in relation to duration control
+//
+enum EDurationControlOnlineState
 {
-	return eType >= k_eEVRHMDType_Huawei_Unknown && eType <= k_eEVRHMDType_Huawei_EndOfRange;
-}
+	k_EDurationControlOnlineState_Invalid = 0,				// nil value
+	k_EDurationControlOnlineState_Offline = 1,				// currently in offline play - single-player, offline co-op, etc.
+	k_EDurationControlOnlineState_Online = 2,				// currently in online play
+	k_EDurationControlOnlineState_OnlineHighPri = 3,		// currently in online play and requests not to be interrupted
+};
 
-
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from an Vive HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsViveHMD( EVRHMDType eType )
-{
-	return eType == k_eEVRHMDType_HTC_Dev || eType == k_eEVRHMDType_HTC_VivePre || eType == k_eEVRHMDType_HTC_Vive || eType == k_eEVRHMDType_HTC_Unknown || eType == k_eEVRHMDType_HTC_VivePro;
-}
 
 #pragma pack( push, 1 )
 
@@ -605,7 +608,7 @@ public:
 	CSteamID( uint32 unAccountID, unsigned int unAccountInstance, EUniverse eUniverse, EAccountType eAccountType )
 	{
 #if defined(_SERVER) && defined(Assert)
-		Assert( ( k_EAccountTypeIndividual != eAccountType ) || ( unAccountInstance == k_unSteamUserDesktopInstance ) );	// enforce that for individual accounts, instance is always 1
+		Assert( ( k_EAccountTypeIndividual != eAccountType ) || ( unAccountInstance == k_unSteamUserDefaultInstance ) );	// enforce that for individual accounts, instance is always 1
 #endif // _SERVER
 		InstancedSet( unAccountID, unAccountInstance, eUniverse, eAccountType );
 	}
@@ -647,7 +650,7 @@ public:
 		}
 		else
 		{
-			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance;
+			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance;
 		}
 	}
 
@@ -714,7 +717,7 @@ public:
 			pTSteamGlobalUserID->m_SteamLocalUserID.Split.High32bits;
 		m_steamid.m_comp.m_EUniverse = eUniverse;		// set the universe
 		m_steamid.m_comp.m_EAccountType = k_EAccountTypeIndividual; // Steam 2 accounts always map to account type of individual
-		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance; // Steam2 only knew one instance
+		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance; // Steam2 only knew one instance
 	}
 
 	//-----------------------------------------------------------------------------
@@ -883,8 +886,7 @@ public:
 	// simple accessors
 	void SetAccountID( uint32 unAccountID )		{ m_steamid.m_comp.m_unAccountID = unAccountID; }
 	void SetAccountInstance( uint32 unInstance ){ m_steamid.m_comp.m_unAccountInstance = unInstance; }
-	void ClearIndividualInstance()				{ if ( BIndividualAccount() ) m_steamid.m_comp.m_unAccountInstance = 0; }
-	bool HasNoIndividualInstance() const		{ return BIndividualAccount() && (m_steamid.m_comp.m_unAccountInstance==0); }
+		
 	AccountID_t GetAccountID() const			{ return m_steamid.m_comp.m_unAccountID; }
 	uint32 GetUnAccountInstance() const			{ return m_steamid.m_comp.m_unAccountInstance; }
 	EAccountType GetEAccountType() const		{ return ( EAccountType ) m_steamid.m_comp.m_EAccountType; }
@@ -954,7 +956,7 @@ inline bool CSteamID::IsValid() const
 
 	if ( m_steamid.m_comp.m_EAccountType == k_EAccountTypeIndividual )
 	{
-		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance > k_unSteamUserWebInstance )
+		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance != k_unSteamUserDefaultInstance )
 			return false;
 	}
 
@@ -1065,72 +1067,6 @@ public:
 	const char *Render() const;					// render this Game ID to string
 	static const char *Render( uint64 ulGameID );		// static method to render a uint64 representation of a Game ID to a string
 
-	// must include checksum_crc.h first to get this functionality
-#if defined( CHECKSUM_CRC_H )
-	CGameID( uint32 nAppID, const char *pchModPath )
-	{
-		m_ulGameID = 0;
-		m_gameID.m_nAppID = nAppID;
-		m_gameID.m_nType = k_EGameIDTypeGameMod;
-
-		char rgchModDir[MAX_PATH];
-		V_FileBase( pchModPath, rgchModDir, sizeof( rgchModDir ) );
-		CRC32_t crc32;
-		CRC32_Init( &crc32 );
-		CRC32_ProcessBuffer( &crc32, rgchModDir, V_strlen( rgchModDir ) );
-		CRC32_Final( &crc32 );
-
-		// set the high-bit on the mod-id 
-		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
-		// replacement for appID's
-		m_gameID.m_nModID = crc32 | (0x80000000);
-	}
-
-	CGameID( const char *pchExePath, const char *pchAppName )
-	{
-		m_ulGameID = 0;
-		m_gameID.m_nAppID = k_uAppIdInvalid;
-		m_gameID.m_nType = k_EGameIDTypeShortcut;
-
-		CRC32_t crc32;
-		CRC32_Init( &crc32 );
-		if ( pchExePath )
-			CRC32_ProcessBuffer( &crc32, pchExePath, V_strlen( pchExePath ) );
-		if ( pchAppName )
-			CRC32_ProcessBuffer( &crc32, pchAppName, V_strlen( pchAppName ) );
-		CRC32_Final( &crc32 );
-
-		// set the high-bit on the mod-id 
-		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
-		// replacement for appID's
-		m_gameID.m_nModID = crc32 | (0x80000000);
-	}
-
-#if defined( VSTFILEID_H )
-
-	CGameID( VstFileID vstFileID )
-	{
-		m_ulGameID = 0;
-		m_gameID.m_nAppID = k_uAppIdInvalid;
-		m_gameID.m_nType = k_EGameIDTypeP2P;
-
-		CRC32_t crc32;
-		CRC32_Init( &crc32 );
-		const char *pchFileId = vstFileID.Render();
-		CRC32_ProcessBuffer( &crc32, pchFileId, V_strlen( pchFileId ) );
-		CRC32_Final( &crc32 );
-
-		// set the high-bit on the mod-id 
-		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
-		// replacement for appID's
-		m_gameID.m_nModID = crc32 | (0x80000000);		
-	}
-
-#endif /* VSTFILEID_H */
-
-#endif /* CHECKSUM_CRC_H */
-
-
 	uint64 ToUint64() const
 	{
 		return m_ulGameID;
@@ -1219,9 +1155,9 @@ public:
 		m_ulGameID = 0;
 	}
 
-
-
-private:
+//
+// Internal stuff.  Use the accessors above if possible
+//
 
 	enum EGameIDType
 	{
@@ -1318,51 +1254,42 @@ enum ESteamIPv6ConnectivityState
 // Define compile time assert macros to let us validate the structure sizes.
 #define VALVE_COMPILE_TIME_ASSERT( pred ) typedef char compile_time_assert_type[(pred) ? 1 : -1];
 
-// NOTE: In the opensource code, we don't care about supporting legacy ABIs or serializing
-// structs between 32-bit and 64-bit platforms.  So just pick a consistent packing.  This
-// makes it easier to make C# binaries that work on any platform, regardless of compiler.
-// Although, some of our structs do have pointers in them, and so they are different sizes
-// on 32- and 64- bit builds.
-#ifdef STEAMNETWORKINGSOCKETS_OPENSOURCE
-	#define VALVE_CALLBACK_PACK_LARGE
-#else
-	#if defined(__linux__) || defined(__APPLE__) 
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 	// The 32-bit version of gcc has the alignment requirement for uint64 and double set to
 	// 4 meaning that even with #pragma pack(8) these types will only be four-byte aligned.
 	// The 64-bit version of gcc has the alignment requirement for these types set to
 	// 8 meaning that unless we use #pragma pack(4) our structures will get bigger.
 	// The 64-bit structure packing has to match the 32-bit structure packing for each platform.
-		#define VALVE_CALLBACK_PACK_SMALL
-	#else
-		#define VALVE_CALLBACK_PACK_LARGE
-	#endif
+	#define VALVE_CALLBACK_PACK_SMALL
+#else
+	#define VALVE_CALLBACK_PACK_LARGE
+#endif
 
-	#if defined( VALVE_CALLBACK_PACK_SMALL )
-		#pragma pack( push, 4 )
-	#elif defined( VALVE_CALLBACK_PACK_LARGE )
-		#pragma pack( push, 8 )
-	#else
-		#error ???
-	#endif 
+#if defined( VALVE_CALLBACK_PACK_SMALL )
+	#pragma pack( push, 4 )
+#elif defined( VALVE_CALLBACK_PACK_LARGE )
+	#pragma pack( push, 8 )
+#else
+	#error ???
+#endif 
 
-	typedef struct ValvePackingSentinel_t
-	{
-		uint32 m_u32;
-		uint64 m_u64;
-		uint16 m_u16;
-		double m_d;
-	} ValvePackingSentinel_t;
+typedef struct ValvePackingSentinel_t
+{
+    uint32 m_u32;
+    uint64 m_u64;
+    uint16 m_u16;
+    double m_d;
+} ValvePackingSentinel_t;
 
-	#pragma pack( pop )
+#pragma pack( pop )
 
 
-	#if defined(VALVE_CALLBACK_PACK_SMALL)
-		VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 24 )
-	#elif defined(VALVE_CALLBACK_PACK_LARGE)
-		VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 32 )
-	#else
-		#error ???
-	#endif
+#if defined(VALVE_CALLBACK_PACK_SMALL)
+	VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 24 )
+#elif defined(VALVE_CALLBACK_PACK_LARGE)
+	VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 32 )
+#else
+	#error ???
 #endif
 
 #endif // STEAMCLIENTPUBLIC_H
