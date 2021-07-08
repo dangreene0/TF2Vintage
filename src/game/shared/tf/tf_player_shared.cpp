@@ -5253,7 +5253,7 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 {	
 	if ( InCond( TF_COND_SODAPOPPER_HYPE ) )
 	{
-		m_flHypeMeter = Max( (float)( m_flHypeMeter - ( gpGlobals->frametime * m_flEnergyDrinkDrainRate ) * 0.75 ), 0.0f );
+		m_flHypeMeter = Max( (float)( m_flHypeMeter - ( gpGlobals->frametime * ( m_flEnergyDrinkDrainRate * 0.75 ) )), 0.0f );
 		
 		if ( m_flHypeMeter <= 0.0f )
 			RemoveCond( TF_COND_SODAPOPPER_HYPE );
@@ -5263,7 +5263,11 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 	
 	if ( InCond( TF_COND_PHASE ) || InCond( TF_COND_ENERGY_BUFF ) )
 	{
-		m_flEnergyDrinkMeter = Max( (float)( m_flEnergyDrinkMeter - ( ( m_flEnergyDrinkDrainRate * ( tf2v_use_new_bonk_length.GetBool() ? 1 : 4/3 ) ) * gpGlobals->frametime ) ), 0.0f );
+		float flEnergyDrinkDrainMod = 1;
+		if (!tf2v_use_new_bonk_length.GetBool())
+			flEnergyDrinkDrainMod = 4/3;
+		
+		m_flEnergyDrinkMeter = Max( (float)( m_flEnergyDrinkMeter - ( gpGlobals->frametime * ( m_flEnergyDrinkDrainRate * flEnergyDrinkDrainMod ) )), 0.0f );
 
 		if ( m_flEnergyDrinkMeter <= 0.0f )
 		{
@@ -5285,7 +5289,7 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 
 	if ( m_pOuter->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX_DRINK ) )
 	{
-		// TF_AMMO_SPECIAL2 = Ammo used by the Bonk Energy drink script.
+		// TF_AMMO_SPECIAL2 = Ammo used by the Bonk Energy drink script. (This uses the grenade ammo in standard TF2.)
 
 		// Full ammo, full meter, nothing else to do.
 		if ( m_flEnergyDrinkMeter >= 100.0f && ( m_pOuter->GetAmmoCount( TF_AMMO_SPECIAL2 ) == m_pOuter->GetMaxAmmo( TF_AMMO_SPECIAL2 ) ) )
