@@ -5524,10 +5524,15 @@
 			"model_player"	"models/workshop/weapons/c_models/c_blackbox/c_blackbox.mdl"
 			"attributes"
 			{
-				"heal on hit for slowfire"
+				"heal on hit for slowfire BLACKBOX1"
 				{
-					"attribute_class"	"add_onhit_addhealth"
+					"attribute_class"	"add_onhit_addhealth_bb1"
 					"value"	"15"
+				}
+				"health on radius damage BLACKBOX2"
+				{
+					"attribute_class"	"add_health_on_radius_damage_bb2"
+					"value"	"20"
 				}
 				"clip size penalty"
 				{
@@ -18089,6 +18094,28 @@
 			"description_format"	"value_is_or"
 			"hidden"	"0"
 			"effect_type"	"positive"
+			"stored_as_integer"	"0"
+		}
+		"10027"
+		{
+			"name"	"heal on hit for slowfire BLACKBOX1"
+			"attribute_class"	"add_onhit_addhealth_bb1"
+			"description_string"	"#Attrib_HealOnHit_Positive"
+			"description_format"	"value_is_additive"
+			"hidden"	"0"
+			"effect_type"	"positive"
+			"armory_desc"	"on_hit"
+			"stored_as_integer"	"0"
+		}
+		"10028"
+		{
+			"name"	"health on radius damage BLACKBOX2"
+			"attribute_class"	"add_health_on_radius_damage_bb2"
+			"description_string"	"#Attrib_HealthOnRadiusDamage"
+			"description_format"	"value_is_additive"
+			"hidden"	"0"
+			"effect_type"	"positive"
+			"armory_desc"	"on_hit"
 			"stored_as_integer"	"0"
 		}
 	}
