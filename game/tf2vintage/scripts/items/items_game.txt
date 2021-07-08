@@ -8615,8 +8615,8 @@
 		{
 			"name"	"The Holy Mackerel"
 			"prefab"	"weapon_bat weapon_reskin"
-			"item_class"	"tf_weapon_bat_fish"
 			"year"			"2010"
+			"item_class"	"tf_weapon_bat_fish"
 			"item_type_name"	"#TF_Weapon_Fish"
 			"item_name"	"#TF_TheHolyMackerel"
 			"propername"	"1"
@@ -8976,6 +8976,45 @@
 				"min_viewmodel_offset"		"10 0 -11"				
 			}
 			"xifier_class_remap"	"Nessie's Nine Iron"
+		}
+		"10572"
+		{
+			"name"	"Unarmed Combat"
+			"prefab"	"weapon_bat weapon_reskin"
+			"year"	"2011"
+			"item_class"	"tf_weapon_bat_fish"
+			"item_type_name"	"#TF_Weapon_Severed_Arm"
+			"item_name"	"#TF_UnarmedCombat"
+			"item_description"	"#TF_UnarmedCombat_Desc"
+			"item_logname"	"unarmed_combat"
+			"item_iconname"	"unarmed_combat"
+			"image_inventory"	"backpack/workshop/weapons/c_models/c_unarmed_combat/c_unarmed_combat"
+			"model_player"	"models/workshop/weapons/c_models/c_unarmed_combat/c_unarmed_combat.mdl"
+			"static_attrs"
+			{
+				"min_viewmodel_offset"					"15 11 -9"
+			}
+			"attributes"
+			{
+				"fish damage override"
+				{
+					"attribute_class"	"fish_damage_override"
+					"value"				"1"
+				}
+			}
+			"visuals"
+			{
+				"sound_melee_hit"	"Weapon_HolyMackerel.HitFlesh"
+				"sound_melee_hit_world"	"Weapon_HolyMackerel.HitWorld"
+			}
+			"visuals_red"
+			{
+				"skin"  "0"
+			}
+			"visuals_blu"
+			{
+				"skin"  "1"
+			}
 		}
 		"10574"
 		{
