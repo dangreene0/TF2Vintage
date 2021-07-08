@@ -136,6 +136,9 @@ ConVar tf2v_use_new_axtinguisher("tf2v_use_new_axtinguisher", "0", FCVAR_REPLICA
 
 ConVar tf2v_overflow_ammo( "tf2v_overflow_ammo", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Overflows ammo pools to adjust for partially loaded weapons.", true, 0, true, 1);
 
+ConVar tf2v_allow_combattext( "tf2v_allow_combattext", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows players to use clientside combat text.", true, 0, true, 1);
+ConVar tf2v_allow_hitsounds( "tf2v_allow_hitsounds", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows players to use clientside hitsounds.", true, 0, true, 1);
+
 #ifdef CLIENT_DLL
 ConVar tf2v_enable_burning_death( "tf2v_enable_burning_death", "0", FCVAR_REPLICATED, "Enables an animation that plays sometimes when dying to fire damage.", true, 0.0f, true, 1.0f );
 #endif
