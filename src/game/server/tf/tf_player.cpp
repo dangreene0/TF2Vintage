@@ -5270,7 +5270,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	{
 		int nCritOnCond = 0;
 		CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nCritOnCond, or_crit_vs_playercond );
-
+		
 		// Crit players when they have this condition.
 		if ( nCritOnCond )
 		{
@@ -5283,6 +5283,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					// If this is a melee hit and burning, check additional logic.
 					if ( nCritOnCond == 1 && ( info.GetDamageType() & DMG_CLUB ) )
 					{
+						// Add the axtinguisher custom damage flag here.
+						info.SetDamageCustom( TF_DMG_CUSTOM_AXTINGUISHER_BOOSTED );
 						switch (tf2v_use_new_axtinguisher.GetInt())
 						{
 							case 0:
@@ -7200,6 +7202,13 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 					
 					if (tf2v_use_new_big_earner.GetBool())
 						CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nSpeedBoostOnKill, speed_boost_on_kill_bigearner );
+					
+					// Speed boost for Axtinguisher on killing burning player in newer config. (Formerly called "Sketchek's bequest")
+					if (tf2v_use_new_axtinguisher.GetInt() == 3 && info.GetDamageCustom() == TF_DMG_CUSTOM_AXTINGUISHER_BOOSTED)
+					{
+						// Add 4s of speed boost.
+						nSpeedBoostOnKill += 4;
+					}
 
 					if ( nSpeedBoostOnKill > 0)
 						m_Shared.AddCond( TF_COND_SPEED_BOOST, nSpeedBoostOnKill );
