@@ -371,6 +371,75 @@ void CTFHudDeathNotice::OnGameEvent(IGameEvent *event, int iDeathNoticeMsg)
 
 		Q_strncpy(m_DeathNotices[iDeathNoticeMsg].szIcon, bDefense ? szDefenseIcons[iIndex] : szCaptureIcons[iIndex], ARRAYSIZE(m_DeathNotices[iDeathNoticeMsg].szIcon));
 	}
+	else if ( FStrEq( "humiliation_fish", pszEventName ) || FStrEq( "humiliation_arm", pszEventName ) || FStrEq( "humiliation_slap", pszEventName ) )
+	{
+		int iCustomDamage = event->GetInt("customkill");
+		int iLocalPlayerIndex = GetLocalPlayerIndex();
+		const wchar_t* pMsg = NULL;
+		if ( ( iCustomDamage == TF_DMG_CUSTOM_FISH_KILL || iCustomDamage == TF_DMG_CUSTOM_SLAP_KILL ) || ( event->GetInt( "death_flags" ) == TF_DEATH_FEIGN_DEATH ) )
+		{
+			// This is a death, add the text.
+			switch (iCustomDamage)
+			{
+				case TF_DMG_CUSTOM_FISH_KILL:
+					pMsg = g_pVGuiLocalize->Find( ( FStrEq( "humiliation_fish", pszEventName) ? "#Humiliation_Kill" : "Humiliation_Kill_Arm" ) );	// FISH KILL! : ARM KILL!
+					break;
+				case TF_DMG_CUSTOM_SLAP_KILL:
+					pMsg = g_pVGuiLocalize->Find( "#Humiliation_Kill_Slap"); // SLAP KILL!
+					break;				
+			}					
+			if (pMsg)
+			{
+				V_wcsncpy(m_DeathNotices[iDeathNoticeMsg].wzInfoText, pMsg, sizeof(m_DeathNotices[iDeathNoticeMsg].wzInfoText));
+			}
+		}
+		else
+		{
+			// Humiliation, but not death.
+			wchar_t wzHumiliationNum[10];
+			DeathNoticeItem& msg = m_DeathNotices[iDeathNoticeMsg];
+			_snwprintf(wzHumiliationNum, ARRAYSIZE(wzHumiliationNum), L"%d", msg.iCount++);
+			pMsg = g_pVGuiLocalize->Find("#Humiliation_Count");
+			if (pMsg && wzHumiliationNum)
+			{
+				static wchar_t wszHumiliations[256];
+				g_pVGuiLocalize->ConstructString(wszHumiliations, sizeof(wszHumiliations), L"%s1 %s2", 2, pMsg, wzHumiliationNum);
+				V_wcsncpy(m_DeathNotices[iDeathNoticeMsg].wzInfoText, wszHumiliations, sizeof(m_DeathNotices[iDeathNoticeMsg].wzInfoText));
+
+				// Since we don't always do player_death, we need to run this again on non-death events.
+				
+				// if there was an assister, put both the killer's and assister's names in the death message
+				int iAssisterID = engine->GetPlayerForUserID(event->GetInt("assister"));
+				m_DeathNotices[iDeathNoticeMsg].Assister.iPlayerID = iAssisterID;
+				const char* assister_name = (iAssisterID > 0 ? g_PR->GetPlayerName(iAssisterID) : NULL);
+				if (assister_name)
+				{
+					// Base TF2 assumes that the assister and killer are the same team, thus it 
+					// writes both of the same string, which in turn gives them both the killers team color
+					// whether or not the assister is on the killers team or not. -danielmm8888
+					m_DeathNotices[iDeathNoticeMsg].Assister.iTeam = (iAssisterID > 0) ? g_PR->GetTeam(iAssisterID) : 0;
+					char szKillerBuf[MAX_PLAYER_NAME_LENGTH];
+					Q_snprintf(szKillerBuf, ARRAYSIZE(szKillerBuf), "%s", assister_name);
+					Q_strncpy(m_DeathNotices[iDeathNoticeMsg].Assister.szName, szKillerBuf, ARRAYSIZE(m_DeathNotices[iDeathNoticeMsg].Assister.szName));
+					if (iLocalPlayerIndex == iAssisterID)
+					{
+						m_DeathNotices[iDeathNoticeMsg].bLocalPlayerInvolved = true;
+					}
+
+					// This is the old code used for assister handling
+					/*
+					char szKillerBuf[MAX_PLAYER_NAME_LENGTH*2];
+					Q_snprintf(szKillerBuf, ARRAYSIZE(szKillerBuf), "%s + %s", m_DeathNotices[iDeathNoticeMsg].Killer.szName, assister_name);
+					Q_strncpy(m_DeathNotices[iDeathNoticeMsg].Killer.szName, szKillerBuf, ARRAYSIZE(m_DeathNotices[iDeathNoticeMsg].Killer.szName));
+					if ( iLocalPlayerIndex == iAssisterID )
+					{
+						m_DeathNotices[iDeathNoticeMsg].bLocalPlayerInvolved = true;
+					}*/
+				}
+			}
+
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

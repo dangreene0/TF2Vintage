@@ -8615,6 +8615,7 @@
 		{
 			"name"	"The Holy Mackerel"
 			"prefab"	"weapon_bat weapon_reskin"
+			"item_class"	"tf_weapon_bat_fish"
 			"year"			"2010"
 			"item_type_name"	"#TF_Weapon_Fish"
 			"item_name"	"#TF_TheHolyMackerel"

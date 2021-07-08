@@ -4505,7 +4505,8 @@ void CTFGameRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &inf
 
 	int iDeathFlags = pTFPlayerVictim->GetDeathFlags();
 
-	if ( ( IsInArenaMode() && ( !IsInVSHMode() || !IsInDRMode() ) ) && tf_arena_first_blood.GetBool() && !m_bFirstBlood && pScorer && pScorer != pTFPlayerVictim )
+	if ( ( !FStrEq( szName, "humiliation_fish" ) && !FStrEq( szName, "humiliation_arm" ) && !FStrEq( szName, "humiliation_slap" ) ) &&
+		 ( IsInArenaMode() && ( !IsInVSHMode() || !IsInDRMode() ) ) && tf_arena_first_blood.GetBool() && !m_bFirstBlood && pScorer && pScorer != pTFPlayerVictim )
 	{
 		m_bFirstBlood = true;
 		float flElapsedTime = gpGlobals->curtime - m_flStalemateStartTime;

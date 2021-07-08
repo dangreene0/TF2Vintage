@@ -6081,6 +6081,27 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 	}
 	
+	
+	// We deal with humiliation here.
+	if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_BAT_FISH )
+	{
+		if (GetHealth() <= 0) // About to die, apply custom damage flag.
+		{
+			info.SetDamageCustom( TF_DMG_CUSTOM_FISH_KILL );
+		}
+		int nOverrideFishDamage = 0;
+		CALL_ATTRIB_HOOK_FLOAT(nOverrideFishDamage, fish_damage_override);
+		TFGameRules()->DeathNotice( this, info, (nOverrideFishDamage == 0) ? "humiliation_fish" : "humiliation_arm" );
+	}
+	else if ( pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_SLAP )
+	{	
+		if (GetHealth() <= 0)  // About to die, apply custom damage flag.
+		{
+			info.SetDamageCustom( TF_DMG_CUSTOM_SLAP_KILL );
+		}
+		TFGameRules()->DeathNotice( this, info, "humilation_slap" );
+	}
+	
 	TeamFortress_SetSpeed();
 
 	// Send the damage message to the client for the hud damage indicator
