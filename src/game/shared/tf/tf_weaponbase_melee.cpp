@@ -494,12 +494,16 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity *pTarget, trace_t &trace )
 
 	float flDamage = GetMeleeDamage( pTarget, iDmgType, iCustomDamage );
 	
+	// Self hits only do half damage.
+	if (pPlayer == pTarget)
+		flDamage *= 0.5f;
+	
 	CTakeDamageInfo info( pPlayer, pPlayer, this, flDamage, iDmgType, iCustomDamage );
 
-	if ( pTarget == pPlayer )
-		info.SetDamageForce( vec3_origin );
-	else
+	if (flDamage > 0)
 		CalculateMeleeDamageForce( &info, vecForward, vecSwingEnd, 1.0f / flDamage * GetForceScale() );
+	else
+		info.SetDamageForce( vec3_origin );
 
 	pTarget->DispatchTraceAttack( info, vecForward, &trace ); 
 	ApplyMultiDamage();
