@@ -657,6 +657,7 @@ const char *g_aWeaponNames[] =
 	"TF_WEAPON_FLAME_BALL",
 	"TF_WEAPON_FLAREGUN_REVENGE",
 	"TF_WEAPON_ROCKETLAUNCHER_FIREBALL",
+	"TF_WEAPON_DEFIB",
 
 	"TF_WEAPON_COUNT",	// end marker, do not add below here
 };
@@ -797,6 +798,7 @@ int g_aWeaponDamageTypes[] =
 	DMG_IGNITE | DMG_HALF_FALLOFF | DMG_USEDISTANCEMOD,	// TF_WEAPON_FLAME_BALL,
 	DMG_IGNITE,                                 // TF_WEAPON_FLAREGUN_REVENGE
 	DMG_IGNITE | DMG_HALF_FALLOFF | DMG_USEDISTANCEMOD,	// TF_WEAPON_ROCKETLAUNCHER_FIREBALL
+	DMG_CLUB,									// TF_WEAPON_DEFIB,
 	
 	// This is a special entry that must match with TF_WEAPON_COUNT
 	// to protect against updating the weapon list without updating this list
