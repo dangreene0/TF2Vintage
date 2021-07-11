@@ -1162,6 +1162,9 @@ void CTFPlayer::Precache()
 	PrecacheScriptSound( "Game.SuddenDeath" );
 	PrecacheScriptSound( "Game.Stalemate" );
 	PrecacheScriptSound( "TV.Tune" );
+	
+	PrecacheScriptSound( "TFPlayer.StunImpactRange" );
+	PrecacheScriptSound( "TFPlayer.StunImpact" );
 	PrecacheScriptSound( "Halloween.PlayerScream" );
 
 	PrecacheScriptSound( "DemoCharge.ChargeCritOn" );
