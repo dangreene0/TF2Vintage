@@ -1,6 +1,6 @@
 "GameInfo"
 {
-	game		"Team Fortress 2 Vintage"
+	game		"Team Fortress 2 Vintage (Beta)"
 	gamelogo		 0
 	type 		multiplayer_only 
 	icon		"resource/game"		
@@ -24,6 +24,7 @@
 	FileSystem 
 	{ 
 		SteamAppId		243750	// Source SDK Base 2013 Multiplayer	
+
 		SearchPaths 
 		{ 
 			// Firstly, mount all user customizations.  This will search for VPKs and subfolders 
@@ -44,7 +45,6 @@
 			// TF2V takes priority, followed by Retail TF2.
 			game+mod+mod_write+default_write_path		"|gameinfo_path|."
 			gamebin						"|gameinfo_path|bin"
-			//game+mod									"|all_source_engine_paths|../Team Fortress 2/tf/."
 			
 			//  Load base TF2V assets.
 			game_lv					"|gameinfo_path|vpk/base/tf2v_lv.vpk"
@@ -58,29 +58,16 @@
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vmt.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_vtf.vpk"
 			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_sounds.vpk"
-			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"		
-		}
-
-		// Mount the game we're using to share assets with, to reduce filesize.
-		// AdditionalContentId is mandatory for both client and server, while
-		// AdditionalContentServerID is used preferentially by the server if available.
-		AdditionalContentId     440	// Team Fortress 2
-		AdditionalContentServerID     232250	// Team Fortress 2 Dedicated Server
-		AdditionalContentRoot     "tf"
-		AdditionalContentPaths
-        {
-            // Call up files to mount from another game.
-            game+mod            "|content_root|custom/*"
-			game+mod			"|content_root|."
-            game+mod            "|content_root|tf2_textures.vpk"
-            game+mod       		"|content_root|tf2_misc.vpk"
-			game+mod            "|content_root|tf2_sound_misc.vpk"
-            game+mod            "|content_root|tf2_sound_vo_english.vpk"
-        }
-
-		// These are the essential Sourcemod files, and are always loaded LAST in priority.
-		SourcemodEssentialPaths
-		{			
+			//game+mod				"|gameinfo_path|vpk/standalone/tf2v_models.vpk"
+			
+			// Mount in missing assets from TF2
+			game_lv				"|all_source_engine_paths|../Team Fortress 2/tf/tf2_lv.vpk"
+			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_textures.vpk"
+			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_misc.vpk"
+			game+mod+vgui		"|all_source_engine_paths|../Team Fortress 2/tf/tf2_misc.vpk"
+			game+mod			"|all_source_engine_paths|../Team Fortress 2/tf/tf2_sound_vo_english.vpk"
+						
+						
 			// We search VPK files before ordinary folders, because most files will be found in
 			// VPK and we can avoid making thousands of file system calls to attempt to open files
 			// in folders where they don't exist.  (Searching a VPK is much faster than making an 
@@ -99,6 +86,9 @@
 			game				"|all_source_engine_paths|hl2"			
 			platform			"|all_source_engine_paths|platform"		
 
+
+			// Load in all loose TF2 content second to last, to try and prevent as much overrides as possible.
+			game+mod									"|all_source_engine_paths|../Team Fortress 2/tf/."
 			
 			// Random files downloaded from gameservers go into a seperate directory, so
 			// that it's easy to keep those files segregated from the official game files
@@ -112,6 +102,6 @@
 			// The map search pack is mounted at the top of the search path list,
 			// but only while you are connected that server and on that map.
 			game+download			"|gameinfo_path|download/"
-		}
+		}	
 	}		
 }
