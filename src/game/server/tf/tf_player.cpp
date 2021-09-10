@@ -5545,39 +5545,33 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				Taunt( TAUNT_LAUGH, MP_CONCEPT_TAUNT_LAUGH );
 			}
 			
-			// If we're being healed, damage them too.
-			int nDamageHealers = 0;
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nDamageHealers, damage_all_connected );
-			if ( nDamageHealers )
+			// Handles recursive damage calculations.
+			if ( info.GetDamageCustom() != TF_DMG_CUSTOM_RECURSIVE )
 			{
-				// Log the current time.
-				m_flRecursiveDamage = gpGlobals->curtime;
-				
-				// Get all the players healing us.
-				for ( int i = 0; i < m_Shared.m_aHealers.Count(); i++ )
+				// Modify the damage info with a custom damage so we know this is recursive damage
+				// Do this initially for future proofing any extra recursive weapons.
+				CTakeDamageInfo info_recursive = inputInfo; // Use the base damage, not our current damage info.
+				info_recursive.SetDamageCustom( TF_DMG_CUSTOM_RECURSIVE );
+				// Start a list of every player to do recursive damage to.
+				CUtlVector<CTFPlayer*> vecPlayers;				
+					
+				// If we're being healed, damage them too.
+				int nDamageHealers = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nDamageHealers, damage_all_connected );
+				if ( nDamageHealers )
 				{
-					// Check to see if it's a player.
-					if (m_Shared.m_aHealers[i].pHealer.IsValid())
-					{
-						CTFPlayer *pTFHealer = ToTFPlayer(m_Shared.m_aHealers[i].pHealer);
-						if ( pTFHealer && ( pTFHealer != this ) && ( m_flRecursiveDamage - pTFHealer->GetRecursiveDamageTime() > 0.1 ) )
-						{
-							// Copy our damage to them!
-							pTFHealer->TakeDamage( info );
-						}
-					}
+					BuildRecursiveHealersList(vecPlayers, this);
 				}
-				// If we're damaging a healer, damage their patient.
-				CWeaponMedigun *pMedigun = dynamic_cast<CWeaponMedigun *>( GetActiveTFWeapon() );
-				if (pMedigun)
+				
+				// We have more than ourselves to apply recursive damage to, apply damage.
+				if (vecPlayers.Count() > 1 )
 				{
-					if ( pMedigun->GetHealTarget() && pMedigun->GetHealTarget()->IsPlayer() )
+					for ( int i = 0 ; i < vecPlayers.Count() ; i++ )
 					{
-						CTFPlayer *pTFPatient = ToTFPlayer( pMedigun->GetHealTarget() );
-						if ( pTFPatient && ( pTFPatient != this ) && ( m_flRecursiveDamage - pTFPatient->GetRecursiveDamageTime() > 0.1 ) )
+						CTFPlayer *pTFPlayer = vecPlayers[i];
+						if ( pTFPlayer && ( pTFPlayer != this ) )
 						{
-							// Copy our damage to them!
-							pTFPatient->TakeDamage( info );
+							pTFPlayer->TakeDamage( info_recursive );
 						}
 					}
 				}
@@ -6233,6 +6227,62 @@ void CTFPlayer::DamageEffect( float flDamage, int fDamageType )
 			EmitSound( "Flesh.BulletImpact" );
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Build a vector of all players connected via healing.
+// Input  : Vector of all connected players, player to do the recursive loop on
+//-----------------------------------------------------------------------------
+void CTFPlayer::BuildRecursiveHealersList( CUtlVector<CTFPlayer*> &vecHealers, CTFPlayer* pPlayer)
+{
+	if (!pPlayer)
+		return;
+	
+	// If we're not on the list (presumably because we're starting it) then add us to it.
+	if ( vecHealers.Find( pPlayer ) != vecHealers.InvalidIndex() )
+		vecHealers.AddToTail( pPlayer );
+	
+	// Get all the players healing us.
+	for ( int i = 0; i < pPlayer->m_Shared.m_aHealers.Count(); i++ )
+	{	// Check to see if it's a player.
+		if (pPlayer->m_Shared.m_aHealers[i].pHealer.IsValid())
+		{
+			CTFPlayer *pTFHealer = ToTFPlayer(pPlayer->m_Shared.m_aHealers[i].pHealer);
+			if ( pTFHealer && ( pTFHealer != pPlayer ) )
+			{
+				// Valid target, check if it's unique.
+				if ( vecHealers.Find( pTFHealer ) == vecHealers.InvalidIndex() )
+				{
+					// Unique target, add to the list and check their connections.
+					vecHealers.AddToTail( pTFHealer );
+					BuildRecursiveHealersList( vecHealers, pTFHealer);
+				}
+			}
+		}
+	}
+					
+	// If we're damaging a healer, damage their patient.
+	CWeaponMedigun *pMedigun = dynamic_cast<CWeaponMedigun *>( pPlayer->GetActiveTFWeapon() );
+	if (pMedigun)
+	{
+		if ( pMedigun->GetHealTarget() && pMedigun->GetHealTarget()->IsPlayer() )
+		{
+			CTFPlayer *pTFPatient = ToTFPlayer( pMedigun->GetHealTarget() );
+			if ( pTFPatient && ( pTFPatient != pPlayer ) )
+			{
+				// Valid target, check if it's unique.
+				if ( vecHealers.Find( pTFPatient ) == vecHealers.InvalidIndex() )
+				{
+					// Unique target, add to the list and check their connections.
+					vecHealers.AddToTail( pTFPatient );
+					BuildRecursiveHealersList( vecHealers, pTFPatient);
+				}
+			}
+		}
+	}
+	
+	return;
+	
 }
 
 //-----------------------------------------------------------------------------
