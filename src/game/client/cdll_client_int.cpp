@@ -1364,8 +1364,8 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		return false;
 	}
 
-	MountAdditionalContent();
-	MountModBoilerPlateContent();
+	//MountAdditionalContent();
+	//MountModBoilerPlateContent();
 	
 
 	if ( CommandLine()->FindParm( "-textmode" ) )
