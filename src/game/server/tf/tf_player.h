@@ -160,6 +160,7 @@ public:
 	void				ClearDamagerHistory();
 	DamagerHistory_t	&GetDamagerHistory( int i ) { return m_DamagerHistory[i]; }
 	virtual void		DamageEffect( float flDamage, int fDamageType );
+	virtual void		BuildRecursiveHealersList( CUtlVector<CTFPlayer*> &vecHealers, CTFPlayer *pPlayer );
 	virtual	bool		ShouldCollide( int collisionGroup, int contentsMask ) const;
 
 	virtual int			GetMaxHealth( void ) const;
@@ -692,8 +693,6 @@ private:
 
 	void				AddContext( AppliedContext_t context );
 	
-	float				GetRecursiveDamageTime() { return m_flRecursiveDamage; }
-	float				m_flRecursiveDamage;
 
 private:
 	// Map introductions
