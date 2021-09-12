@@ -4,7 +4,7 @@
 //	Project Script
 //-----------------------------------------------------------------------------
 
-$Macro OUTBINDIR	"$SRCDIR\..\game\bin"
+$Macro OUTBINDIR	"$SRCDIR\..\game\tf2vintage\bin"
 $Macro SRCDIR		".."
 
 $Include "$SRCDIR\vpc_scripts\source_dll_base.vpc"
