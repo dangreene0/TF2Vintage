@@ -1050,8 +1050,8 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	if ( !soundemitterbase->Connect( appSystemFactory ) )
 		return false;
 
-	//MountAdditionalContent();
-	//MountModBoilerPlateContent();
+	MountAdditionalContent();
+	MountModBoilerPlateContent();
 
 	// cache the globals
 	gpGlobals = pGlobals;
