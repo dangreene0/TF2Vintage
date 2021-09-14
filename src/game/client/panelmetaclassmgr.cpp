@@ -234,7 +234,7 @@ CPanelMetaClassMgrImp::CPanelMetaClassMgrImp() : m_PanelTypeDict( true, 0, 32 )
 
 CPanelMetaClassMgrImp::~CPanelMetaClassMgrImp()
 {
-	FOR_EACH_VEC( m_MetaClassKeyValues, i )
+	for (size_t i = 0; i < m_MetaClassKeyValues.Count(); i++) // this is just FOR_EACH_VEC( m_MetaClassKeyValues, i ) but we do this to avoid C4018
 	{
 		m_MetaClassKeyValues[i]->deleteThis();
 	}
