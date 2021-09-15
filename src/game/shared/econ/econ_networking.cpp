@@ -4,9 +4,6 @@
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
-#include "steam/isteamnetworkingutils.h"
-#include "steam/isteamnetworkingsockets.h"
-#include "tier0/icommandline.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api_common.h"
@@ -23,34 +20,95 @@ static ConVar net_steamcnx_allowrelay( "net_steamcnx_allowrelay", "1", FCVAR_ARC
 #define STEAM_CNX_COLOR Color(255,255,100)
 #define STEAM_CNX_PROTO_VERSION 2
 
-static const char *RenderSteamId( CSteamID const &steamID )
+// Converted from https://github.com/ValveSoftware/GameNetworkingSockets/blob/master/src/common/steamid.cpp#L523-L594
+static char const *RenderSteamId( CSteamID const &steamID )
 {
-	static char szId[64];
+	// longest length of returned string is k_cBufLen
+	//	[A:%u:%u:%u]
+	//	 %u == 10 * 3 + 6 == 36, plus terminator == 37
+	const int k_cBufLen = 37;
 
-	SteamNetworkingIdentity identity;
-	identity.SetSteamID( steamID );
-	identity.ToString( szId, sizeof( szId ) );
+	const int k_cBufs = 4;	// # of static bufs to use (so people can compose output with multiple calls to Render() )
+	static char rgchBuf[k_cBufs][k_cBufLen];
+	static int nBuf = 0;
+	char *pchBuf = rgchBuf[nBuf];	// get pointer to current static buf
+	nBuf++;	// use next buffer for next call to this method
+	nBuf %= k_cBufs;
 
-	return szId;
+	if ( k_EAccountTypeAnonGameServer == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[A:%u:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID(), steamID.GetUnAccountInstance() );
+	}
+	else if ( k_EAccountTypeGameServer == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[G:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeMultiseat == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[M:%u:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID(), steamID.GetUnAccountInstance() );
+	}
+	else if ( k_EAccountTypePending == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[P:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeContentServer == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[C:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeClan == steamID.GetEAccountType() )
+	{
+		// 'g' for "group"
+		V_snprintf( pchBuf, k_cBufLen, "[g:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeChat == steamID.GetEAccountType() )
+	{
+		if ( steamID.GetUnAccountInstance() & k_EChatInstanceFlagClan )
+		{
+			V_snprintf( pchBuf, k_cBufLen, "[c:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+		}
+		else if ( steamID.GetUnAccountInstance() & k_EChatInstanceFlagLobby )
+		{
+			V_snprintf( pchBuf, k_cBufLen, "[L:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+		}
+		else // Anon chat
+		{
+			V_snprintf( pchBuf, k_cBufLen, "[T:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+		}
+	}
+	else if ( k_EAccountTypeInvalid == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[I:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeIndividual == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[U:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else if ( k_EAccountTypeAnonUser == steamID.GetEAccountType() )
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[a:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	else
+	{
+		V_snprintf( pchBuf, k_cBufLen, "[i:%u:%u]", steamID.GetEUniverse(), steamID.GetAccountID() );
+	}
+	return pchBuf;
 }
-
 
 class CSteamSocket
 {
 public:
-	EXPLICIT CSteamSocket( CSteamID const &remoteID, HSteamNetConnection hConnection )
+	EXPLICIT CSteamSocket( CSteamID const &remoteID, SNetSocket_t socket )
 	{
-		m_identity.SetSteamID( remoteID );
-		m_hConn = hConnection;
+		m_identity = remoteID;
+		m_hConn = socket;
 	}
 
-	CSteamID GetSteamID( void ) const						{ return m_identity.GetSteamID(); }
-	HSteamNetConnection GetConnection( void ) const			{ return m_hConn; }
-	SteamNetworkingIdentity const &GetIdentity( void ) const { return m_identity; }
+	CSteamID GetSteamID( void ) const						{ return m_identity; }
+	SNetSocket_t GetConnection( void ) const				{ return m_hConn; }
 
 private:
-	HSteamNetConnection m_hConn;
-	SteamNetworkingIdentity m_identity;
+	SNetSocket_t m_hConn;
+	CSteamID m_identity;
 };
 
 
@@ -63,15 +121,15 @@ public:
 	virtual bool Init( void );
 	virtual void Shutdown( void );
 
-	void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) OVERRIDE;
+	void OnClientConnected( CSteamID const &identity, SNetSocket_t socket ) OVERRIDE;
 	void OnClientDisconnected( CSteamID const &steamID ) OVERRIDE;
-	void ConnectToServer( SteamNetworkingIdentity const &identity ) OVERRIDE;
+	void ConnectToServer( long nIP, short nPort ) OVERRIDE;
 
-	CSteamSocket *OpenConnection( CSteamID const &steamID, HSteamNetConnection hConnection );
+	CSteamSocket *OpenConnection( CSteamID const &steamID, SNetSocket_t socket );
 	void CloseConnection( CSteamSocket *pSocket );
 	CSteamSocket *FindConnectionForID( CSteamID const &steamID );
 
-	void ProcessDataFromConnection( HSteamNetConnection hConn );
+	void ProcessDataFromConnection( SNetSocket_t socket );
 	bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, ::google::protobuf::Message const &msg ) OVERRIDE;
 
 #ifdef CLIENT_DLL
@@ -80,14 +138,25 @@ public:
 	virtual void PreClientUpdate( void );
 #endif
 
-	void SessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus );
+	STEAM_CALLBACK( CEconNetworking, SessionStatusChanged, SocketStatusCallback_t, m_StatusCallback );
 	bool AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
 
 private:
-	HSteamListenSocket						m_hListenSocket;
-	HSteamNetConnection						m_hServerConnection;
+	inline ISteamNetworking *SteamNetworking( void ) const
+	{
+		ISteamNetworking *pNetworking = ::SteamNetworking();
+	#ifdef GAME_DLL
+		if ( pNetworking == NULL )
+		{
+			pNetworking = ::SteamGameServerNetworking();
+		}
+	#endif
+		return pNetworking;
+	}
+
+	SNetListenSocket_t						m_hListenSocket;
+	SNetSocket_t							m_hServerSocket;
 	CUtlVector< CSteamSocket >				m_vecSockets;
-	HSteamNetPollGroup						m_hPollGroup;
 	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
 };
 
@@ -100,8 +169,8 @@ void CNetPacket::Init( uint32 size, MsgType_t eMsg )
 {
 	m_Hdr = {eMsg, size, STEAM_CNX_PROTO_VERSION, k_EProtocolProtobuf};
 
-	m_pMsg = SteamNetworkingUtils()->AllocateMessage( size + sizeof( MsgHdr_t ) );
-	Q_memcpy( m_pMsg->m_pData, &m_Hdr, sizeof( MsgHdr_t ) );
+	m_pMsg = malloc( size + sizeof( MsgHdr_t ) );
+	Q_memcpy( m_pMsg, &m_Hdr, sizeof( MsgHdr_t ) );
 
 	AddRef();
 }
@@ -113,10 +182,10 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 {
 	Assert( pMemory );
 
-	m_pMsg = SteamNetworkingUtils()->AllocateMessage( size );
-	Q_memcpy( m_pMsg->m_pData, pMemory, size );
+	m_pMsg = malloc( size );
+	Q_memcpy( m_pMsg, pMemory, size );
 
-	Q_memcpy( &m_Hdr, m_pMsg->m_pData, sizeof( MsgHdr_t ) );
+	Q_memcpy( &m_Hdr, m_pMsg, sizeof( MsgHdr_t ) );
 
 	Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
 
@@ -124,17 +193,13 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 }
 
 
-void NetworkingSessionStatusChanged(SteamNetConnectionStatusChangedCallback_t *);
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 CEconNetworking::CEconNetworking() : 
 	CAutoGameSystemPerFrame( "EconNetworking" ),
 	m_MessageTypes( DefLessFunc( MsgType_t ) ),
-	m_hPollGroup( k_HSteamNetPollGroup_Invalid ),
-	m_hListenSocket( k_HSteamListenSocket_Invalid ),
-	m_hServerConnection( k_HSteamNetConnection_Invalid )
+	m_StatusCallback( this, &CEconNetworking::SessionStatusChanged )
 {
 }
 
@@ -150,25 +215,12 @@ CEconNetworking::~CEconNetworking()
 //-----------------------------------------------------------------------------
 bool CEconNetworking::Init( void )
 {
-	if( net_steamcnx_allowrelay.GetBool() )
-		SteamNetworkingUtils()->InitRelayNetworkAccess();
-
-	SteamNetworkingUtils()->SetGlobalCallback_SteamNetConnectionStatusChanged( NetworkingSessionStatusChanged );
-	SteamNetworkingUtils()->SetGlobalConfigValueInt32( k_ESteamNetworkingConfig_PacketTraceMaxBytes, 2048 );
-
 #if defined( GAME_DLL )
 	if( engine->IsDedicatedServer() )
 	{
-		SteamNetworkingConfigValue_t config;
-		config.SetInt32( k_ESteamNetworkingConfig_SymmetricConnect, 1 );
-
-		SteamNetworkingIPAddr localAdr;
-		localAdr.SetIPv6LocalHost( ECON_SERVER_PORT );
-		m_hListenSocket = SteamNetworkingSockets()->CreateListenSocketIP( localAdr, 1, &config );
+		m_hListenSocket = SteamNetworking()->CreateListenSocket( 0, 0, ECON_SERVER_PORT, net_steamcnx_allowrelay.GetBool() );
 	}
 #endif
-
-	m_hPollGroup = SteamNetworkingSockets()->CreatePollGroup();
 
 	return true;
 }
@@ -178,14 +230,13 @@ bool CEconNetworking::Init( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::Shutdown( void )
 {
+	SteamNetworking()->DestroyListenSocket( m_hListenSocket, false );
+
 	FOR_EACH_VEC( m_vecSockets, i )
 	{
 		CloseConnection( &m_vecSockets[i] );
 	}
 	m_vecSockets.Purge();
-
-	if( SteamNetworkingSockets() )
-		SteamNetworkingSockets()->DestroyPollGroup( m_hPollGroup );
 
 	s_vecMsgPools.PurgeAndDeleteElements();
 }
@@ -193,23 +244,22 @@ void CEconNetworking::Shutdown( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection )
+void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t socket )
 {
 #if defined( GAME_DLL )
 	if ( !steamgameserverapicontext->SteamGameServer() )
 		return;
 #endif
 
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
-	CSteamID steamID = identity.GetSteamID();
 	if ( net_steamcnx_debug.GetBool() )
 	{
 		ConColorMsg( STEAM_CNX_COLOR, "Initiate %llx\n", steamID.ConvertToUint64() );
 	}
 
-	CSteamSocket *pSocket = OpenConnection( steamID, hConnection );
+	CSteamSocket *pSocket = OpenConnection( steamID, socket );
 	if ( pSocket )
 	{
 	#if defined( GAME_DLL )
@@ -239,7 +289,7 @@ void CEconNetworking::OnClientConnected( SteamNetworkingIdentity const &identity
 //-----------------------------------------------------------------------------
 void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
 	if ( net_steamcnx_debug.GetBool() )
@@ -260,9 +310,9 @@ void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, HSteamNetConnection hConnection )
+CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, SNetSocket_t socket )
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return nullptr;
 
 	FOR_EACH_VEC( m_vecSockets, i )
@@ -274,15 +324,13 @@ CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, HSteamNe
 		}
 	}
 
-	CSteamSocket sock( steamID, hConnection );
+	CSteamSocket sock( steamID, socket );
 	m_vecSockets.AddToTail( sock );
 
 	if ( net_steamcnx_debug.GetBool() )
 	{
 		ConColorMsg( STEAM_CNX_COLOR, "Opened Steam Socket to %s\n", RenderSteamId( steamID ) );
 	}
-
-	SteamNetworkingSockets()->SetConnectionPollGroup( hConnection, m_hPollGroup );
 
 	return &m_vecSockets.Tail();
 }
@@ -292,10 +340,10 @@ CSteamSocket *CEconNetworking::OpenConnection( CSteamID const &steamID, HSteamNe
 //-----------------------------------------------------------------------------
 void CEconNetworking::CloseConnection( CSteamSocket *pSocket )
 {
-	if ( !SteamNetworkingSockets() || pSocket == NULL )
+	if ( !SteamNetworking() || pSocket == NULL )
 		return;
 
-	SteamNetworkingSockets()->CloseConnection( pSocket->GetConnection(), 0, "Game ended, conection closing", true );
+	SteamNetworking()->DestroySocket( pSocket->GetConnection(), true );
 
 	if ( net_steamcnx_debug.GetBool() )
 	{
@@ -324,56 +372,48 @@ CSteamSocket *CEconNetworking::FindConnectionForID( CSteamID const &steamID )
 //-----------------------------------------------------------------------------
 // Purpose: Initialize connection to server
 //-----------------------------------------------------------------------------
-void CEconNetworking::ConnectToServer( SteamNetworkingIdentity const &identity )
+void CEconNetworking::ConnectToServer( long nIP, short nPort )
 {
-	Assert( identity.m_eType == k_ESteamNetworkingIdentityType_IPAddress );
-	m_hServerConnection = SteamNetworkingSockets()->ConnectByIPAddress( *identity.GetIPAddr(), 0, NULL );
-
-	Assert( m_hPollGroup != k_HSteamNetPollGroup_Invalid );
-	SteamNetworkingSockets()->SetConnectionPollGroup( m_hServerConnection, m_hPollGroup );
+	m_hServerSocket = SteamNetworking()->CreateConnectionSocket( nIP, nPort, 20 );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CEconNetworking::ProcessDataFromConnection( HSteamNetConnection hConn )
+void CEconNetworking::ProcessDataFromConnection( SNetSocket_t socket )
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
-	SteamNetworkingMessage_t *messages[16];
-	int nNumMessages = SteamNetworkingSockets()->ReceiveMessagesOnConnection( hConn, messages, ARRAYSIZE( messages ) );
-	for ( int i = 0; i < nNumMessages; ++i )
+	uint32 cubMsgSize = 0;
+	while ( SteamNetworking()->IsDataAvailableOnSocket( socket, &cubMsgSize ) )
 	{
-		uint32 cubMsgSize = messages[i]->GetSize(); // Includes header size
-		void *pData = malloc( cubMsgSize );
-		Q_memcpy( pData, messages[i]->GetData(), cubMsgSize );
-
-		CSmartPtr<CNetPacket> pPacket( new CNetPacket );
-		pPacket->InitFromMemory( pData, cubMsgSize );
-
-		if ( pPacket->Hdr().m_ubProtoVer != STEAM_CNX_PROTO_VERSION )
+		uint32 cubReceived = 0;
+		void *pData = malloc( cubMsgSize+1 );
+		if ( SteamNetworking()->RetrieveDataFromSocket( socket, pData, cubMsgSize, &cubReceived ) )
 		{
-			SteamNetConnectionInfo_t info;
-			if( SteamNetworkingSockets()->GetConnectionInfo( hConn, &info ) )
+			AssertMsg( cubMsgSize == cubReceived, "We can't handle split packets at this time." );
+			if ( cubReceived < cubMsgSize )
 			{
-				Warning( "Malformed packet received from %s, protocol mismatch!",
-						 SteamNetworkingIdentityRender( info.m_identityRemote ).c_str() );
+				free( pData );
+				return;
 			}
 
-			continue;
+			CNetPacket *pPacket = new CNetPacket;
+			pPacket->InitFromMemory( pData, cubMsgSize );
+
+			IMessageHandler *pHandler = NULL;
+			unsigned nIndex = m_MessageTypes.Find( pPacket->Hdr().m_eMsgType );
+			if ( nIndex != m_MessageTypes.InvalidIndex() )
+				pHandler = m_MessageTypes[nIndex];
+
+			QueueEconNetworkMessageWork( pHandler, pPacket );
+
+			pPacket->Release();
 		}
 
-		IMessageHandler *pHandler = NULL;
-		unsigned nIndex = m_MessageTypes.Find( pPacket->Hdr().m_eMsgType );
-		if ( nIndex != m_MessageTypes.InvalidIndex() )
-			pHandler = m_MessageTypes[nIndex];
-
-		QueueEconNetworkMessageWork( pHandler, pPacket );
+		free( pData );
 	}
-
-	for ( int i = 0; i < nNumMessages; ++i )
-		messages[i]->Release();
 }
 
 //-----------------------------------------------------------------------------
@@ -386,8 +426,8 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, goo
 	if ( pSock == nullptr )
 		return false;
 
-	HSteamNetConnection hConn = pSock->GetConnection();
-	if ( hConn == k_HSteamNetConnection_Invalid )
+	SNetSocket_t socket = pSock->GetConnection();
+	if ( socket == NULL )
 		return false;
 #endif
 
@@ -399,11 +439,9 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, goo
 	msg.SerializeWithCachedSizesToArray( pPacket->MutableData() + sizeof(MsgHdr_t) );
 
 #if defined( GAME_DLL )
-	bool bSuccess = SteamNetworkingSockets()->SendMessageToConnection( hConn, pPacket->Data(), pPacket->Size(), 
-																k_nSteamNetworkingSend_Reliable, NULL ) == k_EResultOK;
+	bool bSuccess = SteamNetworking()->SendDataOnSocket( socket, (void *)pPacket->Data(), pPacket->Size(), false );
 #else
-	bool bSuccess = SteamNetworkingSockets()->SendMessageToConnection( m_hServerConnection, pPacket->Data(), pPacket->Size(), 
-																k_nSteamNetworkingSend_Reliable, NULL ) == k_EResultOK;
+	bool bSuccess = SteamNetworking()->SendDataOnSocket( m_hServerSocket, (void *)pPacket->Data(), pPacket->Size(), false );
 #endif
 
 	return bSuccess;
@@ -415,14 +453,14 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, goo
 //-----------------------------------------------------------------------------
 void CEconNetworking::Update( float frametime )
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
 	CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
 	if ( !pPlayer || !engine->IsConnected() )
 		return;
 
-	ProcessDataFromConnection( m_hServerConnection );
+	ProcessDataFromConnection( m_hServerSocket );
 }
 
 #else
@@ -432,7 +470,7 @@ void CEconNetworking::Update( float frametime )
 //-----------------------------------------------------------------------------
 void CEconNetworking::PreClientUpdate()
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
 	FOR_EACH_VEC( m_vecSockets, i )
@@ -445,64 +483,38 @@ void CEconNetworking::PreClientUpdate()
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CEconNetworking::SessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus )
+void CEconNetworking::SessionStatusChanged( SocketStatusCallback_t *pStatus )
 {
-	if ( !SteamNetworkingSockets() )
+	if ( !SteamNetworking() )
 		return;
 
-	switch ( pStatus->m_info.m_eState )
+	switch ( pStatus->m_eSNetSocketState )
 	{
-		case k_ESteamNetworkingConnectionState_ProblemDetectedLocally:
-		{
-			ConColorMsg( STEAM_CNX_COLOR, "Connection forcibly closed with %s (%s)!\n", 
-						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str(),
-						 SteamNetworkingIPAddrRender( pStatus->m_info.m_addrRemote ).c_str() );
-
-			DevMsg( "Connection %s end reason: %s\n", pStatus->m_info.m_szConnectionDescription, pStatus->m_info.m_szEndDebug );
-
-			SteamNetworkingSockets()->CloseConnection( pStatus->m_hConn, 0, NULL, false );
+		case k_ESNetSocketStateInitiated:
 			break;
-		}
 
-		case k_ESteamNetworkingConnectionState_ClosedByPeer:
-		{
-			ConColorMsg( STEAM_CNX_COLOR, "Closing connection with %s.\n", 
-						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str() );
-
-			SteamNetworkingSockets()->CloseConnection( pStatus->m_hConn, 0, NULL, true );
+		case k_ESNetSocketStateChallengeHandshake:
 			break;
-		}
 
-		case k_ESteamNetworkingConnectionState_Connecting:
-		{
-			ConColorMsg( STEAM_CNX_COLOR, "Accepting connection from %s (%s).\n", 
-						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str(),
-						 SteamNetworkingIPAddrRender( pStatus->m_info.m_addrRemote ).c_str() );
-
-			SteamNetworkingSockets()->AcceptConnection( pStatus->m_hConn );
+		case k_ESNetSocketStateConnected:
 			break;
-		}
 
-		case k_ESteamNetworkingConnectionState_Connected:
-		{
-			ConColorMsg( STEAM_CNX_COLOR, "Connected to %s.\n", 
-						 SteamNetworkingIdentityRender( pStatus->m_info.m_identityRemote ).c_str() );
+		case k_ESNetSocketStateDisconnecting:
+			break;
 
-		#if defined( GAME_DLL )
-			SteamNetworkingIdentity remoteID = pStatus->m_info.m_identityRemote;
-			HSteamNetConnection hConnection = pStatus->m_hConn;
+		case k_ESNetSocketStateLocalDisconnect:
+			break;
 
-			OnClientConnected( remoteID, hConnection );
-		#endif
-		}
+		case k_ESNetSocketStateTimeoutDuringConnect:
+			break;
 
-		case k_ESteamNetworkingConnectionState_FindingRoute:
-			break; // NAT traversal is being attempted, finding a route from peer to peer
-		case k_ESteamNetworkingConnectionState_None:
-			break; // Something happened, typically we closed the connection
+		case k_ESNetSocketStateRemoteEndDisconnected:
+		case k_ESNetSocketStateConnectionBroken:
+		case k_ESNetSocketStateInvalid:
+			break;
 
 		default:
-			AssertMsg( false, "Unhandled connection state!" );
+			AssertMsg1( false, "Unhandled connection state %d", pStatus->m_eSNetSocketState );
 			break;
 	}
 }
@@ -533,9 +545,4 @@ void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandle
 	g_Networking.AddMessageHandler( eMsg, pHandler );
 }
 
-
-void NetworkingSessionStatusChanged( SteamNetConnectionStatusChangedCallback_t *pStatus )
-{
-	g_Networking.SessionStatusChanged( pStatus );
-}
 //-----------------------------------------------------------------------------

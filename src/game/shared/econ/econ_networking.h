@@ -6,14 +6,13 @@
 
 
 #ifdef COMPILER_GCC
-#undef min
-#undef max
+	#undef min
+	#undef max
 #endif
 
-#include <google/protobuf/message.h>
+#include "steam/isteamnetworking.h"
 #include "econ_messages.pb.h"
 #include "tier1/mempool.h"
-#include "steam/steamnetworkingtypes.h"
 
 #define ECON_SERVER_PORT 27200
 
@@ -47,9 +46,9 @@ public:
 		m_Hdr.m_eMsgType = k_EInvalidMsg;
 	}
 
-	byte const *Data( void ) const { return (byte*)m_pMsg->m_pData; }
-	byte *MutableData( void ) { return (byte*)m_pMsg->m_pData; }
-	uint32 Size( void ) const { return m_pMsg->m_cbSize; }
+	byte const *Data( void ) const { return (byte*)m_pMsg; }
+	byte *MutableData( void ) { return (byte*)m_pMsg; }
+	uint32 Size( void ) const { return m_Hdr.m_unMsgSize; }
 	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
 
 protected:
@@ -64,7 +63,7 @@ protected:
 	void InitFromMemory( void const *pMemory, uint32 size );
 
 private:
-	SteamNetworkingMessage_t *m_pMsg;
+	void *m_pMsg;
 	MsgHdr_t m_Hdr;
 
 	friend class CRefCountAccessor;
@@ -79,7 +78,7 @@ private:
 		if ( nRefCounts == 0 )
 		{
 			if( m_pMsg )
-				m_pMsg->Release();
+				free( m_pMsg );
 
 			delete this;
 		}
@@ -95,9 +94,9 @@ private:
 abstract_class IEconNetworking
 {
 public:
-	virtual void OnClientConnected( SteamNetworkingIdentity const &identity, HSteamNetConnection hConnection ) = 0;
+	virtual void OnClientConnected( CSteamID const &id, SNetSocket_t socket ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
-	virtual void ConnectToServer( SteamNetworkingIdentity const &identity ) = 0;
+	virtual void ConnectToServer( long nIP, short nPort ) = 0;
 	virtual bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg ) = 0;
 };
 

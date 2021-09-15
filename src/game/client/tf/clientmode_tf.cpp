@@ -50,7 +50,6 @@
 #include "usermessages.h"
 #include "utlvector.h"
 #include "props_shared.h"
-#include "steam/isteamnetworkingsockets.h"
 #include "econ/econ_networking.h"
 
 #if defined( _X360 )
@@ -670,10 +669,7 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 			nIP = ( nIPParts[0]<<24 ) + ( nIPParts[1]<<16 ) + ( nIPParts[2]<<8 ) + nIPParts[3];
 		}
 
-		SteamNetworkingIdentity ident;
-		ident.SetIPv4Addr( nIP, ECON_SERVER_PORT );
-
-		g_pEconNetwork->ConnectToServer( ident );
+		g_pEconNetwork->ConnectToServer( nIP, ECON_SERVER_PORT );
 	}
 
 	BaseClass::FireGameEvent( event );
