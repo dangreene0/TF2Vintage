@@ -1317,7 +1317,6 @@ $Project
 		$Lib		vgui_controls
 		$Lib		vtf
 		$ImpLib		steam_api
-		$ImpLib 	GameNetworkingSockets
 		$Lib 		"discord_game_sdk.dll" [$WIN32]
 		
 		$Libexternal $LIBCOMMON/libcrypto [$OSXALL]
