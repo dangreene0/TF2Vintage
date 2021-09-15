@@ -833,7 +833,10 @@ void CTFOptionsVideoPanel::OnApplyChanges()
 
 	ApplyChangesToConVar("mat_dxlevel", m_pDXLevel->GetActiveItemUserData()->GetInt("dxlevel"));
 	ApplyChangesToConVar("r_rootlod", 2 - m_pModelDetail->GetActiveItem());
-	ApplyChangesToConVar("mat_picmip", m_pTextureDetail->GetActiveItem() - 9);
+
+	int nPicmip = 2 - m_pTextureDetail->GetActiveItem();
+	ApplyChangesToConVar("mat_picmip", nPicmip);
+	ApplyChangesToConVar("tf2v_mat_picmip", nPicmip - 9);
 
 	// reset everything tied to the filtering mode, then the switch sets the appropriate one
 	ApplyChangesToConVar("mat_trilinear", false);
