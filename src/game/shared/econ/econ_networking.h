@@ -10,6 +10,7 @@
 	#undef max
 #endif
 
+#include "steam/isteamclient.h"
 #include "steam/isteamnetworking.h"
 #include "econ_messages.pb.h"
 #include "tier1/mempool.h"

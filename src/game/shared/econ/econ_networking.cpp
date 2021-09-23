@@ -6,7 +6,7 @@
 #include "tier1/smartptr.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
-#include "steam/steam_api_common.h"
+#include "steam/steam_api.h"
 #include "steam/isteamuser.h"
 #endif
 
@@ -20,7 +20,7 @@ static ConVar net_steamcnx_allowrelay( "net_steamcnx_allowrelay", "1", FCVAR_ARC
 #define STEAM_CNX_COLOR Color(255,255,100)
 #define STEAM_CNX_PROTO_VERSION 2
 
-// Converted from https://github.com/ValveSoftware/GameNetworkingSockets/blob/master/src/common/steamid.cpp#L523-L594
+// Converted from https://github.com/ValveSoftware/GameNetworkingSockets/blob/master/src/common/steamid.cpp#L523
 static char const *RenderSteamId( CSteamID const &steamID )
 {
 	// longest length of returned string is k_cBufLen

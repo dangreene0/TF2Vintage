@@ -1,6 +1,6 @@
 //========= Copyright � 1996-2008, Valve LLC, All rights reserved. ============
 //
-// Declare common types used by the Steamworks SDK.
+// Purpose: Declare common types used by the Steamworks SDK.
 //
 //=============================================================================
 
@@ -371,13 +371,18 @@ enum EChatRoomEnterResponse
 	// k_EChatRoomEnterResponseNoRankingDataLobby = 12,  // No longer used
 	// k_EChatRoomEnterResponseNoRankingDataUser = 13,  //  No longer used
 	// k_EChatRoomEnterResponseRankOutOfRange = 14, //  No longer used
-	k_EChatRoomEnterResponseRatelimitExceeded = 15, // Join failed - to many join attempts in a very short period of time
 };
 
 
+typedef void (*PFNLegacyKeyRegistration)( const char *pchCDKey, const char *pchInstallPath );
+typedef bool (*PFNLegacyKeyInstalled)();
+
 const unsigned int k_unSteamAccountIDMask = 0xFFFFFFFF;
 const unsigned int k_unSteamAccountInstanceMask = 0x000FFFFF;
-const unsigned int k_unSteamUserDefaultInstance	= 1; // fixed instance for all individual users
+// we allow 3 simultaneous user account instances right now, 1= desktop, 2 = console, 4 = web, 0 = all
+const unsigned int k_unSteamUserDesktopInstance	= 1;	 
+const unsigned int k_unSteamUserConsoleInstance	= 2;
+const unsigned int k_unSteamUserWebInstance		= 4;
 
 // Special flags for Chat accounts - they go in the top 8 bits
 // of the steam ID's "instance", leaving 12 for the actual instances
@@ -407,8 +412,8 @@ enum EMarketingMessageFlags
 	//aggregate flags
 	k_EMarketingMessageFlagsPlatformRestrictions = 
 		k_EMarketingMessageFlagsPlatformWindows |
-		k_EMarketingMessageFlagsPlatformMac |
-		k_EMarketingMessageFlagsPlatformLinux,
+        k_EMarketingMessageFlagsPlatformMac |
+        k_EMarketingMessageFlagsPlatformLinux,
 };
 
 
@@ -457,115 +462,7 @@ enum EBroadcastUploadResult
 };
 
 
-//-----------------------------------------------------------------------------
-// Purpose: Reasons a user may not use the Community Market.
-//          Used in MarketEligibilityResponse_t.
-//-----------------------------------------------------------------------------
-enum EMarketNotAllowedReasonFlags
-{
-	k_EMarketNotAllowedReason_None = 0,
-
-	// A back-end call failed or something that might work again on retry
-	k_EMarketNotAllowedReason_TemporaryFailure = (1 << 0),
-
-	// Disabled account
-	k_EMarketNotAllowedReason_AccountDisabled = (1 << 1),
-
-	// Locked account
-	k_EMarketNotAllowedReason_AccountLockedDown = (1 << 2),
-
-	// Limited account (no purchases)
-	k_EMarketNotAllowedReason_AccountLimited = (1 << 3),
-
-	// The account is banned from trading items
-	k_EMarketNotAllowedReason_TradeBanned = (1 << 4),
-
-	// Wallet funds aren't tradable because the user has had no purchase
-	// activity in the last year or has had no purchases prior to last month
-	k_EMarketNotAllowedReason_AccountNotTrusted = (1 << 5),
-
-	// The user doesn't have Steam Guard enabled
-	k_EMarketNotAllowedReason_SteamGuardNotEnabled = (1 << 6),
-
-	// The user has Steam Guard, but it hasn't been enabled for the required
-	// number of days
-	k_EMarketNotAllowedReason_SteamGuardOnlyRecentlyEnabled = (1 << 7),
-
-	// The user has recently forgotten their password and reset it
-	k_EMarketNotAllowedReason_RecentPasswordReset = (1 << 8),
-
-	// The user has recently funded his or her wallet with a new payment method
-	k_EMarketNotAllowedReason_NewPaymentMethod = (1 << 9),
-
-	// An invalid cookie was sent by the user
-	k_EMarketNotAllowedReason_InvalidCookie = (1 << 10),
-
-	// The user has Steam Guard, but is using a new computer or web browser
-	k_EMarketNotAllowedReason_UsingNewDevice = (1 << 11),
-
-	// The user has recently refunded a store purchase by his or herself
-	k_EMarketNotAllowedReason_RecentSelfRefund = (1 << 12),
-
-	// The user has recently funded his or her wallet with a new payment method that cannot be verified
-	k_EMarketNotAllowedReason_NewPaymentMethodCannotBeVerified = (1 << 13),
-
-	// Not only is the account not trusted, but they have no recent purchases at all
-	k_EMarketNotAllowedReason_NoRecentPurchases = (1 << 14),
-
-	// User accepted a wallet gift that was recently purchased
-	k_EMarketNotAllowedReason_AcceptedWalletGift = (1 << 15),
-};
-
-
-//
-// describes XP / progress restrictions to apply for games with duration control /
-// anti-indulgence enabled for minor Steam China users.
-//
-// WARNING: DO NOT RENUMBER
-enum EDurationControlProgress
-{
-	k_EDurationControlProgress_Full = 0,	// Full progress
-	k_EDurationControlProgress_Half = 1,	// deprecated - XP or persistent rewards should be halved
-	k_EDurationControlProgress_None = 2,	// deprecated - XP or persistent rewards should be stopped
-
-	k_EDurationControl_ExitSoon_3h = 3,		// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
-	k_EDurationControl_ExitSoon_5h = 4,		// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
-	k_EDurationControl_ExitSoon_Night = 5,	// game running after day period, game should exit - steam will terminate the game soon
-};
-
-
-//
-// describes which notification timer has expired, for steam china duration control feature
-//
-// WARNING: DO NOT RENUMBER
-enum EDurationControlNotification
-{
-	k_EDurationControlNotification_None = 0,		// just informing you about progress, no notification to show
-	k_EDurationControlNotification_1Hour = 1,		// "you've been playing for N hours"
-	
-	k_EDurationControlNotification_3Hours = 2,		// deprecated - "you've been playing for 3 hours; take a break"
-	k_EDurationControlNotification_HalfProgress = 3,// deprecated - "your XP / progress is half normal"
-	k_EDurationControlNotification_NoProgress = 4,	// deprecated - "your XP / progress is zero"
-	
-	k_EDurationControlNotification_ExitSoon_3h = 5,	// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
-	k_EDurationControlNotification_ExitSoon_5h = 6,	// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
-	k_EDurationControlNotification_ExitSoon_Night = 7,// game running after day period, game should exit - steam will terminate the game soon
-};
-
-
-//
-// Specifies a game's online state in relation to duration control
-//
-enum EDurationControlOnlineState
-{
-	k_EDurationControlOnlineState_Invalid = 0,				// nil value
-	k_EDurationControlOnlineState_Offline = 1,				// currently in offline play - single-player, offline co-op, etc.
-	k_EDurationControlOnlineState_Online = 2,				// currently in online play
-	k_EDurationControlOnlineState_OnlineHighPri = 3,		// currently in online play and requests not to be interrupted
-};
-
-
-#pragma pack( push, 1 )
+#pragma pack( push, 1 )		
 
 #define CSTEAMID_DEFINED
 
@@ -608,7 +505,7 @@ public:
 	CSteamID( uint32 unAccountID, unsigned int unAccountInstance, EUniverse eUniverse, EAccountType eAccountType )
 	{
 #if defined(_SERVER) && defined(Assert)
-		Assert( ( k_EAccountTypeIndividual != eAccountType ) || ( unAccountInstance == k_unSteamUserDefaultInstance ) );	// enforce that for individual accounts, instance is always 1
+		Assert( ! ( ( k_EAccountTypeIndividual == eAccountType ) && ( unAccountInstance > k_unSteamUserWebInstance ) ) );	// enforce that for individual accounts, instance is always 1
 #endif // _SERVER
 		InstancedSet( unAccountID, unAccountInstance, eUniverse, eAccountType );
 	}
@@ -650,7 +547,8 @@ public:
 		}
 		else
 		{
-			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance;
+			// by default we pick the desktop instance
+			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance;
 		}
 	}
 
@@ -717,7 +615,7 @@ public:
 			pTSteamGlobalUserID->m_SteamLocalUserID.Split.High32bits;
 		m_steamid.m_comp.m_EUniverse = eUniverse;		// set the universe
 		m_steamid.m_comp.m_EAccountType = k_EAccountTypeIndividual; // Steam 2 accounts always map to account type of individual
-		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance; // Steam2 only knew one instance
+		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance; // Steam2 only knew desktop instances
 	}
 
 	//-----------------------------------------------------------------------------
@@ -886,7 +784,8 @@ public:
 	// simple accessors
 	void SetAccountID( uint32 unAccountID )		{ m_steamid.m_comp.m_unAccountID = unAccountID; }
 	void SetAccountInstance( uint32 unInstance ){ m_steamid.m_comp.m_unAccountInstance = unInstance; }
-		
+	void ClearIndividualInstance()				{ if ( BIndividualAccount() ) m_steamid.m_comp.m_unAccountInstance = 0; }
+	bool HasNoIndividualInstance() const		{ return BIndividualAccount() && (m_steamid.m_comp.m_unAccountInstance==0); }
 	AccountID_t GetAccountID() const			{ return m_steamid.m_comp.m_unAccountID; }
 	uint32 GetUnAccountInstance() const			{ return m_steamid.m_comp.m_unAccountInstance; }
 	EAccountType GetEAccountType() const		{ return ( EAccountType ) m_steamid.m_comp.m_EAccountType; }
@@ -956,7 +855,7 @@ inline bool CSteamID::IsValid() const
 
 	if ( m_steamid.m_comp.m_EAccountType == k_EAccountTypeIndividual )
 	{
-		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance != k_unSteamUserDefaultInstance )
+		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance > k_unSteamUserWebInstance )
 			return false;
 	}
 
@@ -1051,21 +950,74 @@ public:
 		m_gameID.m_nType = k_EGameIDTypeGameMod;
 	}
 
-	CGameID( const CGameID &that )
-	{
-		m_ulGameID = that.m_ulGameID;
-	}
-
-	CGameID& operator=( const CGameID & that )
-	{
-		m_ulGameID = that.m_ulGameID;
-		return *this;
-	}
-
 	// Hidden functions used only by Steam
 	explicit CGameID( const char *pchGameID );
 	const char *Render() const;					// render this Game ID to string
 	static const char *Render( uint64 ulGameID );		// static method to render a uint64 representation of a Game ID to a string
+
+	// must include checksum_crc.h first to get this functionality
+#if defined( CHECKSUM_CRC_H )
+	CGameID( uint32 nAppID, const char *pchModPath )
+	{
+		m_ulGameID = 0;
+		m_gameID.m_nAppID = nAppID;
+		m_gameID.m_nType = k_EGameIDTypeGameMod;
+
+		char rgchModDir[MAX_PATH];
+		V_FileBase( pchModPath, rgchModDir, sizeof( rgchModDir ) );
+		CRC32_t crc32;
+		CRC32_Init( &crc32 );
+		CRC32_ProcessBuffer( &crc32, rgchModDir, V_strlen( rgchModDir ) );
+		CRC32_Final( &crc32 );
+
+		// set the high-bit on the mod-id 
+		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
+		// replacement for appID's
+		m_gameID.m_nModID = crc32 | (0x80000000);
+	}
+
+	CGameID( const char *pchExePath, const char *pchAppName )
+	{
+		m_ulGameID = 0;
+		m_gameID.m_nAppID = k_uAppIdInvalid;
+		m_gameID.m_nType = k_EGameIDTypeShortcut;
+
+		CRC32_t crc32;
+		CRC32_Init( &crc32 );
+		CRC32_ProcessBuffer( &crc32, pchExePath, V_strlen( pchExePath ) );
+		CRC32_ProcessBuffer( &crc32, pchAppName, V_strlen( pchAppName ) );
+		CRC32_Final( &crc32 );
+
+		// set the high-bit on the mod-id 
+		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
+		// replacement for appID's
+		m_gameID.m_nModID = crc32 | (0x80000000);
+	}
+
+#if defined( VSTFILEID_H )
+
+	CGameID( VstFileID vstFileID )
+	{
+		m_ulGameID = 0;
+		m_gameID.m_nAppID = k_uAppIdInvalid;
+		m_gameID.m_nType = k_EGameIDTypeP2P;
+
+		CRC32_t crc32;
+		CRC32_Init( &crc32 );
+		const char *pchFileId = vstFileID.Render();
+		CRC32_ProcessBuffer( &crc32, pchFileId, V_strlen( pchFileId ) );
+		CRC32_Final( &crc32 );
+
+		// set the high-bit on the mod-id 
+		// reduces crc32 to 31bits, but lets us use the modID as a guaranteed unique
+		// replacement for appID's
+		m_gameID.m_nModID = crc32 | (0x80000000);		
+	}
+
+#endif /* VSTFILEID_H */
+
+#endif /* CHECKSUM_CRC_H */
+
 
 	uint64 ToUint64() const
 	{
@@ -1211,44 +1163,6 @@ typedef void (*PFNPreMinidumpCallback)(void *context);
 //-----------------------------------------------------------------------------
 typedef void *BREAKPAD_HANDLE;
 #define BREAKPAD_INVALID_HANDLE (BREAKPAD_HANDLE)0 
-
-enum EGameSearchErrorCode_t
-{
-	k_EGameSearchErrorCode_OK = 1,
-	k_EGameSearchErrorCode_Failed_Search_Already_In_Progress = 2,
-	k_EGameSearchErrorCode_Failed_No_Search_In_Progress = 3,
-	k_EGameSearchErrorCode_Failed_Not_Lobby_Leader = 4, // if not the lobby leader can not call SearchForGameWithLobby
-	k_EGameSearchErrorCode_Failed_No_Host_Available = 5, // no host is available that matches those search params
-	k_EGameSearchErrorCode_Failed_Search_Params_Invalid = 6, // search params are invalid
-	k_EGameSearchErrorCode_Failed_Offline = 7, // offline, could not communicate with server
-	k_EGameSearchErrorCode_Failed_NotAuthorized = 8, // either the user or the application does not have priveledges to do this
-	k_EGameSearchErrorCode_Failed_Unknown_Error = 9, // unknown error
-};
-
-enum EPlayerResult_t
-{
-	k_EPlayerResultFailedToConnect = 1, // failed to connect after confirming
-	k_EPlayerResultAbandoned = 2,		// quit game without completing it
-	k_EPlayerResultKicked = 3,			// kicked by other players/moderator/server rules
-	k_EPlayerResultIncomplete = 4,		// player stayed to end but game did not conclude successfully ( nofault to player )
-	k_EPlayerResultCompleted = 5,		// player completed game
-};
-
-
-enum ESteamIPv6ConnectivityProtocol
-{
-	k_ESteamIPv6ConnectivityProtocol_Invalid = 0,
-	k_ESteamIPv6ConnectivityProtocol_HTTP = 1,		// because a proxy may make this different than other protocols
-	k_ESteamIPv6ConnectivityProtocol_UDP = 2,		// test UDP connectivity. Uses a port that is commonly needed for other Steam stuff. If UDP works, TCP probably works. 
-};
-
-// For the above transport protocol, what do we think the local machine's connectivity to the internet over ipv6 is like
-enum ESteamIPv6ConnectivityState
-{
-	k_ESteamIPv6ConnectivityState_Unknown = 0,	// We haven't run a test yet
-	k_ESteamIPv6ConnectivityState_Good = 1,		// We have recently been able to make a request on ipv6 for the given protocol
-	k_ESteamIPv6ConnectivityState_Bad = 2,		// We failed to make a request, either because this machine has no ipv6 address assigned, or it has no upstream connectivity
-};
 
 
 // Define compile time assert macros to let us validate the structure sizes.
