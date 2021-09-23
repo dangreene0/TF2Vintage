@@ -215,6 +215,8 @@ CEconNetworking::~CEconNetworking()
 //-----------------------------------------------------------------------------
 bool CEconNetworking::Init( void )
 {
+	if ( !SteamNetworking() )
+		return true;
 #if defined( GAME_DLL )
 	if( engine->IsDedicatedServer() )
 	{
@@ -230,7 +232,8 @@ bool CEconNetworking::Init( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::Shutdown( void )
 {
-	SteamNetworking()->DestroyListenSocket( m_hListenSocket, false );
+	if ( SteamNetworking() )
+		SteamNetworking()->DestroyListenSocket( m_hListenSocket, false );
 
 	FOR_EACH_VEC( m_vecSockets, i )
 	{
@@ -421,6 +424,8 @@ void CEconNetworking::ProcessDataFromConnection( SNetSocket_t socket )
 //-----------------------------------------------------------------------------
 bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, google::protobuf::Message const &msg )
 {
+	if ( !SteamNetworking() )
+		return false;
 #if defined( GAME_DLL )
 	CSteamSocket *pSock = FindConnectionForID( targetID );
 	if ( pSock == nullptr )

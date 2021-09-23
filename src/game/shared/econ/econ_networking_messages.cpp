@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "filesystem.h"
+#include "vstdlib/coroutine.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #ifndef NO_STEAM

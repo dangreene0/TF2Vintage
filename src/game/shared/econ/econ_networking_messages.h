@@ -6,7 +6,6 @@
 
 
 #include "tier1/mempool.h"
-#include "vstdlib/coroutine.h"
 #include "tier1/smartptr.h"
 
 class CNetPacket;
