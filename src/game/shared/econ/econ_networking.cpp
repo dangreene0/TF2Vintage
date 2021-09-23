@@ -496,24 +496,43 @@ void CEconNetworking::SessionStatusChanged( SocketStatusCallback_t *pStatus )
 	switch ( pStatus->m_eSNetSocketState )
 	{
 		case k_ESNetSocketStateInitiated:
+			ConColorMsg( STEAM_CNX_COLOR, "Initializing Steam connection.\n" );
 			break;
 
 		case k_ESNetSocketStateChallengeHandshake:
+		#if defined(CLIENT_DLL)
+		{
+			uint32 nIP = 0, nPort = 0;
+			SteamNetworking()->GetListenSocketInfo( pStatus->m_hListenSocket, &nIP, (uint16 *)&nPort );
+
+			ConColorMsg( STEAM_CNX_COLOR, "Initiating connection to %d.%d.%d.%d:%d.\n",
+						 uint8( nIP >> 24 ), uint8( nIP >> 16 ), uint8( nIP >> 8 ), uint8( nIP >> 24 ), nPort );
+		}
+		#endif
 			break;
 
 		case k_ESNetSocketStateConnected:
+			ConColorMsg( STEAM_CNX_COLOR, "Connected to %s.\n", RenderSteamId( pStatus->m_steamIDRemote ) );
+
+		#if defined(GAME_DLL)
+			OnClientConnected( pStatus->m_steamIDRemote, pStatus->m_hSocket );
+		#endif
 			break;
 
 		case k_ESNetSocketStateDisconnecting:
+			ConColorMsg( STEAM_CNX_COLOR, "Closing connection with %s.\n", RenderSteamId( pStatus->m_steamIDRemote ) );
 			break;
 
 		case k_ESNetSocketStateLocalDisconnect:
+		case k_ESNetSocketStateRemoteEndDisconnected:
+			ConColorMsg( STEAM_CNX_COLOR, "Connection closed by %s.\n", RenderSteamId( pStatus->m_steamIDRemote ) );
 			break;
 
 		case k_ESNetSocketStateTimeoutDuringConnect:
+			ConColorMsg( STEAM_CNX_COLOR, "Closing connection with %s. Connection timed out.\n",
+						 RenderSteamId( pStatus->m_steamIDRemote ) );
 			break;
 
-		case k_ESNetSocketStateRemoteEndDisconnected:
 		case k_ESNetSocketStateConnectionBroken:
 		case k_ESNetSocketStateInvalid:
 			break;
