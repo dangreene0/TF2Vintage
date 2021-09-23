@@ -144,11 +144,11 @@ public:
 private:
 	inline ISteamNetworking *SteamNetworking( void ) const
 	{
-		ISteamNetworking *pNetworking = ::SteamNetworking();
+		ISteamNetworking *pNetworking = steamapicontext->SteamNetworking();
 	#ifdef GAME_DLL
 		if ( pNetworking == NULL )
 		{
-			pNetworking = ::SteamGameServerNetworking();
+			pNetworking = steamgameserverapicontext->SteamGameServerNetworking();
 		}
 	#endif
 		return pNetworking;
