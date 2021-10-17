@@ -1,23 +1,11 @@
 //========= Copyright � 1996-2008, Valve LLC, All rights reserved. ============
 //
-// Purpose:
+// Purpose: Declare common types used by the Steamworks SDK.
 //
 //=============================================================================
 
 #ifndef STEAMCLIENTPUBLIC_H
 #define STEAMCLIENTPUBLIC_H
-#ifdef _WIN32
-#pragma once
-#endif
-//lint -save -e1931 -e1927 -e1924 -e613 -e726
-
-// This header file defines the interface between the calling application and the code that
-// knows how to communicate with the connection manager (CM) from the Steam service 
-
-// This header file is intended to be portable; ideally this 1 header file plus a lib or dll
-// is all you need to integrate the client library into some other tree.  So please avoid
-// including or requiring other header files if possible.  This header should only describe the 
-// interface layer, no need to include anything about the implementation.
 
 #include "steamtypes.h"
 #include "steamuniverse.h"
@@ -142,6 +130,11 @@ enum EResult
 	k_EResultAccountDeleted = 114,				// account has been deleted
 	k_EResultExistingUserCancelledLicense = 115,	// A license for this already exists, but cancelled
 	k_EResultCommunityCooldown = 116,			// access is denied because of a community cooldown (probably from support profile data resets)
+	k_EResultNoLauncherSpecified = 117,			// No launcher was specified, but a launcher was needed to choose correct realm for operation.
+	k_EResultMustAgreeToSSA = 118,				// User must agree to china SSA or global SSA before login
+	k_EResultLauncherMigrated = 119,			// The specified launcher type is no longer supported; the user should be directed elsewhere
+	k_EResultSteamRealmMismatch = 120,			// The user's realm does not match the realm of the requested resource
+	k_EResultInvalidSignature = 121,			// signature check did not match
 };
 
 // Error codes for use with the voice functions
@@ -378,7 +371,6 @@ enum EChatRoomEnterResponse
 	// k_EChatRoomEnterResponseNoRankingDataLobby = 12,  // No longer used
 	// k_EChatRoomEnterResponseNoRankingDataUser = 13,  //  No longer used
 	// k_EChatRoomEnterResponseRankOutOfRange = 14, //  No longer used
-	k_EChatRoomEnterResponseRatelimitExceeded = 15, // Join failed - to many join attempts in a very short period of time
 };
 
 
@@ -420,8 +412,8 @@ enum EMarketingMessageFlags
 	//aggregate flags
 	k_EMarketingMessageFlagsPlatformRestrictions = 
 		k_EMarketingMessageFlagsPlatformWindows |
-		k_EMarketingMessageFlagsPlatformMac |
-		k_EMarketingMessageFlagsPlatformLinux,
+        k_EMarketingMessageFlagsPlatformMac |
+        k_EMarketingMessageFlagsPlatformLinux,
 };
 
 
@@ -470,99 +462,7 @@ enum EBroadcastUploadResult
 };
 
 
-//-----------------------------------------------------------------------------
-// Purpose: code points for VR HMD vendors and models 
-// WARNING: DO NOT RENUMBER EXISTING VALUES - STORED IN A DATABASE
-//-----------------------------------------------------------------------------
-enum EVRHMDType
-{
-	k_eEVRHMDType_None = -1, // unknown vendor and model
-
-	k_eEVRHMDType_Unknown = 0, // unknown vendor and model
-
-	k_eEVRHMDType_HTC_Dev = 1,	// original HTC dev kits
-	k_eEVRHMDType_HTC_VivePre = 2,	// htc vive pre
-	k_eEVRHMDType_HTC_Vive = 3,	// htc vive consumer release
-	k_eEVRHMDType_HTC_VivePro = 4,	// htc vive pro release
-	k_eEVRHMDType_HTC_ViveCosmos = 5,	// HTC Vive Cosmos
-
-	k_eEVRHMDType_HTC_Unknown = 20, // unknown htc hmd
-
-	k_eEVRHMDType_Oculus_DK1 = 21, // Oculus DK1 
-	k_eEVRHMDType_Oculus_DK2 = 22, // Oculus DK2
-	k_eEVRHMDType_Oculus_Rift = 23, // Oculus Rift
-	k_eEVRHMDType_Oculus_RiftS = 24, // Oculus Rift S
-	k_eEVRHMDType_Oculus_Quest = 25, // Oculus Quest
-
-	k_eEVRHMDType_Oculus_Unknown = 40, // // Oculus unknown HMD
-
-	k_eEVRHMDType_Acer_Unknown = 50, // Acer unknown HMD
-	k_eEVRHMDType_Acer_WindowsMR = 51, // Acer QHMD Windows MR headset
-
-	k_eEVRHMDType_Dell_Unknown = 60, // Dell unknown HMD
-	k_eEVRHMDType_Dell_Visor = 61, // Dell Visor Windows MR headset
-
-	k_eEVRHMDType_Lenovo_Unknown = 70, // Lenovo unknown HMD
-	k_eEVRHMDType_Lenovo_Explorer = 71, // Lenovo Explorer Windows MR headset
-
-	k_eEVRHMDType_HP_Unknown = 80, // HP unknown HMD
-	k_eEVRHMDType_HP_WindowsMR = 81, // HP Windows MR headset
-	k_eEVRHMDType_HP_Reverb = 82, // HP Reverb Windows MR headset
-
-	k_eEVRHMDType_Samsung_Unknown = 90, // Samsung unknown HMD
-	k_eEVRHMDType_Samsung_Odyssey = 91, // Samsung Odyssey Windows MR headset
-
-	k_eEVRHMDType_Unannounced_Unknown = 100, // Unannounced unknown HMD
-	k_eEVRHMDType_Unannounced_WindowsMR = 101, // Unannounced Windows MR headset
-
-	k_eEVRHMDType_vridge = 110, // VRIDGE tool
-	
-	k_eEVRHMDType_Huawei_Unknown = 120, // Huawei unknown HMD
-	k_eEVRHMDType_Huawei_VR2 = 121, // Huawei VR2 3DOF headset
-	k_eEVRHMDType_Huawei_EndOfRange = 129, // end of Huawei HMD range
-
-	k_eEVRHmdType_Valve_Unknown = 130, // Valve Unknown HMD
-	k_eEVRHmdType_Valve_Index = 131, // Valve Index HMD
-
-};
-
-
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from an Oculus HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsOculusHMD( EVRHMDType eType )
-{
-	return eType == k_eEVRHMDType_Oculus_DK1 || eType == k_eEVRHMDType_Oculus_DK2 || eType == k_eEVRHMDType_Oculus_Rift || eType == k_eEVRHMDType_Oculus_RiftS || eType == k_eEVRHMDType_Oculus_Quest || eType == k_eEVRHMDType_Oculus_Unknown;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from a Windows MR HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsWindowsMRHeadset( EVRHMDType eType )
-{
-	return eType >= k_eEVRHMDType_Acer_WindowsMR && eType <= k_eEVRHMDType_Unannounced_WindowsMR;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from a Hauwei HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsHuaweiHeadset( EVRHMDType eType )
-{
-	return eType >= k_eEVRHMDType_Huawei_Unknown && eType <= k_eEVRHMDType_Huawei_EndOfRange;
-}
-
-
-//-----------------------------------------------------------------------------
-// Purpose: true if this is from an Vive HMD
-//-----------------------------------------------------------------------------
-static inline bool BIsViveHMD( EVRHMDType eType )
-{
-	return eType == k_eEVRHMDType_HTC_Dev || eType == k_eEVRHMDType_HTC_VivePre || eType == k_eEVRHMDType_HTC_Vive || eType == k_eEVRHMDType_HTC_Unknown || eType == k_eEVRHMDType_HTC_VivePro;
-}
-
-#pragma pack( push, 1 )
+#pragma pack( push, 1 )		
 
 #define CSTEAMID_DEFINED
 
@@ -605,7 +505,7 @@ public:
 	CSteamID( uint32 unAccountID, unsigned int unAccountInstance, EUniverse eUniverse, EAccountType eAccountType )
 	{
 #if defined(_SERVER) && defined(Assert)
-		Assert( ( k_EAccountTypeIndividual != eAccountType ) || ( unAccountInstance == k_unSteamUserDesktopInstance ) );	// enforce that for individual accounts, instance is always 1
+		Assert( ! ( ( k_EAccountTypeIndividual == eAccountType ) && ( unAccountInstance > k_unSteamUserWebInstance ) ) );	// enforce that for individual accounts, instance is always 1
 #endif // _SERVER
 		InstancedSet( unAccountID, unAccountInstance, eUniverse, eAccountType );
 	}
@@ -647,6 +547,7 @@ public:
 		}
 		else
 		{
+			// by default we pick the desktop instance
 			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance;
 		}
 	}
@@ -714,7 +615,7 @@ public:
 			pTSteamGlobalUserID->m_SteamLocalUserID.Split.High32bits;
 		m_steamid.m_comp.m_EUniverse = eUniverse;		// set the universe
 		m_steamid.m_comp.m_EAccountType = k_EAccountTypeIndividual; // Steam 2 accounts always map to account type of individual
-		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance; // Steam2 only knew one instance
+		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance; // Steam2 only knew desktop instances
 	}
 
 	//-----------------------------------------------------------------------------
@@ -1049,17 +950,6 @@ public:
 		m_gameID.m_nType = k_EGameIDTypeGameMod;
 	}
 
-	CGameID( const CGameID &that )
-	{
-		m_ulGameID = that.m_ulGameID;
-	}
-
-	CGameID& operator=( const CGameID & that )
-	{
-		m_ulGameID = that.m_ulGameID;
-		return *this;
-	}
-
 	// Hidden functions used only by Steam
 	explicit CGameID( const char *pchGameID );
 	const char *Render() const;					// render this Game ID to string
@@ -1094,10 +984,8 @@ public:
 
 		CRC32_t crc32;
 		CRC32_Init( &crc32 );
-		if ( pchExePath )
-			CRC32_ProcessBuffer( &crc32, pchExePath, V_strlen( pchExePath ) );
-		if ( pchAppName )
-			CRC32_ProcessBuffer( &crc32, pchAppName, V_strlen( pchAppName ) );
+		CRC32_ProcessBuffer( &crc32, pchExePath, V_strlen( pchExePath ) );
+		CRC32_ProcessBuffer( &crc32, pchAppName, V_strlen( pchAppName ) );
 		CRC32_Final( &crc32 );
 
 		// set the high-bit on the mod-id 
@@ -1219,9 +1107,9 @@ public:
 		m_ulGameID = 0;
 	}
 
-
-
-private:
+//
+// Internal stuff.  Use the accessors above if possible
+//
 
 	enum EGameIDType
 	{
@@ -1276,65 +1164,27 @@ typedef void (*PFNPreMinidumpCallback)(void *context);
 typedef void *BREAKPAD_HANDLE;
 #define BREAKPAD_INVALID_HANDLE (BREAKPAD_HANDLE)0 
 
-enum EGameSearchErrorCode_t
-{
-	k_EGameSearchErrorCode_OK = 1,
-	k_EGameSearchErrorCode_Failed_Search_Already_In_Progress = 2,
-	k_EGameSearchErrorCode_Failed_No_Search_In_Progress = 3,
-	k_EGameSearchErrorCode_Failed_Not_Lobby_Leader = 4, // if not the lobby leader can not call SearchForGameWithLobby
-	k_EGameSearchErrorCode_Failed_No_Host_Available = 5, // no host is available that matches those search params
-	k_EGameSearchErrorCode_Failed_Search_Params_Invalid = 6, // search params are invalid
-	k_EGameSearchErrorCode_Failed_Offline = 7, // offline, could not communicate with server
-	k_EGameSearchErrorCode_Failed_NotAuthorized = 8, // either the user or the application does not have priveledges to do this
-	k_EGameSearchErrorCode_Failed_Unknown_Error = 9, // unknown error
-};
-
-enum EPlayerResult_t
-{
-	k_EPlayerResultFailedToConnect = 1, // failed to connect after confirming
-	k_EPlayerResultAbandoned = 2,		// quit game without completing it
-	k_EPlayerResultKicked = 3,			// kicked by other players/moderator/server rules
-	k_EPlayerResultIncomplete = 4,		// player stayed to end but game did not conclude successfully ( nofault to player )
-	k_EPlayerResultCompleted = 5,		// player completed game
-};
-
-
-enum ESteamIPv6ConnectivityProtocol
-{
-	k_ESteamIPv6ConnectivityProtocol_Invalid = 0,
-	k_ESteamIPv6ConnectivityProtocol_HTTP = 1,		// because a proxy may make this different than other protocols
-	k_ESteamIPv6ConnectivityProtocol_UDP = 2,		// test UDP connectivity. Uses a port that is commonly needed for other Steam stuff. If UDP works, TCP probably works. 
-};
-
-// For the above transport protocol, what do we think the local machine's connectivity to the internet over ipv6 is like
-enum ESteamIPv6ConnectivityState
-{
-	k_ESteamIPv6ConnectivityState_Unknown = 0,	// We haven't run a test yet
-	k_ESteamIPv6ConnectivityState_Good = 1,		// We have recently been able to make a request on ipv6 for the given protocol
-	k_ESteamIPv6ConnectivityState_Bad = 2,		// We failed to make a request, either because this machine has no ipv6 address assigned, or it has no upstream connectivity
-};
-
 
 // Define compile time assert macros to let us validate the structure sizes.
 #define VALVE_COMPILE_TIME_ASSERT( pred ) typedef char compile_time_assert_type[(pred) ? 1 : -1];
 
-#if defined(__linux__) || defined(__APPLE__) 
-// The 32-bit version of gcc has the alignment requirement for uint64 and double set to
-// 4 meaning that even with #pragma pack(8) these types will only be four-byte aligned.
-// The 64-bit version of gcc has the alignment requirement for these types set to
-// 8 meaning that unless we use #pragma pack(4) our structures will get bigger.
-// The 64-bit structure packing has to match the 32-bit structure packing for each platform.
-#define VALVE_CALLBACK_PACK_SMALL
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
+	// The 32-bit version of gcc has the alignment requirement for uint64 and double set to
+	// 4 meaning that even with #pragma pack(8) these types will only be four-byte aligned.
+	// The 64-bit version of gcc has the alignment requirement for these types set to
+	// 8 meaning that unless we use #pragma pack(4) our structures will get bigger.
+	// The 64-bit structure packing has to match the 32-bit structure packing for each platform.
+	#define VALVE_CALLBACK_PACK_SMALL
 #else
-#define VALVE_CALLBACK_PACK_LARGE
+	#define VALVE_CALLBACK_PACK_LARGE
 #endif
 
 #if defined( VALVE_CALLBACK_PACK_SMALL )
-#pragma pack( push, 4 )
+	#pragma pack( push, 4 )
 #elif defined( VALVE_CALLBACK_PACK_LARGE )
-#pragma pack( push, 8 )
+	#pragma pack( push, 8 )
 #else
-#error ???
+	#error ???
 #endif 
 
 typedef struct ValvePackingSentinel_t
@@ -1349,11 +1199,11 @@ typedef struct ValvePackingSentinel_t
 
 
 #if defined(VALVE_CALLBACK_PACK_SMALL)
-VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 24 )
+	VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 24 )
 #elif defined(VALVE_CALLBACK_PACK_LARGE)
-VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 32 )
+	VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 32 )
 #else
-#error ???
+	#error ???
 #endif
 
 #endif // STEAMCLIENTPUBLIC_H

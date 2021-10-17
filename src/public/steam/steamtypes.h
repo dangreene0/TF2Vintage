@@ -17,26 +17,31 @@
 typedef unsigned char uint8;
 #endif
 
-#if defined( __GNUC__ ) && !defined(POSIX)
+#if defined( __GNUC__ ) && !defined(_WIN32) && !defined(POSIX)
 	#if __GNUC__ < 4
 		#error "Steamworks requires GCC 4.X (4.2 or 4.4 have been tested)"
 	#endif
 	#define POSIX 1
 #endif
 
-#if defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__)
+#if defined(__LP64__) || defined(__x86_64__) || defined(_WIN64) || defined(__aarch64__) || defined(__s390x__)
 #define X64BITS
 #endif
 
+#if !defined(VALVE_BIG_ENDIAN)
+#if defined(_PS3)
 // Make sure VALVE_BIG_ENDIAN gets set on PS3, may already be set previously in Valve internal code.
-#if !defined(VALVE_BIG_ENDIAN) && defined(_PS3)
-#define VALVE_BIG_ENDIAN
+#define VALVE_BIG_ENDIAN 1
+#endif
+#if defined( __GNUC__ ) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define VALVE_BIG_ENDIAN 1
+#endif
 #endif
 
 typedef unsigned char uint8;
 typedef signed char int8;
 
-#if defined( _WIN32 )
+#if defined( _WIN32 ) && !defined( __GNUC__ )
 
 typedef __int16 int16;
 typedef unsigned __int16 uint16;
@@ -84,28 +89,6 @@ typedef unsigned int uintp;
 
 #endif // else _WIN32
 
-#ifdef __clang__
-# define STEAM_CLANG_ATTR(ATTR) __attribute__((annotate( ATTR )))
-#else
-# define STEAM_CLANG_ATTR(ATTR)
-#endif
-
-#define STEAM_METHOD_DESC(DESC) STEAM_CLANG_ATTR( "desc:" #DESC ";" )
-#define STEAM_IGNOREATTR() STEAM_CLANG_ATTR( "ignore" )
-#define STEAM_OUT_STRUCT() STEAM_CLANG_ATTR( "out_struct: ;" )
-#define STEAM_OUT_STRING() STEAM_CLANG_ATTR( "out_string: ;" )
-#define STEAM_OUT_ARRAY_CALL(COUNTER,FUNCTION,PARAMS) STEAM_CLANG_ATTR( "out_array_call:" #COUNTER "," #FUNCTION "," #PARAMS ";" )
-#define STEAM_OUT_ARRAY_COUNT(COUNTER, DESC) STEAM_CLANG_ATTR( "out_array_count:" #COUNTER  ";desc:" #DESC )
-#define STEAM_ARRAY_COUNT(COUNTER) STEAM_CLANG_ATTR( "array_count:" #COUNTER ";" )
-#define STEAM_ARRAY_COUNT_D(COUNTER, DESC) STEAM_CLANG_ATTR( "array_count:" #COUNTER ";desc:" #DESC )
-#define STEAM_BUFFER_COUNT(COUNTER) STEAM_CLANG_ATTR( "buffer_count:" #COUNTER ";" )
-#define STEAM_OUT_BUFFER_COUNT(COUNTER) STEAM_CLANG_ATTR( "out_buffer_count:" #COUNTER ";" )
-#define STEAM_OUT_STRING_COUNT(COUNTER) STEAM_CLANG_ATTR( "out_string_count:" #COUNTER ";" )
-#define STEAM_DESC(DESC) STEAM_CLANG_ATTR("desc:" #DESC ";")
-#define STEAM_CALL_RESULT(RESULT_TYPE) STEAM_CLANG_ATTR("callresult:" #RESULT_TYPE ";")
-#define STEAM_CALL_BACK(RESULT_TYPE) STEAM_CLANG_ATTR("callback:" #RESULT_TYPE ";")
-#define STEAM_FLAT_NAME(NAME) STEAM_CLANG_ATTR("flat_name:" #NAME ";")
-
 const int k_cubSaltSize   = 8;
 typedef	uint8 Salt_t[ k_cubSaltSize ];
 
@@ -148,17 +131,12 @@ const AssetClassId_t k_ulAssetClassIdInvalid = 0x0;
 typedef uint32 PhysicalItemId_t;
 const PhysicalItemId_t k_uPhysicalItemIdInvalid = 0x0;
 
-
-// this is baked into client messages and interfaces as an int, 
-// make sure we never break this.  AppIds and DepotIDs also presently
-// share the same namespace, but since we'd like to change that in the future
-// I've defined it seperately here.
+// AppIds and DepotIDs also presently share the same namespace
 typedef uint32 DepotId_t;
 const DepotId_t k_uDepotIdInvalid = 0x0;
 
-// RTime32
-// We use this 32 bit time representing real world time.
-// It offers 1 second resolution beginning on January 1, 1970 (Unix time)
+// RTime32.  Seconds elapsed since Jan 1 1970, i.e. unix timestamp.
+// It's the same as time_t, but it is always 32-bit and unsigned.  
 typedef uint32 RTime32;
 
 typedef uint32 CellID_t;
@@ -259,6 +237,5 @@ struct SteamIPAddress_t
 };
 
 #pragma pack( pop )
-
 
 #endif // STEAMTYPES_H

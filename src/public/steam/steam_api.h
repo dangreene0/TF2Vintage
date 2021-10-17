@@ -25,7 +25,7 @@
 #include "isteammusic.h"
 #include "isteammusicremote.h"
 #include "isteamhttp.h"
-//#include "isteamunifiedmessages.h"
+#include "isteamunifiedmessages.h"
 #include "isteamcontroller.h"
 #include "isteamugc.h"
 #include "isteamapplist.h"
@@ -206,6 +206,10 @@ inline bool CSteamAPIContext::Init()
 
 	m_pSteamHTTP = SteamClient()->GetISteamHTTP( hSteamUser, hSteamPipe, STEAMHTTP_INTERFACE_VERSION );
 	if ( !m_pSteamHTTP )
+		return false;
+
+	m_pSteamUnifiedMessages = SteamClient()->GetISteamUnifiedMessages( hSteamUser, hSteamPipe, STEAMUNIFIEDMESSAGES_INTERFACE_VERSION );
+	if ( !m_pSteamUnifiedMessages )
 		return false;
 
 	m_pController = SteamClient()->GetISteamController( hSteamUser, hSteamPipe, STEAMCONTROLLER_INTERFACE_VERSION );

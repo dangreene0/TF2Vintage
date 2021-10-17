@@ -337,10 +337,10 @@ public:
 	ISteamApps*			SteamApps() const					{ return m_pSteamApps; }
 	ISteamMatchmakingServers* SteamMatchmakingServers() const { return m_pSteamMatchmakingServers; }
 	ISteamNetworking*	SteamNetworking() const				{ return m_pSteamNetworking; }
-	ISteamNetworkingMessages *SteamNetworkingMessages() const { return m_pSteamNetworkingMessages; }
 	ISteamRemoteStorage* SteamRemoteStorage() const			{ return m_pSteamRemoteStorage; }
 	ISteamScreenshots*	SteamScreenshots() const			{ return m_pSteamScreenshots; }
 	ISteamHTTP*			SteamHTTP() const					{ return m_pSteamHTTP; }
+	ISteamUnifiedMessages*	SteamUnifiedMessages()			{ return m_pSteamUnifiedMessages; }
 	ISteamController*	SteamController() const				{ return m_pController; }
 	ISteamUGC*			SteamUGC() const					{ return m_pSteamUGC; }
 	ISteamAppList*		SteamAppList() const				{ return m_pSteamAppList; }
@@ -363,10 +363,10 @@ private:
 	ISteamApps			*m_pSteamApps;
 	ISteamMatchmakingServers *m_pSteamMatchmakingServers;
 	ISteamNetworking	*m_pSteamNetworking;
-	ISteamNetworkingMessages *m_pSteamNetworkingMessages;
 	ISteamRemoteStorage *m_pSteamRemoteStorage;
 	ISteamScreenshots	*m_pSteamScreenshots;
 	ISteamHTTP			*m_pSteamHTTP;
+	ISteamUnifiedMessages*m_pSteamUnifiedMessages;
 	ISteamController	*m_pController;
 	ISteamUGC			*m_pSteamUGC;
 	ISteamAppList		*m_pSteamAppList;
@@ -389,7 +389,6 @@ public:
 	ISteamGameServer *SteamGameServer() const			{ return m_pSteamGameServer; }
 	ISteamUtils *SteamGameServerUtils() const			{ return m_pSteamGameServerUtils; }
 	ISteamNetworking *SteamGameServerNetworking() const	{ return m_pSteamGameServerNetworking; }
-	ISteamNetworkingMessages *SteamNetworkingMessages() const { return m_pSteamNetworkingMessages; }
 	ISteamGameServerStats *SteamGameServerStats() const	{ return m_pSteamGameServerStats; }
 	ISteamHTTP *SteamHTTP() const						{ return m_pSteamHTTP; }
 	ISteamInventory *SteamInventory() const				{ return m_pSteamInventory; }
@@ -401,7 +400,6 @@ private:
 	ISteamGameServer			*m_pSteamGameServer;
 	ISteamUtils					*m_pSteamGameServerUtils;
 	ISteamNetworking			*m_pSteamGameServerNetworking;
-	ISteamNetworkingMessages	*m_pSteamNetworkingMessages;
 	ISteamGameServerStats		*m_pSteamGameServerStats;
 	ISteamHTTP					*m_pSteamHTTP;
 	ISteamInventory				*m_pSteamInventory;
