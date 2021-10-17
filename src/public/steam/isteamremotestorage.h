@@ -303,8 +303,10 @@ class ISteamRemoteStorage
 
 #define STEAMREMOTESTORAGE_INTERFACE_VERSION "STEAMREMOTESTORAGE_INTERFACE_VERSION012"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamRemoteStorage *S_CALLTYPE SteamRemoteStorage();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

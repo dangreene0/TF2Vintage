@@ -272,11 +272,13 @@ public:
 };
 #define STEAMNETWORKING_INTERFACE_VERSION "SteamNetworking005"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamNetworking *S_CALLTYPE SteamNetworking();
 
 // Global accessor for the gameserver client
 S_API ISteamNetworking *S_CALLTYPE SteamGameServerNetworking();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

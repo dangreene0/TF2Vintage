@@ -18,7 +18,6 @@
 #elif defined( VALVE_CALLBACK_PACK_LARGE )
 #pragma pack( push, 8 )
 #else
-#error isteamclient.h must be included
 #error steam_api_common.h should define VALVE_CALLBACK_PACK_xxx
 #endif 
 
@@ -272,11 +271,14 @@ public:
 
 #define STEAMUGC_INTERFACE_VERSION "STEAMUGC_INTERFACE_VERSION007"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamUGC *S_CALLTYPE SteamUGC();
 
 // Global accessor for the gameserver client
 S_API ISteamUGC *S_CALLTYPE SteamGameServerUGC();
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Callback for querying UGC
 //-----------------------------------------------------------------------------

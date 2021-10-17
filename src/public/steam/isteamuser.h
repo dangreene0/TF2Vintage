@@ -200,8 +200,10 @@ public:
 
 #define STEAMUSER_INTERFACE_VERSION "SteamUser018"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamUser *S_CALLTYPE SteamUser();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

@@ -200,8 +200,10 @@ public:
 
 #define STEAMHTMLSURFACE_INTERFACE_VERSION "STEAMHTMLSURFACE_INTERFACE_VERSION_003"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamHTMLSurface *S_CALLTYPE SteamHTMLSurface();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

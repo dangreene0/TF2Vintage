@@ -88,8 +88,10 @@ public:
 
 #define STEAMAPPS_INTERFACE_VERSION "STEAMAPPS_INTERFACE_VERSION007"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamApps *S_CALLTYPE SteamApps();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

@@ -177,11 +177,13 @@ public:
 
 #define STEAMUTILS_INTERFACE_VERSION "SteamUtils007"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamUtils *S_CALLTYPE SteamUtils();
 
 // Global accessor for the gameserver client
 S_API ISteamUtils *S_CALLTYPE SteamGameServerUtils();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

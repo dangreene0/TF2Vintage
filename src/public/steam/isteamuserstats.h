@@ -316,8 +316,10 @@ public:
 
 #define STEAMUSERSTATS_INTERFACE_VERSION "STEAMUSERSTATS_INTERFACE_VERSION011"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamUserStats *S_CALLTYPE SteamUserStats();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

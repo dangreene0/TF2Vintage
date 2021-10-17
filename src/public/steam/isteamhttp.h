@@ -142,11 +142,13 @@ public:
 
 #define STEAMHTTP_INTERFACE_VERSION "STEAMHTTP_INTERFACE_VERSION002"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamHTTP *S_CALLTYPE SteamHTTP();
 
 // Global accessor for the gameserver client
 S_API ISteamHTTP *S_CALLTYPE SteamGameServerHTTP();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

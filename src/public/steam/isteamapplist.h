@@ -33,8 +33,10 @@ public:
 
 #define STEAMAPPLIST_INTERFACE_VERSION "STEAMAPPLIST_INTERFACE_VERSION001"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamAppList *S_CALLTYPE SteamAppList();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

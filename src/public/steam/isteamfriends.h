@@ -423,8 +423,10 @@ public:
 
 #define STEAMFRIENDS_INTERFACE_VERSION "SteamFriends017"
 
+#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 S_API ISteamFriends *S_CALLTYPE SteamFriends();
+#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )
