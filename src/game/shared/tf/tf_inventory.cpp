@@ -130,8 +130,8 @@ void CTFInventory::LoadInventory()
 	bool bReskinsEnabled = !CommandLine()->CheckParm( "-hidereskins" ); // CommandLine()->CheckParm( "-showreskins" ) but inversed
 #endif
 	bool bSpecialsEnabled = false;
-	if (SteamUser())
-		bSpecialsEnabled = SteamUser()->GetSteamID().ConvertToUint64() == 76561197984621385; // uint64 VIPRANKS1
+	if ( steamapicontext->SteamUser() )
+		bSpecialsEnabled = steamapicontext->SteamUser()->GetSteamID().ConvertToUint64() == 76561197984621385; // uint64 VIPRANKS1
 #else
 	bool bReskinsEnabled = true;
 	bool bSpecialsEnabled = true;
