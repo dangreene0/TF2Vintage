@@ -61,14 +61,17 @@ public:
 
 #define STEAMSCREENSHOTS_INTERFACE_VERSION "STEAMSCREENSHOTS_INTERFACE_VERSION002"
 
+// Global interface accessor
+S_API ISteamScreenshots *S_CALLTYPE SteamScreenshots();
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )
 #pragma pack( push, 4 )
 #elif defined( VALVE_CALLBACK_PACK_LARGE )
 #pragma pack( push, 8 )
 #else
-#error isteamclient.h must be included
-#endif 
+#error steam_api_common.h should define VALVE_CALLBACK_PACK_xxx
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: Screenshot successfully written or otherwise added to the library
 // and can now be tagged
