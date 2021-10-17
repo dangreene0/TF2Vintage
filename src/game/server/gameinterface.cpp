@@ -655,21 +655,10 @@ static void MountAdditionalContent()
 				const char *pszBaseDir = szAbsPathName;
 
 				const char CONTENTROOT_TOKEN[] = "|content_root|";
-				const char GAMEINFOPATH_TOKEN[] = "|gameinfo_path|";
-				const char BASESOURCEPATHS_TOKEN[] = "|all_source_engine_paths|";
-				if (Q_stristr(pszLocation, CONTENTROOT_TOKEN) == pszLocation)
+				if ( Q_stristr( pszLocation, CONTENTROOT_TOKEN ) == pszLocation )
 				{
-					pszLocation += strlen(CONTENTROOT_TOKEN);
+					pszLocation += strlen( CONTENTROOT_TOKEN );
 					pszBaseDir = szAppDirectory;
-				}
-				else if (Q_stristr(pszLocation, GAMEINFOPATH_TOKEN) == pszLocation)
-				{
-					pszLocation += strlen(GAMEINFOPATH_TOKEN);
-					pszBaseDir = szAppDirectory;
-				}
-				else if (Q_stristr(pszLocation, BASESOURCEPATHS_TOKEN) == pszLocation)
-				{
-					pszLocation += strlen(BASESOURCEPATHS_TOKEN);
 				}
 
 				V_MakeAbsolutePath( szAbsPathName, sizeof( szAbsPathName ), pszLocation, pszBaseDir );
@@ -749,157 +738,6 @@ static void MountAdditionalContent()
 		}
 	}
 #endif
-}
-
-
-static void MountModBoilerPlateContent()
-{
-	KeyValuesAD pMainFile("gameinfo");
-	bool bSuccess = false;
-#ifndef _WINDOWS
-	// case sensitivity
-	bSuccess = pMainFile->LoadFromFile(g_pFullFileSystem, "GameInfo.txt", "MOD");
-	if (!bSuccess)
-#endif
-		bSuccess = pMainFile->LoadFromFile(g_pFullFileSystem, "gameinfo.txt", "MOD");
-
-	if (!bSuccess)
-	{
-		Error("Unable to load GameInfo.txt, does it exist?");
-		return;
-	}
-
-	KeyValues* pFileSystemInfo = pMainFile->FindKey("FileSystem");
-	if (!pFileSystemInfo)
-	{
-		Error("Error parsing GameInfo.txt, KV is malformed (Missing FileSystem key)");
-		return;
-	}
-
-	KeyValues* pAdditionaContentId = pFileSystemInfo->FindKey("AdditionalContentId");
-	if (!pAdditionaContentId)
-	{
-		return;
-	}
-
-	char szAppDirectory[MAX_PATH];
-	strcpy(szAppDirectory, CommandLine()->ParmValue("-basedir", ""));
-
-	V_AppendSlash(szAppDirectory, sizeof(szAppDirectory));
-
-	g_pFullFileSystem->AddSearchPath(szAppDirectory, "MOD");
-	g_pFullFileSystem->AddSearchPath(szAppDirectory, "GAME");
-	
-	char platform[MAX_PATH];
-	Q_strncpy( platform, szAppDirectory, MAX_PATH );
-	Q_StripTrailingSlash( platform );
-	Q_strncat( platform, "/../platform", MAX_PATH, MAX_PATH );
-	g_pFullFileSystem->AddSearchPath( platform, "PLATFORM" );
-
-	KeyValues* pAdditionalContent = pFileSystemInfo->FindKey("SourcemodEssentialPaths");
-	if (pAdditionalContent)
-	{
-		char szAbsPathName[MAX_PATH];
-		V_ExtractFilePath(szAppDirectory, szAbsPathName, sizeof(szAbsPathName));
-
-		FOR_EACH_VALUE(pAdditionalContent, pSubKey)
-		{
-			const char* pszLocation = pSubKey->GetString();
-			const char* pszBaseDir = szAbsPathName;
-
-			const char CONTENTROOT_TOKEN[] = "|content_root|";
-			const char GAMEINFOPATH_TOKEN[] = "|gameinfo_path|";
-			const char BASESOURCEPATHS_TOKEN[] = "|all_source_engine_paths|";
-			if (Q_stristr(pszLocation, CONTENTROOT_TOKEN) == pszLocation)
-			{
-				pszLocation += strlen(CONTENTROOT_TOKEN);
-				pszBaseDir = szAppDirectory;
-			}
-			else if (Q_stristr(pszLocation, GAMEINFOPATH_TOKEN) == pszLocation)
-			{
-				pszLocation += strlen(GAMEINFOPATH_TOKEN);
-				pszBaseDir = szAppDirectory;
-			}
-			else if (Q_stristr(pszLocation, BASESOURCEPATHS_TOKEN) == pszLocation)
-			{
-				pszLocation += strlen(BASESOURCEPATHS_TOKEN);
-			}
-
-			V_MakeAbsolutePath(szAbsPathName, sizeof(szAbsPathName), pszLocation, pszBaseDir);
-
-			V_FixSlashes(szAbsPathName);
-			V_RemoveDotSlashes(szAbsPathName);
-			V_StripTrailingSlash(szAbsPathName);
-
-			CUtlStringList fullFilePaths;
-			if (V_stristr(pszLocation, "?") == NULL && V_stristr(pszLocation, "*") == NULL)
-			{
-				fullFilePaths.CopyAndAddToTail(szAbsPathName);
-			}
-			else
-			{
-				FileFindHandle_t hFind;
-				char const* pszFileFound = g_pFullFileSystem->FindFirst(szAbsPathName, &hFind);
-				while (pszFileFound)
-				{
-					if (pszFileFound[0] != '.')
-					{
-						if (g_pFullFileSystem->FindIsDirectory(hFind) || V_stristr(pszFileFound, "vpk"))
-						{
-							char szAbsPath[MAX_PATH];
-							V_ExtractFilePath(szAbsPathName, szAbsPath, sizeof(szAbsPath));
-							V_AppendSlash(szAbsPath, sizeof(szAbsPath));
-							V_strcat_safe(szAbsPath, pszFileFound, COPY_ALL_CHARACTERS);
-
-							fullFilePaths.CopyAndAddToTail(szAbsPath);
-						}
-					}
-
-					pszFileFound = g_pFullFileSystem->FindNext(hFind);
-				}
-				g_pFullFileSystem->FindClose(hFind);
-
-				fullFilePaths.Sort(CaseInsensitiveStringSort);
-
-				FOR_EACH_VEC_BACK(fullFilePaths, i)
-				{
-					char ext[10];
-					V_ExtractFileExtension(fullFilePaths[i], ext, sizeof(ext));
-
-					if (Q_stricmp(ext, "vpk") == 0)
-					{
-						char* szDirVPK = Q_stristr(fullFilePaths[i], "_dir.vpk");
-						if (szDirVPK == NULL)
-						{
-							delete fullFilePaths[i];
-							fullFilePaths.Remove(i);
-						}
-						else
-						{
-							*szDirVPK = '\0';
-							V_strcat(szDirVPK, ".vpk", MAX_PATH);
-						}
-					}
-				}
-			}
-
-			// Parse Path ID list
-			CUtlStringList pathIDs;
-			V_SplitString(pSubKey->GetName(), "+", pathIDs);
-			FOR_EACH_VEC(pathIDs, i)
-			{
-				Q_StripPrecedingAndTrailingWhitespace(pathIDs[i]);
-			}
-
-			FOR_EACH_VEC(fullFilePaths, i)
-			{
-				FOR_EACH_VEC(pathIDs, j)
-				{
-					g_pFullFileSystem->AddSearchPath(fullFilePaths[i], pathIDs[j]);
-				}
-			}
-		}
-	}
 }
 
 bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory, 
@@ -994,7 +832,6 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 		return false;
 
 	MountAdditionalContent();
-	MountModBoilerPlateContent();
 
 	// cache the globals
 	gpGlobals = pGlobals;
