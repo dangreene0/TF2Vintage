@@ -40,7 +40,7 @@ extern IMaterialSystem *materials;
 
 using namespace vgui;
 
-ConVar cl_windowmode( "cl_windowmode", "0", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Set the mode of the game window (fullscreen, windowed, borderless)", true, 0.0f, true, 2.0f );
+ConVar cl_windowmode( "cl_windowmode", "0", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Set the mode of the game window (fullscreen, windowed)", true, 0.0f, true, 1.0f );
 ConVar cl_unlockfovsliders( "cl_unlockfovsliders", "1", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Unlock the standard FOV up to super high settings", true, 0, true, 1 );
 
 //-----------------------------------------------------------------------------
@@ -205,7 +205,6 @@ void CTFOptionsVideoPanel::CreateControls()
 	m_pWindowed = new ComboBox(this, "DisplayModeCombo", 6, false);
 	m_pWindowed->AddItem("#GameUI_Fullscreen", NULL);
 	m_pWindowed->AddItem("#GameUI_Windowed", NULL);
-	m_pWindowed->AddItem("Borderless", NULL);
 
 	m_pGammaSlider = new CCvarSlider(this, "Gamma", "#GameUI_Gamma", 1.6f, 2.6f, "mat_monitorgamma");
 
@@ -780,7 +779,7 @@ void CTFOptionsVideoPanel::OnApplyChanges()
 	sscanf(sz, "%i x %i", &width, &height);
 	Msg("VIDEO %s\n", sz);
 	// windowed
-	bool windowed = ( m_pWindowed->GetActiveItem() == 1 || m_pWindowed->GetActiveItem() == 2 );
+	bool windowed = ( m_pWindowed->GetActiveItem() == 1 );
 
 	// make sure there is a change
 	const MaterialSystem_Config_t &config = materials->GetCurrentConfigForVideoCard();
@@ -793,27 +792,6 @@ void CTFOptionsVideoPanel::OnApplyChanges()
 		Q_snprintf( szCmd, sizeof( szCmd ), "mat_setvideomode %i %i %i\n", width, height, windowed ? 1 : 0 );
 		Msg( "%s", szCmd );
 		engine->ClientCmd_Unrestricted( szCmd );
-	}
-
-	if ( m_pWindowed->GetActiveItem() == 2 )
-	{
-	#ifdef _WIN32
-		if ( !s_hWnd )
-			InitWindowHandle();
-
-		if ( s_hWnd != NULL )
-		{
-			DWORD style = GetWindowLong( s_hWnd, GWL_STYLE );
-			style &= ~( WS_CAPTION|WS_THICKFRAME|WS_MINIMIZEBOX|WS_MAXIMIZEBOX|WS_SYSMENU );
-			SetWindowLong( s_hWnd, GWL_STYLE, style );
-
-			DWORD exStyle = GetWindowLong( s_hWnd, GWL_EXSTYLE );
-			exStyle &= ~( WS_EX_DLGMODALFRAME|WS_EX_CLIENTEDGE|WS_EX_STATICEDGE );
-			SetWindowLong( s_hWnd, GWL_EXSTYLE, exStyle );
-
-			SetWindowPos( s_hWnd, 0, 0, 0, 0, 0, SWP_DRAWFRAME|SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER );
-		}
-	#endif // _WIN32
 	}
 
 	if (config.m_VideoMode.m_Width != width || config.m_VideoMode.m_Height != height || config.Windowed() != windowed)
