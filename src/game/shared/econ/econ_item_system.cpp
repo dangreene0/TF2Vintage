@@ -821,28 +821,25 @@ CEconItemSchema::~CEconItemSchema()
 //-----------------------------------------------------------------------------
 bool CEconItemSchema::Init( void )
 {
-	if ( !m_bInited )
-	{
-		// Must register activities early so we can parse animation replacements.
-		ActivityList_Free();
-		ActivityList_RegisterSharedActivities();
+	Reset();
 
-		KeyValuesAD schema("KVDataFile");
-		if ( !schema->LoadFromFile( filesystem, ITEMS_GAME ) )
-			return false;
+	// Must register activities early so we can parse animation replacements.
+	ActivityList_Free();
+	ActivityList_RegisterSharedActivities();
 
-		InitAttributeTypes();
+	KeyValuesAD schema("KVDataFile");
+	if ( !schema->LoadFromFile( filesystem, ITEMS_GAME ) )
+		return false;
 
-		float flStartTime = engine->Time();
+	InitAttributeTypes();
 
-		ParseSchema( schema );
+	float flStartTime = engine->Time();
 
-		float flEndTime = engine->Time();
-		Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
+	ParseSchema( schema );
 
-		m_bInited = true;
-	}
-	
+	float flEndTime = engine->Time();
+	Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
+
 	return true;
 }
 
