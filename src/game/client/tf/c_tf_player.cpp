@@ -3217,7 +3217,6 @@ void C_TFPlayer::UpdateSpyMask(void)
 					pMask->SetMoveType(MOVETYPE_NONE);
 					pMask->Release();
 					m_hSpyMask = NULL;
-					delete pMask;
 					return;
 				}
 
@@ -3234,7 +3233,6 @@ void C_TFPlayer::UpdateSpyMask(void)
 			pMask->SetMoveType(MOVETYPE_NONE);
 			pMask->Release();
 			m_hSpyMask = NULL;
-			delete pMask;
 		}
 	}
 	else
@@ -3245,7 +3243,6 @@ void C_TFPlayer::UpdateSpyMask(void)
 			pMask->SetMoveType(MOVETYPE_NONE);
 			pMask->Release();
 			m_hSpyMask = NULL;
-			delete pMask;
 		}	
 	}
 }
