@@ -367,7 +367,7 @@ Vector CTFBotEngineerBuilding::FindHiddenSpot( CTFNavArea *pPointArea, const CUt
 	FOR_EACH_VEC( validAreas, i )
 	{
 		const int tries = 10;
-		for ( int i = 0; i < tries; ++i )
+		for ( int n = 0; n < tries; ++n )
 		{
 			Vector vecSpot = validAreas[i]->GetRandomPoint();
 
