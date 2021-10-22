@@ -71,23 +71,15 @@ int CEconWearable::GetSkin( void )
 	{
 		case TF_TEAM_RED:
 			return 0;
-			break;
 
 		case TF_TEAM_BLUE:
 			return 1;
-			break;
 
 		case TF_TEAM_GREEN:
 			return 2;
-			break;
 
 		case TF_TEAM_YELLOW:
 			return 3;
-			break;
-
-		default:
-			return 0;
-			break;
 	}
 
 	return m_nSkin;
@@ -193,17 +185,12 @@ void CEconWearable::Equip( CBasePlayer *pPlayer )
 
 void CEconWearable::UnEquip( CBasePlayer *pPlayer )
 {
-	if ( pPlayer )
-	{
-	#ifdef GAME_DLL
-		UpdatePlayerBodygroups( TURN_OFF_BODYGROUP_OVERRIDES );
-	#endif
-
-		StopFollowingEntity();
-
-		SetOwnerEntity( NULL );
-		ReapplyProvision();
-	}
+#ifdef GAME_DLL
+	UpdatePlayerBodygroups( TURN_OFF_BODYGROUP_OVERRIDES );
+#endif
+	StopFollowingEntity();
+	SetOwnerEntity( NULL );
+	ReapplyProvision();
 }
 #else
 
