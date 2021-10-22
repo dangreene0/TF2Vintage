@@ -943,12 +943,12 @@ static void MountAdditionalContent()
 	{
 		if ( !steamapicontext->SteamApps() )
 		{
-			Error( "Unable to mount extra content, unkown error\n" );
+			Warning( "Unable to mount extra content, unkown error\n" );
 			return;
 		}
 		if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
 		{
-			Warning( "Unable to mount extra content with AppId: %i\n", appid );
+			Warning( "Unable to mount extra content with AppId: %i\nApp not installed.\n", appid );
 			return;
 		}
 
@@ -1049,7 +1049,7 @@ static void MountAdditionalContent()
 				{
 					FOR_EACH_VEC( pathIDs, j )
 					{
-						g_pFullFileSystem->AddSearchPath( fullFilePaths[i], pathIDs[j] );
+						g_pFullFileSystem->AddSearchPath( fullFilePaths[i], pathIDs[j], PATH_ADD_TO_HEAD );
 					}
 				}
 			}

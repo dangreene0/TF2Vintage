@@ -731,7 +731,7 @@ static void MountAdditionalContent()
 				{
 					FOR_EACH_VEC( pathIDs, j )
 					{
-						g_pFullFileSystem->AddSearchPath( fullFilePaths[i], pathIDs[j] );
+						g_pFullFileSystem->AddSearchPath( fullFilePaths[i], pathIDs[j], PATH_ADD_TO_HEAD );
 					}
 				}
 			}
