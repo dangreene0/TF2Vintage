@@ -53,12 +53,22 @@ CTFInventory::~CTFInventory()
 
 bool CTFInventory::Init( void )
 {
+	return true;
+}
+
+void CTFInventory::PostInit( void )
+{
 	GetItemSchema()->Init();
+#ifdef CLIENT_DLL
+	IGameEvent *event = gameeventmanager->CreateEvent( "item_schema_initialized" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
+#endif
 
 	// Generate item list.
 	LoadInventory();
-
-	return true;
 }
 
 void CTFInventory::LevelInitPreEntity( void )

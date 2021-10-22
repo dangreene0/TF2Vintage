@@ -44,6 +44,7 @@ public:
 	virtual char const *Name() { return "CTFInventory"; }
 
 	virtual bool Init( void );
+	void PostInit( void ) OVERRIDE;
 	virtual void LevelInitPreEntity( void );
 
 	int GetNumPresets( int iClass, int iSlot );

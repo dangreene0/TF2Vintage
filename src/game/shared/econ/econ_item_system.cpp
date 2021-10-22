@@ -823,10 +823,6 @@ bool CEconItemSchema::Init( void )
 {
 	Reset();
 
-	// Must register activities early so we can parse animation replacements.
-	ActivityList_Free();
-	ActivityList_RegisterSharedActivities();
-
 	KeyValuesAD schema("KVDataFile");
 	if ( !schema->LoadFromFile( filesystem, ITEMS_GAME ) )
 		return false;
