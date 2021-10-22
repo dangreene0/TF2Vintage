@@ -1990,7 +1990,7 @@ void CTFBot::SetupSniperSpotAccumulation( void )
 	if ( pObjective == m_sniperGoalEnt )
 	{
 		Vector vecToCart = pObjective->WorldSpaceCenter() - m_sniperGoal;
-		if ( Square( tf_bot_sniper_goal_entity_move_tolerance.GetFloat() ) > vecToCart.LengthSqr() )
+		if ( vecToCart.IsLengthLessThan( tf_bot_sniper_goal_entity_move_tolerance.GetFloat() ) )
 			return;
 	}
 
@@ -2001,13 +2001,10 @@ void CTFBot::SetupSniperSpotAccumulation( void )
 	bool bCheckForward = false;
 	CTFNavArea *pObjectiveArea = nullptr;
 
-	m_sniperStandAreas.RemoveAll();
-	m_sniperLookAreas.RemoveAll();
-
 	if ( TFGameRules()->GetGameType() == TF_GAMETYPE_ESCORT )
 	{
-		pObjectiveArea = static_cast<CTFNavArea *>( TheNavMesh->GetNearestNavArea( pObjective->WorldSpaceCenter(), true, 500.0f ) );
-		bCheckForward = iEnemyTeam != pObjective->GetTeamNumber();
+		pObjectiveArea = static_cast<CTFNavArea *>( TheNavMesh->GetNearestNavArea( pObjective->WorldSpaceCenter(), false, 500.0f ) );
+		bCheckForward = iMyTeam != pObjective->GetTeamNumber();
 	}
 	else
 	{
@@ -2036,16 +2033,9 @@ void CTFBot::SetupSniperSpotAccumulation( void )
 		if ( flEnemyIncursion <= pObjectiveArea->GetIncursionDistance( iEnemyTeam ) )
 			m_sniperLookAreas.AddToTail( area );
 
-		if ( bCheckForward )
-		{
-			if ( pObjectiveArea->GetIncursionDistance( iMyTeam ) + tf_bot_sniper_spot_point_tolerance.GetFloat() >= flMyIncursion )
-				m_sniperStandAreas.AddToTail( area );
-		}
-		else
-		{
-			if ( pObjectiveArea->GetIncursionDistance( iMyTeam ) - tf_bot_sniper_spot_point_tolerance.GetFloat() >= flMyIncursion )
-				m_sniperStandAreas.AddToTail( area );
-		}
+		float flObjectiveIncursion = pObjectiveArea->GetIncursionDistance( iMyTeam ) + tf_bot_sniper_spot_point_tolerance.GetFloat() * bCheckForward ? 1 : -1;
+		if ( flObjectiveIncursion >= flMyIncursion )
+			m_sniperStandAreas.AddToTail( area );
 	}
 
 	m_sniperGoalEnt = pObjective;

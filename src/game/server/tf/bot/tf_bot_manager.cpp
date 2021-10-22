@@ -462,6 +462,8 @@ void CTFBotManager::MaintainBotQuota()
 			CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( GetRandomBotName() );
 			if ( pBot != nullptr )
 			{
+				pBot->SetAttribute( CTFBot::AttributeType::QUOTAMANAGED );
+
 				pBot->HandleCommand_JoinTeam( "auto" );
 
 				const char *szClassname;

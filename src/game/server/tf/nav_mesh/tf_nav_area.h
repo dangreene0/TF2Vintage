@@ -76,7 +76,7 @@ public:
 	virtual bool IsPotentiallyVisibleToTeam( int iTeamNum ) const OVERRIDE
 	{
 		Assert( iTeamNum > -1 && iTeamNum < TF_TEAM_COUNT );
-		return !m_PVNPCs[ iTeamNum ].IsEmpty();
+		return !m_PVActors[ iTeamNum ].IsEmpty();
 	}
 
 	void CollectNextIncursionAreas( int iTeamNum, CUtlVector<CTFNavArea *> *areas );
@@ -96,7 +96,7 @@ public:
 	{
 		CHandle<CBaseCombatCharacter> hActor( actor );
 		for( int i=0; i<TF_TEAM_COUNT; ++i )
-			m_PVNPCs[i].FindAndFastRemove( hActor );
+			m_PVActors[i].FindAndFastRemove( hActor );
 	}
 
 	float GetCombatIntensity() const;
@@ -111,11 +111,11 @@ public:
 	{
 		++m_masterTFMark;
 	}
-	bool IsTFMarked() const
+	inline bool IsTFMarked() const
 	{
 		return m_TFMarker == m_masterTFMark;
 	}
-	void TFMark()
+	inline void TFMark()
 	{
 		m_TFMarker = m_masterTFMark;
 	}
@@ -125,62 +125,59 @@ public:
 		return ( m_nAttributes & ( BLOCKED | RESCUE_CLOSET | BLUE_SPAWN_ROOM | RED_SPAWN_ROOM | NO_SPAWNING ) ) == 0;
 	}
 
-	void SetIncursionDistance( int iTeamNum, float distance )
+	inline void SetIncursionDistance( int iTeamNum, float distance )
 	{
 		Assert( iTeamNum > -1 && iTeamNum < TF_TEAM_COUNT );
 		m_aIncursionDistances[ iTeamNum ] = distance;
 	}
-	float GetIncursionDistance( int iTeamNum ) const
+	inline float GetIncursionDistance( int iTeamNum ) const
 	{
 		Assert( iTeamNum > -1 && iTeamNum < TF_TEAM_COUNT );
 		return m_aIncursionDistances[ iTeamNum ];
 	}
 
-	inline void AddTFAttributes( int bits )
-	{
+	inline void AddTFAttributes( int bits ) {
 		m_nAttributes |= bits;
 	}
-	inline int getTFAttributes( void ) const
-	{
+	inline int GetTFAttributes( void ) const {
 		return m_nAttributes;
 	}
-	inline bool HasTFAttributes( int bits ) const
-	{
+	inline bool HasTFAttributes( int bits ) const {
 		return ( m_nAttributes & bits ) != 0;
 	}
-	inline void RemoveTFAttributes( int bits )
-	{
+	inline void RemoveTFAttributes( int bits ) {
 		m_nAttributes &= ~bits;
 	}
 
-	void SetBombTargetDistance( float distance )
-	{
+	inline void SetBombTargetDistance( float distance ) {
 		m_flBombTargetDistance = distance;
 	}
-	float GetBombTargetDistance( void ) const
-	{
+	inline float GetBombTargetDistance( void ) const {
 		return m_flBombTargetDistance;
 	}
 
-	static int m_masterTFMark;
+	inline int GetSearchMarker( void ) const {
+		return m_TFSearchMarker;
+	}
+	inline void SetSearchMarker( int mark ) {
+		m_TFSearchMarker = mark;
+	}
 
 private:
 	float m_aIncursionDistances[ TF_TEAM_COUNT ];
 	CUtlVector<CTFNavArea *> m_InvasionAreas[ TF_TEAM_COUNT ];
-
-public:
 	int m_TFSearchMarker;
 
-private:
 	int m_nAttributes;
 
-	CUtlVector< CHandle<CBaseCombatCharacter> > m_PVNPCs[ TF_TEAM_COUNT ];
+	CUtlVector< CHandle<CBaseCombatCharacter> > m_PVActors[ TF_TEAM_COUNT ];
 
 	float m_fCombatIntensity;
 	IntervalTimer m_combatTimer;
 
 	float m_flBombTargetDistance;
 
+	static int m_masterTFMark;
 	int m_TFMarker;
 };
 

@@ -49,7 +49,7 @@ public:
 			for ( int i=0; i<area->GetAdjacentAreas( (NavDirType)dir )->Count(); ++i )
 			{
 				CTFNavArea *other = static_cast<CTFNavArea *>( ( *area->GetAdjacentAreas( (NavDirType)dir ) )[i].area );
-				if ( other->m_TFSearchMarker == m_iMarker )
+				if ( other->GetSearchMarker() == m_iMarker )
 					continue;
 
 				if ( area->GetIncursionDistance( TF_TEAM_BLUE ) <= other->GetIncursionDistance( TF_TEAM_BLUE ) ||
@@ -68,7 +68,7 @@ public:
 			for ( int i=0; i<area->GetIncomingConnections( (NavDirType)dir )->Count(); ++i )
 			{
 				CTFNavArea *other = static_cast<CTFNavArea *>( ( *area->GetIncomingConnections( (NavDirType)dir ) )[i].area );
-				if ( other->m_TFSearchMarker == m_iMarker )
+				if ( other->GetSearchMarker() == m_iMarker )
 					continue;
 
 				if ( area->GetIncursionDistance( TF_TEAM_BLUE ) <= other->GetIncursionDistance( TF_TEAM_BLUE ) ||
@@ -412,9 +412,9 @@ void CTFNavArea::ComputeInvasionAreaVectors()
 	static int searchMarker = RandomInt( 0, Square( 1024 ) );
 	searchMarker++;
 
-	auto MarkVisibleSet = [ = ]( CNavArea *a ) {
+	auto MarkVisibleSet = []( CNavArea *a ) {
 		CTFNavArea *area = static_cast<CTFNavArea *>( a );
-		area->m_TFSearchMarker = searchMarker;
+		area->SetSearchMarker( searchMarker );
 
 		return true;
 	};
@@ -450,14 +450,14 @@ void CTFNavArea::AddPotentiallyVisibleActor( CBaseCombatCharacter *actor )
 	if ( ToTFBot( actor ) )
 		return;
 
-	for ( int i=0; i<m_PVNPCs[team].Count(); ++i )
+	for ( int i=0; i<m_PVActors[team].Count(); ++i )
 	{
-		CBaseCombatCharacter *npc = m_PVNPCs[team][i];
+		CBaseCombatCharacter *npc = m_PVActors[team][i];
 		if ( actor == npc )
 			return;
 	}
 
-	m_PVNPCs[team].AddToTail( actor );
+	m_PVActors[team].AddToTail( actor );
 }
 
 float CTFNavArea::GetCombatIntensity() const

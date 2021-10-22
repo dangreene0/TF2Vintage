@@ -39,8 +39,8 @@ public:
 
 	virtual void	ReapplyProvision( void ) OVERRIDE;
 
-	virtual void	SetExtraWearable( bool bExtraWearable ) { m_bExtraWearable = bExtraWearable; }
-	virtual bool	IsExtraWearable( void ) { return m_bExtraWearable; }
+	virtual void	SetExtraWearable( bool bExtraWearable )			{ m_bExtraWearable = bExtraWearable; }
+	virtual bool	IsExtraWearable( void )							{ return m_bExtraWearable; }
 	void			SetDisguiseWearable( bool bDisguiseWearable )	{ m_bDisguiseWearable = bDisguiseWearable; }
 	bool			IsDisguiseWearable( void ) const				{ return m_bDisguiseWearable; }
 	void			SetWeaponAssociatedWith( CBaseEntity *pWeapon )	{ m_hWeaponAssociatedWith = pWeapon; }

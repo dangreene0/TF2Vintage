@@ -2092,13 +2092,12 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 
 			if ( !ItemsMatch( pWeapon->GetItem(), pLoadoutItem, pWeapon ) )
 			{
-
-				ModifyWeaponMeters(pWeapon);
+				ModifyWeaponMeters( pWeapon );
 
 				// If this is not a weapon we're supposed to have in this loadout slot then nuke it.
 				// Either changed class or changed loadout.
 				if ( pWeapon == GetActiveWeapon() )
-					pWeapon->Holster();
+					SwitchToNextBestWeapon( pWeapon );
 
 				Weapon_Detach( pWeapon );
 				UTIL_Remove( pWeapon );
@@ -2111,6 +2110,10 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 				if ( m_bRegenerating == false )
 				{
 					pWeapon->WeaponReset();
+				}
+				else
+				{
+					pWeapon->WeaponRegenerate();
 				}
 			}
 		}

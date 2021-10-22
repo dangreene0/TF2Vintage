@@ -209,7 +209,7 @@ public:
 			int nCurTime = (int)floor( gpGlobals->curtime );
 			int nMinTime = nCurTime - tf_bot_suspect_spy_touch_interval.GetInt();
 
-			for ( int i=m_times.Count()-1; i >= 0; --i )
+			FOR_EACH_VEC_BACK(m_times, i)
 			{
 				if ( m_times[i] <= nMinTime )
 					m_times.Remove( i );
@@ -218,23 +218,18 @@ public:
 			m_times.AddToHead( nCurTime );
 
 			CUtlVector<bool> checks;
+			checks.AddMultipleToTail( tf_bot_suspect_spy_touch_interval.GetInt() );
 
-			checks.SetCount( tf_bot_suspect_spy_touch_interval.GetInt() );
-			for ( int i=0; i < checks.Count(); ++i )
-				checks[i] = false;
-
-			for ( int i=0; i<m_times.Count(); ++i )
+			FOR_EACH_VEC(m_times, i)
 			{
 				int idx = nCurTime - m_times[i];
 				if ( checks.IsValidIndex( idx ) )
 					checks[idx] = true;
 			}
 
-			for ( int i=0; i<checks.Count(); ++i )
-			{
-				if ( !checks[i] )
-					return false;
-			}
+			int nIndex = checks.Find( false );
+			if ( nIndex != checks.InvalidIndex() )
+				return false;
 
 			return true;
 		}
@@ -283,6 +278,9 @@ public:
 		MAX
 	}
 	m_iSkill;
+	DifficultyType	GetDifficulty( void ) const;
+	void			SetDifficulty( DifficultyType difficulty );
+	bool			IsDifficulty( DifficultyType skill ) const;
 
 	enum class AttributeType : int
 	{
@@ -294,7 +292,7 @@ public:
 		SUPPRESSFIRE            = (1 << 3),
 		DISABLEDODGE            = (1 << 4),
 		BECOMESPECTATORONDEATH  = (1 << 5),
-		// 6?
+		QUOTAMANAGED			= (1 << 6),
 		RETAINBUILDINGS         = (1 << 7),
 		SPAWNWITHFULLCHARGE     = (1 << 8),
 		ALWAYSCRIT              = (1 << 9),
@@ -316,6 +314,24 @@ public:
 		FIREIMMUNE              = (1 << 25),
 	}
 	m_nBotAttrs;
+	void			SetAttribute( AttributeType attribute );
+	bool			HasAttribute( AttributeType attribute ) const;
+	void			ClearAttribute( AttributeType attribute );
+	void			ClearAllAttributes( void );
+
+	enum class WeaponRestrictionType : int
+	{
+		NONE			= 0,
+
+		MELEEONLY		= ( 1 << 0 ),
+		PRIMARYONLY		= ( 1 << 1 ),
+		SECONDARYONLY	= ( 1 << 2 )
+	}
+	m_nWeaponRestrictions;
+	void			SetWeaponRestriction( WeaponRestrictionType restrictionFlags );
+	bool			HasWeaponRestriction( WeaponRestrictionType restrictionFlags ) const;
+	bool			IsWeaponRestricted( CTFWeaponBase *weapon ) const;
+	void			ClearWeaponRestrictions( void );
 	
 
 private:
@@ -372,6 +388,61 @@ private:
 	float m_flMaxJumpHeight;
 	float m_flDeathDropHeight;
 };
+
+DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::AttributeType )
+inline bool operator!( CTFBot::AttributeType const &rhs )
+{
+	return (int const &)rhs == 0;
+}
+inline bool operator!=( CTFBot::AttributeType const &rhs, int const &lhs )
+{
+	return (int const &)rhs != lhs;
+}
+
+DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::WeaponRestrictionType )
+inline bool operator!( CTFBot::WeaponRestrictionType const &rhs )
+{
+	return (int const &)rhs == 0;
+}
+inline bool operator!=( CTFBot::WeaponRestrictionType const &rhs, int const &lhs )
+{
+	return (int const &)rhs != lhs;
+}
+
+inline void CTFBot::SetWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags )
+{
+	m_nWeaponRestrictions |= restrictionFlags;
+}
+
+inline bool CTFBot::HasWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags ) const
+{
+	return (m_nWeaponRestrictions & restrictionFlags) != 0;
+}
+
+inline void CTFBot::ClearWeaponRestrictions( void )
+{
+	m_nWeaponRestrictions = CTFBot::WeaponRestrictionType::NONE;
+}
+
+inline void CTFBot::SetAttribute( CTFBot::AttributeType attribute )
+{
+	m_nBotAttrs |= attribute;
+}
+
+inline void CTFBot::ClearAttribute( CTFBot::AttributeType attribute )
+{
+	m_nBotAttrs &= ~attribute;
+}
+
+inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
+{
+	return (m_nBotAttrs & attribute) != 0;
+}
+
+inline void CTFBot::ClearAllAttributes()
+{
+	m_nBotAttrs = CTFBot::AttributeType::NONE;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -504,16 +575,5 @@ private:
 };
 
 extern CTFBotItemSchema &TFBotItemSchema( void );
-
-
-DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::AttributeType )
-inline bool operator!( CTFBot::AttributeType const &rhs )
-{
-	return (int const &)rhs == 0;
-}
-inline bool operator!=( CTFBot::AttributeType const &rhs, int const &lhs )
-{
-	return (int const &)rhs != lhs;
-}
 
 #endif

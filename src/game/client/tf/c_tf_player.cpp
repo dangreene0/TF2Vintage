@@ -1077,7 +1077,7 @@ void C_TFRagdoll::OnDataChanged( DataUpdateType_t type )
 		if ( bCreateRagdoll )
 		{
 			// Delete our mask if we're disguised.
-			if (pPlayer && pPlayer->m_Shared.InCond(TF_COND_DISGUISED))
+			if ( pPlayer && pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
 			{			
 				pPlayer->UpdateSpyMask();
 			}
@@ -5402,6 +5402,8 @@ void C_TFPlayer::ClientPlayerRespawn( void )
 
 	// Update min. viewmodel
 	CalcMinViewmodelOffset();
+
+	UpdateSpyMask();
 
 	// Reset rage
 	m_Shared.ResetRageSystem();

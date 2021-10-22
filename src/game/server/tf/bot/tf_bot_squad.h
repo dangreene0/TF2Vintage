@@ -51,6 +51,7 @@ public:
 
 	void DisbandAndDeleteSquad( void );
 
+private:
 	CUtlVector< CHandle<CTFBot> > m_hMembers;
 	CHandle<CTFBot> m_hLeader;
 	float m_flFormationSize;
