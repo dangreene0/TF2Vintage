@@ -4880,7 +4880,6 @@ void CTFPlayer::DropFlag( bool bSilent )
 
 				gameeventmanager->FireEvent( event );
 			}
-			RemoveGlowEffect();
 		}
 	}
 }
