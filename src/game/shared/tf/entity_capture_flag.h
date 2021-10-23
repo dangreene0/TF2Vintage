@@ -229,7 +229,13 @@ public:
 	void			InputEnable( inputdata_t &inputdata );
 	void			InputDisable( inputdata_t &inputdata );
 	void			InputRoundActivate( inputdata_t &inputdata );
+	void			InputForceDrop( inputdata_t &inputdata );
 	void			InputForceReset( inputdata_t &inputdata );
+	void			InputForceResetSilent( inputdata_t &inputdata );
+	void			InputForceResetAndDisableSilent( inputdata_t &inputdata );
+	void			InputSetReturnTime( inputdata_t &inputdata );
+	void			InputShowTimer( inputdata_t &inputdata );
+	void			InputForceGlowDisabled( inputdata_t &inputdata );
 
 	void			Think( void );
 	
@@ -286,7 +292,7 @@ public:
 	virtual void	PickUp( CTFPlayer *pPlayer, bool bInvisible );
 	virtual void	Drop( CTFPlayer *pPlayer, bool bVisible, bool bThrown = false, bool bMessage = true );
 
-	int				GetGameType( void ){ return m_nGameType; }
+	int				GetGameType( void ){ return m_nType; }
 
 	bool			IsDropped( void );
 	bool			IsHome( void );
@@ -315,20 +321,19 @@ private:
 
 	CNetworkVar( bool,	m_bDisabled );	// Enabled/Disabled?
 	CNetworkVar( bool,	m_bVisibleWhenDisabled );
-	CNetworkVar( int,	m_nGameType );	// Type of game this flag will be used for.
-
+	CNetworkVar( int,	m_nType );	// Type of game this flag will be used for.
 	CNetworkVar( float,	m_flResetTime );		// Time until the flag is placed back at spawn.
 	CNetworkVar( float, m_flMaxResetTime );		// Time the flag takes to return in the current mode
 	CNetworkVar( float, m_flNeutralTime );	// Time until the flag becomes neutral (used for the invade gametype)
 	CNetworkHandle( CBaseEntity, m_hPrevOwner );
-	CNetworkVar( int, m_nPointValue );	// Value per scoring, for Robot/Player Destruction
+	CNetworkVar( int,	m_nPointValue );	// Value per scoring, for Robot/Player Destruction
 	CNetworkVar( float, m_flAutoCapTime );
-	CNetworkVar( bool, m_bGlowEnabled );
+	CNetworkVar( bool,	m_bGlowEnabled );
 	CNetworkString( m_szModel, MAX_PATH );
 	CNetworkString( m_szHudIcon, MAX_PATH );
 	CNetworkString( m_szPaperEffect, MAX_PATH );
 	CNetworkString( m_szTrailEffect, MAX_PATH );
-	CNetworkVar( int, m_nUseTrailEffect );
+	CNetworkVar( int,	m_nUseTrailEffect );
 	CNetworkVar( float, m_flTimeToSetPoisonous );
 
 	int				m_iOriginalTeam;
@@ -368,6 +373,9 @@ private:
 	float			m_flNextTeamSoundTime[TF_TEAM_COUNT];
 
 	CSpriteTrail	*m_pGlowTrail;
+
+	string_t		m_iszTags;
+	CUtlStringList	m_tags;
 #else
 
 	IMaterial	*m_pReturnProgressMaterial_Empty;		// For labels above players' heads.

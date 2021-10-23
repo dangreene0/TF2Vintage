@@ -198,7 +198,7 @@ public:
 	virtual void		RemoveAllWeapons( void );
 
 	bool				DropCurrentWeapon( void );
-	void				DropFlag( void );
+	void				DropFlag( bool bSilent = false );
 	void				TFWeaponRemove( int iWeaponID );
 	bool				TFWeaponDrop( CTFWeaponBase *pWeapon, bool bThrowForward );
 

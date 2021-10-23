@@ -103,7 +103,7 @@ BEGIN_NETWORK_TABLE( CCaptureFlag, DT_CaptureFlag )
 #ifdef GAME_DLL
 	SendPropBool( SENDINFO( m_bDisabled ) ),
 	SendPropBool( SENDINFO( m_bVisibleWhenDisabled ) ),
-	SendPropInt( SENDINFO( m_nGameType ), 5, SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nType ), 5, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nFlagStatus ), 3, SPROP_UNSIGNED ),
 	SendPropTime( SENDINFO( m_flResetTime ) ),
 	SendPropTime( SENDINFO( m_flNeutralTime ) ),
@@ -122,7 +122,7 @@ BEGIN_NETWORK_TABLE( CCaptureFlag, DT_CaptureFlag )
 #else
 	RecvPropInt( RECVINFO( m_bDisabled ), 0, RecvProxy_IsDisabled ),
 	RecvPropInt( RECVINFO( m_bVisibleWhenDisabled ), 0, RecvProxy_IsVisibleWhenDisabled ),
-	RecvPropInt( RECVINFO( m_nGameType ) ),
+	RecvPropInt( RECVINFO( m_nType ) ),
 	RecvPropInt( RECVINFO( m_nFlagStatus ), 0, RecvProxy_FlagStatus ),
 	RecvPropTime( RECVINFO( m_flResetTime ) ),
 	RecvPropTime( RECVINFO( m_flNeutralTime ) ),
@@ -145,7 +145,7 @@ BEGIN_DATADESC( CCaptureFlag )
 
 	// Keyfields.
 	DEFINE_KEYFIELD( m_flResetTime, FIELD_INTEGER, "ReturnTime"),
-	DEFINE_KEYFIELD( m_nGameType, FIELD_INTEGER, "GameType" ),
+	DEFINE_KEYFIELD( m_nType, FIELD_INTEGER, "GameType" ),
 	DEFINE_KEYFIELD( m_nUseTrailEffect, FIELD_INTEGER, "trail_effect" ),
 	DEFINE_KEYFIELD( m_bReturnBetweenWaves, FIELD_BOOLEAN, "ReturnBetweenWaves" ),
 	DEFINE_KEYFIELD( m_bVisibleWhenDisabled, FIELD_BOOLEAN, "VisibleWhenDisabled" ),
@@ -156,12 +156,19 @@ BEGIN_DATADESC( CCaptureFlag )
 	DEFINE_KEYFIELD( m_iszHudIcon, FIELD_STRING, "flag_icon" ),
 	DEFINE_KEYFIELD( m_iszPaperEffect, FIELD_STRING, "flag_paper" ),
 	DEFINE_KEYFIELD( m_iszTrailEffect, FIELD_STRING, "flag_trail" ),
+	DEFINE_KEYFIELD( m_iszTags, FIELD_STRING, "tags" ),
 
 	// Inputs.
 	DEFINE_INPUTFUNC( FIELD_VOID, "Enable", InputEnable ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "Disable", InputDisable ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "RoundActivate", InputRoundActivate ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "ForceDrop", InputForceDrop ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "ForceReset", InputForceReset ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "ForceResetSilent", InputForceResetSilent ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "ForceResetAndDisableSilent", InputForceResetAndDisableSilent ),
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "SetReturnTime", InputSetReturnTime ),
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "ShowTimer", InputShowTimer ),
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "ForceGlowDisabled", InputForceGlowDisabled ),
 
 	// Outputs.
 	DEFINE_OUTPUT( m_outputOnReturn, "OnReturn" ),
@@ -440,6 +447,11 @@ void CCaptureFlag::Spawn( void )
 		TFObjectiveResource()->SetNextMvMBombUpgradeTime( -1 );
 	}
 
+	CSplitString tags( STRING( m_iszTags ), " " );
+	for ( int i=0; i < tags.Count(); ++i )
+	{
+		m_tags.CopyAndAddToTail( tags[i] );
+	}
 #else
 
 	// add this element if it isn't already in the list
@@ -518,7 +530,7 @@ bool CCaptureFlag::ShouldHideGlowEffect( void )
 	C_TFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
 	if ( pLocalPlayer )
 	{
-		if ( m_nGameType == TF_FLAGTYPE_CTF )
+		if ( m_nType == TF_FLAGTYPE_CTF )
 		{
 			// In CTF the flag is the team of where it was originally sitting
 			bIsHiddenTeam = ( pLocalPlayer->GetTeamNumber() == GetTeamNumber() );
@@ -581,7 +593,7 @@ void CCaptureFlag::Activate( void )
 {
 	BaseClass::Activate();
 
-	if ( tf2v_assault_ctf_rules.GetBool() && m_nGameType == TF_FLAGTYPE_CTF )
+	if ( tf2v_assault_ctf_rules.GetBool() && m_nType == TF_FLAGTYPE_CTF )
 	{
 		// If we're playing Assault CTF, swap the flags.
 		switch (GetTeamNumber())
@@ -607,7 +619,7 @@ CCaptureFlag *CCaptureFlag::Create( const Vector& vecOrigin, const char *pszMode
 {
 	CCaptureFlag *pFlag = static_cast< CCaptureFlag* >( CBaseEntity::CreateNoSpawn( "item_teamflag", vecOrigin, vec3_angle, NULL ) );
 	pFlag->m_iszModel = MAKE_STRING( pszModelName );
-	pFlag->m_nGameType = nFlagType;
+	pFlag->m_nType = nFlagType;
 
 	if ( nFlagType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
 	{
@@ -661,7 +673,7 @@ void CCaptureFlag::Reset( void )
 	m_bAllowOwnerPickup = true;
 	m_hPrevOwner = NULL;
 
-	if ( m_nGameType == TF_FLAGTYPE_INVADE )
+	if ( m_nType == TF_FLAGTYPE_INVADE )
 	{
 		ChangeTeam( m_iOriginalTeam );
 	}
@@ -684,7 +696,7 @@ void CCaptureFlag::Reset( void )
 void CCaptureFlag::ResetMessage( void )
 {
 #ifdef GAME_DLL
-	if ( m_nGameType == TF_FLAGTYPE_CTF )
+	if ( m_nType == TF_FLAGTYPE_CTF )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -708,7 +720,7 @@ void CCaptureFlag::ResetMessage( void )
 		CPASAttenuationFilter filter( this, TF_CTF_FLAGSPAWN );
 		PlaySound( filter, TF_CTF_FLAGSPAWN );
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
+	else if ( m_nType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -735,7 +747,7 @@ void CCaptureFlag::ResetMessage( void )
 			}
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_INVADE )
+	else if ( m_nType == TF_FLAGTYPE_INVADE )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -745,7 +757,7 @@ void CCaptureFlag::ResetMessage( void )
 			PlaySound( filter, TF_INVADE_FLAG_RETURNED );
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	else if ( m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		const char *pszSound = TF_RESOURCE_RETURNED;
 		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
@@ -810,7 +822,7 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 	#endif
 
 		// Does my team own this flag? If so, no touch.
-		if ( m_nGameType == TF_FLAGTYPE_CTF || m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+		if ( m_nType == TF_FLAGTYPE_CTF || m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
 		{
 			if ( !tf_flag_return_on_touch.GetBool() )
 				return;
@@ -820,14 +832,14 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 		}
 	}
 
-	if ( ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND || m_nGameType == TF_FLAGTYPE_TERRITORY_CONTROL ) &&
+	if ( ( m_nType == TF_FLAGTYPE_ATTACK_DEFEND || m_nType == TF_FLAGTYPE_TERRITORY_CONTROL ) &&
 		   pOther->GetTeamNumber() != GetTeamNumber() )
 	{
 		return;
 	}
 
 	// Don't allow us to touch the flag until it's neutral.
-	if ( ( m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL ) && GetTeamNumber() != TEAM_UNASSIGNED )
+	if ( ( m_nType == TF_FLAGTYPE_INVADE || m_nType == TF_FLAGTYPE_RESOURCE_CONTROL ) && GetTeamNumber() != TEAM_UNASSIGNED )
 	{
 		if ( pOther->GetTeamNumber() != GetTeamNumber() )
 		{
@@ -865,7 +877,7 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 		return;
 
 	// Don't let invulnerable players pickup flags, except in PD
-	if ( pPlayer->m_Shared.IsInvulnerable() && m_nGameType != TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	if ( pPlayer->m_Shared.IsInvulnerable() && m_nType != TF_FLAGTYPE_PLAYER_DESTRUCTION )
 		return;
 
 	// Don't let bonked players pickup flags
@@ -878,11 +890,11 @@ void CCaptureFlag::FlagTouch( CBaseEntity *pOther )
 #endif
 
 	// Do not allow the player to pick up multiple flags
-	if ( pPlayer->HasTheFlag() && !( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION ) && !tf_flag_return_on_touch.GetBool() )
+	if ( pPlayer->HasTheFlag() && !( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION ) && !tf_flag_return_on_touch.GetBool() )
 		return;
 
 	if ( IsDropped() && pOther->GetTeamNumber() == GetTeamNumber() && 
-		 m_nGameType == TF_FLAGTYPE_CTF && tf_flag_return_on_touch.GetBool() )
+		 m_nType == TF_FLAGTYPE_CTF && tf_flag_return_on_touch.GetBool() )
 	{
 		Reset();
 		ResetMessage();
@@ -931,7 +943,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 		
 	}
 
-	if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
 	{
 		if ( pPlayer->HasItem() && ( pPlayer->GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG ) && pPlayer->GetItem() != this )
 		{
@@ -944,7 +956,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			return;
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	else if ( m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
 	{
 		if ( pPlayer->HasItem() && ( pPlayer->GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG ) && pPlayer->GetItem() != this )
 		{
@@ -1003,7 +1015,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	m_hPrevOwner = pPlayer;
 	m_bAllowOwnerPickup = true;
 
-	if ( m_nGameType == TF_FLAGTYPE_CTF )
+	if ( m_nType == TF_FLAGTYPE_CTF )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -1026,7 +1038,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			}
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
+	else if ( m_nType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
 		// Handle messages to the screen.
 		TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_AD_TakeFlagToPoint" );
@@ -1052,7 +1064,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			}
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_INVADE )
+	else if ( m_nType == TF_FLAGTYPE_INVADE )
 	{
 		// Handle messages to the screen.
 		TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerPickup" );
@@ -1074,7 +1086,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			}
 		}
 	}
-	else if (m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	else if ( m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		// Only do notifications when a neutral flag has been taken.
 		if ( GetTeamNumber() == TEAM_UNASSIGNED )
@@ -1116,7 +1128,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			}
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	else if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -1132,7 +1144,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 			}
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	else if ( m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
 	{
 		/*if ( CTFPlayerDestructionLogic::GetPlayerDestructionLogic() )
 		{
@@ -1142,7 +1154,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	}
 	
 	// Neutral flags: Set team.
-	if (m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	if ( m_nType == TF_FLAGTYPE_INVADE || m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		// Set the flag to be the carrier's team.
 		ChangeTeam( pPlayer->GetTeamNumber() );
@@ -1271,7 +1283,7 @@ void CCaptureFlag::AddPointValue( int nPoints )
 { 
 	m_nPointValue += nPoints;
 
-	if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nGameType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION || m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
 	{
 		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
 		if ( pEvent )
@@ -1309,7 +1321,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 
 #ifdef GAME_DLL
 
-	if ( m_nGameType == TF_FLAGTYPE_CTF )
+	if ( m_nType == TF_FLAGTYPE_CTF )
 	{
 		bool bNotify = true;
 
@@ -1372,7 +1384,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_CTF_CAPTURED_TEAM_FRAGS );
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
+	else if ( m_nType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
 		char szNumber[64];
 		Q_snprintf( szNumber, sizeof(szNumber), "%d", nCapturePoint );
@@ -1412,7 +1424,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 
 		// TFTODO:: Reward the team	
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_INVADE )
+	else if ( m_nType == TF_FLAGTYPE_INVADE )
 	{
 		// Handle messages to the screen.
 		TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerCapture" );
@@ -1450,7 +1462,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
 		}
 	}
-	else if (m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL)
+	else if ( m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		// Pretty much the Invasion code with some tweaks.
 		
@@ -1496,7 +1508,7 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 			TFTeamMgr()->AddTeamScore( pPlayer->GetTeamNumber(), TF_INVADE_CAPTURED_TEAM_FRAGS );
 		}
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	else if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
 	{
 		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
 		{
@@ -1624,7 +1636,7 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 	UTIL_TraceHull( vecStart, vecEnd, WorldAlignMins(), WorldAlignMaxs(), MASK_SOLID, this, COLLISION_GROUP_DEBRIS, &trace );
 	SetAbsOrigin( trace.endpos );
 
-	if ( m_nGameType == TF_FLAGTYPE_CTF )
+	if ( m_nType == TF_FLAGTYPE_CTF )
 	{
 		if ( bMessage  )
 		{
@@ -1652,7 +1664,7 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 		else
 			SetFlagReturnIn( TF_CTF_RESET_TIME );
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_INVADE )
+	else if ( m_nType == TF_FLAGTYPE_INVADE )
 	{
 		if ( bMessage  )
 		{
@@ -1680,7 +1692,7 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 		SetFlagReturnIn( TF_INVADE_RESET_TIME );
 		SetFlagNeutralIn( TF_INVADE_NEUTRAL_TIME );
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	else if ( m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		if ( bMessage  )
 		{
@@ -1704,7 +1716,7 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 		SetFlagReturnIn( TF_RESOURCE_RESET_TIME );
 		SetFlagNeutralIn( TF_RESOURCE_NEUTRAL_TIME );
 	}
-	else if ( m_nGameType == TF_FLAGTYPE_ATTACK_DEFEND )
+	else if ( m_nType == TF_FLAGTYPE_ATTACK_DEFEND )
 	{
 		if ( bMessage  )
 		{
@@ -1911,7 +1923,7 @@ void CCaptureFlag::Think( void )
 			}
 		}
 
-		if ( m_nGameType == TF_FLAGTYPE_INVADE || m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+		if ( m_nType == TF_FLAGTYPE_INVADE || m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 		{
 			if ( m_flResetTime && gpGlobals->curtime > m_flResetTime )
 			{
@@ -1943,7 +1955,7 @@ void CCaptureFlag::Think( void )
 		m_nSkin = GetIntelSkin( GetTeamNumber() );
 	}
 
-	if ( m_nGameType == TF_FLAGTYPE_RESOURCE_CONTROL )
+	if ( m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
 		{
@@ -2068,6 +2080,20 @@ void CCaptureFlag::InputDisable( inputdata_t &inputdata )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CCaptureFlag::InputForceDrop( inputdata_t &inputdata )
+{
+	CTFPlayer *pPlayer = ToTFPlayer( m_hPrevOwner.Get() );
+
+	// If the player has a capture flag, drop it.
+	if ( pPlayer && pPlayer->HasItem() && ( pPlayer->GetItem() == this ) )
+	{
+		pPlayer->DropFlag();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CCaptureFlag::InputRoundActivate( inputdata_t &inputdata )
 {
 	CTFPlayer *pPlayer = ToTFPlayer( m_hPrevOwner.Get() );
@@ -2088,10 +2114,79 @@ void CCaptureFlag::InputForceReset( inputdata_t &inputdata )
 	// If the player has a capture flag, drop it.
 	if ( pPlayer && pPlayer->HasItem() && ( pPlayer->GetItem() == this ) )
 	{
-		Drop( pPlayer, true, false, false );
+		pPlayer->DropFlag();
 	}
 
 	Reset();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::InputForceResetSilent( inputdata_t &inputdata )
+{
+	CTFPlayer *pPlayer = ToTFPlayer( m_hPrevOwner.Get() );
+
+	// If the player has a capture flag, drop it.
+	if ( pPlayer && pPlayer->HasItem() && ( pPlayer->GetItem() == this ) )
+	{
+		pPlayer->DropFlag( true );
+	}
+
+	Reset();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::InputForceResetAndDisableSilent( inputdata_t &inputdata )
+{
+	InputForceResetSilent( inputdata );
+	SetDisabled( true );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::InputSetReturnTime( inputdata_t &inputdata )
+{
+	int nReturnTime = inputdata.value.Int();
+	nReturnTime = Max( 0, nReturnTime );
+
+	if ( IsDropped() )
+	{
+		// do we currently have a neutral time?
+		if ( m_flNeutralTime > 0 )
+		{
+			// if our return time is less than the neutral time, we don't need a neutral time
+			if ( TF_INVADE_NEUTRAL_TIME < nReturnTime )
+			{
+				SetFlagNeutralIn( TF_INVADE_NEUTRAL_TIME );
+			}
+		}
+
+		SetFlagReturnIn( nReturnTime );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::InputShowTimer( inputdata_t &inputdata )
+{
+	int nReturnTime = inputdata.value.Int();
+	SetFlagReturnIn( Max( 0, nReturnTime ) );
+
+	CreateReturnIcon();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::InputForceGlowDisabled( inputdata_t &inputdata )
+{
+	int nState = inputdata.value.Int();
+	SetGlowEnabled( nState == 0 );
 }
 
 //-----------------------------------------------------------------------------

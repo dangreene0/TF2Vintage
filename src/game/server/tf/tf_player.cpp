@@ -4862,14 +4862,15 @@ bool CTFPlayer::DropCurrentWeapon( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayer::DropFlag( void )
+void CTFPlayer::DropFlag( bool bSilent )
 {
 	if ( HasItem() )
 	{
 		CCaptureFlag *pFlag = dynamic_cast<CCaptureFlag *>( GetItem() );
 		if ( pFlag )
 		{
-			pFlag->Drop( this, true, true );
+			pFlag->Drop( this, true, true, !bSilent );
+
 			IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_flag_event" );
 			if ( event )
 			{
