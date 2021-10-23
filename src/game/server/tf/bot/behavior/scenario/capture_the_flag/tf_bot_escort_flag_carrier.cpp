@@ -95,14 +95,14 @@ int GetBotEscortCount( int iTeamNum )
 		if ( pBehavior == nullptr )
 			continue;
 
-		auto pAction = static_cast<Action<CTFBot> *>( pBehavior->FirstContainedResponder() );
+		auto pAction = assert_cast<Action<CTFBot> *>( pBehavior->FirstContainedResponder() );
 		if ( pAction == nullptr )
 			continue;
 
-		while ( pAction->FirstContainedResponder() )
-			pAction = static_cast<Action<CTFBot> *>( pAction->FirstContainedResponder() );
+		while ( pAction->GetActiveChildAction() )
+			pAction = pAction->GetActiveChildAction();
 
-		if ( pAction->IsNamed( "EscortFlagCarrier" ) )
+		if ( pAction && pAction->IsNamed( "EscortFlagCarrier" ) )
 			++nCount;
 	}
 
