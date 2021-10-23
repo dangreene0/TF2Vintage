@@ -210,7 +210,7 @@ CTFBot::DifficultyType NameToDifficulty( const char *pszSkillName )
 	return (CTFBot::DifficultyType)-1;
 }
 
-void CreateBotName( int iTeamNum, int iClassIdx, int iSkillLevel, char *out, int outlen )
+void CreateBotName( int iTeamNum, int iClassIdx, CTFBot::DifficultyType iSkillLevel, char *out, int outlen )
 {
 	char szName[64] = "", szRelationship[64] = "", szDifficulty[32] = "";
 	if ( TFGameRules()->IsInTraining() )
@@ -437,7 +437,7 @@ void CTFBotManager::MaintainBotQuota()
 
 	if ( tf_bot_join_after_player.GetBool() )
 	{
-		if ( nHumansTeamed == 0 && nHumansSpec == 0 )
+		if ( nHumansTotal == 0 )
 		{
 			nDesired = 0;
 		}
@@ -486,28 +486,28 @@ void CTFBotManager::MaintainBotQuota()
 	}
 	else if ( nDesired < nTFBotsTeamed )
 	{
-		if ( !UTIL_KickBotFromTeam( TEAM_UNASSIGNED ) )
-		{
-			CTeam *pRedTeam = GetGlobalTeam( TF_TEAM_RED );
-			CTeam *pBluTeam = GetGlobalTeam( TF_TEAM_BLUE );
+		if ( UTIL_KickBotFromTeam( TEAM_UNASSIGNED ) )
+			return;
+		
+		CTeam *pRedTeam = GetGlobalTeam( TF_TEAM_RED );
+		CTeam *pBluTeam = GetGlobalTeam( TF_TEAM_BLUE );
 
-			int iTeamToKick;
-			if ( pRedTeam->GetNumPlayers() > pBluTeam->GetNumPlayers() )
-				iTeamToKick = TF_TEAM_RED;
-			else if ( pRedTeam->GetNumPlayers() < pBluTeam->GetNumPlayers() )
-				iTeamToKick = TF_TEAM_BLUE;
-			else if ( pRedTeam->GetScore() > pBluTeam->GetScore() )
-				iTeamToKick = TF_TEAM_RED;
-			else if ( pRedTeam->GetScore() < pBluTeam->GetScore() )
-				iTeamToKick = TF_TEAM_BLUE;
-			else
-				iTeamToKick = RandomInt( 0, 1 ) == 1 ? TF_TEAM_RED : TF_TEAM_BLUE;
+		int iTeamToKick;
+		if ( pRedTeam->GetNumPlayers() > pBluTeam->GetNumPlayers() )
+			iTeamToKick = TF_TEAM_RED;
+		else if ( pRedTeam->GetNumPlayers() < pBluTeam->GetNumPlayers() )
+			iTeamToKick = TF_TEAM_BLUE;
+		else if ( pRedTeam->GetScore() > pBluTeam->GetScore() )
+			iTeamToKick = TF_TEAM_RED;
+		else if ( pRedTeam->GetScore() < pBluTeam->GetScore() )
+			iTeamToKick = TF_TEAM_BLUE;
+		else
+			iTeamToKick = RandomInt( 0, 1 ) == 1 ? TF_TEAM_RED : TF_TEAM_BLUE;
 
-			if ( !UTIL_KickBotFromTeam( iTeamToKick ) )
-			{
-				UTIL_KickBotFromTeam( iTeamToKick == TF_TEAM_RED ? TF_TEAM_BLUE : TF_TEAM_RED );
-			}
-		}
+		if ( UTIL_KickBotFromTeam( iTeamToKick ) )
+			return;
+			
+		UTIL_KickBotFromTeam( iTeamToKick == TF_TEAM_RED ? TF_TEAM_BLUE : TF_TEAM_RED );
 	}
 }
 
