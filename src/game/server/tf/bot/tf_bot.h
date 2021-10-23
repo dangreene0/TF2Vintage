@@ -262,11 +262,6 @@ public:
 	ObjectHandle	GetTargetSentry( void ) const;
 	Vector const&	GetLastKnownSentryLocation( void ) const;
 
-	friend class CTFBotSquad;
-	CTFBotSquad *m_pSquad;
-	float m_flFormationError;
-	bool m_bIsInFormation;
-
 	CTFNavArea *m_HomeArea;
 
 	enum DifficultyType
@@ -347,6 +342,11 @@ private:
 	ILocomotion *m_locomotor;
 	IBody *m_body;
 	IVision *m_vision;
+
+	friend class CTFBotSquad;
+	CTFBotSquad *m_pSquad;
+	float m_flFormationError;
+	bool m_bIsInFormation;
 
 	CHandle<CBaseObject> m_hTargetSentry;
 	Vector m_vecLastNoticedSentry;
