@@ -87,7 +87,7 @@ ActionResult<CTFBot> CTFBotTacticalMonitor::Update( CTFBot *me, float dt )
 	if ( retreat == ANSWER_YES )
 		return BaseClass::SuspendFor( new CTFBotRetreatToCover, "Backing off" );
 
-	if ( retreat != ANSWER_NO && !me->m_Shared.InCond( TF_COND_INVULNERABLE ) && me->m_iSkill >= CTFBot::HARD )
+	if ( retreat != ANSWER_NO && !me->m_Shared.InCond( TF_COND_INVULNERABLE ) && me->GetDifficulty() >= CTFBot::DifficultyType::HARD )
 	{
 		CTFWeaponBase *pWeapon = (CTFWeaponBase *)me->Weapon_GetSlot( 1 );
 		if ( pWeapon && me->IsBarrageAndReloadWeapon( pWeapon ) )
@@ -232,7 +232,7 @@ EventDesiredResult<CTFBot> CTFBotTacticalMonitor::OnCommandString( CTFBot *me, c
 
 void CTFBotTacticalMonitor::AvoidBumpingEnemies( CTFBot *actor )
 {
-	if ( actor->m_iSkill > CTFBot::NORMAL )
+	if ( actor->GetDifficulty() > CTFBot::DifficultyType::NORMAL )
 	{
 		CTFPlayer *pClosest = nullptr;
 		float flClosest = Square( 200.0f );

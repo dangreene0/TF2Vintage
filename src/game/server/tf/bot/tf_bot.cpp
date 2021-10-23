@@ -213,7 +213,7 @@ void CTFBot::Spawn( void )
 	BaseClass::Spawn();
 
 	m_iSkill = (DifficultyType)tf_bot_difficulty.GetInt();
-	m_nBotAttrs = AttributeType::NONE;
+	m_nBotAttributes = AttributeType::NONE;
 
 	m_useWeaponAbilityTimer.Start( 5.0f );
 	m_bLookingAroundForEnemies = true;
@@ -743,13 +743,17 @@ CTeamControlPoint *CTFBot::GetMyControlPoint( void )
 		TFGameRules()->CollectDefendPoints( this, &defensePoints );
 		TFGameRules()->CollectCapturePoints( this, &attackPoints );
 
-		if ( ( IsPlayerClass( TF_CLASS_SNIPER ) || IsPlayerClass( TF_CLASS_ENGINEER )/* || BYTE( this + 10061 ) & ( 1 << 4 ) */) && !defensePoints.IsEmpty() )
+		if ( ( IsPlayerClass( TF_CLASS_SNIPER ) || IsPlayerClass( TF_CLASS_ENGINEER ) ) 
+			 || HasAttribute( CTFBot::AttributeType::PRIORITIZEDEFENSE ) )
 		{
-			CTeamControlPoint *pPoint = SelectPointToDefend( defensePoints );
-			if ( pPoint )
+			if ( !defensePoints.IsEmpty() )
 			{
-				m_hMyControlPoint = pPoint;
-				return pPoint;
+				CTeamControlPoint *pPoint = SelectPointToDefend( defensePoints );
+				if ( pPoint )
+				{
+					m_hMyControlPoint = pPoint;
+					return pPoint;
+				}
 			}
 		}
 		else
@@ -762,8 +766,6 @@ CTeamControlPoint *CTFBot::GetMyControlPoint( void )
 			}
 			else
 			{
-				m_myCPValidDuration.Invalidate();
-
 				pPoint = SelectPointToDefend( defensePoints );
 				if ( pPoint )
 				{
@@ -924,7 +926,7 @@ CTeamControlPoint *CTFBot::SelectPointToDefend( CUtlVector<CTeamControlPoint *> 
 	if ( candidates.IsEmpty() )
 		return nullptr;
 
-	if ( ( m_nBotAttrs & CTFBot::AttributeType::DISABLEDODGE ) != 0 )
+	if ( HasAttribute( CTFBot::AttributeType::PRIORITIZEDEFENSE ) )
 		return SelectClosestPointByTravelDistance( candidates );
 
 	return candidates.Random();
@@ -1307,13 +1309,13 @@ bool CTFBot::ShouldFireCompressionBlast( void )
 {
 	if ( !tf_bot_pyro_always_reflect.GetBool() )
 	{
-		if ( TFGameRules()->IsInTraining() || m_iSkill == CTFBot::EASY )
+		if ( TFGameRules()->IsInTraining() || m_iSkill == CTFBot::DifficultyType::EASY )
 			return false;
 
-		if ( m_iSkill == CTFBot::NORMAL && TransientlyConsistentRandomValue( 1.0, 0 ) < 0.5f )
+		if ( m_iSkill == CTFBot::DifficultyType::NORMAL && TransientlyConsistentRandomValue( 1.0, 0 ) < 0.5f )
 			return false;
 
-		if ( m_iSkill == CTFBot::HARD && TransientlyConsistentRandomValue( 1.0, 0 ) < 0.1f )
+		if ( m_iSkill == CTFBot::DifficultyType::HARD && TransientlyConsistentRandomValue( 1.0, 0 ) < 0.1f )
 			return false;
 	}
 
@@ -1618,7 +1620,7 @@ void CTFBot::ForgetSpy( CTFPlayer *spy )
 //-----------------------------------------------------------------------------
 void CTFBot::UpdateLookingAroundForEnemies( void )
 {
-	if ( !m_bLookingAroundForEnemies || m_Shared.IsControlStunned() || ( m_nBotAttrs & AttributeType::DONTLOOKAROUND ) == AttributeType::DONTLOOKAROUND )
+	if ( !m_bLookingAroundForEnemies || m_Shared.IsControlStunned() || HasAttribute( AttributeType::DONTLOOKAROUND ) )
 		return;
 
 	const CKnownEntity *threat = GetVisionInterface()->GetPrimaryKnownThreat();
@@ -1762,7 +1764,7 @@ bool CTFBot::EquipBestWeaponForThreat( const CKnownEntity *threat )
 				pWeapon = melee;
 		}
 
-		if ( m_iSkill != EASY )
+		if ( m_iSkill != DifficultyType::EASY )
 		{
 			if ( threat->WasEverVisible() && threat->GetTimeSinceLastSeen() <= 5.0f )
 			{
@@ -2190,7 +2192,7 @@ const char *CTFBot::GetNextSpawnClassname( void )
 		int m_nMinTeamSize;
 		int m_nRatioTeamSize;
 		int m_nMinimum;
-		int m_nMaximum[ DifficultyType::MAX ];
+		int m_nMaximum[ (int)DifficultyType::MAX ];
 	} ClassSelection_t;
 
 	static ClassSelection_t defenseRoster[] = 
@@ -2300,7 +2302,7 @@ const char *CTFBot::GetNextSpawnClassname( void )
 			break;
 		}
 
-		const int nMaximum = pInfo->m_nMaximum[ m_iSkill ];
+		const int nMaximum = pInfo->m_nMaximum[ (int)m_iSkill ];
 		if ( nMaximum > -1 && func.m_aClassCounts[ pInfo->m_iClass ] >= nMaximum )
 			continue;
 
@@ -2540,7 +2542,8 @@ float CTFBotPathCost::operator()( CNavArea *area, CNavArea *fromArea, const CNav
 
 void DifficultyChanged( IConVar *var, const char *pOldValue, float flOldValue )
 {
-	if ( tf_bot_difficulty.GetInt() >= CTFBot::EASY && tf_bot_difficulty.GetInt() <= CTFBot::EXPERT )
+	if ( (CTFBot::DifficultyType)tf_bot_difficulty.GetInt() >= CTFBot::DifficultyType::EASY &&
+		 (CTFBot::DifficultyType)tf_bot_difficulty.GetInt() <= CTFBot::DifficultyType::EXPERT )
 	{
 		CUtlVector<INextBot *> bots;
 		TheNextBots().CollectAllBots( &bots );
@@ -2550,7 +2553,7 @@ void DifficultyChanged( IConVar *var, const char *pOldValue, float flOldValue )
 			if ( pBot == nullptr )
 				continue;
 
-			pBot->m_iSkill = (CTFBot::DifficultyType)tf_bot_difficulty.GetInt();
+			pBot->SetDifficulty( (CTFBot::DifficultyType)tf_bot_difficulty.GetInt() );
 		}
 	}
 	else
@@ -2567,16 +2570,17 @@ void PrefixNameChanged( IConVar *var, const char *pOldValue, float flOldValue )
 		if ( pBot == nullptr )
 			continue;
 
+		extern const char *DifficultyToName( CTFBot::DifficultyType iSkillLevel );
 		if ( tf_bot_prefix_name_with_difficulty.GetBool() )
 		{
-			const char *szSkillName = DifficultyToName( pBot->m_iSkill );
+			const char *szSkillName = DifficultyToName( pBot->GetDifficulty() );
 			const char *szCurrentName = pBot->GetPlayerName();
 
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", CFmtStr( "%s%s", szSkillName, szCurrentName ) );
 		}
 		else
 		{
-			const char *szSkillName = DifficultyToName( pBot->m_iSkill );
+			const char *szSkillName = DifficultyToName( pBot->GetDifficulty() );
 			const char *szCurrentName = pBot->GetPlayerName();
 
 			engine->SetFakeClientConVarValue( pBot->edict(), "name", &szCurrentName[Q_strlen( szSkillName )] );
@@ -2594,11 +2598,13 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 		char const *pszClassName = "random";
 		int nNumBots = 1;
 		bool bNoQuota = false;
-		int nSkill = tf_bot_difficulty.GetInt();
+		CTFBot::DifficultyType nSkill = (CTFBot::DifficultyType)tf_bot_difficulty.GetInt();
 
 		for ( int i=0; i < args.ArgC(); ++i )
 		{
-			int nParsedSkill = NameToDifficulty( args[i] );
+			extern CTFBot::DifficultyType NameToDifficulty( const char *pszSkillName );
+
+			CTFBot::DifficultyType nParsedSkill = NameToDifficulty( args[i] );
 			int nParsedNumBots = V_atoi( args[i] );
 
 			if ( IsPlayerClassName( args[i] ) )
@@ -2613,7 +2619,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 			{
 				bNoQuota = true;
 			}
-			else if ( nParsedSkill != -1 )
+			else if ( nParsedSkill != (CTFBot::DifficultyType)-1 )
 			{
 				nSkill = nParsedSkill;
 			}
@@ -2643,6 +2649,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 		char szBotName[128]; int nCount = 0;
 		for ( int i = 0; i < nNumBots; ++i )
 		{
+			extern void CreateBotName( int iTeamNum, int iClassIdx, CTFBot::DifficultyType iSkillLevel, char *out, int outlen );
 			if ( pszBotName == NULL )
 				CreateBotName( iTeam, GetClassIndexFromString( pszClassName ), nSkill, szBotName, sizeof szBotName );
 			else
@@ -2654,7 +2661,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 
 			pBot->HandleCommand_JoinTeam( pszTeamName );
 			pBot->HandleCommand_JoinClass( pszClassName );
-			pBot->m_iSkill = (CTFBot::DifficultyType)nSkill;
+			pBot->SetDifficulty( (CTFBot::DifficultyType)nSkill );
 
 			nCount++;
 		}

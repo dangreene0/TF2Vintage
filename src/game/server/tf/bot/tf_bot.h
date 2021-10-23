@@ -264,7 +264,7 @@ public:
 
 	CTFNavArea *m_HomeArea;
 
-	enum DifficultyType
+	enum class DifficultyType
 	{
 		EASY   = 0,
 		NORMAL = 1,
@@ -277,7 +277,7 @@ public:
 	void			SetDifficulty( DifficultyType difficulty );
 	bool			IsDifficulty( DifficultyType skill ) const;
 
-	enum class AttributeType : int
+	enum class AttributeType
 	{
 		NONE                    = 0,
 
@@ -293,7 +293,7 @@ public:
 		ALWAYSCRIT              = (1 << 9),
 		IGNOREENEMIES           = (1 << 10),
 		HOLDFIREUNTILFULLRELOAD = (1 << 11),
-		// 12?
+		PRIORITIZEDEFENSE		= (1 << 12),
 		ALWAYSFIREWEAPON        = (1 << 13),
 		TELEPORTTOHINT          = (1 << 14),
 		MINIBOSS                = (1 << 15),
@@ -308,13 +308,13 @@ public:
 		BLASTIMMUNE             = (1 << 24),
 		FIREIMMUNE              = (1 << 25),
 	}
-	m_nBotAttrs;
+	m_nBotAttributes;
 	void			SetAttribute( AttributeType attribute );
 	bool			HasAttribute( AttributeType attribute ) const;
 	void			ClearAttribute( AttributeType attribute );
 	void			ClearAllAttributes( void );
 
-	enum class WeaponRestrictionType : int
+	enum class WeaponRestrictionType
 	{
 		NONE			= 0,
 
@@ -390,58 +390,86 @@ private:
 };
 
 DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::AttributeType )
-inline bool operator!( CTFBot::AttributeType const &rhs )
-{
-	return (int const &)rhs == 0;
-}
-inline bool operator!=( CTFBot::AttributeType const &rhs, int const &lhs )
-{
-	return (int const &)rhs != lhs;
-}
-
 DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::WeaponRestrictionType )
-inline bool operator!( CTFBot::WeaponRestrictionType const &rhs )
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::DifficultyType CTFBot::GetDifficulty( void ) const
 {
-	return (int const &)rhs == 0;
-}
-inline bool operator!=( CTFBot::WeaponRestrictionType const &rhs, int const &lhs )
-{
-	return (int const &)rhs != lhs;
+	return m_iSkill;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetDifficulty( CTFBot::DifficultyType difficulty )
+{
+	m_iSkill = difficulty;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsDifficulty( CTFBot::DifficultyType skill ) const
+{
+	return m_iSkill == skill;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline void CTFBot::SetWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags )
 {
 	m_nWeaponRestrictions |= restrictionFlags;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline bool CTFBot::HasWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags ) const
 {
-	return (m_nWeaponRestrictions & restrictionFlags) != 0;
+	return (m_nWeaponRestrictions & restrictionFlags) != (CTFBot::WeaponRestrictionType)0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline void CTFBot::ClearWeaponRestrictions( void )
 {
 	m_nWeaponRestrictions = CTFBot::WeaponRestrictionType::NONE;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline void CTFBot::SetAttribute( CTFBot::AttributeType attribute )
 {
-	m_nBotAttrs |= attribute;
+	m_nBotAttributes |= attribute;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline void CTFBot::ClearAttribute( CTFBot::AttributeType attribute )
 {
-	m_nBotAttrs &= ~attribute;
+	m_nBotAttributes &= ~attribute;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
 {
-	return (m_nBotAttrs & attribute) != 0;
+	return (m_nBotAttributes & attribute) != (CTFBot::AttributeType)0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline void CTFBot::ClearAllAttributes()
 {
-	m_nBotAttrs = CTFBot::AttributeType::NONE;
+	m_nBotAttributes = CTFBot::AttributeType::NONE;
 }
 
 //-----------------------------------------------------------------------------

@@ -21,13 +21,13 @@ float CTFBotBody::GetHeadAimTrackingInterval( void ) const
 {
 	CTFBot *me = static_cast<CTFBot *>( GetBot() );
 
-	switch( me->m_iSkill )
+	switch( me->GetDifficulty() )
 	{
-		case CTFBot::NORMAL:
+		case CTFBot::DifficultyType::NORMAL:
 			return 0.30f;
-		case CTFBot::HARD:
+		case CTFBot::DifficultyType::HARD:
 			return 0.10f;
-		case CTFBot::EXPERT:
+		case CTFBot::DifficultyType::EXPERT:
 			return 0.05f;
 
 		default:
@@ -384,13 +384,13 @@ float CTFBotVision::GetMinRecognizeTime( void ) const
 {
 	CTFBot *me = static_cast<CTFBot *>( GetBot() );
 
-	switch ( me->m_iSkill )
+	switch ( me->GetDifficulty() )
 	{
-		case CTFBot::NORMAL:
+		case CTFBot::DifficultyType::NORMAL:
 			return 0.50f;
-		case CTFBot::HARD:
+		case CTFBot::DifficultyType::HARD:
 			return 0.30f;
-		case CTFBot::EXPERT:
+		case CTFBot::DifficultyType::EXPERT:
 			return 0.15f;
 
 		default:

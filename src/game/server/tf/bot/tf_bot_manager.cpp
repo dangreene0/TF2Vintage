@@ -180,34 +180,34 @@ bool UTIL_KickBotFromTeam( int teamNum )
 	return false;
 }
 
-const char *DifficultyToName( int iSkillLevel )
+const char *DifficultyToName( CTFBot::DifficultyType iSkillLevel )
 {
 	switch ( iSkillLevel )
 	{
-		case CTFBot::EASY:
+		case CTFBot::DifficultyType::EASY:
 			return "Easy ";
-		case CTFBot::NORMAL:
+		case CTFBot::DifficultyType::NORMAL:
 			return "Normal ";
-		case CTFBot::HARD:
+		case CTFBot::DifficultyType::HARD:
 			return "Hard ";
-		case CTFBot::EXPERT:
+		case CTFBot::DifficultyType::EXPERT:
 			return "Expert ";
 	}
 
 	return "Undefined ";
 }
-int NameToDifficulty( const char *pszSkillName )
+CTFBot::DifficultyType NameToDifficulty( const char *pszSkillName )
 {
 	if ( !Q_stricmp( pszSkillName, "expert" ) )
-		return CTFBot::EXPERT;
+		return CTFBot::DifficultyType::EXPERT;
 	else if ( !Q_stricmp( pszSkillName, "hard" ) )
-		return CTFBot::HARD;
+		return CTFBot::DifficultyType::HARD;
 	else if ( !Q_stricmp( pszSkillName, "normal" ) )
-		return CTFBot::NORMAL;
+		return CTFBot::DifficultyType::NORMAL;
 	else if ( !Q_stricmp( pszSkillName, "easy" ) )
-		return CTFBot::EASY;
+		return CTFBot::DifficultyType::EASY;
 
-	return -1;
+	return (CTFBot::DifficultyType)-1;
 }
 
 void CreateBotName( int iTeamNum, int iClassIdx, int iSkillLevel, char *out, int outlen )
@@ -479,7 +479,7 @@ void CTFBotManager::MaintainBotQuota()
 				pBot->HandleCommand_JoinClass( szClassname );
 
 				char szName[256];
-				CreateBotName( pBot->GetTeamNumber(), pBot->GetPlayerClass()->GetClassIndex(), tf_bot_difficulty.GetInt(), szName, sizeof( szName ) );
+				CreateBotName( pBot->GetTeamNumber(), pBot->GetPlayerClass()->GetClassIndex(), (CTFBot::DifficultyType)tf_bot_difficulty.GetInt(), szName, sizeof( szName ) );
 				engine->SetFakeClientConVarValue( pBot->edict(), "name", szName );
 			}
 		}

@@ -51,9 +51,4 @@ private:
 
 extern CTFBotManager &TheTFBots( void );
 
-const char *DifficultyToName( int iSkillLevel );
-int NameToDifficulty( const char *pszSkillName );
-
-void CreateBotName( int iTeamNum, int iClassIdx, int iSkillLevel, char *out, int outlen );
-
 #endif
