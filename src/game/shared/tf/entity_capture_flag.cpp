@@ -84,6 +84,13 @@ static void RecvProxy_FlagStatus( const CRecvProxyData *pData, void *pStruct, vo
 	if ( pFlag )
 	{
 		pFlag->SetFlagStatus( pData->m_Value.m_Int );
+
+		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
+		if ( pEvent )
+		{
+			pEvent->SetInt( "entindex", pFlag->entindex() );
+			gameeventmanager->FireEventClientSide( pEvent );
+		}
 	}
 }
 
@@ -608,7 +615,7 @@ void CCaptureFlag::Activate( void )
 	else
 		m_iOriginalTeam = GetTeamNumber();
 
-	m_nSkin = GetIntelSkin(GetTeamNumber());
+	m_nSkin = GetIntelSkin( GetTeamNumber() );
 }
 
 //-----------------------------------------------------------------------------
@@ -633,24 +640,19 @@ CCaptureFlag *CCaptureFlag::Create( const Vector& vecOrigin, const char *pszMode
 
 int CCaptureFlag::GetIntelSkin(int iTeamNum, bool bPickupSkin)
 {
-	switch (iTeamNum)
+	switch ( iTeamNum )
 	{
 	case TF_TEAM_RED:
 		return bPickupSkin ? 3 : 0;
-		break;
 	case TF_TEAM_BLUE:
 		return bPickupSkin ? 4 : 1;
-		break;
 	case TF_TEAM_GREEN:
 		return bPickupSkin ? 8 : 6;
-		break;
 	case TF_TEAM_YELLOW:
 		return bPickupSkin ? 9 : 7;
-		break;
 	case TEAM_UNASSIGNED:
 	default:
 		return bPickupSkin ? 5 : 2;
-		break;
 	}
 }
 
@@ -936,7 +938,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	{
 		CTFBot *pBot = assert_cast<CTFBot *>( pPlayer );
 
-		if ( ( pBot->m_nBotAttrs & CTFBot::AttributeType::IGNOREFLAG ) != 0 )
+		if ( pBot->HasAttribute( CTFBot::AttributeType::IGNOREFLAG ) )
 			return;
 
 		
