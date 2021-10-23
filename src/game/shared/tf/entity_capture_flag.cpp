@@ -83,8 +83,7 @@ static void RecvProxy_FlagStatus( const CRecvProxyData *pData, void *pStruct, vo
 
 	if ( pFlag )
 	{
-		pFlag->UpdateGlowEffect();
-		pFlag->m_nFlagStatus = pData->m_Value.m_Int;
+		pFlag->SetFlagStatus( pData->m_Value.m_Int );
 	}
 }
 
@@ -1878,6 +1877,50 @@ void CCaptureFlag::SetVisibleWhenDisabled( bool bVisible )
 	SetDisabled( IsDisabled() ); 
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Sets the flag status
+//-----------------------------------------------------------------------------
+void CCaptureFlag::SetFlagStatus( int iStatus, CBasePlayer *pNewOwner /*= NULL*/ )
+{
+#ifdef GAME_DLL
+	MDLCACHE_CRITICAL_SECTION();
+#endif
+
+	if ( m_nFlagStatus != iStatus )
+	{
+		m_nFlagStatus = iStatus;
+	#ifdef GAME_DLL
+		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
+		if ( pEvent )
+		{
+			pEvent->SetInt( "userid", pNewOwner ? pNewOwner->GetUserID() : -1 );
+			pEvent->SetInt( "entindex", entindex() );
+			gameeventmanager->FireEvent( pEvent );
+		}
+	#endif
+	}
+
+#ifdef CLIENT_DLL
+	UpdateGlowEffect();
+#endif
+
+#ifdef GAME_DLL
+	switch ( m_nFlagStatus )
+	{
+		case TF_FLAGINFO_NONE:
+		case TF_FLAGINFO_DROPPED:
+			ResetSequence( LookupSequence( "spin" ) );	// set spin animation if it's not being held
+			break;
+		case TF_FLAGINFO_STOLEN:
+			ResetSequence( LookupSequence( "idle" ) );	// set idle animation if it is being held
+			break;
+		default:
+			AssertOnce( false );	// invalid stats
+			break;
+	}
+#endif
+}
+
 //-----------------------------------------------------------------------------------------------
 // GAME DLL Functions
 //-----------------------------------------------------------------------------------------------
@@ -2022,42 +2065,6 @@ void CCaptureFlag::ManageSpriteTrail( void )
 			m_pGlowTrail->Remove();
 			m_pGlowTrail = NULL;
 		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Sets the flag status
-//-----------------------------------------------------------------------------
-void CCaptureFlag::SetFlagStatus( int iStatus, CBasePlayer *pNewOwner /*= NULL*/ )
-{ 
-	MDLCACHE_CRITICAL_SECTION();
-
-	if ( m_nFlagStatus != iStatus )
-	{
-		m_nFlagStatus = iStatus;
-
-		IGameEvent *pEvent = gameeventmanager->CreateEvent( "flagstatus_update" );
-		if ( pEvent )
-		{
-			pEvent->SetInt( "userid", pNewOwner ? pNewOwner->GetUserID() : -1 );
-			pEvent->SetInt( "entindex", entindex() );
-		
-			gameeventmanager->FireEvent( pEvent );
-		}
-	}
-
-	switch ( m_nFlagStatus )
-	{
-	case TF_FLAGINFO_NONE:
-	case TF_FLAGINFO_DROPPED:
-		ResetSequence( LookupSequence("spin") );	// set spin animation if it's not being held
-		break;
-	case TF_FLAGINFO_STOLEN:
-		ResetSequence( LookupSequence("idle") );	// set idle animation if it is being held
-		break;
-	default:
-		AssertOnce( false );	// invalid stats
-		break;
 	}
 }
 

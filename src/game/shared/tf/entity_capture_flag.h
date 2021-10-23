@@ -219,6 +219,8 @@ public:
 
 	int				GetIntelSkin( int iTeamNum, bool bPickupSkin = false );
 
+	void			SetFlagStatus( int iStatus, CBasePlayer *pNewOwner = NULL );
+
 // Game DLL Functions
 #ifdef GAME_DLL
 	virtual void	Activate( void );
@@ -239,7 +241,6 @@ public:
 
 	void			Think( void );
 	
-	void			SetFlagStatus( int iStatus, CBasePlayer *pNewOwner = NULL );
 	int				GetFlagStatus( void ) { return m_nFlagStatus; };
 	void			ResetFlagReturnTime( void ) { m_flResetTime = 0; }
 	void			SetFlagReturnIn( float flTime )
@@ -308,8 +309,6 @@ public:
 
 	int				GetPointValue() const { return m_nPointValue.Get(); }
 
-	CNetworkVar( int,	m_nFlagStatus );
-
 private:
 #ifdef GAME_DLL
 	void			SetGlowEnabled( bool bGlowEnabled ) { m_bGlowEnabled = bGlowEnabled; }
@@ -322,6 +321,7 @@ private:
 	CNetworkVar( bool,	m_bDisabled );	// Enabled/Disabled?
 	CNetworkVar( bool,	m_bVisibleWhenDisabled );
 	CNetworkVar( int,	m_nType );	// Type of game this flag will be used for.
+	CNetworkVar( int,	m_nFlagStatus );
 	CNetworkVar( float,	m_flResetTime );		// Time until the flag is placed back at spawn.
 	CNetworkVar( float, m_flMaxResetTime );		// Time the flag takes to return in the current mode
 	CNetworkVar( float, m_flNeutralTime );	// Time until the flag becomes neutral (used for the invade gametype)
