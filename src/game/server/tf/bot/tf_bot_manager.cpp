@@ -389,7 +389,7 @@ void CTFBotManager::MaintainBotQuota()
 	int nHumansTeamed = 0;
 	int nHumansSpec   = 0;
 
-	for ( int i = 1; i < gpGlobals->maxClients; ++i )
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
 		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
 
