@@ -2636,7 +2636,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 		bool bNoQuota = false;
 		CTFBot::DifficultyType nSkill = (CTFBot::DifficultyType)tf_bot_difficulty.GetInt();
 
-		for ( int i=0; i < args.ArgC(); ++i )
+		for ( int i=1; i < args.ArgC(); ++i )
 		{
 			extern CTFBot::DifficultyType NameToDifficulty( const char *pszSkillName );
 
