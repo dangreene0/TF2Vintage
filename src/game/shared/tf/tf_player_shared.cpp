@@ -6146,10 +6146,17 @@ CTFItem	*CTFPlayer::GetItem(void)
 //-----------------------------------------------------------------------------
 // Purpose: Is the player allowed to use a teleporter ?
 //-----------------------------------------------------------------------------
-bool CTFPlayer::HasTheFlag(void)
+bool CTFPlayer::HasTheFlag( int const *pFlagExceptions, int nNumExceptions )
 {
-	if (HasItem() && GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG)
+	if ( HasItem() && GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG )
 	{
+		CCaptureFlag *pFlag = assert_cast<CCaptureFlag *>( GetItem() );
+		for ( int i=0; i < nNumExceptions; ++i )
+		{
+			if ( pFlagExceptions[i] == pFlag->GetGameType() )
+				return false;
+		}
+
 		return true;
 	}
 

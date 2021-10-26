@@ -225,7 +225,7 @@ public:
 	void			SetItem( C_TFItem *pItem );
 	C_TFItem *GetItem( void );
 	bool			IsAllowedToPickUpFlag( void );
-	bool			HasTheFlag( void );
+	bool			HasTheFlag( int const *pFlagExceptions = NULL, int nNumExceptions = 0 );
 	float			GetCritMult( void ) { return m_Shared.GetCritMult(); }
 
 	virtual void	ItemPostFrame( void );

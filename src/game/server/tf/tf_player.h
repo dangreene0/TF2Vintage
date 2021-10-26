@@ -343,7 +343,7 @@ public:
 	void				TeleportEffect( void );
 	void				RemoveTeleportEffect( void );
 	virtual bool		IsAllowedToPickUpFlag( void );
-	bool				HasTheFlag( void );
+	bool				HasTheFlag( int const *pFlagExceptions = NULL, int nNumExceptions = 0 );
 
 	// Death & Ragdolls.
 	virtual void		CreateRagdollEntity( void );
