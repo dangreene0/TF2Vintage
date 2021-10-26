@@ -110,55 +110,6 @@ void TestAndBlockOverlappingAreas( CBaseEntity *pBlocker )
 }
 
 
-class ComputeIncursionDistance : public ISearchSurroundingAreasFunctor
-{
-public:
-	ComputeIncursionDistance( int teamNum=TEAM_ANY )
-		: m_iTeam( teamNum ) {}
-
-	virtual bool operator() ( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar )
-	{
-		return true;
-	}
-
-	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) OVERRIDE
-	{
-		CTFNavArea *adjTFArea = static_cast<CTFNavArea *>( adjArea );
-		if ( !adjTFArea->HasTFAttributes( RED_SETUP_GATE|BLUE_SETUP_GATE|SPAWN_ROOM_EXIT ) && adjArea->IsBlocked( m_iTeam ) )
-			return false;
-
-		return currentArea->ComputeAdjacentConnectionHeightChange( adjArea ) <= 45.0f;
-	}
-
-	virtual void IterateAdjacentAreas( CNavArea *area, CNavArea *priorArea, float travelDistanceSoFar ) OVERRIDE
-	{
-		// search adjacent outgoing connections
-		for ( int dir=0; dir<NUM_DIRECTIONS; ++dir )
-		{
-			int count = area->GetAdjacentCount( (NavDirType)dir );
-			for ( int i=0; i<count; ++i )
-			{
-				const NavConnect &con = ( *area->GetAdjacentAreas( (NavDirType)dir ) )[i];
-				CTFNavArea *adjArea = static_cast<CTFNavArea *>( con.area );
-
-				if ( ShouldSearch( adjArea, area, travelDistanceSoFar ) )
-				{
-					float flIncursionDist = static_cast<CTFNavArea *>( area )->GetIncursionDistance( m_iTeam ) + con.length;
-					if ( adjArea->GetIncursionDistance( m_iTeam ) < 0.0f || adjArea->GetIncursionDistance( m_iTeam ) > flIncursionDist )
-					{
-						adjArea->SetIncursionDistance( m_iTeam, flIncursionDist );
-						IncludeInSearch( adjArea, area );
-					}
-				}
-			}
-		}
-	}
-
-private:
-	int m_iTeam;
-};
-
-
 class CollectAndLabelSpawnRooms
 {
 public:
@@ -640,8 +591,8 @@ void CTFNavMesh::ComputeIncursionDistances()
 	for ( int i=0; i<TheNavAreas.Count(); ++i )
 	{
 		CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
-		area->SetIncursionDistance( TF_TEAM_RED, -1.0f );
-		area->SetIncursionDistance( TF_TEAM_BLUE, -1.0f );
+		for ( int i=0; i < TF_TEAM_COUNT; ++i )
+			area->SetIncursionDistance( i, -1.0f );
 	}
 
 	bool bFoundRedSpawn = false;
@@ -720,14 +671,63 @@ void CTFNavMesh::ComputeIncursionDistances()
 void CTFNavMesh::ComputeIncursionDistances( CTFNavArea *startArea, int teamNum )
 {
 	Assert( teamNum >= 0 && teamNum <= 3 );
-	VPROF_BUDGET( __FUNCTION__, "NextBot" );
 	
 	if ( startArea )
 	{
 		startArea->SetIncursionDistance( teamNum, 0.0f );
 
-		ComputeIncursionDistance functor( teamNum );
-		SearchSurroundingAreas( startArea, functor );
+		CNavArea::ClearSearchLists();
+
+		startArea->AddToOpenList();
+		startArea->SetParent( NULL );
+		startArea->Mark();
+
+		VPROF_SCOPE_BEGIN( __FUNCTION__ );
+
+		CUtlVectorFixedGrowable<const NavConnect *, 64u> adjCons;
+		while ( !CNavArea::IsOpenListEmpty() )
+		{
+			CTFNavArea *area = static_cast<CTFNavArea *>( CNavArea::PopOpenList() );
+
+			adjCons.RemoveAll();
+
+			if ( !TFGameRules()->IsMannVsMachineMode() && !area->HasTFAttributes( TF_NAV_RED_SETUP_GATE|TF_NAV_BLUE_SETUP_GATE|TF_NAV_SPAWN_ROOM_EXIT ) && area->IsBlocked( teamNum ) )
+				continue;
+
+			for ( int dir = 0; dir < NUM_DIRECTIONS; ++dir )
+			{
+				for ( int i=0; i < area->GetAdjacentCount( (NavDirType)dir ); ++i )
+				{
+					const NavConnect *connection = &( *area->GetAdjacentAreas( (NavDirType)dir ) )[i];
+					adjCons.AddToTail( connection );
+				}
+			}
+
+			if ( adjCons.IsEmpty() )
+				continue;
+
+			FOR_EACH_VEC( adjCons, i )
+			{
+				const NavConnect *connect = adjCons[i];
+				CTFNavArea *adjArea = static_cast<CTFNavArea *>( connect->area );
+
+				if ( area->ComputeAdjacentConnectionHeightChange( adjArea ) > 45.f )
+					continue;
+
+				float flIncursionDist = area->GetIncursionDistance( teamNum ) + connect->length;
+				if ( adjArea->GetIncursionDistance( teamNum ) < 0.0f || flIncursionDist < adjArea->GetIncursionDistance( teamNum ) )
+				{
+					adjArea->SetIncursionDistance( teamNum, flIncursionDist );
+					adjArea->Mark();
+					adjArea->SetParent( area );
+
+					if ( !adjArea->IsOpen() )
+						adjArea->AddToOpenListTail();
+				}
+			}
+		}
+
+		VPROF_SCOPE_END();
 	}
 }
 
