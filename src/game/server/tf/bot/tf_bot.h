@@ -142,6 +142,8 @@ public:
 
 	CCaptureZone*	GetFlagCaptureZone( void );
 	CCaptureFlag*	GetFlagToFetch( void );
+	void			SetFlagTarget( CCaptureFlag *pFlag );
+	CCaptureFlag*	GetFlagTarget( void ) const;
 
 	float			TransientlyConsistentRandomValue( float duration, int seed ) const;
 
@@ -354,7 +356,9 @@ private:
 	CHandle<CTeamControlPoint> m_hMyControlPoint;
 	CountdownTimer m_myCPValidDuration;
 	CountdownTimer m_cpChangedTimer;
+
 	CHandle<CCaptureZone> m_hMyCaptureZone;
+	CHandle<CCaptureFlag> m_hMyCaptureFlag;
 
 	CountdownTimer m_useWeaponAbilityTimer;
 
@@ -470,6 +474,14 @@ inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
 inline void CTFBot::ClearAllAttributes()
 {
 	m_nBotAttributes = CTFBot::AttributeType::NONE;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CCaptureFlag *CTFBot::GetFlagTarget( void ) const
+{
+	return m_hMyCaptureFlag;
 }
 
 //-----------------------------------------------------------------------------

@@ -941,7 +941,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 		if ( pBot->HasAttribute( CTFBot::AttributeType::IGNOREFLAG ) )
 			return;
 
-		
+		pBot->SetFlagTarget( this );
 	}
 
 	if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
@@ -1274,6 +1274,37 @@ void CCaptureFlag::DestroyReturnIcon( void )
 	{
 		UTIL_Remove( m_hReturnIcon );
 		m_hReturnIcon = NULL;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::AddFollower( CTFBot *pBot )
+{
+	if ( !m_hFollowers.HasElement( pBot ) )
+	{
+		m_hFollowers.AddToTail( pBot );
+		for ( int i=0; i < m_tags.Count(); ++i )
+		{
+			//pBot->AddTag( m_tags[i] );
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CCaptureFlag::RemoveFollower( CTFBot *pBot )
+{
+	int index = m_hFollowers.Find( pBot );
+	if ( index != m_hFollowers.InvalidIndex() )
+	{
+		m_hFollowers.Remove( index );
+		for ( int i=0; i < m_tags.Count(); ++i )
+		{
+			//pBot->RemoveTag( m_tags[i] );
+		}
 	}
 }
 

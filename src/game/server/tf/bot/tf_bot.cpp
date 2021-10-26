@@ -982,31 +982,47 @@ CCaptureZone *CTFBot::GetFlagCaptureZone( void )
 //-----------------------------------------------------------------------------
 CCaptureFlag *CTFBot::GetFlagToFetch( void )
 {
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+	{
+		if ( GetTeamNumber() == TF_TEAM_MVM_BOTS && IsPlayerClass( TF_CLASS_ENGINEER ) )
+		{
+			return NULL;
+		}
+
+		if ( HasAttribute( CTFBot::AttributeType::IGNOREFLAG ) )
+		{
+			return NULL;
+		}
+
+		if ( GetFlagTarget() )
+		{
+			return GetFlagTarget();
+		}
+	}
+
 	CUtlVector<CCaptureFlag *> flags;
 	int nNumStolen = 0;
-	for ( int i=0; i<ICaptureFlagAutoList::AutoList().Count(); ++i )
+	FOR_EACH_VEC( ICaptureFlagAutoList::AutoList(), i )
 	{
 		CCaptureFlag *pFlag = static_cast<CCaptureFlag *>( ICaptureFlagAutoList::AutoList()[i] );
 		if ( !pFlag || pFlag->IsDisabled() )
 			continue;
 
-		if ( HasTheFlag(/* 0, 0 */) && pFlag->GetOwnerEntity() == this )
+		if ( HasTheFlag() && pFlag->GetOwnerEntity() == this )
 			return pFlag;
 
 		if ( pFlag->GetGameType() > TF_FLAGTYPE_CTF && pFlag->GetGameType() <= TF_FLAGTYPE_RESOURCE_CONTROL )
 		{
 			if ( pFlag->GetTeamNumber() != GetEnemyTeam( this ) )
 				flags.AddToTail( pFlag );
-
-			nNumStolen += pFlag->IsStolen();
 		}
 		else if ( pFlag->GetGameType() == TF_FLAGTYPE_CTF )
 		{
 			if ( pFlag->GetTeamNumber() == GetEnemyTeam( this ) )
 				flags.AddToTail( pFlag );
-
-			nNumStolen += pFlag->IsStolen();
 		}
+
+		nNumStolen += pFlag->IsStolen();
 	}
 
 	float flMinDist = FLT_MAX;
@@ -1038,6 +1054,26 @@ CCaptureFlag *CTFBot::GetFlagToFetch( void )
 		return pClosestStolen;
 
 	return pClosest;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::SetFlagTarget( CCaptureFlag *pFlag )
+{
+	if ( m_hMyCaptureFlag != pFlag )
+	{
+		if ( m_hMyCaptureFlag )
+		{
+			m_hMyCaptureFlag->RemoveFollower( this );
+		}
+
+		m_hMyCaptureFlag = pFlag;
+		if ( m_hMyCaptureFlag )
+		{
+			m_hMyCaptureFlag->AddFollower( this );
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------

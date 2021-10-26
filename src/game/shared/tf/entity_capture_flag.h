@@ -16,6 +16,8 @@
 #define CCaptureFlag C_CaptureFlag
 #endif
 
+class CTFBot;
+
 #define TF_FLAG_THINK_TIME			0.25f
 #define	TF_FLAG_OWNER_PICKUP_TIME	3.0f
 
@@ -266,6 +268,10 @@ public:
 
 	void			AddPointValue( int nPoints );
 
+	void			AddFollower( CTFBot *pBot );
+	void			RemoveFollower( CTFBot *pBot );
+	int				GetNumFollowers( void ) const { return m_hFollowers.Count(); }
+
 #else // CLIENT DLL Functions
 
 	virtual const char	*GetIDString(void) { return "entity_capture_flag"; };
@@ -376,6 +382,8 @@ private:
 
 	string_t		m_iszTags;
 	CUtlStringList	m_tags;
+
+	CUtlVector< CHandle<CTFBot> > m_hFollowers;
 #else
 
 	IMaterial	*m_pReturnProgressMaterial_Empty;		// For labels above players' heads.
