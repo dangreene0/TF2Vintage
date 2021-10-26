@@ -128,7 +128,7 @@ bool CZombieAttack::IsPotentiallyChaseable( CZombie *actor, CBaseCombatCharacter
 	if ( pArea == nullptr )
 		return false;
 
-	if ( pArea->HasTFAttributes( RED_SPAWN_ROOM | BLUE_SPAWN_ROOM ) )
+	if ( pArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM | TF_NAV_BLUE_SPAWN_ROOM ) )
 		return false;
 
 	if ( other->GetGroundEntity() == nullptr )

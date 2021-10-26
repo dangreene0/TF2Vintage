@@ -193,7 +193,7 @@ bool CMerasmusAttack::IsPotentiallyChaseable( CMerasmus *me, CTFPlayer *pVictim 
 		return false;
 
 	CTFNavArea *pArea = static_cast<CTFNavArea *>( pVictim->GetLastKnownArea() );
-	if ( !pArea || pArea->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM ) )
+	if ( !pArea || pArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
 		return false;
 
 	if ( pVictim->m_Shared.IsInvulnerable() )

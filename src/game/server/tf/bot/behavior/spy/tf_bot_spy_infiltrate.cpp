@@ -47,7 +47,7 @@ ActionResult<CTFBot> CTFBotSpyInfiltrate::Update( CTFBot *me, float dt )
 	if ( area == nullptr )
 		return Action<CTFBot>::Continue();
 
-	if ( !me->m_Shared.IsStealthed() && !area->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM|SPAWN_ROOM_EXIT ) && area->IsInCombat() && !m_bCloaked )
+	if ( !me->m_Shared.IsStealthed() && !area->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM|TF_NAV_SPAWN_ROOM_EXIT ) && area->IsInCombat() && !m_bCloaked )
 	{
 		m_bCloaked = true;
 		me->PressAltFireButton();

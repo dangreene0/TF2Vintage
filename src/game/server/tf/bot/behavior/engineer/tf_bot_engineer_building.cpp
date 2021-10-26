@@ -398,13 +398,13 @@ bool CTFBotEngineerBuilding::IsMetalSourceNearby( CTFBot *me ) const
 
 	FOR_EACH_VEC( areas, i )
 	{
-		if ( areas[i]->HasTFAttributes( AMMO ) )
+		if ( areas[i]->HasTFAttributes( TF_NAV_AMMO ) )
 			return true;
 
-		if ( me->GetTeamNumber() == TF_TEAM_RED && areas[i]->HasTFAttributes( RED_SPAWN_ROOM ) )
+		if ( me->GetTeamNumber() == TF_TEAM_RED && areas[i]->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM ) )
 			return true;
 
-		if ( me->GetTeamNumber() == TF_TEAM_BLUE && areas[i]->HasTFAttributes( BLUE_SPAWN_ROOM ) )
+		if ( me->GetTeamNumber() == TF_TEAM_BLUE && areas[i]->HasTFAttributes( TF_NAV_BLUE_SPAWN_ROOM ) )
 			return true;
 	}
 

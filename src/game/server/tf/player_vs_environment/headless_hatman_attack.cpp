@@ -315,7 +315,7 @@ bool CHeadlessHatmanAttack::IsPotentiallyChaseable( CHeadlessHatman *actor, CTFP
 		return false;
 
 	CTFNavArea *area = static_cast<CTFNavArea *>( victim->GetLastKnownArea() );
-	if (!area || area->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM ))
+	if (!area || area->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ))
 		return false;
 
 	if (!victim->GetGroundEntity())

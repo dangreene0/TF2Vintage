@@ -45,7 +45,7 @@ public:
 
 private:
 	CTFPlayer *m_pActor;
-	float m_flMinCost;
+	mutable float m_flMinCost;
 };
 
 #endif

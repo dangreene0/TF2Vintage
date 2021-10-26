@@ -326,7 +326,7 @@ public:
 	bool				PlayerOwnsObject( CBaseObject *pObject );
 	void				DetonateOwnedObjectsOfType( int iType, int iMode );
 	void				StartBuildingObjectOfType( int iType, int iMode );
-	CBaseObject			*GetObjectOfType( int iType, int iMode );
+	CBaseObject			*GetObjectOfType( int iType, int iMode=OBJECT_MODE_NONE );
 
 	void OnSapperPlaced( CBaseEntity *sappedObject );
 	bool IsPlacingSapper( void ) const;

@@ -2908,7 +2908,7 @@ void CTFGameRules::BeginHaunting( int nDesiredCount, float flMinLifetime, float 
 	FOR_EACH_VEC( TheNavAreas, i )
 	{
 		CTFNavArea *area = assert_cast<CTFNavArea *>( TheNavAreas[i] );
-		if ( area->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM ) )
+		if ( area->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
 		{
 			// keep out of spawn rooms
 			continue;

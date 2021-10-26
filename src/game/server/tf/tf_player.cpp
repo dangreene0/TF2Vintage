@@ -12384,14 +12384,14 @@ float CTFPlayerPathCost::operator()( CNavArea *area, CNavArea *fromArea, const C
 		{
 			case TF_TEAM_RED:
 			{
-				if ( tfArea->HasTFAttributes( BLUE_SPAWN_ROOM ) )
+				if ( tfArea->HasTFAttributes( TF_NAV_BLUE_SPAWN_ROOM ) )
 					return -1.0f;
 
 				break;
 			}
 			case TF_TEAM_BLUE:
 			{
-				if ( tfArea->HasTFAttributes( RED_SPAWN_ROOM ) )
+				if ( tfArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM ) )
 					return -1.0f;
 
 				break;
