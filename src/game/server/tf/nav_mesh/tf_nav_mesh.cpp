@@ -204,6 +204,40 @@ private:
 };
 
 
+class DrawIncursionFlow
+{
+public:
+	inline bool operator()( CNavArea *a )
+	{
+		CTFNavArea *area = static_cast<CTFNavArea *>( a );
+		int nTeam = tf_show_incursion_flow.GetInt() + 1;
+
+		for ( int dir = 0; dir < NUM_DIRECTIONS; dir++ )
+		{
+			for ( int i=0; i < area->GetAdjacentCount( (NavDirType)dir ); ++i )
+			{
+				CTFNavArea *adjArea = static_cast<CTFNavArea *>( area->GetAdjacentArea( (NavDirType)dir, i ) );
+				if ( area->ComputeAdjacentConnectionHeightChange( adjArea ) > 45.f )
+					continue;
+
+				if ( adjArea->GetIncursionDistance( nTeam ) > area->GetIncursionDistance( nTeam ) )
+				{
+					float flTimeMod = fmodf( adjArea->GetIncursionDistance( nTeam ) - ( gpGlobals->curtime * 0.3333f * 2500.f ), 2500.f ) * 2 / 2500.f;
+					if ( flTimeMod > 1.0f )
+						flTimeMod -= 2.0f;
+
+					int r = (nTeam == TF_TEAM_RED) ? 255 * flTimeMod : 0;
+					int b = (nTeam == TF_TEAM_BLUE) ? 255 * flTimeMod : 0;
+					NDebugOverlay::HorzArrow( area->GetCenter(), adjArea->GetCenter(), 5.0f, r, 0, b, 255, true, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+				}
+			}
+		}
+
+		return true;
+	}
+};
+
+
 CTFNavMesh::CTFNavMesh()
 {
 	for ( int i=0; i < MAX_CONTROL_POINTS; ++i )
