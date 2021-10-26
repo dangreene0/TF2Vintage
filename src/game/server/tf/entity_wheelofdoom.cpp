@@ -1087,7 +1087,7 @@ void CWheelOfDoom::WOD_Dance::InitEffect( float flDuration )
 	m_iSpawnSide = RandomInt( 0, 1 );
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TEAM_ANY, true );
+	CollectPlayers( &players, TEAM_ANY, COLLECT_ONLY_LIVING_PLAYERS );
 	
 	int nDancers = 0;
 	float flMaxY = FLT_MAX;

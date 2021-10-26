@@ -2891,8 +2891,8 @@ void CTFGameRules::BeginHaunting( int nDesiredCount, float flMinLifetime, float 
 		return;
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	auto IsPlayerNearby = [&]( Vector const &vecSpot ) -> bool {
 		FOR_EACH_VEC( players, i )
@@ -3013,8 +3013,8 @@ void CTFGameRules::SpawnHalloweenBoss( void )
 				return;
 
 			CUtlVector<CTFPlayer *> players;
-			CollectPlayers( &players, TF_TEAM_RED, true );
-			CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+			CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+			CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 			int nNumHumans = 0;
 			for ( int i=0; i<players.Count(); ++i )
@@ -3138,8 +3138,8 @@ void CTFGameRules::SpawnZombieMob( void )
 	}
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	int nHumans = 0;
 	FOR_EACH_VEC( players, i )
@@ -7125,7 +7125,7 @@ void CTFGameRules::PlayerSpawn( CBasePlayer *pPlayer )
 void CTFGameRules::PushAllPlayersAway( Vector const &vecPos, float flRange, float flForce, int iTeamNum, CUtlVector<CTFPlayer *> *outVector )
 {
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, iTeamNum, true );
+	CollectPlayers( &players, iTeamNum, COLLECT_ONLY_LIVING_PLAYERS );
 
 	FOR_EACH_VEC( players, i )
 	{

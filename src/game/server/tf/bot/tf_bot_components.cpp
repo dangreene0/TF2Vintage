@@ -212,7 +212,7 @@ void CTFBotVision::Update( void )
 		return;
 
 	CUtlVector<CTFPlayer *> enemies;
-	CollectPlayers( &enemies, GetEnemyTeam( me ), true );
+	CollectPlayers( &enemies, GetEnemyTeam( me ), COLLECT_ONLY_LIVING_PLAYERS );
 
 	FOR_EACH_VEC( enemies, i )
 	{

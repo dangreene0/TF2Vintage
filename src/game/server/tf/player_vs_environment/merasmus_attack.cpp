@@ -218,8 +218,8 @@ void CMerasmusAttack::SelectVictim( CMerasmus *me )
 	if ( !IsPotentiallyChaseable( me, m_hTarget ) || m_chooseVictimTimer.IsElapsed() )
 	{
 		CUtlVector<CTFPlayer *> victims;
-		CollectPlayers( &victims, TF_TEAM_RED, true );
-		CollectPlayers( &victims, TF_TEAM_BLUE, true, true );
+		CollectPlayers( &victims, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+		CollectPlayers( &victims, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 		float flMinDist = FLT_MAX;
 		CTFPlayer *pClosest = nullptr;

@@ -83,7 +83,7 @@ ActionResult<CTFBot> CTFBotEscortFlagCarrier::Update( CTFBot *me, float dt )
 int GetBotEscortCount( int iTeamNum )
 {
 	CUtlVector<CTFPlayer *> teammates;
-	CollectPlayers( &teammates, iTeamNum, true );
+	CollectPlayers( &teammates, iTeamNum, COLLECT_ONLY_LIVING_PLAYERS );
 
 	int nCount = 0;
 	FOR_EACH_VEC( teammates, i ) {

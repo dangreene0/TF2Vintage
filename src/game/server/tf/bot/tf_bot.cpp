@@ -1587,7 +1587,7 @@ void CTFBot::RealizeSpy( CTFPlayer *spy )
 	if ( info && info->IsCurrentlySuspected() )
 	{
 		CUtlVector<CTFPlayer *> teammates;
-		CollectPlayers( &teammates, GetTeamNumber(), true );
+		CollectPlayers( &teammates, GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
 		FOR_EACH_VEC( teammates, i )
 		{
@@ -2072,7 +2072,7 @@ void CTFBot::AvoidPlayers( CUserCmd *pCmd )
 	const float flRadius = 50.0;
 
 	CUtlVector<CTFPlayer *> teammates;
-	CollectPlayers( &teammates, GetTeamNumber(), true );
+	CollectPlayers( &teammates, GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 	for ( int i=0; i<teammates.Count(); i++ )
 	{
 		if ( IsSelf( teammates[i] ) || HasTheFlag() )
@@ -2140,7 +2140,7 @@ void CTFBot::SelectReachableObjects( CUtlVector<EHANDLE> const &knownHealth, CUt
 CTFPlayer *CTFBot::SelectRandomReachableEnemy( void )
 {
 	CUtlVector<CTFPlayer *> enemies;
-	CollectPlayers( &enemies, GetEnemyTeam( this ), true );
+	CollectPlayers( &enemies, GetEnemyTeam( this ), COLLECT_ONLY_LIVING_PLAYERS );
 
 	CUtlVector<CTFPlayer *> validEnemies;
 	for ( int i=0; i<enemies.Count(); ++i )

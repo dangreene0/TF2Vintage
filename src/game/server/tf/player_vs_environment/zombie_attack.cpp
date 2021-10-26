@@ -149,14 +149,14 @@ void CZombieAttack::SelectVictim( CZombie *actor )
 	switch ( actor->GetTeamNumber() )
 	{
 		case TF_TEAM_RED:
-			CollectPlayers( &players, TF_TEAM_BLUE, true );
+			CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS );
 			break;
 		case TF_TEAM_BLUE:
-			CollectPlayers( &players, TF_TEAM_RED, true );
+			CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
 			break;
 		default:
-			CollectPlayers( &players, TF_TEAM_RED, true );
-			CollectPlayers( &players, TF_TEAM_RED, true, true );
+			CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+			CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 			break;
 	}
 

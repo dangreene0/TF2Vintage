@@ -177,7 +177,7 @@ EventDesiredResult<CTFBot> CTFBotMainAction::OnInjured( CTFBot *me, const CTakeD
 			me->DelayedThreatNotice( info.GetInflictor(), 0.5 );
 
 			CUtlVector<CTFPlayer *> teammates;
-			CollectPlayers( &teammates, me->GetTeamNumber(), true );
+			CollectPlayers( &teammates, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
 			float flChanceMod = 1.0f / ( tf_bot_notice_backstab_max_chance.GetFloat() - tf_bot_notice_backstab_min_chance.GetFloat() );
 

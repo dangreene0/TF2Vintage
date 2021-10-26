@@ -260,7 +260,7 @@ bool CTFBotSniperLurk::FindHint( CTFBot *actor )
 	if ( !m_hHint || m_Hints.Count() > 1 )
 	{
 		CUtlVector<CTFPlayer *> enemies;
-		CollectPlayers( &enemies, GetEnemyTeam( actor ), true );
+		CollectPlayers( &enemies, GetEnemyTeam( actor ), COLLECT_ONLY_LIVING_PLAYERS );
 
 		CUtlVector<CTFBotHint *> emptyHints;
 		CUtlVector<CTFBotHint *> dangerHints;

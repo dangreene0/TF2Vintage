@@ -238,7 +238,7 @@ void CTFBotTacticalMonitor::AvoidBumpingEnemies( CTFBot *actor )
 		float flClosest = Square( 200.0f );
 
 		CUtlVector<CTFPlayer *> enemies;
-		CollectPlayers( &enemies, GetEnemyTeam( actor ), true );
+		CollectPlayers( &enemies, GetEnemyTeam( actor ), COLLECT_ONLY_LIVING_PLAYERS );
 		for ( int i=0; i<enemies.Count(); ++i )
 		{
 			CTFPlayer *pPlayer = enemies[i];
