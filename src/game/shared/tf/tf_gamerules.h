@@ -529,13 +529,12 @@ private:
 
 	virtual void	PlayerSpawn( CBasePlayer *pPlayer );
 
-	const CUtlVector<EHANDLE> &GetAmmoEnts( void ) const { Assert( m_hAmmoEntities.Count() ); return m_hAmmoEntities; }
-	const CUtlVector<EHANDLE> &GetHealthEnts( void ) const { Assert( m_hHealthEntities.Count() ); return m_hHealthEntities; }
+	const CUtlVector<EHANDLE> &GetAmmoEnts( void ) const	{ return m_hAmmoEntities; }
+	const CUtlVector<EHANDLE> &GetHealthEnts( void ) const	{ return m_hHealthEntities; }
 
 	void			PushAllPlayersAway( Vector const &vecPos, float flRange, float flForce, int iTeamNum, CUtlVector<CTFPlayer *> *outVector );
 
 	void			BeginHaunting( int nDesiredCount, float flMinLifetime, float flMaxLifetime );
-	CUtlVector< CHandle<CBaseCombatCharacter> > m_hBosses;
 
 private:
 
@@ -548,6 +547,7 @@ private:
 	int				m_nZombiesToSpawn;
 	Vector			m_vecMobSpawnLocation;
 	CUtlVector< CHandle<CGhost> > m_hGhosts;
+	CUtlVector< CHandle<CBaseCombatCharacter> > m_hBosses;
 
 #endif
 
