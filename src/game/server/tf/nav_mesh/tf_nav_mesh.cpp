@@ -53,12 +53,12 @@ void TestAndBlockOverlappingAreas( CBaseEntity *pBlocker )
 		CNavArea *area = potentiallyBlockedAreas[i];
 
 		Vector nwCorner = area->GetCorner( NORTH_WEST );
-		Vector neCorner = area->GetCorner( NORTH_EAST );
-		Vector swCorner = area->GetCorner( SOUTH_WEST );
-		Vector seCorner = area->GetCorner( SOUTH_EAST );
-		const Vector vecMins( 0, 0, StepHeight );
+		Vector const nwCorner = area->GetCorner( NORTH_WEST );
+		Vector const neCorner = area->GetCorner( NORTH_EAST );
+		Vector const swCorner = area->GetCorner( SOUTH_WEST );
+		Vector const seCorner = area->GetCorner( SOUTH_EAST );
 
-		Vector vecStart, vecEnd, vecMaxs, vecTest;
+		Vector vecMaxs(0, 0, HalfHumanHeight), vecMins(0, 0, StepHeight), vecTest;
 		if ( fabs( nwCorner.z - neCorner.z ) >= 1.0f )
 		{
 			if ( fabs( seCorner.z - swCorner.z ) >= 1.0f )
@@ -121,23 +121,26 @@ public:
 		m_team = teamNum;
 	};
 
-	inline bool operator()( CNavArea *area )
+	inline bool operator()( CNavArea *a )
 	{
-		if ( dynamic_cast<CTFNavArea *>( area ) == nullptr )
-			return false;
+		CTFNavArea *area = (CTFNavArea *)a;
+		if ( m_respawn == nullptr )
+			return true;
 
+		Vector const center = area->GetCenter() + Vector( 0, 0, StepHeight );
 		Vector const nwCorner = area->GetCorner( NORTH_WEST ) + Vector( 0, 0, StepHeight );
 		Vector const neCorner = area->GetCorner( NORTH_EAST ) + Vector( 0, 0, StepHeight );
 		Vector const swCorner = area->GetCorner( SOUTH_WEST ) + Vector( 0, 0, StepHeight );
 		Vector const seCorner = area->GetCorner( SOUTH_EAST ) + Vector( 0, 0, StepHeight );
 
-		if ( m_respawn->PointIsWithin( nwCorner ) ||
+		if ( m_respawn->PointIsWithin( center ) ||
+			 m_respawn->PointIsWithin( nwCorner ) ||
 			 m_respawn->PointIsWithin( neCorner ) ||
 			 m_respawn->PointIsWithin( swCorner ) ||
 			 m_respawn->PointIsWithin( seCorner ) )
 		{
-			( (CTFNavArea *)area )->AddTFAttributes( m_team == TF_TEAM_RED ? TF_NAV_RED_SPAWN_ROOM : TF_NAV_BLUE_SPAWN_ROOM );
-			m_vector->AddToTail( (CTFNavArea *)area );
+			area->AddTFAttributes( m_team == TF_TEAM_RED ? TF_NAV_RED_SPAWN_ROOM : TF_NAV_BLUE_SPAWN_ROOM );
+			m_vector->AddToTail( area );
 		}
 
 		return true;
@@ -401,8 +404,7 @@ void CTFNavMesh::CollectBuiltObjects( CUtlVector<CBaseObject *> *objects, int te
 {
 	objects->RemoveAll();
 
-
-	for ( int i=0; i<IBaseObjectAutoList::AutoList().Count(); ++i )
+	FOR_EACH_VEC( IBaseObjectAutoList::AutoList(), i )
 	{
 		CBaseObject *obj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
 		if ( obj && ( teamNum == TEAM_ANY || obj->GetTeamNumber() == teamNum ) )
@@ -413,57 +415,42 @@ void CTFNavMesh::CollectBuiltObjects( CUtlVector<CBaseObject *> *objects, int te
 // this function makes 0 sense
 void CTFNavMesh::CollectSpawnRoomThresholdAreas( CUtlVector<CTFNavArea*> *areas, int teamNum ) const
 {
-	const CUtlVector<CTFNavArea *> *spawnExits = nullptr;
-	if ( teamNum == TF_TEAM_RED )
+	const CUtlVector<CTFNavArea *> &spawnExits = GetSpawnRoomExitsForTeam( teamNum );
+	FOR_EACH_VEC( spawnExits, i )
 	{
-		spawnExits = &m_spawnExitsTeam1;
-	}
-	else
-	{
-		if ( teamNum != TF_TEAM_BLUE )
-			return;
-
-		spawnExits = &m_spawnExitsTeam2;
-	}
-
-	if ( spawnExits )
-	{
-		for ( int i=0; i<spawnExits->Count(); ++i )
-		{
-			CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
+		CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
 			
-			CTFNavArea *exitArea = NULL;
-			float flMaxAreaSize = 0.0f;
+		CTFNavArea *exitArea = NULL;
+		float flMaxAreaSize = 0.0f;
 
-			for( int dir=0; dir<NUM_DIRECTIONS; ++dir )
+		for( int dir=0; dir<NUM_DIRECTIONS; ++dir )
+		{
+			for ( int j=0; j<area->GetAdjacentCount( (NavDirType)dir ); ++j )
 			{
-				for ( int j=0; j<area->GetAdjacentCount( (NavDirType)dir ); ++j )
-				{
-					CTFNavArea *adjArea = static_cast<CTFNavArea *>( area->GetAdjacentArea( (NavDirType)dir, j ) );
+				CTFNavArea *adjArea = static_cast<CTFNavArea *>( area->GetAdjacentArea( (NavDirType)dir, j ) );
 
-					if ( !adjArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM|TF_NAV_SPAWN_ROOM_EXIT ) )
+				if ( !adjArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM|TF_NAV_SPAWN_ROOM_EXIT ) )
+				{
+					float size = adjArea->GetSizeX() * adjArea->GetSizeY();
+					if ( size > flMaxAreaSize )
 					{
-						float size = adjArea->GetSizeX() * adjArea->GetSizeY();
-						if ( size > flMaxAreaSize )
-						{
-							exitArea = adjArea;
-							flMaxAreaSize = size;
-						}
+						exitArea = adjArea;
+						flMaxAreaSize = size;
 					}
 				}
 			}
+		}
 
-			if ( exitArea )
-			{
-				areas->AddToTail( exitArea );
-			}
+		if ( exitArea )
+		{
+			areas->AddToTail( exitArea );
 		}
 	}
 }
 
 bool CTFNavMesh::IsSentryGunHere( CTFNavArea *area ) const
 {
-	for ( int i=0; i<IBaseObjectAutoList::AutoList().Count(); ++i )
+	FOR_EACH_VEC( IBaseObjectAutoList::AutoList(), i )
 	{
 		CBaseObject *obj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
 		if ( obj == nullptr || obj->GetType() != OBJ_SENTRYGUN )
@@ -513,7 +500,7 @@ void CTFNavMesh::CollectControlPointAreas()
 		CTeamControlPointMaster *pMaster = g_hControlPointMasters[0].Get();
 		if ( pMaster )
 		{
-			for ( int i=0; i < ITriggerAreaCaptureAutoList::AutoList().Count(); ++i )
+			FOR_EACH_VEC( ITriggerAreaCaptureAutoList::AutoList(), i )
 			{
 				CTriggerAreaCapture *pCaptureArea = static_cast<CTriggerAreaCapture *>( ITriggerAreaCaptureAutoList::AutoList()[i] );
 
@@ -532,7 +519,7 @@ void CTFNavMesh::CollectControlPointAreas()
 
 					float flMinDist = FLT_MAX;
 					Vector vOrigin = pCaptureArea->WorldSpaceCenter();
-					for ( int j=0; j < m_CPAreas[iIndex].Count(); ++j )
+					FOR_EACH_VEC( m_CPAreas[iIndex], j )
 					{
 						Vector vCenter = m_CPAreas[iIndex][j]->GetCenter();
 						float flDistance = ( vCenter - vOrigin ).AsVector2D().LengthSqr();
@@ -564,7 +551,7 @@ void CTFNavMesh::CollectAreasWithinBombTravelRange( CUtlVector<CTFNavArea *> *ar
 
 void CTFNavMesh::ComputeBlockedAreas()
 {
-	for ( int i=0; i<TheNavAreas.Count(); ++i )
+	FOR_EACH_VEC( TheNavAreas, i )
 	{
 		CNavArea *area = TheNavAreas[i];
 		area->UnblockArea();
@@ -1056,7 +1043,8 @@ void CTFNavMesh::OnObjectChanged()
 				Vector areaPos( 0.0f );
 				area->GetClosestPointOnArea( sentryPos, &areaPos );
 
-				if ( areaPos.DistToSqr( sentryPos ) < Square( SENTRYGUN_BASE_RANGE ) )
+				if ( areaPos.DistToSqr( sentryPos ) < Square( SENTRYGUN_BASE_RANGE ) &&
+					 area->IsPartiallyVisible( obj->GetAbsOrigin() + Vector(0, 0, 30.f), obj ) )
 				{
 					if ( !area->HasAttributes( TF_NAV_BLUE_SENTRY|TF_NAV_RED_SENTRY ) )
 						m_sentryAreas.AddToTail( area );
