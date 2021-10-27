@@ -2691,7 +2691,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 			else
 				V_strcpy_safe( szBotName, pszBotName );
 
-			CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( pszBotName );
+			CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( szBotName );
 			if ( pBot == nullptr )
 				break;
 
