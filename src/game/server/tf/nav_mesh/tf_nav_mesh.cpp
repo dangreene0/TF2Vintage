@@ -11,6 +11,7 @@
 #include "tf_shareddefs.h"
 #include "tf_gamerules.h"
 #include "tf_obj.h"
+#include "func_capture_zone.h"
 
 #include "NextBotUtil.h"
 
@@ -547,6 +548,20 @@ void CTFNavMesh::CollectControlPointAreas()
 	}
 }
 
+void CTFNavMesh::CollectAreasWithinBombTravelRange( CUtlVector<CTFNavArea *> *areas, float minTravel, float maxTravel ) const
+{
+	FOR_EACH_VEC( TheNavAreas, i )
+	{
+		CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
+
+		float travelDistance = area->GetBombTargetDistance();
+		if ( travelDistance >= minTravel && travelDistance <= maxTravel )
+		{
+			areas->AddToTail( area );
+		}
+	}
+}
+
 void CTFNavMesh::ComputeBlockedAreas()
 {
 	for ( int i=0; i<TheNavAreas.Count(); ++i )
@@ -844,20 +859,172 @@ void CTFNavMesh::DecorateMesh()
 	}
 }
 
-// Irrelevant MvM computations
-/*void CTFNavMesh::ComputeBombTargetDistance()
+void CTFNavMesh::ComputeBombTargetDistance()
 {
-	// Back traces from a capture zone entity to each area to figure out
-	// the distance between it and the area as long as the area is reachable
-}*/
+	if ( !TFGameRules()->IsMannVsMachineMode() )
+		return;
+	VPROF_BUDGET( __FUNCTION__, "NextBot" );
 
-/*void CTFNavMesh::ComputeLegalBombDropAreas()
+	CCaptureZone *zone = NULL;
+	FOR_EACH_VEC( ICaptureZoneAutoList::AutoList(), i )
+	{
+		zone = static_cast<CCaptureZone *>( ICaptureZoneAutoList::AutoList()[i] );
+		if ( zone->GetTeamNumber() == TF_TEAM_MVM_BOTS )
+		{
+			break;
+		}
+	}
+
+	if ( zone )
+	{
+		CTFNavArea *startArea = (CTFNavArea *)TheNavMesh->GetNearestNavArea( zone->WorldSpaceCenter(), false, 500.0f, true );
+		if ( startArea )
+		{
+			FOR_EACH_VEC( TheNavAreas, it )
+			{
+				CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[it] );
+				area->SetBombTargetDistance( -1.0f );
+			}
+
+			startArea->SetBombTargetDistance( 0.0f );
+
+			CNavArea::ClearSearchLists();
+
+			startArea->AddToOpenList();
+			startArea->SetParent( NULL );
+			startArea->Mark();
+
+			CUtlVectorFixedGrowable<const NavConnect *, 64u> adjCons;
+			while ( !CNavArea::IsOpenListEmpty() )
+			{
+				CTFNavArea *area = static_cast<CTFNavArea *>( CNavArea::PopOpenList() );
+
+				adjCons.RemoveAll();
+
+				for ( int dir = 0; dir < NUM_DIRECTIONS; ++dir )
+				{
+					for ( int i=0; i < area->GetAdjacentCount( (NavDirType)dir ); ++i )
+					{
+						const NavConnect *connection = &( *area->GetAdjacentAreas( (NavDirType)dir ) )[i];
+						adjCons.AddToTail( connection );
+					}
+				}
+
+				if ( adjCons.IsEmpty() )
+					continue;
+
+				FOR_EACH_VEC( adjCons, i )
+				{
+					const NavConnect *connect = adjCons[i];
+					CTFNavArea *adjArea = static_cast<CTFNavArea *>( connect->area );
+
+					if ( area->ComputeAdjacentConnectionHeightChange( adjArea ) > 45.f )
+						continue;
+
+					float flDistanceToHatch = area->GetBombTargetDistance() + connect->length;
+					if ( adjArea->GetBombTargetDistance() < 0.0f || flDistanceToHatch < adjArea->GetBombTargetDistance() )
+					{
+						adjArea->SetBombTargetDistance( flDistanceToHatch );
+						adjArea->Mark();
+						adjArea->SetParent( area );
+
+						if ( !adjArea->IsOpen() )
+							adjArea->AddToOpenListTail();
+					}
+					else
+					{
+						float flShortcutToHatch = adjArea->GetBombTargetDistance() + connect->length;
+						if ( flShortcutToHatch < area->GetBombTargetDistance() )
+						{
+							area->SetBombTargetDistance( flShortcutToHatch );
+							area->Mark();
+							area->SetParent( adjArea );
+
+							if ( !area->IsOpen() )
+								area->AddToOpenListTail();
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			Warning( "No nav area for bomb delivery zone." );
+		}
+	}
+	else
+	{
+		Warning( "Can't find bomb delivery zone." );
+	}
+}
+
+void CTFNavMesh::ComputeLegalBombDropAreas()
 {
-	// Flood fills from an area it found in TheNavAreas with BLUE_SPAWN_ROOM flag
-	// with BOMB_DROP flag if not BLUE_SPAWN_ROOM|RED_SPAWN_ROOM
+	if ( !TFGameRules()->IsMannVsMachineMode() )
+		return;
+	VPROF_BUDGET( __FUNCTION__, "NextBot" );
 
-	// These areas determine if the bomb resets if it's dropped from a robot
-}*/
+	CTFNavArea *startArea = NULL;
+	FOR_EACH_VEC( TheNavAreas, i )
+	{
+		CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
+		area->RemoveTFAttributes( TF_NAV_BOMB_DROP );
+
+		if ( area->HasTFAttributes( TF_NAV_BLUE_SPAWN_ROOM ) )
+			startArea = area;
+	}
+
+	if ( startArea )
+	{
+		CNavArea::ClearSearchLists();
+
+		startArea->AddToOpenList();
+		startArea->SetParent( NULL );
+		startArea->Mark();
+
+		CUtlVectorFixedGrowable<const NavConnect *, 64u> adjCons;
+		while ( !CNavArea::IsOpenListEmpty() )
+		{
+			CTFNavArea *area = static_cast<CTFNavArea *>( CNavArea::PopOpenList() );
+
+			adjCons.RemoveAll();
+
+			for ( int dir = 0; dir < NUM_DIRECTIONS; ++dir )
+			{
+				for ( int i=0; i < area->GetAdjacentCount( (NavDirType)dir ); ++i )
+				{
+					const NavConnect *connection = &( *area->GetAdjacentAreas( (NavDirType)dir ) )[i];
+					adjCons.AddToTail( connection );
+				}
+			}
+
+			if ( adjCons.IsEmpty() )
+				continue;
+
+			FOR_EACH_VEC( adjCons, i )
+			{
+				const NavConnect *connect = adjCons[i];
+				CTFNavArea *adjArea = static_cast<CTFNavArea *>( connect->area );
+
+				if ( area->ComputeAdjacentConnectionHeightChange( adjArea ) > StepHeight )
+					continue;
+
+				if ( !adjArea->HasTFAttributes( TF_NAV_BLUE_SPAWN_ROOM|TF_NAV_RED_SPAWN_ROOM ) )
+					adjArea->AddTFAttributes( TF_NAV_BOMB_DROP );
+				
+				adjArea->Mark();
+				adjArea->SetParent( area );
+
+				if ( !adjArea->IsOpen() )
+					adjArea->AddToOpenListTail();
+			}
+		}
+	}
+	else
+	{
+		Warning( "Can't find blue spawn room nav areas. No legal bomb drop areas are marked" );
+	}
+}
 
 void CTFNavMesh::OnObjectChanged()
 {
@@ -913,8 +1080,8 @@ void CTFNavMesh::RecomputeInternalData()
 	ComputeBlockedAreas();
 	ComputeIncursionDistances();
 	ComputeInvasionAreas();
-	//ComputeLegalBombDropAreas();
-	//ComputeBombTargetDistance();
+	ComputeLegalBombDropAreas();
+	ComputeBombTargetDistance();
 
 	for ( int i=0; i<TheNavAreas.Count(); ++i )
 	{

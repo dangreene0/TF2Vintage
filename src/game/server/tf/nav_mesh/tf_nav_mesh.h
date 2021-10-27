@@ -32,7 +32,7 @@ public:
 	virtual void EndCustomAnalysis( void ) OVERRIDE;
 
 	void CollectAmbushAreas( CUtlVector<CTFNavArea *> *areas, CTFNavArea *startArea, int teamNum, float fMaxDist = -1.0f, float fIncursionDiff = 0.0f ) const;
-	//void CollectAreasWithinBombTravelRange( CUtlVector<CTFNavArea *> *areas, float f1, float f2 ) const;
+	void CollectAreasWithinBombTravelRange( CUtlVector<CTFNavArea *> *areas, float minTravel, float maxTravel ) const;
 	void CollectBuiltObjects( CUtlVector<CBaseObject *> *objects, int teamNum );
 	void CollectSpawnRoomThresholdAreas( CUtlVector<CTFNavArea *> *areas, int teamNum ) const;
 	bool IsSentryGunHere( CTFNavArea *area ) const;
@@ -69,11 +69,11 @@ private:
 	void CollectAndMarkSpawnRoomExits( CTFNavArea *area, CUtlVector<CTFNavArea *> *areas );
 	void CollectControlPointAreas( void );
 	void ComputeBlockedAreas( void );
-	//void ComputeBombTargetDistance(void);
+	void ComputeBombTargetDistance(void);
 	void ComputeIncursionDistances( void );
 	void ComputeIncursionDistances( CTFNavArea *area, int teamNum );
 	void ComputeInvasionAreas( void );
-	//void ComputeLegalBombDropAreas(void);
+	void ComputeLegalBombDropAreas(void);
 	void DecorateMesh( void );
 	void OnObjectChanged( void );
 	void RecomputeInternalData( void );
