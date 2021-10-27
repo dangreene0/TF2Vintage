@@ -12,7 +12,9 @@
 #include "tf_bot.h"
 #include "tier3/tier3.h"
 #include "vgui/ILocalize.h"
-#include "fmtstr.h"
+#include "map_entities/tf_hint.h"
+#include "map_entities/tf_hint_sentrygun.h"
+#include "map_entities/tf_hint_teleexit.h"
 
 
 extern ConVar tf_bot_difficulty;
@@ -130,11 +132,7 @@ const char *GetRandomBotName( void )
 		nameIndex = RandomInt( 0, nameCount );
 	}
 
-	const char *name = nameList[nameIndex];
-	if ( ++nameIndex >= nameCount )
-		nameIndex = 0;
-
-	return name;
+	return nameList[ ++nameIndex % nameCount ];
 }
 
 bool UTIL_KickBotFromTeam( int teamNum )
@@ -148,8 +146,14 @@ bool UTIL_KickBotFromTeam( int teamNum )
 		if ( pPlayer == nullptr || !pPlayer->IsPlayer() || !pPlayer->IsConnected() )
 			continue;
 
+		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
+			continue;
+
 		CTFBot *pBot = ToTFBot( pPlayer );
 		if ( pBot == nullptr )
+			continue;
+
+		if ( !pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
 			continue;
 
 		if ( pPlayer->GetTeamNumber() != teamNum || pPlayer->IsAlive() )
@@ -166,8 +170,14 @@ bool UTIL_KickBotFromTeam( int teamNum )
 		if ( pPlayer == nullptr || !pPlayer->IsPlayer() || !pPlayer->IsConnected() )
 			continue;
 
+		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
+			continue;
+
 		CTFBot *pBot = ToTFBot( pPlayer );
 		if ( pBot == nullptr )
+			continue;
+
+		if ( !pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
 			continue;
 
 		if ( pPlayer->GetTeamNumber() != teamNum )
@@ -297,6 +307,22 @@ void CTFBotManager::OnMapLoaded()
 void CTFBotManager::OnRoundRestart()
 {
 	NextBotManager::OnRoundRestart();
+
+	CBaseEntity *hint = NULL;
+	while ( ( hint = gEntList.FindEntityByClassname( hint, "func_tfbot_hint" ) ) != NULL )
+	{
+		hint->SetOwnerEntity( NULL );
+	}
+
+	while ( ( hint = gEntList.FindEntityByClassname( hint, "bot_hint_sentrygun" ) ) != NULL )
+	{
+		hint->SetOwnerEntity( NULL );
+	}
+
+	while ( ( hint = gEntList.FindEntityByClassname( hint, "bot_hint_teleporter_exit" ) ) != NULL )
+	{
+		hint->SetOwnerEntity( NULL );
+	}
 }
 
 void CTFBotManager::OnLevelShutdown()
@@ -399,33 +425,30 @@ void CTFBotManager::MaintainBotQuota()
 			continue;
 
 		CTFBot *pBot = ToTFBot( pPlayer );
-		if ( pBot != nullptr )
+		if ( pBot != nullptr && pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
 		{
-			++nTFBotsTotal;
+			nTFBotsTotal++;
 			if ( pPlayer->GetTeamNumber() == TF_TEAM_RED || pPlayer->GetTeamNumber() == TF_TEAM_BLUE )
 			{
-				++nTFBotsTeamed;
+				nTFBotsTeamed++;
 			}
 		}
 		else
 		{
 			if ( pPlayer->GetTeamNumber() == TF_TEAM_RED || pPlayer->GetTeamNumber() == TF_TEAM_BLUE )
 			{
-				++nHumansTeamed;
+				nHumansTeamed++;
 			}
 			else if ( pPlayer->GetTeamNumber() == TEAM_SPECTATOR )
 			{
-				++nHumansSpec;
+				nHumansSpec++;
 			}
 		}
 
-		++nPlayersTotal;
+		nPlayersTotal++;
 	}
 
-	int nHumansTotal = nPlayersTotal - nTFBotsTotal;
-
 	int nDesired = tf_bot_quota.GetInt();
-
 	if ( FStrEq( tf_bot_quota_mode.GetString(), "fill" ) )
 	{
 		nDesired = Max( 0, nDesired - nHumansTeamed );
@@ -437,15 +460,16 @@ void CTFBotManager::MaintainBotQuota()
 
 	if ( tf_bot_join_after_player.GetBool() )
 	{
-		if ( nHumansTotal == 0 )
+		if ( nHumansTeamed == 0 && nHumansSpec == 0 )
 		{
 			nDesired = 0;
 		}
 	}
 
+	int nHumansTotal = nPlayersTotal - nTFBotsTotal;
 	if ( tf_bot_auto_vacate.GetBool() )
 	{
-		nDesired = Min( nDesired, gpGlobals->maxClients - ( nHumansTotal - 1 ) );
+		nDesired = Min( nDesired, gpGlobals->maxClients - nHumansTotal - 1 );
 	}
 	else
 	{
@@ -560,7 +584,7 @@ bool CTFBotManager::LoadBotNames()
 	return true;
 }
 
-void CC_ReloadBotNames( const CCommand &args )
+void CC_ReloadBotNames( void )
 {
 	TheTFBots().ReloadBotNames();
 }
