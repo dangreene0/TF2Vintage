@@ -14,6 +14,9 @@
 
 #include "NextBotManager.h"
 
+
+#define BOT_NAMES_FILE	"scripts/tf_bot_names.txt"
+
 class CTFBotManager : public NextBotManager
 {
 public:

@@ -531,7 +531,6 @@ void CTFBotManager::ReloadBotNames()
 	LoadBotNames();
 }
 
-#define BOT_NAMES_FILE	"scripts/tf_bot_names.txt"
 bool CTFBotManager::LoadBotNames()
 {
 	VPROF_BUDGET( __FUNCTION__, VPROF_BUDGETGROUP_OTHER_FILESYSTEM );
