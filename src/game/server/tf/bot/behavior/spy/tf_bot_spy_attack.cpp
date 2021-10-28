@@ -192,17 +192,17 @@ ActionResult<CTFBot> CTFBotSpyAttack::Update( CTFBot *me, float dt )
 
 	me->GetBodyInterface()->AimHeadTowards( victimPlayer, IBody::MANDATORY, 0.1f, nullptr, "Aiming my pistol" );
 
-	if ( !threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 200.0f ) )
+	if ( !victim->IsVisibleRecently() && me->IsRangeLessThan( victim->GetLastKnownPosition(), 200.0f ) )
 	{
-		me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
+		me->GetVisionInterface()->ForgetEntity( victim->GetEntity() );
 		return Action<CTFBot>::Done( "I lost my target!" );
 	}
 
 	if ( me->IsRangeGreaterThan( victimPlayer, me->GetDesiredAttackRange() ) || !me->IsLineOfFireClear( victimPlayer->EyePosition() ) )
 	{
-		if ( !threat->IsVisibleRecently() && me->IsRangeLessThan( threat->GetLastKnownPosition(), 200.0f ) )
+		if ( !victim->IsVisibleRecently() && me->IsRangeLessThan( victim->GetLastKnownPosition(), 200.0f ) )
 		{
-			me->GetVisionInterface()->ForgetEntity( threat->GetEntity() );
+			me->GetVisionInterface()->ForgetEntity( victim->GetEntity() );
 			return Action<CTFBot>::Done( "I lost my target!" );
 		}
 
