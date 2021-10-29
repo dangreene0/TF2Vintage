@@ -113,6 +113,10 @@ public:
 		if ( m_respawn == nullptr )
 			return true;
 
+		const int nIndex = m_vector->Find( area );
+		if ( nIndex != m_vector->InvalidIndex() )
+			return true;
+
 		Vector const center = area->GetCenter() + Vector( 0, 0, StepHeight );
 		Vector const nwCorner = area->GetCorner( NORTH_WEST ) + Vector( 0, 0, StepHeight );
 		Vector const neCorner = area->GetCorner( NORTH_EAST ) + Vector( 0, 0, StepHeight );
@@ -460,6 +464,10 @@ void CTFNavMesh::OnBlockedAreasChanged()
 
 void CTFNavMesh::CollectAndMarkSpawnRoomExits( CTFNavArea *area, CUtlVector<CTFNavArea *> *areas )
 {
+	const int nIndex = areas->Find( area );
+	if ( nIndex != areas->InvalidIndex() )
+		return;
+
 	for ( int dir=0; dir < NUM_DIRECTIONS; dir++ )
 	{
 		for ( int i=0; i<area->GetAdjacentCount( (NavDirType)dir ); ++i )
