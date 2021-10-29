@@ -35,7 +35,7 @@ ConVar tf_select_ambush_areas_radius( "tf_select_ambush_areas_radius", "750", FC
 ConVar tf_select_ambush_areas_close_range( "tf_select_ambush_areas_close_range", "300", FCVAR_CHEAT );
 ConVar tf_select_ambush_areas_max_enemy_exposure_area( "tf_select_ambush_areas_max_enemy_exposure_area", "500000", FCVAR_CHEAT );
 
-#define TF_ATTRIBUTE_RESET    (TF_NAV_BLOCKED|TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM|TF_NAV_SPAWN_ROOM_EXIT|TF_NAV_AMMO|TF_NAV_HEALTH|TF_NAV_CONTROL_POINT|TF_NAV_BLUE_SENTRY|TF_NAV_RED_SENTRY)
+#define TF_PERSISTENT_ATTRIBUTES    (TF_NAV_BLUE_SETUP_GATE|TF_NAV_RED_SETUP_GATE|TF_NAV_BLOCKED_AFTER_POINT_CAPTURE|TF_NAV_BLOCKED_UNTIL_POINT_CAPTURE|TF_NAV_BLUE_ONE_WAY_DOOR|TF_NAV_RED_ONE_WAY_DOOR|TF_NAV_WITH_SECOND_POINT|TF_NAV_WITH_THIRD_POINT|TF_NAV_WITH_FOURTH_POINT|TF_NAV_WITH_FIFTH_POINT|TF_NAV_SNIPER_SPOT|TF_NAV_SENTRY_SPOT|TF_NAV_NO_SPAWNING|TF_NAV_RESCUE_CLOSET|TF_NAV_DOOR_NEVER_BLOCKS|TF_NAV_DOOR_ALWAYS_BLOCKS|TF_NAV_UNBLOCKABLE)
 
 
 void TestAndBlockOverlappingAreas( CBaseEntity *pBlocker )
@@ -48,11 +48,10 @@ void TestAndBlockOverlappingAreas( CBaseEntity *pBlocker )
 	CUtlVector<CNavArea *> potentiallyBlockedAreas;
 	TheNavMesh->CollectAreasOverlappingExtent( blockerExtent, &potentiallyBlockedAreas );
 
-	for (int i=0; i<potentiallyBlockedAreas.Count(); ++i)
+	FOR_EACH_VEC( potentiallyBlockedAreas, i )
 	{
 		CNavArea *area = potentiallyBlockedAreas[i];
 
-		Vector nwCorner = area->GetCorner( NORTH_WEST );
 		Vector const nwCorner = area->GetCorner( NORTH_WEST );
 		Vector const neCorner = area->GetCorner( NORTH_EAST );
 		Vector const swCorner = area->GetCorner( SOUTH_WEST );
@@ -71,34 +70,21 @@ void TestAndBlockOverlappingAreas( CBaseEntity *pBlocker )
 			{
 				vecTest = neCorner;
 				vecMaxs.x = 0.0f;
-				vecMaxs.y = seCorner.y - neCorner.y;
+				vecMaxs.y = area->GetSizeY();
 			}
 		}
 		else
 		{
 			vecTest = swCorner;
-			vecMaxs.x = seCorner.x - nwCorner.x;
+			vecMaxs.x = area->GetSizeX();
 			vecMaxs.y = 0.0f;
 		}
 
-		vecStart = nwCorner;
-		if ( nwCorner.z >= vecTest.z )
-		{
-			vecEnd = vecTest;
-		}
-		else
-		{
-			vecEnd = nwCorner;
-			vecStart = vecTest;
-		}
-
-		vecMaxs.z = HalfHumanHeight;
-
-		Ray_t ray;
-		ray.Init( vecStart, vecEnd, vecMins, vecMaxs );
+		Vector const vecStart = (nwCorner.z >= vecTest.z) ? nwCorner : vecTest;
+		Vector const vecEnd = (nwCorner.z >= vecTest.z) ? vecTest : nwCorner;
 
 		trace_t tr;
-		enginetrace->TraceRay( ray, MASK_PLAYERSOLID, &filter, &tr );
+		UTIL_TraceHull( vecStart, vecEnd, vecMins, vecMaxs, MASK_PLAYERSOLID, &filter, &tr );
 
 		if ( tr.DidHit() )
 		{
@@ -479,11 +465,13 @@ void CTFNavMesh::CollectAndMarkSpawnRoomExits( CTFNavArea *area, CUtlVector<CTFN
 		for ( int i=0; i<area->GetAdjacentCount( (NavDirType)dir ); ++i )
 		{
 			CTFNavArea *other = static_cast<CTFNavArea *>( area->GetAdjacentArea( (NavDirType)dir, i ) );
-			if ( other->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
-				continue;
+			if ( !other->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
+			{
+				area->AddTFAttributes( TF_NAV_SPAWN_ROOM_EXIT );
+				areas->AddToTail( area );
 
-			area->AddTFAttributes( TF_NAV_SPAWN_ROOM_EXIT );
-			areas->AddToTail( area );
+				return;
+			}
 		}
 	}
 }
@@ -706,6 +694,7 @@ void CTFNavMesh::ComputeIncursionDistances()
 
 void CTFNavMesh::ComputeIncursionDistances( CTFNavArea *startArea, int teamNum )
 {
+	VPROF_SCOPE_BEGIN( __FUNCTION__ );
 	Assert( teamNum >= 0 && teamNum <= 3 );
 	
 	if ( startArea )
@@ -717,8 +706,6 @@ void CTFNavMesh::ComputeIncursionDistances( CTFNavArea *startArea, int teamNum )
 		startArea->AddToOpenList();
 		startArea->SetParent( NULL );
 		startArea->Mark();
-
-		VPROF_SCOPE_BEGIN( __FUNCTION__ );
 
 		CUtlVectorFixedGrowable<const NavConnect *, 64u> adjCons;
 		while ( !CNavArea::IsOpenListEmpty() )
@@ -762,9 +749,9 @@ void CTFNavMesh::ComputeIncursionDistances( CTFNavArea *startArea, int teamNum )
 				}
 			}
 		}
-
-		VPROF_SCOPE_END();
 	}
+
+	VPROF_SCOPE_END();
 }
 
 void CTFNavMesh::ComputeInvasionAreas()
@@ -787,40 +774,44 @@ void CTFNavMesh::DecorateMesh()
 	m_spawnExitsTeam1.RemoveAll();
 	m_spawnExitsTeam2.RemoveAll();
 
-	for ( int i=0; i<IFuncRespawnRoomAutoList::AutoList().Count(); ++i )
+	FOR_EACH_VEC( IFuncRespawnRoomAutoList::AutoList(), i )
 	{
-		CFuncRespawnRoom *respawnRoom = static_cast<CFuncRespawnRoom *>( IFuncRespawnRoomAutoList::AutoList()[i] );
-		if ( respawnRoom->GetActive() && !respawnRoom->m_bDisabled )
+		CFuncRespawnRoom *pRespawnRoom = static_cast<CFuncRespawnRoom *>( IFuncRespawnRoomAutoList::AutoList()[i] );
+		if ( pRespawnRoom->GetActive() && !pRespawnRoom->m_bDisabled )
 		{
-			for ( int j=0; j<ITFTeamSpawnAutoList::AutoList().Count(); ++j )
+			FOR_EACH_VEC( ITFTeamSpawnAutoList::AutoList(), j )
 			{
-				CTFTeamSpawn *teamSpawn = static_cast<CTFTeamSpawn *>( ITFTeamSpawnAutoList::AutoList()[j] );
-				if ( teamSpawn->IsTriggered( NULL ) && !teamSpawn->IsDisabled() && respawnRoom->PointIsWithin( teamSpawn->GetAbsOrigin() ) )
-				{
-					Extent ext;
-					ext.Init( respawnRoom );
+				CTFTeamSpawn *pTeamSpawn = static_cast<CTFTeamSpawn *>( ITFTeamSpawnAutoList::AutoList()[j] );
+				// Has anyone spawned here yet?
+				if ( !pTeamSpawn->IsTriggered( NULL ) || pTeamSpawn->IsDisabled() )
+					continue;
+				// Is it even located in a spawn room? !BUG! this breaks on Arena
+				if ( !pRespawnRoom->PointIsWithin( pTeamSpawn->GetAbsOrigin() ) )
+					continue;
+				
+				Extent ext;
+				ext.Init( pRespawnRoom );
 
-					if ( teamSpawn->GetTeamNumber() == TF_TEAM_RED )
-					{
-						CollectAndLabelSpawnRooms func( respawnRoom, TF_TEAM_RED, &m_spawnAreasTeam1 );
-						ForAllAreasOverlappingExtent( func, ext );
-					}
-					else
-					{
-						CollectAndLabelSpawnRooms func( respawnRoom, TF_TEAM_BLUE, &m_spawnAreasTeam2 );
-						ForAllAreasOverlappingExtent( func, ext );
-					}
+				if ( pTeamSpawn->GetTeamNumber() == TF_TEAM_RED )
+				{
+					CollectAndLabelSpawnRooms func( pRespawnRoom, TF_TEAM_RED, &m_spawnAreasTeam1 );
+					ForAllAreasOverlappingExtent( func, ext );
+				}
+				else
+				{
+					CollectAndLabelSpawnRooms func( pRespawnRoom, TF_TEAM_BLUE, &m_spawnAreasTeam2 );
+					ForAllAreasOverlappingExtent( func, ext );
 				}
 			}
 		}
 	}
 
-	for ( int i=0; i<m_spawnAreasTeam1.Count(); ++i )
+	FOR_EACH_VEC( m_spawnAreasTeam1, i )
 	{
 		CollectAndMarkSpawnRoomExits( m_spawnAreasTeam1[i], &m_spawnExitsTeam1 );
 	}
 
-	for ( int i=0; i<m_spawnAreasTeam2.Count(); ++i )
+	FOR_EACH_VEC( m_spawnAreasTeam2, i )
 	{
 		CollectAndMarkSpawnRoomExits( m_spawnAreasTeam2[i], &m_spawnExitsTeam2 );
 	}
@@ -1116,7 +1107,7 @@ void CTFNavMesh::RemoveAllMeshDecoration()
 	for ( int i=0; i < TheNavAreas.Count(); ++i )
 	{
 		CTFNavArea *area = static_cast<CTFNavArea *>( TheNavAreas[i] );
-		area->RemoveTFAttributes( TF_ATTRIBUTE_RESET );
+		area->RemoveTFAttributes( ~TF_PERSISTENT_ATTRIBUTES );
 	}
 
 	m_sentryAreas.RemoveAll();
