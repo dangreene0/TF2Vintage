@@ -2139,22 +2139,45 @@ void CTFPlayer::ValidateWearables( void )
 			continue;
 		}
 
-		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
-		if ( pItemDef )
 		CTFWearable *pTFWearable = assert_cast<CTFWearable *>( pWearable );
 		if ( bIsDisguisedSpy && pTFWearable->IsDisguiseWearable() )
 			continue;
 
+		bool bMatch = false;
+		if ( pTFWearable->IsExtraWearable() )
 		{
-			int iSlot = pItemDef->GetLoadoutSlot( iClass );
-			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+			CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( pTFWearable->GetWeaponAssociatedWith() );
 
-			if (!ItemsMatch(pWearable->GetItem(), pLoadoutItem) )
+			CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
+			if ( pItemDef )
 			{
-				// Not supposed to carry this wearable, nuke it.
-				RemoveWearable( pWearable );
-				UTIL_Remove(pWearable);
+				int iSlot = pItemDef->GetLoadoutSlot( iClass );
+				if ( iSlot >= 0 )
+				{
+					CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+					bMatch = ItemsMatch( pWeapon->GetItem(), pLoadoutItem );
+				}
 			}
+		}
+		else
+		{
+			CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
+			if ( pItemDef )
+			{
+				int iSlot = pItemDef->GetLoadoutSlot( iClass );
+				if ( iSlot >= 0 )
+				{
+					CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+					bMatch = ItemsMatch( pWearable->GetItem(), pLoadoutItem );
+				}
+			}
+		}
+
+		if ( !bMatch || pWearable->GetTeamNumber() != GetTeamNumber() )
+		{
+			// Not supposed to carry this wearable, nuke it.
+			RemoveWearable( pWearable );
+			UTIL_Remove( pWearable );
 		}
 	}
 	
