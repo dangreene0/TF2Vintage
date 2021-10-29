@@ -194,7 +194,9 @@ bool CTFBotSpyInfiltrate::FindHidingSpot( CTFBot *actor )
 	FOR_EACH_VEC( exits, i )
 	{
 		CUtlVector<CNavArea *> temp;
-		CollectSurroundingAreas( &temp, exits[i], 2500.0f );
+		CollectSurroundingAreas( &temp, exits[i], 2500.0f,
+								 actor->GetLocomotionInterface()->GetStepHeight(), 
+								 actor->GetLocomotionInterface()->GetStepHeight() );
 
 		surrounding.AddVectorToTail( temp );
 	}
