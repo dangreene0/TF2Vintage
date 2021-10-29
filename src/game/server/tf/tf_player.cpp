@@ -2126,16 +2126,25 @@ void CTFPlayer::ValidateWeapons( bool bRegenerate )
 //-----------------------------------------------------------------------------
 void CTFPlayer::ValidateWearables( void )
 {
-	int iClass = m_PlayerClass.GetClassIndex();
+	const int iClass = m_PlayerClass.GetClassIndex();
+	const bool bIsDisguisedSpy = IsPlayerClass( TF_CLASS_SPY ) && m_Shared.InCond( TF_COND_DISGUISED );
 
-	for ( int i = 0; i < GetNumWearables(); i++ )
+	FOR_EACH_VEC_BACK( m_hMyWearables, i )
 	{
 		CEconWearable *pWearable = GetWearable( i );
 		if ( pWearable == nullptr )
+		{
+			// Shouldn't happen, but remove NULLs here
+			m_hMyWearables.Remove( i );
 			continue;
+		}
 
 		CEconItemDefinition *pItemDef = pWearable->GetItem()->GetStaticData();
 		if ( pItemDef )
+		CTFWearable *pTFWearable = assert_cast<CTFWearable *>( pWearable );
+		if ( bIsDisguisedSpy && pTFWearable->IsDisguiseWearable() )
+			continue;
+
 		{
 			int iSlot = pItemDef->GetLoadoutSlot( iClass );
 			CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
