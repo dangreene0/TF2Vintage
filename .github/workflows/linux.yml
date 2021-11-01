@@ -65,7 +65,7 @@ jobs:
       
       - name: Pack
         shell: bash
-        run: sudo tar cJfv Linux.tar.xz game/tf2vintage/bin)
+        run: sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
 
       - name: Upload product
         uses: actions/upload-artifact@v2

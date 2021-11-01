@@ -62,7 +62,7 @@ jobs:
       
       - name: Pack
         shell: bash
-        run: tar cJfv Windows.tar.xz game/tf2vintage/bin)
+        run: tar cJfv Windows.tar.xz game/tf2vintage/bin
 
       - name: Upload product
         uses: actions/upload-artifact@v2
