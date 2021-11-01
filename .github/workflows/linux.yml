@@ -61,11 +61,10 @@ jobs:
           CCACHE_MAXSIZE: 400M
       
       - name: Pack
-        shell: bash
         run: sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
 
       - name: Upload product
         uses: actions/upload-artifact@v2
         with:
           name: TF2Vintage
-          path: Linux.tar.xz
+          path: src
