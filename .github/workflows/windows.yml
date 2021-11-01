@@ -31,7 +31,7 @@ jobs:
         id: ccache
         shell: cmake -P {0}
         run: |
-          set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$CCACHE_VERSION/${{ runner.os }}.tar.xz")
+          set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${{ runner.os }}.tar.xz")
           file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
           execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
         env:
@@ -56,8 +56,8 @@ jobs:
         env:
           CC: cl
           CXX: cl
-          CCACHE_BASEDIR: $GITHUB_WORKSPACE
-          CCACHE_DIR: $CCACHE_BASEDIR\.ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
           CCACHE_COMPRESS: true
           CCACHE_COMPRESSLEVEL: 6
           CCACHE_MAXSIZE: 400M
