@@ -51,9 +51,8 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Windows'
-        run: cd src;ccache TF2vintage.sln /Build Release
+        run: cd src;../ccache TF2vintage.sln /Build Release
         env:
-          PATH: $GITHUB_WORKSPACE;$PATH
           CC: cl
           CXX: cl
           CCACHE_BASEDIR: $GITHUB_WORKSPACE
