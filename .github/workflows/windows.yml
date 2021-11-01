@@ -51,7 +51,7 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Windows'
-        run: cd src;../ccache TF2vintage.sln /Build Release
+        run: cd src;../ccache.exe TF2vintage.sln /Build Release
         env:
           CC: cl
           CXX: cl

@@ -52,7 +52,7 @@ jobs:
         run: |
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --target="i386 amd64" --auto-upgrade
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --target="i386 amd64" --auto-upgrade
-          cd src && ../ccache -f TF2vintage.mak 
+          cd src && sudo ../ccache -f TF2vintage.mak 
         env:
           STEAM_RUNTIME_PATH: /valve/steam-runtime
           CC: gcc
