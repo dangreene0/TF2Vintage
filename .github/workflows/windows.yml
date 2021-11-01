@@ -51,7 +51,7 @@ jobs:
 
       - name: Build project
         run: |
-          set PATH="$GITHUB_WORKSPACE;PATH"
+          set PATH="${{ github.workspace }};${{ env.PATH }}"
           cd src;ccache TF2vintage.sln /Build Release
         env:
           CC: cl
