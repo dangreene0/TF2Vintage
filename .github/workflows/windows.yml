@@ -22,8 +22,7 @@ jobs:
       - uses: actions/cache@v2
         id: cache
         with:
-          path: |
-            cache
+          path: .ccache
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
 
@@ -51,10 +50,10 @@ jobs:
 
       - name: Build project
         run: |
-          cd src;../ccache.exe cl TF2vintage.sln /Build Release
+          cd src;devenv TF2vintage.sln /Build Release
         env:
-          CC: cl
-          CXX: cl
+          CC: ${{ github.workspace }}\ccache
+          CXX: ${{ github.workspace }}\ccache
           CCACHE_BASEDIR: ${{ github.workspace }}
           CCACHE_DIR: ${{ github.workspace }}\.ccache
           CCACHE_COMPRESS: true
