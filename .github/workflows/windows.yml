@@ -2,6 +2,9 @@ name: Windows
 
 on: [ push, pull_request ]
 
+env:
+  CCACHE_VERSION: 4.2.1
+
 jobs:
   build:
     runs-on:
@@ -10,6 +13,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+        shell: bash
+      
+      - uses: actions/cache@v2
+        id: cache
+        with:
+          path: |
+            cache
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
+          restore-keys: ${{ runner.os }}-
+
+      - name: Download ccache
+        id: ccache
+        shell: cmake -P {0}
+        run: |
+          set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$CCACHE_VERSION/${{ runner.os }}.tar.xz")
+          file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
+          execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
+        env:
+          CCACHE_VERSION: 4.2.1
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
@@ -25,10 +51,23 @@ jobs:
 
       - name: Build project
         if: runner.os == 'Windows'
-        run: cd src;devenv TF2vintage.sln /Build Release
+        run: cd src;ccache TF2vintage.sln /Build Release
+        env:
+          PATH: $GITHUB_WORKSPACE;$PATH
+          CC: cl
+          CXX: cl
+          CCACHE_BASEDIR: $GITHUB_WORKSPACE
+          CCACHE_DIR: $CCACHE_BASEDIR/.ccache
+          CCACHE_COMPRESS: true
+          CCACHE_COMPRESSLEVEL: 6
+          CCACHE_MAXSIZE: 400M
+      
+      - name: Pack
+        shell: bash
+        run: tar cJfv Windows.tar.xz game/tf2vintage/bin)
 
       - name: Upload product
         uses: actions/upload-artifact@v2
         with:
           name: TF2Vintage
-          path: game/tf2vintage/bin
+          path: Windows.tar.xz
