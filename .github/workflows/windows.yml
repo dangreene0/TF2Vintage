@@ -51,11 +51,10 @@ jobs:
 
       - name: Build project
         run: |
-          cd src;$CCACHE cl TF2vintage.sln /Build Release
+          cd src;../ccache.exe TF2vintage.sln /Build Release
         env:
           CC: cl
           CXX: cl
-          CCACHE: ${{ github.workspace }}\ccache.exe
           CCACHE_BASEDIR: ${{ github.workspace }}
           CCACHE_DIR: ${{ github.workspace }}\.ccache
           CCACHE_COMPRESS: true
