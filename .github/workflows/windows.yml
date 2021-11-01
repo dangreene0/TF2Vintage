@@ -50,7 +50,9 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        run: cd src;..\ccache.exe TF2vintage.sln /Build Release
+        run: |
+          set PATH="$ENV{GITHUB_WORKSPACE};PATH"
+          cd src;ccache TF2vintage.sln /Build Release
         env:
           CC: cl
           CXX: cl
