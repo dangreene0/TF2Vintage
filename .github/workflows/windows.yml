@@ -50,13 +50,12 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        if: runner.os == 'Windows'
-        run: cd src;../ccache.exe TF2vintage.sln /Build Release
+        run: cd src;..\ccache.exe TF2vintage.sln /Build Release
         env:
           CC: cl
           CXX: cl
           CCACHE_BASEDIR: $GITHUB_WORKSPACE
-          CCACHE_DIR: $CCACHE_BASEDIR/.ccache
+          CCACHE_DIR: $CCACHE_BASEDIR\.ccache
           CCACHE_COMPRESS: true
           CCACHE_COMPRESSLEVEL: 6
           CCACHE_MAXSIZE: 400M
