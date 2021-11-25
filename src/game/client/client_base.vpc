@@ -549,6 +549,7 @@ $Project
 				"$SRCDIR\public\sentence.cpp"						\
 				"$SRCDIR\game\shared\sheetsimulator.cpp"			\
 				"$SRCDIR\public\simple_physics.cpp"					\
+				"$SRCDIR\common\steamid.cpp"						\
 				"$SRCDIR\public\stringregistry.cpp"					\
 				"$SRCDIR\public\studio.cpp"							\
 				"$SRCDIR\public\vallocator.cpp"						\

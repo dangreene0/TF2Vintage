@@ -623,7 +623,7 @@ static void MountAdditionalContent()
 	{
 		if ( !steamapicontext->SteamApps() )
 		{
-			Error( "Unable to mount extra content, unkown error\n" );
+			Warning( "Unable to mount extra content, unkown error\n" );
 			return;
 		}
 		if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
