@@ -146,7 +146,7 @@ void CTFInventory::AddNewItem( CEconItemDefinition *pItemDef, const int iClass, 
 	bool bSpecialsEnabled = true;
 #endif
 
-	int iItemID = pItemDef->index;
+	item_def_index_t iItemID = pItemDef->index;
 	if ( pItemDef->baseitem )
 	{
 		CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
