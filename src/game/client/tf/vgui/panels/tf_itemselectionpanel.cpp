@@ -300,7 +300,7 @@ void CTFItemPanel::SetupItem( int iItem )
 
 		if ( pItemData )
 		{
-			m_pWeaponButton->SetSize( YRES(m_pWeaponSetPanel->m_nItemWidth ) - m_pWeaponSetPanel->m_nItemXSpace, YRES(m_pWeaponSetPanel->m_nItemHeight ) - m_pWeaponSetPanel->m_nItemYSpace );
+			m_pWeaponButton->SetSize( XRES( m_pWeaponSetPanel->m_nItemWidth ) - m_pWeaponSetPanel->m_nItemXSpace, YRES( m_pWeaponSetPanel->m_nItemHeight ) - m_pWeaponSetPanel->m_nItemYSpace );
 			m_pWeaponButton->SetBorderVisible( true );
 			m_pWeaponButton->SetItemDefinition( pItemData );
 			m_pWeaponButton->SetLoadoutSlot( m_iCurrentSlot, iItem );
@@ -316,7 +316,7 @@ void CTFItemPanel::SetupItem( int iItem )
 			}
 			int offset = m_nPage * m_pWeaponSetPanel->m_nItemColumns * m_pWeaponSetPanel->m_nItemRows;
 
-			m_pWeaponButton->SetPos( ((iItem - offset) % m_pWeaponSetPanel->m_nItemColumns) * YRES(m_pWeaponSetPanel->m_nItemWidth ) + YRES( m_pWeaponSetPanel->m_nItemXSpace ),
+			m_pWeaponButton->SetPos( ((iItem - offset) % m_pWeaponSetPanel->m_nItemColumns) * XRES( m_pWeaponSetPanel->m_nItemWidth ) + XRES( m_pWeaponSetPanel->m_nItemXSpace ),
 									 ((iItem - offset) / m_pWeaponSetPanel->m_nItemColumns) * YRES( m_pWeaponSetPanel->m_nItemHeight ) + YRES( m_pWeaponSetPanel->m_nItemYSpace ));
 			m_pWeaponButton->SetVisible( true );
 		}
