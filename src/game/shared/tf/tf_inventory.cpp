@@ -172,7 +172,6 @@ void CTFInventory::LoadInventory()
 {
 	FOR_EACH_MAP( GetItemSchema()->m_Items, i )
 	{
-		int iItemID = GetItemSchema()->m_Items.Key( i );
 		CEconItemDefinition *pItemDef = GetItemSchema()->m_Items.Element( i );
 
 		if ( pItemDef->item_slot == -1 )
