@@ -748,6 +748,9 @@ void CTFWeaponBase::Drop( const Vector &vecVelocity )
 #endif
 
 	BaseClass::Drop( vecVelocity );
+
+	ReapplyProvision();
+	RemoveExtraWearables();
 }
 
 //-----------------------------------------------------------------------------
@@ -1157,7 +1160,7 @@ void CTFWeaponBase::OnActiveStateChanged( int iOldState )
 //-----------------------------------------------------------------------------
 void CTFWeaponBase::UpdateOnRemove( void )
 {
-	//RemoveExtraWearables();
+	RemoveExtraWearables();
 
 	BaseClass::UpdateOnRemove();
 }
