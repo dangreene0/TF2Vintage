@@ -49,6 +49,7 @@ public:
 
 	int GetNumPresets( int iClass, int iSlot );
 	int GetWeapon( int iClass, int iSlot );
+	void AddNewItem( CEconItemDefinition *pItemDef, int iClass, int iSlot );
 	CEconItemView *GetItem( int iClass, int iSlot, int iNum );
 	bool CheckValidSlot( int iClass, int iSlot, bool bHudCheck = false );
 	bool CheckValidWeapon( int iClass, int iSlot, int iWeapon, bool bHudCheck = false );

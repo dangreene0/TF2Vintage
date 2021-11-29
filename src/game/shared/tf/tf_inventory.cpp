@@ -130,10 +130,9 @@ bool CTFInventory::CheckValidWeapon(int iClass, int iSlot, int iWeapon, bool bHu
 	return true;
 };
 
-void CTFInventory::LoadInventory()
+void CTFInventory::AddNewItem( CEconItemDefinition *pItemDef, const int iClass, const int iSlot )
 {
 #ifdef CLIENT_DLL
-
 #ifdef _DEBUG
 	bool bReskinsEnabled = true;
 #else
@@ -147,6 +146,30 @@ void CTFInventory::LoadInventory()
 	bool bSpecialsEnabled = true;
 #endif
 
+	int iItemID = pItemDef->index;
+	if ( pItemDef->baseitem )
+	{
+		CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
+		if ( pBaseItem != NULL )
+		{
+			Warning( "Duplicate base item %d for class %s in slot %s!\n", iItemID, g_aPlayerClassNames_NonLocalized[iClass], g_LoadoutSlots[iSlot] );
+			delete pBaseItem;
+		}
+	}
+	
+	if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
+	{
+		CEconItemView *pNewItem = new CEconItemView( iItemID );
+
+	#if defined ( GAME_DLL )
+		pNewItem->SetItemClassNumber( iClass );
+	#endif
+		m_Items[iClass][iSlot].AddToTail( pNewItem );
+	}
+}
+
+void CTFInventory::LoadInventory()
+{
 	FOR_EACH_MAP( GetItemSchema()->m_Items, i )
 	{
 		int iItemID = GetItemSchema()->m_Items.Key( i );
@@ -167,31 +190,7 @@ void CTFInventory::LoadInventory()
 				{
 					if ( iSlot <= TF_LOADOUT_SLOT_HAT || ( iSlot == TF_LOADOUT_SLOT_MEDAL || iSlot == TF_LOADOUT_SLOT_EVENT ) )	// Standard parse items in these slots.
 					{
-						if ( pItemDef->baseitem )
-						{
-							CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
-							if ( pBaseItem != NULL )
-							{
-								Warning( "Duplicate base item %d for class %s in slot %s!\n", iItemID, g_aPlayerClassNames_NonLocalized[iClass], g_LoadoutSlots[iSlot] );
-								delete pBaseItem;
-							}
-
-							CEconItemView *pNewItem = new CEconItemView( iItemID );
-
-						#if defined ( GAME_DLL )
-							pNewItem->SetItemClassNumber( iClass );
-						#endif
-							m_Items[iClass][iSlot][0] = pNewItem;
-						}
-						else if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
-						{
-							CEconItemView *pNewItem = new CEconItemView( iItemID );
-
-						#if defined ( GAME_DLL )
-							pNewItem->SetItemClassNumber( iClass );
-						#endif
-							m_Items[iClass][iSlot].AddToTail( pNewItem );
-						}
+						AddNewItem( pItemDef, iClass, iSlot );
 					}
 					else if (iSlot == TF_LOADOUT_SLOT_MISC1 ) // We need to duplicate across all misc slots.
 					{
@@ -212,64 +211,14 @@ void CTFInventory::LoadInventory()
 									break;
 							}
 
-							if ( pItemDef->baseitem )
-							{
-								CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
-								if ( pBaseItem != NULL )
-								{
-									Warning("Duplicate base item %d for class %s in slot %s!\n", iItemID, g_aPlayerClassNames_NonLocalized[iClass], g_LoadoutSlots[iSlot]);
-									delete pBaseItem;
-								}
-
-								CEconItemView *pNewItem = new CEconItemView( iItemID );
-
-							#if defined ( GAME_DLL )
-								pNewItem->SetItemClassNumber( iClass );
-							#endif
-								m_Items[iClass][iSlot][0] = pNewItem;
-							}
-							else if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
-							{
-								CEconItemView *pNewItem = new CEconItemView( iItemID );
-
-							#if defined ( GAME_DLL )
-								pNewItem->SetItemClassNumber( iClass );
-							#endif
-								m_Items[iClass][iSlot].AddToTail(pNewItem);
-							}
+							AddNewItem( pItemDef, iClass, iSlot );
 						}
 					}
 					else if (iSlot == TF_LOADOUT_SLOT_TAUNT1) // We need to duplicate across all taunt slots.
 					{
 						for (int iTauntSlot = 1; iTauntSlot <= TF_PLAYER_TAUNT_COUNT; ++iTauntSlot)
 						{
-
-							if (pItemDef->baseitem)
-							{
-								CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
-								if (pBaseItem != NULL)
-								{
-									Warning("Duplicate base item %d for class %s in slot %s!\n", iItemID, g_aPlayerClassNames_NonLocalized[iClass], g_LoadoutSlots[iSlot]);
-									delete pBaseItem;
-								}
-
-								CEconItemView *pNewItem = new CEconItemView(iItemID);
-
-							#if defined ( GAME_DLL )
-								pNewItem->SetItemClassNumber(iClass);
-							#endif
-								m_Items[iClass][iSlot][0] = pNewItem;
-							}
-							else if (pItemDef->show_in_armory && (pItemDef->is_reskin == 0 || bReskinsEnabled) && (pItemDef->specialitem == 0 || bSpecialsEnabled))
-							{
-								CEconItemView *pNewItem = new CEconItemView(iItemID);
-
-							#if defined ( GAME_DLL )
-								pNewItem->SetItemClassNumber(iClass);
-							#endif
-								m_Items[iClass][iSlot].AddToTail(pNewItem);
-							}
-
+							AddNewItem( pItemDef, iClass, iSlot );
 							// Increase our slot value.
 							iSlot += 1;
 						}
