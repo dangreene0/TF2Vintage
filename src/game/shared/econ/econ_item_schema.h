@@ -399,7 +399,6 @@ public:
 	}
 	char const *GetDescription( void ) const
 	{
-		Assert( description_string && description_string[0] );
 		return description_string;
 	}
 
