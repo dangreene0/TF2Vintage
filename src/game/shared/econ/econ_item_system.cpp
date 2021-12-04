@@ -3,6 +3,7 @@
 #include "econ_item_system.h"
 #include "script_parser.h"
 #include "activitylist.h"
+#include "tier0/icommandline.h"
 
 #if defined(CLIENT_DLL)
 #define UTIL_VarArgs  VarArgs
@@ -1104,18 +1105,28 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 		ParseItems( pUnlockItems );
 	}
 
+#if defined(CLIENT_DLL)
+	if ( !CommandLine()->CheckParm( "-hidecosmetics" ) )
+#endif
+	{
 	// Stock Cosmetics are for the typical cosmetics.
-	KeyValues *pCosmeticItems = pKVData->FindKey( "cosmeticitems" );
-	if ( pCosmeticItems )
-	{
-		ParseItems( pCosmeticItems );
+		KeyValues *pCosmeticItems = pKVData->FindKey( "cosmeticitems" );
+		if ( pCosmeticItems )
+		{
+			ParseItems( pCosmeticItems );
+		}
 	}
-
-	// Reskins is for reskin weapons.
-	KeyValues *pReskinItems = pKVData->FindKey( "reskinitems" );
-	if ( pReskinItems )
+	
+#if defined(CLIENT_DLL)
+	if ( !CommandLine()->CheckParm( "-hidereskins" ) )
+#endif
 	{
-		ParseItems( pReskinItems );
+	// Reskins is for reskin weapons.
+		KeyValues *pReskinItems = pKVData->FindKey( "reskinitems" );
+		if ( pReskinItems )
+		{
+			ParseItems( pReskinItems );
+		}
 	}
 	
 	// Everything below should be largely static and not change much.
@@ -1221,14 +1232,10 @@ void CEconItemSchema::ParseAttributes( KeyValues *pKVData )
 
 void CEconItemSchema::ClientConnected( edict_t *pClient )
 {
-#if defined( GAME_DLL )
-#endif
 }
 
 void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 {
-#if defined( GAME_DLL )
-#endif
 }
 
 CEconItemDefinition *CEconItemSchema::GetItemDefinition( int id )
