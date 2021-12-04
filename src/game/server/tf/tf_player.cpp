@@ -2579,12 +2579,12 @@ void CTFPlayer::ManagePlayerCosmetics( TFPlayerClassData_t *pData )
 				if ( tf2v_allowed_year_cosmetics.GetInt() <= 2007 )
 				{
 					// Prevent the value from being below 2007.
-					if ( (pItemDef->year) > 2007 ) 
+					if ( pItemDef->year > 2007 ) 
 						bWhiteListedCosmetic = false;
 				}
 				else
 				{
-					if ( (pItemDef->year) > tf2v_allowed_year_cosmetics.GetInt() )
+					if ( pItemDef->year > tf2v_allowed_year_cosmetics.GetInt() )
 						bWhiteListedCosmetic = false;
 				}
 			}

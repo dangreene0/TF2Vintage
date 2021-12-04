@@ -148,7 +148,7 @@ void CTFLoadoutPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
 	BaseClass::ApplySchemeSettings( pScheme );
 
 	LoadControlSettings( "resource/UI/main_menu/LoadoutPanel.res" );
-	m_pItemPanel = dynamic_cast<CTFItemPanel*>( GetMenuPanel( ITEMSELCTION_MENU ) );
+	m_pItemPanel = dynamic_cast<CTFItemPanel*>( GetMenuPanel( ITEMSELECTION_MENU ) );
 }
 
 void CTFLoadoutPanel::PerformLayout()
@@ -171,7 +171,7 @@ void CTFLoadoutPanel::SetCurrentClass(int iClass)
 	{
 		m_pItemPanel->SetEnabled(false);
 		g_bShowItemMenu = false;
-		MAINMENU_ROOT->HidePanel(ITEMSELCTION_MENU);
+		MAINMENU_ROOT->HidePanel( ITEMSELECTION_MENU );
 	}
 
 	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
@@ -236,10 +236,9 @@ void CTFLoadoutPanel::OnCommand ( const char* command )
 	{
 		if ( g_bShowItemMenu )
 		{
-			CTFItemPanel *ItemPanel = dynamic_cast< CTFItemPanel* >(GetMenuPanel ( ITEMSELCTION_MENU ));
-			ItemPanel->SetEnabled ( false );
+			m_pItemPanel->SetEnabled ( false );
 			g_bShowItemMenu = false;
-			MAINMENU_ROOT->HidePanel ( ITEMSELCTION_MENU );
+			MAINMENU_ROOT->HidePanel( ITEMSELECTION_MENU );
 			const char *sChar = strchr ( command, ' ' );
 			if ( sChar )
 			{
@@ -254,13 +253,12 @@ void CTFLoadoutPanel::OnCommand ( const char* command )
 		}
 		else
 		{
-			CTFItemPanel *ItemPanel = dynamic_cast< CTFItemPanel* >(GetMenuPanel ( ITEMSELCTION_MENU ));
-			ItemPanel->SetEnabled ( true );
+			m_pItemPanel->SetEnabled ( true );
 			const char *sChar = strchr ( command, ' ' );
 			int iSlot = atoi ( sChar + 1 );
-			ItemPanel->SetCurrentClassAndSlot ( m_iCurrentClass, iSlot );
+			m_pItemPanel->SetCurrentClassAndSlot ( m_iCurrentClass, iSlot );
 			g_bShowItemMenu = true;
-			MAINMENU_ROOT->ShowPanel ( ITEMSELCTION_MENU );
+			MAINMENU_ROOT->ShowPanel( ITEMSELECTION_MENU );
 		}
 		return;
 	}

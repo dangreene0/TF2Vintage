@@ -190,11 +190,11 @@ void CTFItemPanel::OnCommand(const char* command)
 	if ( !Q_strcmp ( command, "back" ) || (!Q_strcmp ( command, "vguicancel" )) )
 	{
 		g_bShowItemMenu = false;
-		Hide ();
+		Hide();
 	}
 	else if ( !Q_strncmp ( command, "loadout", 7 ) )
 	{
-		GetParent ()->OnCommand ( command );
+		GetParent()->OnCommand ( command );
 		return;
 	}
 	else if ( !Q_strcmp( command, "nextpage" ) )
