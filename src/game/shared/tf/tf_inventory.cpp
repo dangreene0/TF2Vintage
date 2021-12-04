@@ -147,6 +147,11 @@ void CTFInventory::AddNewItem( CEconItemDefinition *pItemDef, const int iClass, 
 #endif
 
 	item_def_index_t iItemID = pItemDef->index;
+	CEconItemView *pNewItem = new CEconItemView( iItemID );
+
+#if defined ( GAME_DLL )
+	pNewItem->SetItemClassNumber( iClass );
+#endif
 	if ( pItemDef->baseitem )
 	{
 		CEconItemView *pBaseItem = m_Items[iClass][iSlot][0];
@@ -155,16 +160,17 @@ void CTFInventory::AddNewItem( CEconItemDefinition *pItemDef, const int iClass, 
 			Warning( "Duplicate base item %d for class %s in slot %s!\n", iItemID, g_aPlayerClassNames_NonLocalized[iClass], g_LoadoutSlots[iSlot] );
 			delete pBaseItem;
 		}
+
+		m_Items[iClass][iSlot][0] = pNewItem;
 	}
 	
 	if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
 	{
-		CEconItemView *pNewItem = new CEconItemView( iItemID );
-
-	#if defined ( GAME_DLL )
-		pNewItem->SetItemClassNumber( iClass );
-	#endif
 		m_Items[iClass][iSlot].AddToTail( pNewItem );
+	}
+	else
+	{
+		delete pNewItem;
 	}
 }
 
