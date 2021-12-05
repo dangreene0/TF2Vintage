@@ -42,7 +42,7 @@ jobs:
         run: |
           ./ccache.exe -s -z
           ./ccache.exe --set-config cache_dir=$CCACHE_DIR
-          ./ccache.exe --set-config compression_level=$CCACHE_COMPRESSLEVEL
+          ./ccache.exe --set-config compression_level=$ENV{CCACHE_COMPRESSLEVEL}
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
