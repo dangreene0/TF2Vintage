@@ -27,7 +27,7 @@ jobs:
         id: cache
         with:
           path: |
-            $CCACHE_DIR
+            ${{ env.CCACHE_DIR }}
             game\bin\tf2vintage
             src\lib\public\mathlib.lib
             src\lib\public\tier1.lib
@@ -51,6 +51,9 @@ jobs:
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: 14.0
+          spectre: true
 
       - name: Configure registry
         shell: powershell
