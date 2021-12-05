@@ -45,7 +45,7 @@ jobs:
           set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${{ runner.os }}.tar.xz")
           file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
           execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-          file(COPY ./ccache DESTINATION src/devtools/bin/linux USE_SOURCE_PERMISSIONS)
+          file(COPY ./ccache DESTINATION src/devtools/bin/linux FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_WRITE GROUP_EXECUTE WORLD_READ WORLD_WRITE WORLD_EXECUTE)
       
       - name: Setup ccache
         run: |
