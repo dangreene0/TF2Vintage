@@ -1,13 +1,6 @@
 name: Windows
 
-on: [ push, pull_request ]
-
-env:
-  CCACHE_VERSION: 4.2.1
-  CCACHE_DIR: ${{ github.workspace }}\ccache
-  CCACHE_COMPRESS: true
-  CCACHE_COMPRESSLEVEL: 6
-  CCACHE_NLEVELS: 4
+on: [ push, pull_request, workflow_dispatch ]
 
 jobs:
   build:
@@ -27,27 +20,13 @@ jobs:
         id: cache
         with:
           path: |
-            ${{ env.CCACHE_DIR }}
-            game\bin\tf2vintage
+            game\tf2vintage\bin\
             src\lib\public\mathlib.lib
             src\lib\public\tier1.lib
             src\lib\public\raytrace.lib
             src\lib\public\vgui_controls.lib
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
-
-      - name: Download ccache
-        id: ccache
-        shell: cmake -P {0}
-        run: |
-          set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${{ runner.os }}.tar.xz")
-          file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
-          execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-      
-      - name: Setup ccache
-        run: |
-          ./ccache.exe --set-config cache_dir=$CCACHE_DIR
-          ./ccache.exe --set-config compression_level=6
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
@@ -66,7 +45,7 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        run: ./ccache.exe devenv src/TF2vintage.sln /Build Release
+        run: cd src;devenv TF2vintage.sln /Build Release
       
       - name: Pack
         shell: bash
