@@ -26,7 +26,13 @@ jobs:
       - uses: actions/cache@v2
         id: cache
         with:
-          path: ${{ env.CCACHE_DIR }}
+          path: |
+            $CCACHE_DIR
+            game\bin\tf2vintage
+            src\lib\public\mathlib.lib
+            src\lib\public\tier1.lib
+            src\lib\public\raytrace.lib
+            src\lib\public\vgui_controls.lib
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
 
@@ -40,9 +46,8 @@ jobs:
       
       - name: Setup ccache
         run: |
-          ./ccache.exe -s -z
           ./ccache.exe --set-config cache_dir=$CCACHE_DIR
-          ./ccache.exe --set-config compression_level=$ENV{CCACHE_COMPRESSLEVEL}
+          ./ccache.exe --set-config compression_level=6
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
