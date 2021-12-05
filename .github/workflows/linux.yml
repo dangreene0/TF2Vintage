@@ -3,7 +3,7 @@ name: Linux
 on: [ push, pull_request ]
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/src/.ccache
+  CCACHE_DIR: ${{ github.workspace }}/src/ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 6
   CCACHE_NLEVELS: 4
@@ -24,7 +24,13 @@ jobs:
       - uses: actions/cache@v2
         id: cache
         with:
-          path: ${{ env.CCACHE_DIR }}
+          path: |
+            ${{ env.CCACHE_DIR }}
+            game\bin\tf2vintage
+            src\lib\public\linux32\mathlib.a
+            src\lib\public\linux32\tier1.a
+            src\lib\public\linux32\raytrace.a
+            src\lib\public\linux32\vgui_controls.a
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
       
