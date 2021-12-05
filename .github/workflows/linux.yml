@@ -33,6 +33,8 @@ jobs:
 
       - name: Create project
         run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2vintage
+
+      - run: devtools/bin/linux/ccache -s
       
       - name: Download Steam runtime
         run: |
