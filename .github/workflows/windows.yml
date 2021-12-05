@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 env:
   CCACHE_VERSION: 4.2.1
-  CCACHE_DIR: ${{ github.workspace }}\src\.ccache
+  CCACHE_DIR: ${{ github.workspace }}\src\ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 6
   CCACHE_NLEVELS: 4
@@ -54,6 +54,7 @@ jobs:
         with:
           toolset: 14.0
           spectre: true
+          arch: x86
 
       - name: Configure registry
         shell: powershell
@@ -65,7 +66,9 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        run: ./ccache.exe msbuild src/TF2vintage.sln /t:Build /p:Configuration=Release
+        run: |
+          $ProgramFiles(x86)\\Microsoft Visual C++ Build Tools\\vcbuildtools.bat
+          ./ccache.exe msbuild -m src/TF2vintage.sln /t:Build /p:Configuration=Release
       
       - name: Pack
         shell: bash
