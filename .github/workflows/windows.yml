@@ -4,6 +4,10 @@ on: [ push, pull_request ]
 
 env:
   CCACHE_VERSION: 4.2.1
+  CCACHE_DIR: ${{ github.workspace }}\src\.ccache
+  CCACHE_COMPRESS: true
+  CCACHE_COMPRESSLEVEL: 6
+  CCACHE_NLEVELS: 4
 
 jobs:
   build:
@@ -22,7 +26,7 @@ jobs:
       - uses: actions/cache@v2
         id: cache
         with:
-          path: .ccache
+          path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
 
@@ -33,8 +37,12 @@ jobs:
           set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${{ runner.os }}.tar.xz")
           file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
           execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-        env:
-          CCACHE_VERSION: 4.2.1
+      
+      - name: Setup ccache
+        run: |
+          ./ccache.exe -s -z
+          ./ccache.exe --set-config cache_dir=$CCACHE_DIR
+          ./ccache.exe --set-config compression_level=$CCACHE_COMPRESSLEVEL
       
       - name: Configure dependencies
         uses: ilammy/msvc-dev-cmd@v1
@@ -49,16 +57,7 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        run: |
-          cd src;devenv TF2vintage.sln /Build Release
-        env:
-          CC: ${{ github.workspace }}\ccache
-          CXX: ${{ github.workspace }}\ccache
-          CCACHE_BASEDIR: ${{ github.workspace }}
-          CCACHE_DIR: ${{ github.workspace }}\.ccache
-          CCACHE_COMPRESS: true
-          CCACHE_COMPRESSLEVEL: 6
-          CCACHE_MAXSIZE: 400M
+        run: ./ccache.exe msbuild src/TF2vintage.sln /t:Build /p:Configuration=Release
       
       - name: Pack
         shell: bash
