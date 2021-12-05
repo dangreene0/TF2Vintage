@@ -4,7 +4,7 @@ on: [ push, pull_request, workflow_dispatch ]
 
 env:
   CCACHE_VERSION: 4.2.1
-  CCACHE_DIR: ${{ github.workspace }}/ccache
+  CCACHE_DIR: ${{ github.workspace }}/src/ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 6
   CCACHE_NLEVELS: 4
@@ -49,8 +49,9 @@ jobs:
       
       - name: Setup ccache
         run: |
+          cd src
           sudo mkdir -p ./ccache/tmp
-          cd src/devtools/bin/linux
+          cd devtools/bin/linux
           sudo ./ccache --set-config cache_dir=$CCACHE_DIR
           sudo ./ccache --set-config compression_level=6
 
