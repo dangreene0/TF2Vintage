@@ -49,9 +49,8 @@ jobs:
       
       - name: Setup ccache
         run: |
-          cd src
           sudo mkdir -p ./ccache/tmp
-          cd devtools/bin/linux
+          cd src/devtools/bin/linux
           sudo ./ccache --set-config cache_dir=$CCACHE_DIR
           sudo ./ccache --set-config compression_level=6
 
