@@ -4,7 +4,7 @@ on: [ push, pull_request ]
 
 env:
   CCACHE_VERSION: 4.2.1
-  CCACHE_DIR: ${{ github.workspace }}\src\ccache
+  CCACHE_DIR: ${{ github.workspace }}\ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 6
   CCACHE_NLEVELS: 4
@@ -20,7 +20,7 @@ jobs:
 
       - id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d-%H;%M;%S")"
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d-%H%M%S")"
         shell: bash
       
       - uses: actions/cache@v2
@@ -66,9 +66,7 @@ jobs:
         run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
       - name: Build project
-        run: |
-          $ProgramFiles(x86)\\Microsoft Visual C++ Build Tools\\vcbuildtools.bat
-          ./ccache.exe msbuild -m src/TF2vintage.sln /t:Build /p:Configuration=Release
+        run: ./ccache.exe devenv src/TF2vintage.sln /Build Release
       
       - name: Pack
         shell: bash
@@ -78,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: TF2Vintage
-          path: .\
+          path: Windows.tar.xz
