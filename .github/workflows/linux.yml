@@ -3,7 +3,7 @@ name: Linux
 on: [ push, pull_request ]
 
 env:
-  CCACHE_DIR: ${{ github.workspace }}/src/ccache
+  CCACHE_DIR: ${{ github.workspace }}/ccache
   CCACHE_COMPRESS: true
   CCACHE_COMPRESSLEVEL: 6
   CCACHE_NLEVELS: 4
@@ -19,18 +19,18 @@ jobs:
 
       - id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d-%H;%M;%S")"
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m%d-%H%M%S")"
       
       - uses: actions/cache@v2
         id: cache
         with:
           path: |
             ${{ env.CCACHE_DIR }}
-            game\bin\tf2vintage
-            src\lib\public\linux32\mathlib.a
-            src\lib\public\linux32\tier1.a
-            src\lib\public\linux32\raytrace.a
-            src\lib\public\linux32\vgui_controls.a
+            game/bin/tf2vintage
+            src/lib/public/linux32/mathlib.a
+            src/lib/public/linux32/tier1.a
+            src/lib/public/linux32/raytrace.a
+            src/lib/public/linux32/vgui_controls.a
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
       
@@ -39,8 +39,6 @@ jobs:
 
       - name: Create project
         run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2vintage
-
-      - run: src/devtools/bin/linux/ccache -s
       
       - name: Download Steam runtime
         run: |
@@ -53,7 +51,6 @@ jobs:
 
       - name: Build project
         run: |
-          sudo bash $STEAM_RUNTIME_PATH/setup.sh --debug --target="i386 amd64" --auto-upgrade
           sudo bash $STEAM_RUNTIME_PATH/setup.sh --release --target="i386 amd64" --auto-upgrade
           cd src && sudo make -f TF2vintage.mak
         env:
@@ -66,4 +63,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: TF2Vintage
-          path: ./
+          path: Linux.tar.xz
