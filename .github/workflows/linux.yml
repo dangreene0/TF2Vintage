@@ -27,8 +27,7 @@ jobs:
         id: cache
         with:
           path: |
-            ${{ env.CCACHE_DIR }}/
-            /valve/steam-runtime
+            ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
       - if: steps.cache.outputs.cache-hit == 'true'
@@ -58,7 +57,6 @@ jobs:
         run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2vintage
       
       - name: Download Steam runtime
-        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd /
           sudo mkdir valve
