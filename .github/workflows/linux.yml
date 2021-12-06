@@ -30,7 +30,7 @@ jobs:
             /valve/steam-runtime
           key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}
           restore-keys: ${{ runner.os }}-
-      - if: steps.cache.cache-hit
+      - if: steps.cache.outputs.cache-hit
         run: sudo bash .github/gh-cache.sh restore
       
       - name: Download ccache
@@ -57,7 +57,7 @@ jobs:
         run: cd src && sudo devtools/bin/vpc /tf2vintage +game /mksln TF2vintage
       
       - name: Download Steam runtime
-        if: steps.cache.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           cd /
           sudo mkdir valve
