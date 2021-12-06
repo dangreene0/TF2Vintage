@@ -3,6 +3,7 @@ name: Linux
 on: [ push, pull_request, workflow_dispatch ]
 
 env:
+  STEAM_RUNTIME_PATH: /valve/steam-runtime
   CCACHE_VERSION: 4.2.1
   CCACHE_DIR: ${{ github.workspace }}/src/ccache
   CCACHE_COMPRESS: true
@@ -70,8 +71,6 @@ jobs:
 
       - name: Build project
         run: cd src && sudo make -f TF2vintage.mak
-        env:
-          STEAM_RUNTIME_PATH: /valve/steam-runtime
       
       - name: Pack
         run: |
