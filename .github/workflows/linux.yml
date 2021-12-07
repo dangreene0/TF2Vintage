@@ -42,6 +42,7 @@ jobs:
       
       - name: Setup ccache
         run: |
+          sudo mkdir -p game/tf2vintage/bin
           cd src
           sudo mkdir -p ./ccache/tmp
           cd devtools/bin/linux
