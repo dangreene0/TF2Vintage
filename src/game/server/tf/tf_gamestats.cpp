@@ -610,7 +610,7 @@ void CTFGameStats::Event_PlayerDamage( CBasePlayer *pBasePlayer, const CTakeDama
 	IncrementStat( pAttacker, TFSTAT_DAMAGE, iDamageTaken );
 
 	TF_Gamestats_LevelStats_t::PlayerDamageLump_t damage;
-	Vector killerOrg ={};
+	Vector killerOrg( 0 );
 
 	// set the location where the target was hit
 	const Vector &org = pTarget->GetAbsOrigin();
