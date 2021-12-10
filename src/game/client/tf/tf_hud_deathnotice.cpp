@@ -400,7 +400,7 @@ void CTFHudDeathNotice::OnGameEvent(IGameEvent *event, int iDeathNoticeMsg)
 			DeathNoticeItem& msg = m_DeathNotices[iDeathNoticeMsg];
 			_snwprintf(wzHumiliationNum, ARRAYSIZE(wzHumiliationNum), L"%d", msg.iCount++);
 			pMsg = g_pVGuiLocalize->Find("#Humiliation_Count");
-			if (pMsg && wzHumiliationNum)
+			if (pMsg)
 			{
 				static wchar_t wszHumiliations[256];
 				g_pVGuiLocalize->ConstructString(wszHumiliations, sizeof(wszHumiliations), L"%s1 %s2", 2, pMsg, wzHumiliationNum);

@@ -686,7 +686,7 @@ void CHudBaseDeathNotice::FireGameEvent( IGameEvent *event )
 		bool bInverted = m_DeathNotices[iMsg].bLocalPlayerInvolved;
 #ifdef TF_VINTAGE_CLIENT
 		ConVarRef cl_hud_console( "cl_hud_console" );
-		if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+		if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 #else
 		if ( IsConsole() )
 #endif

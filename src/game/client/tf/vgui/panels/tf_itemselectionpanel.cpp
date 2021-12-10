@@ -144,9 +144,9 @@ bool CTFItemPanel::Init()
 
 	g_TFWeaponScriptParser.InitParser("scripts/tf_weapon_*.txt", true, false);
 
-	char* chEmptyLoc = new char[32];
+	char chEmptyLoc[32];
 	wchar_t *wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
-	sprintf(chEmptyLoc, "%ws", wcLoc);
+	g_pVGuiLocalize->ConvertUnicodeToANSI( wcLoc, chEmptyLoc, sizeof( chEmptyLoc ) );
 
 	m_pWeaponSetPanel = new CTFWeaponSelectPanel( this, "weaponsetpanel" );
 	m_pItemSlotLabel = new CExLabel( this, "ItemSlotLabel", "#PrimaryWeapon" );

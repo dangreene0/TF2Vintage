@@ -117,9 +117,9 @@ bool CTFLoadoutPanel::Init()
 	m_pItemPanel = NULL;
 	g_TFWeaponScriptParser.InitParser( "scripts/tf_weapon_*.txt", true, false );
 
-	char* chEmptyLoc = new char[32];
+	char chEmptyLoc[32];
 	wchar_t* wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
-	sprintf(chEmptyLoc, "%ws", wcLoc);
+	g_pVGuiLocalize->ConvertUnicodeToANSI( wcLoc, chEmptyLoc, sizeof( chEmptyLoc ) );
 
 	for ( int i = 0; i < INVENTORY_ROWNUM; i++ )
 	{

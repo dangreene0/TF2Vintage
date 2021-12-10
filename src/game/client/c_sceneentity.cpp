@@ -829,7 +829,7 @@ CChoreoScene *C_SceneEntity::LoadScene( const char *filename )
 		pBuffer = new char[ fileSize ];
 		if ( !scenefilecache->GetSceneData( filename, (byte *)pBuffer, fileSize ) )
 		{
-			delete[] pBuffer;
+			delete[] (char*)pBuffer;
 			return NULL;
 		}
 
@@ -853,7 +853,7 @@ CChoreoScene *C_SceneEntity::LoadScene( const char *filename )
 		pScene->SetEventCallbackInterface( this );
 	}
 
-	delete[] pBuffer;
+	delete[] (char*)pBuffer;
 	return pScene;
 }
 

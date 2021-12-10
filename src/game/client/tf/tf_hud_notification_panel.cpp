@@ -453,7 +453,6 @@ const char *CHudNotificationPanel::GetNotificationByType( int iType )
 		break;
 
 	default:
-		DevMsg("Failed to load notification res file '%s' specified in %s.");
 		break;
 	}
 

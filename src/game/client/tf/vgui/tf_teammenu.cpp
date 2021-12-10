@@ -364,7 +364,7 @@ void CTFTeamMenu::ShowPanel( bool bShow )
 			{
 			case TF_TEAM_BLUE:
 				
-				if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+				if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 				{
 					m_pBlueTeamButton->OnCursorEntered();
 					m_pBlueTeamButton->SetDefaultAnimation( "enter_enabled" );
@@ -373,7 +373,7 @@ void CTFTeamMenu::ShowPanel( bool bShow )
 				break;
 
 			case TF_TEAM_RED:
-				if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+				if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 				{
 					m_pRedTeamButton->OnCursorEntered();
 					m_pRedTeamButton->SetDefaultAnimation( "enter_enabled" );
@@ -382,7 +382,7 @@ void CTFTeamMenu::ShowPanel( bool bShow )
 				break;
 
 			default:
-				if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+				if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 				{
 					m_pAutoTeamButton->OnCursorEntered();
 					m_pAutoTeamButton->SetDefaultAnimation( "enter_enabled" );
@@ -410,7 +410,7 @@ void CTFTeamMenu::ShowPanel( bool bShow )
 			SetMouseInputEnabled( false );
 
 			ConVarRef cl_hud_console( "cl_hud_console" );
-			if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+			if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 			{
 				// Close the door behind us
 				CTFTeamButton *pButton = dynamic_cast< CTFTeamButton *> (GetFocusNavGroup().GetCurrentFocus());
@@ -836,7 +836,7 @@ void CTFArenaTeamMenu::ShowPanel(bool bShow)
 			SetMouseInputEnabled(false);
 
 			ConVarRef cl_hud_console( "cl_hud_console" );
-			if ( IsConsole() || cl_hud_console.IsValid() && cl_hud_console.GetBool() )
+			if ( IsConsole() || ( cl_hud_console.IsValid() && cl_hud_console.GetBool() ) )
 			{
 				// Close the door behind us
 				CTFTeamButton *pButton = dynamic_cast< CTFTeamButton *> (GetFocusNavGroup().GetCurrentFocus());
