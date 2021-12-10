@@ -253,7 +253,7 @@ void CTFGrenadePipebombProjectile::OnDataChanged( DataUpdateType_t updateType )
 		{
 			if ( C_BasePlayer::GetLocalPlayer() == GetThrower() )
 			{
-				Vector vecColor;
+				Vector vecColor( 0 );
 				if ( GetTeamNumber() == TF_TEAM_RED )
 					vecColor.Init( 150.f, 0.0f, 0.0f );
 				else if ( GetTeamNumber() == TF_TEAM_BLUE )
@@ -963,28 +963,31 @@ void CProxyStickyBombGlowColor::OnBind( void *pObject )
 		return;
 	}
 
-	static Vector vecColor( 0 );
+	static Vector const vecRed( 100.f, 0 , 0 );
+	static Vector const vecBlue( 0, 0, 100.f );
 
 	if ( pProjectile->m_bGlowing )
 	{
 		if ( pProjectile->GetTeamNumber() == TF_TEAM_RED )
-			vecColor.Init( 100.0f, 0.0f, 0.0f );
+		{
+			pProjectile->m_pGlowObject->SetColor( vecRed * 2.5f );
+			m_pResult->SetVecValue( vecRed.x, vecRed.y, vecRed.z );
+		}
 		else if ( pProjectile->GetTeamNumber() == TF_TEAM_BLUE )
-			vecColor.Init( 0.0f, 0.0f, 100.0f );
-
-		pProjectile->m_pGlowObject->SetColor( vecColor * 2.5f );
-		m_pResult->SetVecValue( vecColor.x, vecColor.y, vecColor.z );
-
-		return;
+		{
+			pProjectile->m_pGlowObject->SetColor( vecBlue * 2.5f );
+			m_pResult->SetVecValue( vecBlue.x, vecBlue.y, vecBlue.z );
+		}
 	}
+	else
+	{
+		if ( pProjectile->GetTeamNumber() == TF_TEAM_RED )
+			pProjectile->m_pGlowObject->SetColor( vecRed + Vector( 100.f ) );
+		else if ( pProjectile->GetTeamNumber() == TF_TEAM_BLUE )
+			pProjectile->m_pGlowObject->SetColor( vecBlue + Vector( 100.f ) );
 
-	if ( pProjectile->GetTeamNumber() == TF_TEAM_RED )
-		vecColor.Init( 200.0f, 100.0f, 100.0f );
-	else if ( pProjectile->GetTeamNumber() == TF_TEAM_BLUE )
-		vecColor.Init( 100.0f, 100.0f, 200.0f );
-
-	pProjectile->m_pGlowObject->SetColor( vecColor );
-	m_pResult->SetVecValue( 1.0f, 1.0f, 1.0f );
+		m_pResult->SetVecValue( 1.0f, 1.0f, 1.0f );
+	}
 }
 
 EXPOSE_INTERFACE( CProxyStickyBombGlowColor, IMaterialProxy, "StickybombGlowColor" IMATERIAL_PROXY_INTERFACE_VERSION );
