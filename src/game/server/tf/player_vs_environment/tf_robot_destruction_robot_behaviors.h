@@ -11,27 +11,6 @@
 #include "Path/NextBotPathFollow.h"
 class CTFRobotDestruction_Robot;
 
-class CRobotBehavior : public Action<CTFRobotDestruction_Robot>
-{
-public:
-	virtual const char *GetName( void ) const { return "RobotBehavior"; }
-
-	virtual Action<CTFRobotDestruction_Robot> *InitialContainedAction( CTFRobotDestruction_Robot *me );
-
-	virtual ActionResult<CTFRobotDestruction_Robot> OnStart( CTFRobotDestruction_Robot *me, Action<CTFRobotDestruction_Robot> *priorAction );
-	virtual ActionResult<CTFRobotDestruction_Robot> Update( CTFRobotDestruction_Robot *me, float dt );
-
-	virtual QueryResultType	IsPositionAllowed( const INextBot *me, const Vector &pos ) const;
-
-	virtual EventDesiredResult<CTFRobotDestruction_Robot> OnInjured( CTFRobotDestruction_Robot *me, const CTakeDamageInfo &info );
-	EventDesiredResult<CTFRobotDestruction_Robot> OnContact( CTFRobotDestruction_Robot *me, CBaseEntity *pOther, CGameTrace *result = NULL );
-
-private:
-	CountdownTimer m_speakTimer;
-	CountdownTimer m_idleTimer;
-};
-
-
 class CRobotPatrol : public Action<CTFRobotDestruction_Robot>
 {
 public:
