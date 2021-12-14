@@ -1,9 +1,16 @@
+//========= Copyright © Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "tf_robot_destruction_robot.h"
 #include "particle_parse.h"
 
 #ifdef GAME_DLL
-	#include "player_vs_environment/tf_robot_destruction_robot_behaviors.h"
+	#include "tf_ammo_pack.h"
+	#include "entity_bonuspack.h"
 #else
 	#include "eventlist.h"
 #endif
@@ -17,6 +24,9 @@ extern ConVar tf_obj_gib_maxspeed;
 ConVar tf_rd_robot_repair_rate( "tf_rd_robot_repair_rate", "60", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
 
 #ifdef GAME_DLL
+
+IMPLEMENT_INTENTION_INTERFACE( CTFRobotDestruction_Robot, CRobotBehavior );
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -135,14 +145,73 @@ void CRobotBody::Impulse( Vector const& vecImpulse )
 //-----------------------------------------------------------------------------
 void CRobotBody::Approach( Vector& vecIn, Vector const& vecTarget, float flRate )
 {
-	Vector vecApproach = ( vecTarget - vecIn ) * flRate * gpGlobals->frametime;
+	Vector vecApproach = (( vecTarget - vecIn ) * flRate) * gpGlobals->frametime;
+	if ( vecApproach.LengthSqr() > ( vecIn - vecTarget ).LengthSqr() )
+		vecIn = vecTarget;
+	else
+		vecIn += vecApproach;		
+}
+#else
+
+C_RobotBody::C_RobotBody( CBaseCombatCharacter *actor )
+	: m_Actor( actor )
+{
+	m_iMoveX = -1;
+	m_iMoveY = -1;
+
+	m_vecLean = vec3_origin;
+	m_vecPrevOrigin = vec3_origin;
+	m_vecImpulse = vec3_origin;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void C_RobotBody::Update( void )
+{
+	if ( m_Actor == nullptr )
+		return;
+
+	if ( m_iMoveX < 0 )
+		m_iMoveX = m_Actor->LookupPoseParameter( "move_x" );
+	if ( m_iMoveY < 0 )
+		m_iMoveY = m_Actor->LookupPoseParameter( "move_y" );
+
+	Vector vecVelocity = m_vecPrevOrigin - m_Actor->GetAbsOrigin();
+	m_vecPrevOrigin = m_Actor->GetAbsOrigin();
+
+	Approach( m_vecLean, vecVelocity + m_vecImpulse, 2.0f );
+	Approach( m_vecImpulse, vec3_origin, 200.0f );
+
+	Vector vecFwd, vecRight;
+	AngleVectors( m_Actor->GetAbsAngles(), &vecFwd, &vecRight, nullptr );
+
+	if ( m_iMoveX >= 0 )
+		m_Actor->SetPoseParameter( m_iMoveX, vecFwd.Dot( m_vecLean ) );
+	if ( m_iMoveY >= 0 )
+		m_Actor->SetPoseParameter( m_iMoveY, vecRight.Dot( m_vecLean ) );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void C_RobotBody::Impulse( Vector const& vecImpulse )
+{ 
+	m_vecImpulse += vecImpulse * 5;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Shift a vector towards the target at the specified rate over time
+//-----------------------------------------------------------------------------
+void C_RobotBody::Approach( Vector& vecIn, Vector const& vecTarget, float flRate )
+{
+	Vector vecApproach = (( vecTarget - vecIn ) * flRate) * gpGlobals->frametime;
 	if ( vecApproach.LengthSqr() > ( vecIn - vecTarget ).LengthSqr() )
 		vecIn = vecTarget;
 	else
 		vecIn += vecApproach;		
 }
 #endif
-
 
 BEGIN_DATADESC( CRobotDispenser )
 END_DATADESC()
@@ -224,10 +293,13 @@ CTFRobotDestruction_Robot::CTFRobotDestruction_Robot( void )
 #ifdef GAME_DLL
 	ALLOCATE_INTENTION_INTERFACE( CTFRobotDestruction_Robot );
 	m_loco = new CRobotLocomotion( this );
-	m_body = new CRobotBody( this );
 #else
 	ListenForGameEvent( "rd_robot_impact" );
 #endif
+
+	m_body = new CRobotBody( this );
+
+	UseClientSideAnimation();
 }
 
 CTFRobotDestruction_Robot::~CTFRobotDestruction_Robot( void )
@@ -237,9 +309,10 @@ CTFRobotDestruction_Robot::~CTFRobotDestruction_Robot( void )
 		delete m_intention;
 	if ( m_loco )
 		delete m_loco;
+#endif
+
 	if ( m_body )
 		delete m_body;
-#endif
 }
 
 
@@ -278,6 +351,11 @@ void CTFRobotDestruction_Robot::Spawn()
 		UTIL_Remove( this );
 	}
 
+	/*if ( m_hRobotGroup )
+	{
+		m_hRobotGroup->UpdateState();
+	}*/
+
 	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotCreated( this );*/
 
@@ -308,6 +386,7 @@ bool CTFRobotDestruction_Robot::ShouldCollide( int collisionGroup, int contentsM
 //-----------------------------------------------------------------------------
 void CTFRobotDestruction_Robot::HandleAnimEvent( animevent_t *pEvent )
 {
+	// NOP
 }
 
 //-----------------------------------------------------------------------------
@@ -329,6 +408,8 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 	// Let the game logic know that we died
 	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotRemoved( this );*/
+
+	PlayDeathEffects();
 
 	CTFPlayer *pScorer = ToTFPlayer( TFGameRules()->GetDeathScorer( info.GetAttacker(), info.GetInflictor(), this ) );
 	if ( pScorer )
@@ -377,7 +458,137 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 
+	/*if ( m_hRobotSpawn )
+	{
+		m_hRobotSpawn->OnRobotKilled();
+	}*/
+
+	/*if ( m_hRobotGroup )
+	{
+		m_hRobotGroup->OnRobotKilled();
+	}*/
+
+	if ( *(int *)( this + 0x24F ) == 2 )
+	{
+		SetModel( "TODO" );
+		ResetSequence( LookupSequence( "idle" ) );
+		m_takedamage = DAMAGE_NO;
+		SetContextThink( &CTFRobotDestruction_Robot::SpewBarsThink, gpGlobals->curtime, "spew_bars_context" );
+		SetContextThink( &CTFRobotDestruction_Robot::SelfDestructThink, gpGlobals->curtime + 5.0f, "self_destruct_think" );
+
+		return;
+	}
+
+	SpewBars( *(int *)( this + 0x24F ) );
+	SpewGibs();
+
 	CBaseAnimating::Event_Killed( info );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Play our death visual and audio effects
+//-----------------------------------------------------------------------------
+void CTFRobotDestruction_Robot::PlayDeathEffects()
+{
+	EmitSound( "TODO" ); 
+	EmitSound( "RD.BotDeathExplosion" );
+
+	DispatchParticleEffect( "rd_robot_explosion", GetAbsOrigin(), vec3_angle );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestruction_Robot::SpewGibs()
+{
+	FOR_EACH_VEC( m_aGibs, i )
+	{
+		CTFAmmoPack *pAmmoPack = CTFAmmoPack::Create( GetAbsOrigin() + m_aGibs[i].offset, GetAbsAngles(), this, m_aGibs[i].modelName );
+		if ( pAmmoPack )
+		{
+			pAmmoPack->ActivateWhenAtRest();
+
+			// Calculate the initial impulse on the weapon.
+			Vector vecImpulse( random->RandomFloat( -0.5, 0.5 ), random->RandomFloat( -0.5, 0.5 ), random->RandomFloat( 0.75, 1.25 ) );
+			VectorNormalize( vecImpulse );
+
+			bool bIsHeadGib = FStrEq( "models/bots/bot_worker/bot_worker_head_gib.mdl", m_aGibs[i].modelName );
+			if ( bIsHeadGib ) 
+			{	//Shoot straight up
+				vecImpulse[2] = 3.0f;
+				vecImpulse *= random->RandomFloat( tf_obj_gib_velocity_max.GetFloat() * 0.75, tf_obj_gib_velocity_max.GetFloat() );
+			}
+			else
+			{
+				vecImpulse *= random->RandomFloat( tf_obj_gib_velocity_min.GetFloat(), tf_obj_gib_velocity_max.GetFloat() );
+			}
+
+			// Cap the impulse.
+			float flSpeed = vecImpulse.Length();
+			if ( flSpeed > tf_obj_gib_maxspeed.GetFloat() )
+			{
+				VectorScale( vecImpulse, tf_obj_gib_maxspeed.GetFloat() / flSpeed, vecImpulse );
+			}
+
+			if ( pAmmoPack->VPhysicsGetObject() )
+			{
+				AngularImpulse angImpulse( 0.f, random->RandomFloat( 0.f, 100.f ), 0.f );
+				if ( bIsHeadGib )
+				{	// Speeeeeeeen!
+					angImpulse = AngularImpulse( RandomFloat( -60.f, 60.f ), RandomFloat( -60.f, 60.f ), 100000.f );
+				}
+				pAmmoPack->VPhysicsGetObject()->SetVelocityInstantaneous( &vecImpulse, &angImpulse );
+			}
+
+			pAmmoPack->SetInitialVelocity( vecImpulse );
+
+			pAmmoPack->m_nSkin = Min( 0, GetTeamNumber() - 2 );
+
+			// Give the ammo pack some health, so that trains can destroy it.
+			pAmmoPack->SetCollisionGroup( COLLISION_GROUP_DEBRIS );
+			pAmmoPack->m_takedamage = DAMAGE_YES;
+			pAmmoPack->SetHealth( 900 );
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestruction_Robot::SpewBars( int nNumToSpew )
+{
+	for ( int i=0; i < nNumToSpew; ++i )
+	{
+		CBonusPack *pBonusPack = static_cast<CBonusPack *>( CreateEntityByName("item_bonuspack") );
+		if ( pBonusPack )
+		{
+			pBonusPack->ChangeTeam( GetEnemyTeam( GetTeamNumber() ) );
+			pBonusPack->SetDisabled( false );
+			pBonusPack->SetAbsOrigin( GetAbsOrigin() + Vector( 0, 0, 20 ) );
+			pBonusPack->SetAbsAngles( QAngle( 0.f, RandomFloat( 0, 360.f ), 0.f ) );
+
+			// Calculate the initial impulse on the weapon
+			Vector vecImpulse( random->RandomFloat( -0.5, 0.5 ), random->RandomFloat( -0.5, 0.5 ), random->RandomFloat( 1.0, 1.25 ) );
+			VectorNormalize( vecImpulse );
+			vecImpulse *= random->RandomFloat( 125.f, 150.f );
+
+			// Cap the impulse.
+			float flSpeed = vecImpulse.Length();
+			if ( flSpeed > tf_obj_gib_maxspeed.GetFloat() )
+			{
+				VectorScale( vecImpulse, tf_obj_gib_maxspeed.GetFloat() / flSpeed, vecImpulse );
+			}
+
+			pBonusPack->SetCollisionGroup( COLLISION_GROUP_DEBRIS );
+			pBonusPack->AddSpawnFlags( SF_NORESPAWN );
+			pBonusPack->m_nSkin = Min( 0, GetTeamNumber() - 2 );
+
+			DispatchSpawn( pBonusPack );
+			pBonusPack->DropSingleInstance( vecImpulse, NULL, 0, 0 );
+			pBonusPack->SetCycle( RandomFloat( 0.f, 1.f ) );
+			pBonusPack->SetGravity( 0.2f );
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -404,6 +615,7 @@ int CTFRobotDestruction_Robot::OnTakeDamage( const CTakeDamageInfo &info )
 		return 0;
 
 	CTakeDamageInfo newInfo{info};
+	ModifyDamage( &newInfo );
 
 	Vector vecDamagePos = newInfo.GetDamagePosition();
 	QAngle vecDamageAngles;
@@ -417,7 +629,7 @@ int CTFRobotDestruction_Robot::OnTakeDamage( const CTakeDamageInfo &info )
 	DispatchParticleEffect( "rd_bot_impact_sparks", vecDamagePos, vecDamageAngles );
 
 	Vector vecImpulse( newInfo.GetDamageForce() );
-	GetBodyInterface()->Impulse( vecImpulse.Normalized() * 20.f );
+	m_body->Impulse( vecImpulse.Normalized() * 20.f );
 
 	IGameEvent *event = gameeventmanager->CreateEvent( "rd_robot_impact" );
 	if ( event )
@@ -430,12 +642,48 @@ int CTFRobotDestruction_Robot::OnTakeDamage( const CTakeDamageInfo &info )
 		gameeventmanager->FireEvent( event );
 	}
 
+	/*if ( m_hRobotGroup )
+	{
+		m_hRobotGroup->OnRobotAttacked();
+	}*/
+
 	int nResult = BaseClass::OnTakeDamage( newInfo );
 
 	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotAttacked( this );*/
 
 	return nResult;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Scale damage based on attacker
+//-----------------------------------------------------------------------------
+void CTFRobotDestruction_Robot::ModifyDamage( CTakeDamageInfo *info ) const
+{
+	CTFPlayer *pAttacker = ToTFPlayer( info->GetAttacker() );
+	if ( pAttacker )
+	{
+		float flScale = 1.0f;
+		switch( pAttacker->GetPlayerClass()->GetClassIndex() )
+		{
+			case TF_CLASS_SCOUT:
+				flScale = 1.5f;
+				break;
+			case TF_CLASS_SNIPER:
+				flScale = 2.25f;
+				break;
+			case TF_CLASS_SPY:
+			case TF_CLASS_MEDIC:
+				flScale = 2.0f;
+				break;
+			case TF_CLASS_PYRO:
+			case TF_CLASS_HEAVYWEAPONS:
+				flScale = 0.75;
+				break;
+		}
+
+		info->SetDamage( info->GetDamage() * flScale );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -455,6 +703,28 @@ void CTFRobotDestruction_Robot::TraceAttack( const CTakeDamageInfo &inputInfo, c
 //-----------------------------------------------------------------------------
 void CTFRobotDestruction_Robot::InputStopAndUseComputer( inputdata_t &inputdata )
 {
+}
+
+void CTFRobotDestruction_Robot::EnableUber()
+{
+	m_bShielded = true;
+	m_nSkin = GetTeamNumber() == TF_TEAM_RED ? 2 : 3;
+
+	/*if ( m_hRobotGroup )
+	{
+		m_hGroup->UpdateState();
+	}*/
+}
+
+void CTFRobotDestruction_Robot::DisableUber()
+{
+	m_bShielded = false;
+	m_nSkin = GetTeamNumber() == TF_TEAM_RED ? 0 : 1;
+
+	/*if ( m_hRobotGroup )
+	{
+		m_hRobotGroup->UpdateState();
+	}*/
 }
 
 //-----------------------------------------------------------------------------
@@ -487,6 +757,29 @@ void CTFRobotDestruction_Robot::RepairSelfThink()
 		SetContextThink( &CTFRobotDestruction_Robot::RepairSelfThink, gpGlobals->curtime + 1.0f, "RepairSelfThink" );
 	}
 }
+
+void CTFRobotDestruction_Robot::SpewBarsThink()
+{
+	++ *(int *)( this + 0x253 );
+	SpewBars( 1 );
+
+	if ( *(int *)( this + 0x253 ) >= *(int *)( this + 0x24F ) )
+	{
+		SelfDestructThink();
+	}
+	else
+	{
+		SetContextThink( &CTFRobotDestruction_Robot::SpewBarsThink, gpGlobals->curtime + 0.1f, "spew_bars_context" );
+	}
+}
+
+void CTFRobotDestruction_Robot::SelfDestructThink()
+{
+	SpewGibs();
+	SpewBars( *(int *)( this + 0x24F ) - *(int *)( this + 0x253 ) );
+	PlayDeathEffects();
+	UTIL_Remove( this );
+}
 #else
 
 //-----------------------------------------------------------------------------
@@ -501,7 +794,7 @@ void CTFRobotDestruction_Robot::FireGameEvent( IGameEvent *event )
 		if ( index_ == entindex() )
 		{
 			Vector vecImpulse( event->GetFloat( "impulse_x" ), event->GetFloat( "impulse_y" ), event->GetFloat( "impulse_z" ) );
-			// TODO: Animation control
+			m_body->Impulse( vecImpulse );
 		}
 	}
 }
@@ -518,15 +811,36 @@ void CTFRobotDestruction_Robot::OnDataChanged( DataUpdateType_t type )
 		SetNextClientThink( CLIENT_THINK_ALWAYS );
 	}
 
-	//UpdateDamagedEffects();
+	UpdateDamagedEffects();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CStudioHdr *CTFRobotDestruction_Robot::OnNewModel()
 {
 	CStudioHdr *hdr = BaseClass::OnNewModel();
 	BuildPropList( "spawn", m_aSpawnProps, GetModelIndex(), 1.0f, COLLISION_GROUP_NONE );
 
 	return hdr;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Play damaged effects
+//-----------------------------------------------------------------------------
+void CTFRobotDestruction_Robot::UpdateDamagedEffects()
+{
+	// Start playing our damaged particle if we're damaged
+	bool bLowHealth = GetHealth() <= ( GetMaxHealth() * 0.5 );
+	if ( bLowHealth && !m_hDamagedEffect )
+	{
+		m_hDamagedEffect = ParticleProp()->Create( "sentrydamage_4", PATTACH_ABSORIGIN_FOLLOW, 0, Vector( 0, 0, 50.0f ) );
+	}
+	else if ( !bLowHealth && m_hDamagedEffect )
+	{
+		ParticleProp()->StopEmission( m_hDamagedEffect );
+		m_hDamagedEffect = NULL;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -553,16 +867,15 @@ void CTFRobotDestruction_Robot::FireEvent( const Vector& origin, const QAngle& a
 			Vector vForward, vRight, vUp;
 			AngleVectors( GetAbsAngles(), &vForward, &vRight, &vUp );
 
-			Vector vecBreakVelocity = Vector(0, 0, 200);
+			Vector vecBreakVelocity = Vector( 0, 0, 200.0f );
 			AngularImpulse angularImpulse( RandomFloat( 0.0f, 120.0f ), RandomFloat( 0.0f, 120.0f ), 0.0 );
-			Vector vecOrigin = GetAbsOrigin() + vForward*70 + vUp*10;
+			Vector vecOrigin = GetAbsOrigin() + (vForward * 70.0f) + (vUp * 10.0f);
 			QAngle vecAngles = GetAbsAngles();
 			breakablepropparams_t breakParams( vecOrigin, vecAngles, vecBreakVelocity, angularImpulse );
 			breakParams.impactEnergyScale = 1.0f;
 			breakParams.defBurstScale = 3.0f;
-			int nModelIndex = GetModelIndex();
 
-			CreateGibsFromList( vecProp, nModelIndex, NULL, breakParams, this, -1 , false, true );
+			CreateGibsFromList( vecProp, GetModelIndex(), NULL, breakParams, this, -1 , false, true );
 		}
 	}
 
@@ -574,52 +887,17 @@ void CTFRobotDestruction_Robot::FireEvent( const Vector& origin, const QAngle& a
 //-----------------------------------------------------------------------------
 void CTFRobotDestruction_Robot::UpdateClientSideAnimation( void )
 {
+	m_body->Update();
+
 	BaseClass::UpdateClientSideAnimation();
 }
 
-#endif
-
-#ifdef GAME_DLL
 //-----------------------------------------------------------------------------
-// Purpose:
+// Purpose: Specify where our healthbars should go over our heads
 //-----------------------------------------------------------------------------
-float CRobotPathCost::operator()( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const CFuncElevator *elevator, float length ) const
+float CTFRobotDestruction_Robot::GetHealthBarHeightOffset() const
 {
-	if ( fromArea == nullptr )
-	{
-		// first area in path; zero cost
-		return 0.0f;
-	}
-
-	if ( !m_Actor->GetLocomotionInterface()->IsAreaTraversable( area ) )
-	{
-		// dead end
-		return -1.0f;
-	}
-
-	if ( ladder != nullptr )
-		length = ladder->m_length;
-	else if ( length <= 0.0f )
-		length = ( area->GetCenter() - fromArea->GetCenter() ).Length();
-
-	const float dz = fromArea->ComputeAdjacentConnectionHeightChange( area );
-	if ( dz >= m_Actor->GetLocomotionInterface()->GetStepHeight() )
-	{
-		if ( dz >= m_Actor->GetLocomotionInterface()->GetMaxJumpHeight() )
-			return -1.0f;
-
-		// we won't actually get here according to the locomotor
-		length *= 5;
-	}
-	else
-	{
-		if ( dz < -m_Actor->GetLocomotionInterface()->GetDeathDropHeight() )
-			return -1.0f;
-	}
-
-	return length + fromArea->GetCostSoFar();
+	return 32.0f; //TODO
 }
-
-IMPLEMENT_INTENTION_INTERFACE( CTFRobotDestruction_Robot, CRobotBehavior );
 
 #endif

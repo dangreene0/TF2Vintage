@@ -27,11 +27,37 @@
 
 #define CObjectDispenser C_ObjectDispenser
 #define CRobotDispenser C_RobotDispenser
+
+#define CRobotBody C_RobotBody
 #endif
 
 class CTFRobotDestruction_Robot;
+class CTFRobotDestruction_RobotGroup;
+class CTFRobotDestruction_RobotSpawn;
 
 #ifdef GAME_DLL
+
+class CRobotBehavior : public Action<CTFRobotDestruction_Robot>
+{
+public:
+	virtual const char *GetName( void ) const { return "RobotBehavior"; }
+
+	virtual Action<CTFRobotDestruction_Robot> *InitialContainedAction( CTFRobotDestruction_Robot *me );
+
+	virtual ActionResult<CTFRobotDestruction_Robot> OnStart( CTFRobotDestruction_Robot *me, Action<CTFRobotDestruction_Robot> *priorAction );
+	virtual ActionResult<CTFRobotDestruction_Robot> Update( CTFRobotDestruction_Robot *me, float dt );
+
+	virtual QueryResultType	IsPositionAllowed( const INextBot *me, const Vector &pos ) const;
+
+	virtual EventDesiredResult<CTFRobotDestruction_Robot> OnInjured( CTFRobotDestruction_Robot *me, const CTakeDamageInfo &info );
+	EventDesiredResult<CTFRobotDestruction_Robot> OnContact( CTFRobotDestruction_Robot *me, CBaseEntity *pOther, CGameTrace *result = NULL );
+
+private:
+	CountdownTimer m_speakTimer;
+	CountdownTimer m_idleTimer;
+};
+
+
 class CRobotLocomotion : public NextBotGroundLocomotion
 {
 public:
@@ -67,6 +93,28 @@ private:
 	void Approach( Vector& vecIn, Vector const& vecTarget, float flRate );
 
 	Activity m_Activity;
+
+	int m_iMoveX;
+	int m_iMoveY;
+
+	Vector m_vecPrevOrigin;
+	Vector m_vecLean;
+	Vector m_vecImpulse;
+};
+#else
+
+class C_RobotBody
+{
+public:
+	C_RobotBody( CBaseCombatCharacter *actor );
+
+	void Update( void );
+	void Impulse( Vector const& vecImpulse );
+
+private:
+	void Approach( Vector& vecIn, Vector const& vecTarget, float flRate );
+
+	CHandle<CBaseCombatCharacter> m_Actor;
 
 	int m_iMoveX;
 	int m_iMoveY;
@@ -138,20 +186,34 @@ public:
 	void			InputStopAndUseComputer( inputdata_t &inputdata );
 
 	void			RepairSelfThink( void );
+	void			SelfDestructThink( void );
+
+	void			EnableUber( void );
+	void			DisableUber( void );
 
 	void			SetPanicking( bool bSet ) { m_bPanicking = bSet; }
 	bool			IsPanicking( void ) const { return m_bPanicking; }
 
 	CPathTrack*		GetGoalPath( void ) const { return m_hGoalPath; }
 	void			ArriveAtPath( void );
+
+private:
+	void			PlayDeathEffects( void );
+	void			ModifyDamage( CTakeDamageInfo *info ) const;
+	void			SpewBars( int nNumToSpew );
+	void			SpewBarsThink( void );
+	void			SpewGibs( void );
 #else
 	virtual int		GetHealth( void ) const OVERRIDE { return m_iHealth; }
 	virtual int		GetMaxHealth( void ) const OVERRIDE { return m_iMaxHealth; }
+	virtual float	GetHealthBarHeightOffset( void ) const OVERRIDE;
+	virtual bool	IsHealthBarVisible( void ) const OVERRIDE { return true; }
 
 	virtual void	FireGameEvent( IGameEvent *event );
 
 	virtual void	OnDataChanged( DataUpdateType_t type );
 	virtual CStudioHdr* OnNewModel();
+	void			UpdateDamagedEffects( void );
 
 	virtual void	FireEvent( const Vector& origin, const QAngle& angles, int event, const char *options );
 	virtual void	UpdateClientSideAnimation( void );
@@ -176,12 +238,18 @@ private:
 	CHandle<CRobotDispenser> m_hDispenser;
 	CHandle<CPathTrack>		m_hGoalPath;
 
+	CHandle<CTFRobotDestruction_RobotGroup> m_hRobotGroup;
+	CHandle<CTFRobotDestruction_RobotSpawn> m_hRobotSpawn;
+
 	bool m_bPanicking;
+#else
+
+	HPARTICLEFFECT	m_hDamagedEffect;
+	C_RobotBody*	m_body;
 #endif
 };
 
 #ifdef GAME_DLL
-//--------------------------------------------------------------------------------------------------------------
 class CRobotPathCost : public IPathCost
 {
 public:
@@ -190,11 +258,45 @@ public:
 		m_Actor = me;
 	}
 
-	virtual float operator()( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const CFuncElevator *elevator, float length ) const OVERRIDE;
+	virtual float operator()( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const CFuncElevator *elevator, float length ) const OVERRIDE
+	{
+		if ( fromArea == nullptr )
+		{
+			// first area in path; zero cost
+			return 0.0f;
+		}
+
+		if ( !m_Actor->GetLocomotionInterface()->IsAreaTraversable( area ) )
+		{
+			// dead end
+			return -1.0f;
+		}
+
+		if ( ladder != nullptr )
+			length = ladder->m_length;
+		else if ( length <= 0.0f )
+			length = ( area->GetCenter() - fromArea->GetCenter() ).Length();
+
+		const float dz = fromArea->ComputeAdjacentConnectionHeightChange( area );
+		if ( dz >= m_Actor->GetLocomotionInterface()->GetStepHeight() )
+		{
+			if ( dz >= m_Actor->GetLocomotionInterface()->GetMaxJumpHeight() )
+				return -1.0f;
+
+			// we won't actually get here according to the locomotor
+			length *= 5;
+		}
+		else
+		{
+			if ( dz < -m_Actor->GetLocomotionInterface()->GetDeathDropHeight() )
+				return -1.0f;
+		}
+
+		return length + fromArea->GetCostSoFar();
+	}
 
 private:
 	CTFRobotDestruction_Robot *m_Actor;
 };
 #endif
-
 #endif // ROBOT_DESTRUCTION_ROBOT_H
