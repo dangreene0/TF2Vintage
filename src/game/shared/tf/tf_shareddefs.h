@@ -10,7 +10,6 @@
 #pragma once
 #endif
 
-#include "shareddefs.h"
 #include "mp_shareddefs.h"
 
 // Using MAP_DEBUG mode?
