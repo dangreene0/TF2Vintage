@@ -98,6 +98,8 @@ $Project "Client (TF)"
 		{
 			$File	"tf\c_baseobject.cpp"
 			$File	"tf\c_baseobject.h"
+			$File	"tf\c_entity_currencypack.cpp"
+			$File	"tf\c_entity_currencypack.h"
 			$File	"tf\c_func_capture_zone.cpp"
 			$File	"tf\c_func_respawnroom.cpp"
 			$File	"tf\c_obj_dispenser.cpp"

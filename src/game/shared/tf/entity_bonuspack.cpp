@@ -9,6 +9,7 @@
 
 #ifdef GAME_DLL
 #include "particle_parse.h"
+#include "tf_fx.h"
 #include "tf_player.h"
 #endif
 
@@ -58,7 +59,7 @@ void CBonusPack::Spawn( void )
 	m_flAllowPickupAt = gpGlobals->curtime + 0.5f;
 
 	m_flRemoveAt = gpGlobals->curtime + 25.0f;
-	SetContextThink( &CBonusPack::BlinkThink, gpGlobals->curtime + 20.0f, "blink_think" );
+	SetContextThink( &CBonusPack::BlinkThink, m_flRemoveAt - 5.0f, "blink_think" );
 	SetContextThink( &CBonusPack::SUB_Remove, m_flRemoveAt, "RemoveThink" );
 #endif
 }
@@ -73,8 +74,7 @@ void CBonusPack::Precache( void )
 	bool bAllowPrecache = CBaseEntity::IsPrecacheAllowed();
 	CBaseEntity::SetAllowPrecache( true );
 
-	PrecacheParticleSystem( "powercore_embers_red" );
-	PrecacheParticleSystem( "powercore_embers_blue" );
+	PrecacheTeamParticles( "powercore_embers_%s" );
 
 	CBaseEntity::SetAllowPrecache( bAllowPrecache );
 }
@@ -110,6 +110,29 @@ bool CBonusPack::MyTouch( CBasePlayer *pPlayer )
 		CTFPlayer *pTFPlayer = ToTFPlayer( pPlayer );
 		if ( !pTFPlayer )
 			return true;
+
+		const Vector &vecOrigin = GetAbsOrigin() + Vector( 0, 0, 5.0f );
+		CPVSFilter filter( vecOrigin );
+		const char *pszParticleName = ConstructTeamParticle( "powercore_embers_%s", pPlayer->GetTeamNumber() );
+		TE_TFParticleEffect( filter, 0.15f, pszParticleName, vecOrigin, vec3_angle );
+
+		int nHealthToAdd = clamp( 5, 0, pTFPlayer->m_Shared.GetMaxBuffedHealth() - pPlayer->GetHealth() );
+		pPlayer->TakeHealth( nHealthToAdd, DMG_GENERIC | DMG_IGNORE_MAXHEALTH );
+
+		for ( int i=0; i < TF_AMMO_COUNT; i++ )
+		{
+			pPlayer->GiveAmmo( 5, i );
+		}
+
+		/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+ 		{
+ 			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( GetTeamNumber()
+																			  , tf_bonuspack_score.GetInt()
+																			  , 1
+																			  , ToTFPlayer( pPlayer ) );
+ 		}*/
+
+		pPlayer->SetLastObjectiveTime( gpGlobals->curtime );
 
 		return true;
 	}

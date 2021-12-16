@@ -442,6 +442,8 @@ BEGIN_SEND_TABLE_NOBASE( CTFPlayer, DT_TFLocalPlayerExclusive )
 	),
 
 	SendPropFloat( SENDINFO_VECTORELEM( m_angEyeAngles, 0 ), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
+
+	SendPropInt( SENDINFO( m_nCurrency ), -1, SPROP_VARINT ),
 END_SEND_TABLE()
 
 // all players except the local player
@@ -12383,6 +12385,36 @@ void CTFPlayer::InspectButtonPressed()
 void CTFPlayer::InspectButtonReleased()
 {
 	m_flInspectTime = 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Currency awarded directly will not be tracked by stats - see TFGameRules
+//-----------------------------------------------------------------------------
+void CTFPlayer::AddCurrency( int nAmount )
+{
+	if ( nAmount + m_nCurrency > 30000 )
+	{
+		m_nCurrency = 30000;
+	}
+	else if ( nAmount + m_nCurrency < 0 )
+	{
+		m_nCurrency = 0;
+	}
+	else
+	{
+		m_nCurrency += nAmount;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Remove Currency from Display and track it as currency spent
+//-----------------------------------------------------------------------------
+void CTFPlayer::RemoveCurrency( int nAmount )
+{
+	m_nCurrency = Max( m_nCurrency - nAmount, 0 );
+
+	/*if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+		g_pPopulationManager->AddPlayerCurrencySpent( this, nAmount );*/
 }
 
 

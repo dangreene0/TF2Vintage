@@ -2357,6 +2357,8 @@ BEGIN_RECV_TABLE_NOBASE( C_TFPlayer, DT_TFLocalPlayerExclusive )
 		"player_object_array" ),
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
+
+	RecvPropInt( RECVINFO( m_nCurrency ) ),
 END_RECV_TABLE()
 
 // all players except the local player
@@ -2691,6 +2693,7 @@ void C_TFPlayer::OnPreDataChanged( DataUpdateType_t updateType )
 	m_iOldSpawnCounter = m_iSpawnCounter;
 	m_bOldSaveMeParity = m_bSaveMeParity;
 	m_nOldWaterLevel = GetWaterLevel();
+	m_nOldCurrency = m_nCurrency;
 
 	m_iOldTeam = GetTeamNumber();
 	C_TFPlayerClass *pClass = GetPlayerClass();
@@ -2918,6 +2921,25 @@ void C_TFPlayer::OnDataChanged( DataUpdateType_t updateType )
 			m_iPreviousMetal = iCurrentMetal;
 		}
 
+		if ( m_iHealth > m_iOldHealth )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "localplayer_healed" );
+			if ( event )
+			{
+				event->SetInt( "amount", m_iHealth - m_iOldHealth );
+				gameeventmanager->FireEventClientSide( event );
+			}
+		}
+
+		if ( m_nOldCurrency != m_nCurrency )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "player_currency_changed" );
+			if ( event )
+			{
+				event->SetInt( "currency", m_nCurrency );
+				gameeventmanager->FireEventClientSide( event );
+			}
+		}
 	}
 
 	// Some time in this network transmit we changed the size of the object array.

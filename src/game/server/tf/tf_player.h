@@ -250,6 +250,11 @@ public:
 	virtual int			GiveAmmo( int iCount, int iAmmoIndex, bool bSuppressSound, EAmmoSource ammosource );
 	int					GetMaxAmmo( int iAmmoIndex, int iClassNumber = -1 ) const;
 
+	int					GetCurrency( void ) const { return m_nCurrency; }
+	void				SetCurrency( int nAmount ) { m_nCurrency = nAmount; }
+	void				AddCurrency( int nAmount );
+	void				RemoveCurrency( int nAmount );
+
 	bool				CanAttack( void );
 
 	virtual void		OnNavAreaChanged( CNavArea *enteredArea, CNavArea *leftArea );
@@ -729,6 +734,9 @@ private:
 	// Networked.
 	CNetworkQAngle( m_angEyeAngles );					// Copied from EyeAngles() so we can send it to the client.
 	CNetworkVar( float, m_flInspectTime );
+
+	CNetworkVar( int, m_nCurrency );
+	CNetworkVar( bool, m_bIsMiniBoss );
 
 public:
 	QAngle				m_angPrevEyeAngles;

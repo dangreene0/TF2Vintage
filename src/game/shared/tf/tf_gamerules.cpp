@@ -1376,6 +1376,7 @@ void CTFGameRules::Activate()
 	m_bPlayingMedieval.Set( false );
 	m_bPlayingHybrid_CTF_CP.Set( false );
 	m_bPlayingSpecialDeliveryMode.Set( false );
+	m_nCurrencyAccumulator = 0;
 	m_bPlayingMannVsMachine.Set( false );
 	m_bMannVsMachineAlarmStatus.Set( false );
 	m_bPlayingRobotDestructionMode.Set( false );
@@ -7170,6 +7171,103 @@ int CTFGameRules::CountActivePlayers( void )
 	}
 
 	return BaseClass::CountActivePlayers();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::CalculateCurrencyAmount_CustomPack( int nAmount )
+{
+	int nMinDrop = 1;
+	if ( TFObjectiveResource()->GetMannVsMachineWaveEnemyCount() == 1 )
+	{
+		nMinDrop = m_nCurrencyAccumulator + nAmount;
+		m_nCurrencyAccumulator = 0;
+		return nMinDrop;
+	}
+
+	if ( nAmount >= nMinDrop )
+		return nAmount;
+
+	m_nCurrencyAccumulator += nAmount;
+	if ( m_nCurrencyAccumulator >= nMinDrop )
+	{
+		m_nCurrencyAccumulator -= nMinDrop;
+		return nMinDrop;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::CalculateCurrencyAmount_ByType( CurrencyRewards_t nType )
+{
+	switch ( nType )
+	{
+		/*case 0:
+			return 40;
+		case 1:
+			return 40;
+		case 2:
+			return 20;
+		case 3:
+			return 1;
+		case 4:
+			return 100;
+		case 5:
+			return 10;*/
+		case CURRENCY_PACK_SMALL:
+			return 5;
+		case CURRENCY_PACK_MEDIUM:
+			return 10;
+		case CURRENCY_PACK_LARGE:
+			return 25;
+		/*case 10:
+			return 5;
+		case 11:
+			return 100;*/
+		default:
+			Assert( 0 );
+			return 0;
+	};
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /* = NULL */, bool bShared /* = true */, bool b1 /*= false */, bool b2 /*= false */ )
+{
+	if ( bShared )
+	{
+		CUtlVector<CTFPlayer *> players;
+		if ( IsMannVsMachineMode() )
+		{
+			CollectPlayers( &players, TF_TEAM_MVM_PLAYERS );
+		}
+
+		FOR_EACH_VEC( players, i )
+		{
+			if ( players[i] )
+			{
+				players[i]->AddCurrency( nAmount );
+			}
+		}
+	}
+	else if ( pTFPlayer )
+	{
+		pTFPlayer->AddCurrency( nAmount );
+	}
+
+	/*if ( IsMannVsMachineMode() && g_pPopulationManager )
+	{
+		g_pPopulationManager->OnCurrencyCollected( nAmount, b1, b2 );
+	}*/
+
+	return nAmount;
 }
 #endif
 

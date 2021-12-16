@@ -312,6 +312,8 @@ public:
 	float m_flInspectTime;
 	bool IsInspecting() const;
 
+	int GetCurrency( void ) { return m_nCurrency; }
+
 protected:
 
 	void ResetFlexWeights( CStudioHdr *pStudioHdr );
@@ -471,6 +473,10 @@ public:
 
 	// Overheal particle fix for spies
 	int				m_iOldOverhealTeamNum;
+
+	// MvM Currency
+	int				m_nCurrency;
+	int				m_nOldCurrency;
 
 private:
 

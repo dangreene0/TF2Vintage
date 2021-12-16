@@ -975,6 +975,20 @@ void CTFGameStats::Event_PlayerAwardBonusPoints(CTFPlayer *pPlayer, CBaseEntity 
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Records players touching currency packs
+//-----------------------------------------------------------------------------
+void CTFGameStats::Event_PlayerCollectedCurrency( CBasePlayer *pPlayer, int nAmount )
+{
+	Assert( pPlayer );
+
+	CTFPlayer *pTFPlayer = ToTFPlayer( pPlayer );
+	if ( pTFPlayer )
+	{
+		IncrementStat( pTFPlayer, TFSTAT_CURRENCY_COLLECTED, nAmount );
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 void CTFGameStats::Event_GameEnd(void)

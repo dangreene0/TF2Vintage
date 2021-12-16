@@ -1955,6 +1955,15 @@ typedef enum
 	MVM_EVENT_POPFILE_MAX_TYPES,
 } MvMEventPopfile_t;
 
+typedef enum
+{
+	// 1 .. 5?
+	CURRENCY_PACK_SMALL = 6,
+	CURRENCY_PACK_MEDIUM,
+	CURRENCY_PACK_LARGE,
+	CURRENCY_PACK_CUSTOM,
+} CurrencyRewards_t;
+
 #define MVM_BUYBACK_COST_PER_SEC		5
 
 #define MVM_CLASS_TYPES_PER_WAVE_MAX	24

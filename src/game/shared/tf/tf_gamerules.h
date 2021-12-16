@@ -536,6 +536,10 @@ private:
 
 	void			BeginHaunting( int nDesiredCount, float flMinLifetime, float flMaxLifetime );
 
+	int				CalculateCurrencyAmount_CustomPack( int nAmount );
+	int				CalculateCurrencyAmount_ByType( CurrencyRewards_t nType );
+	int				DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer = NULL, bool bShared = true, bool bCountAsDropped = false, bool bIsBonus = false );
+
 private:
 
 	int				DefaultFOV( void ) { return 75; }
@@ -568,6 +572,8 @@ private:
 	int m_iCurrentRoundState;
 	int m_iCurrentMiniRoundMask;
 	float m_flTimerMayExpireAt;
+
+	int m_nCurrencyAccumulator;
 
 	CHandle<CArenaLogic> m_hArenaLogic;
 	bool m_bFirstBlood;
