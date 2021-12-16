@@ -393,7 +393,8 @@ $Project "Server (TF)"
 				{
 					$Folder "Tank"
 					{
-
+						$File "tf\player_vs_environment\tf_tank_boss.cpp"
+						$File "tf\player_vs_environment\tf_tank_boss.h"
 					}
 					$Folder "Boss"
 					{

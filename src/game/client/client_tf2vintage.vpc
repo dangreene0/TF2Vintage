@@ -234,6 +234,7 @@ $Project "Client (TF)"
 			{	
 				$File	"tf\player_vs_environment\c_tf_base_boss.cpp"
 				$File	"tf\player_vs_environment\c_tf_base_boss.h"
+				$File	"tf\player_vs_environment\c_tf_tank_boss.cpp"
 				$File	"tf\c_tf_mvm_boss_progress_user.cpp"
 				$File	"tf\c_tf_mvm_boss_progress_user.h"
 				$File	"$SRCDIR\game\shared\tf\tf_upgrades_shared.cpp"
