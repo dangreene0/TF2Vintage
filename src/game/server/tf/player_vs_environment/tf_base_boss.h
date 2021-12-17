@@ -14,6 +14,8 @@
 #include "NextBot/NextBot.h"
 #include "NextBot/NextBotGroundLocomotion.h"
 
+class CTFPlayer;
+
 
 class CTFBaseBossLocomotion : public NextBotGroundLocomotion
 {
