@@ -197,6 +197,9 @@ public:
 	CPathTrack*		GetGoalPath( void ) const { return m_hGoalPath; }
 	void			ArriveAtPath( void );
 
+	void			SetRobotGroup( CTFRobotDestruction_RobotGroup const *pGroup )	{ m_hRobotGroup = pGroup; }
+	void			SetRobotSpawn( CTFRobotDestruction_RobotSpawn const *pSpawn )	{ m_hRobotSpawn = pSpawn; }
+	void			SetSpawnData( RobotSpawnData_t const &data )					{ m_spawnData = data; }
 private:
 	void			PlayDeathEffects( void );
 	void			ModifyDamage( CTakeDamageInfo *info ) const;
@@ -240,6 +243,7 @@ private:
 
 	CHandle<CTFRobotDestruction_RobotGroup> m_hRobotGroup;
 	CHandle<CTFRobotDestruction_RobotSpawn> m_hRobotSpawn;
+	RobotSpawnData_t m_spawnData;
 
 	bool m_bPanicking;
 #else
