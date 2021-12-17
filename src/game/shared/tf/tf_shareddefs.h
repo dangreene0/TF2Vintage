@@ -1019,6 +1019,23 @@ enum {
 };
 
 //-----------------------------------------------------------------------------
+// TF Robot Destruction Score Events
+//-----------------------------------------------------------------------------
+enum ERDScoreMethod
+{
+	SCORE_UNDEFINED = -1,
+	SCORE_REACTOR_CAPTURED,
+	SCORE_CORES_COLLECTED,
+	SCORE_REACTOR_RETURNED,
+	SCORE_REACTOR_STEAL,
+
+	NUM_SCORE_TYPES
+};
+
+const char *GetRDScoreMethodName( ERDScoreMethod iScoreMethod );
+ERDScoreMethod GetRDScoreMethodFromName( const char *pszName );
+
+//-----------------------------------------------------------------------------
 // Class data
 //-----------------------------------------------------------------------------
 #define TF_REGEN_TIME			1.0		// Number of seconds between each regen.

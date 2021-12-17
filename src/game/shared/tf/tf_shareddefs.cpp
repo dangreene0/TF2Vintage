@@ -1496,3 +1496,32 @@ void BuildBigHeadTransformation( CBaseAnimating *pAnimating, CStudioHdr *pStudio
 	}
 #endif
 }
+
+const char *GetRDScoreMethodName( ERDScoreMethod iScoreMethod )
+{
+	static const char *aRDScoreMethodNames[] =
+	{
+		"SCORE_UNDEFINED",
+		"SCORE_REACTOR_CAPTURED",
+		"SCORE_CORES_COLLECTED",
+		"SCORE_REACTOR_RETURNED",
+		"SCORE_REACTOR_STEAL",
+
+		"NUM_SCORE_TYPES"
+	};
+
+	return aRDScoreMethodNames[iScoreMethod + 1];
+}
+
+ERDScoreMethod GetRDScoreMethodFromName( const char *pszName )
+{
+	for ( int i=SCORE_UNDEFINED; i < NUM_SCORE_TYPES; ++i )
+	{
+		if ( FStrEq( pszName, GetRDScoreMethodName( (ERDScoreMethod)i ) ) )
+		{
+			return (ERDScoreMethod)i;
+		}
+	}
+
+	return SCORE_UNDEFINED;
+}
