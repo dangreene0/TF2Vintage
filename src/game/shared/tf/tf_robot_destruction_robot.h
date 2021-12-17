@@ -20,6 +20,7 @@
 #endif
 
 #include "props_shared.h"
+#include "tf_logic_robot_destruction.h"
 
 #ifdef CLIENT_DLL
 #define NextBotCombatCharacter C_NextBotCombatCharacter
@@ -32,8 +33,6 @@
 #endif
 
 class CTFRobotDestruction_Robot;
-class CTFRobotDestruction_RobotGroup;
-class CTFRobotDestruction_RobotSpawn;
 
 #ifdef GAME_DLL
 
@@ -191,15 +190,22 @@ public:
 	void			EnableUber( void );
 	void			DisableUber( void );
 
-	void			SetPanicking( bool bSet ) { m_bPanicking = bSet; }
-	bool			IsPanicking( void ) const { return m_bPanicking; }
+	void			SetPanicking( bool bSet )	{ m_bPanicking = bSet; }
+	bool			IsPanicking( void ) const	{ return m_bPanicking; }
 
-	CPathTrack*		GetGoalPath( void ) const { return m_hGoalPath; }
+	CPathTrack*		GetGoalPath( void ) const	{ return m_hGoalPath; }
 	void			ArriveAtPath( void );
 
 	void			SetRobotGroup( CTFRobotDestruction_RobotGroup const *pGroup )	{ m_hRobotGroup = pGroup; }
 	void			SetRobotSpawn( CTFRobotDestruction_RobotSpawn const *pSpawn )	{ m_hRobotSpawn = pSpawn; }
 	void			SetSpawnData( RobotSpawnData_t const &data )					{ m_spawnData = data; }
+	
+	int				GetType( void ) const		{ return m_eType; }
+	void			SetType( ERobotType eType ) { m_eType = eType; }
+
+	bool			IsShielded( void ) const	{ return m_bShielded; }
+	void			SetShielded( bool bSet )	{ m_bShielded = bSet; }
+
 private:
 	void			PlayDeathEffects( void );
 	void			ModifyDamage( CTakeDamageInfo *info ) const;
@@ -245,6 +251,7 @@ private:
 	CHandle<CTFRobotDestruction_RobotSpawn> m_hRobotSpawn;
 	RobotSpawnData_t m_spawnData;
 
+	int m_nBarsSpewed;
 	bool m_bPanicking;
 #else
 

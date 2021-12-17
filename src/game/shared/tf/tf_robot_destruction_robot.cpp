@@ -6,6 +6,7 @@
 //=============================================================================
 #include "cbase.h"
 #include "tf_robot_destruction_robot.h"
+#include "tf_logic_robot_destruction.h"
 #include "particle_parse.h"
 
 #ifdef GAME_DLL
@@ -305,6 +306,9 @@ CTFRobotDestruction_Robot::CTFRobotDestruction_Robot( void )
 CTFRobotDestruction_Robot::~CTFRobotDestruction_Robot( void )
 {
 #ifdef GAME_DLL
+	if ( m_hRobotSpawn )
+		m_hRobotSpawn->ClearRobot();
+
 	if ( m_intention )
 		delete m_intention;
 	if ( m_loco )
@@ -345,16 +349,16 @@ void CTFRobotDestruction_Robot::Spawn()
 	m_nSkin = ( GetTeamNumber() == TF_TEAM_RED ) ? 0 : 1;
 
 #ifdef GAME_DLL
-	//m_hGoalPath = dynamic_cast<CPathTrack *>( gEntList.FindEntityByName( NULL, "" ) );
+	m_hGoalPath = dynamic_cast<CPathTrack *>( gEntList.FindEntityByName( NULL, m_spawnData.m_pszPathName ) );
 	if ( !m_hGoalPath )
 	{
 		UTIL_Remove( this );
 	}
 
-	/*if ( m_hRobotGroup )
+	if ( m_hRobotGroup )
 	{
 		m_hRobotGroup->UpdateState();
-	}*/
+	}
 
 	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotCreated( this );*/
@@ -458,17 +462,17 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 		}
 	}
 
-	/*if ( m_hRobotSpawn )
+	if ( m_hRobotSpawn )
 	{
 		m_hRobotSpawn->OnRobotKilled();
-	}*/
+	}
 
-	/*if ( m_hRobotGroup )
+	if ( m_hRobotGroup )
 	{
 		m_hRobotGroup->OnRobotKilled();
-	}*/
+	}
 
-	if ( *(int *)( this + 0x24F ) == 2 )
+	if ( m_spawnData.m_eType == ROBOT_TYPE_LARGE )
 	{
 		SetModel( "TODO" );
 		ResetSequence( LookupSequence( "idle" ) );
@@ -479,7 +483,7 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 		return;
 	}
 
-	SpewBars( *(int *)( this + 0x24F ) );
+	SpewBars( m_spawnData.m_nNumGibs );
 	SpewGibs();
 
 	CBaseAnimating::Event_Killed( info );
@@ -642,10 +646,10 @@ int CTFRobotDestruction_Robot::OnTakeDamage( const CTakeDamageInfo &info )
 		gameeventmanager->FireEvent( event );
 	}
 
-	/*if ( m_hRobotGroup )
+	if ( m_hRobotGroup )
 	{
 		m_hRobotGroup->OnRobotAttacked();
-	}*/
+	}
 
 	int nResult = BaseClass::OnTakeDamage( newInfo );
 
@@ -710,10 +714,10 @@ void CTFRobotDestruction_Robot::EnableUber()
 	m_bShielded = true;
 	m_nSkin = GetTeamNumber() == TF_TEAM_RED ? 2 : 3;
 
-	/*if ( m_hRobotGroup )
+	if ( m_hRobotGroup )
 	{
-		m_hGroup->UpdateState();
-	}*/
+		m_hRobotGroup->UpdateState();
+	}
 }
 
 void CTFRobotDestruction_Robot::DisableUber()
@@ -721,10 +725,10 @@ void CTFRobotDestruction_Robot::DisableUber()
 	m_bShielded = false;
 	m_nSkin = GetTeamNumber() == TF_TEAM_RED ? 0 : 1;
 
-	/*if ( m_hRobotGroup )
+	if ( m_hRobotGroup )
 	{
 		m_hRobotGroup->UpdateState();
-	}*/
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -760,10 +764,10 @@ void CTFRobotDestruction_Robot::RepairSelfThink()
 
 void CTFRobotDestruction_Robot::SpewBarsThink()
 {
-	++ *(int *)( this + 0x253 );
+	++m_nBarsSpewed;
 	SpewBars( 1 );
 
-	if ( *(int *)( this + 0x253 ) >= *(int *)( this + 0x24F ) )
+	if ( m_nBarsSpewed >= m_spawnData.m_nNumGibs )
 	{
 		SelfDestructThink();
 	}
@@ -776,7 +780,7 @@ void CTFRobotDestruction_Robot::SpewBarsThink()
 void CTFRobotDestruction_Robot::SelfDestructThink()
 {
 	SpewGibs();
-	SpewBars( *(int *)( this + 0x24F ) - *(int *)( this + 0x253 ) );
+	SpewBars( m_spawnData.m_nNumGibs - m_nBarsSpewed );
 	PlayDeathEffects();
 	UTIL_Remove( this );
 }
