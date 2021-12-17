@@ -27,6 +27,17 @@ enum ERobotType
 
 	NUM_ROBOT_TYPES,
 };
+
+enum ERobotState
+{
+	ROBOT_STATE_INACIVE = 0,
+	ROBOT_STATE_ACTIVE,
+	ROBOT_STATE_DEAD,
+	ROBOT_STATE_SHIELDED,
+
+	NUM_ROBOT_STATES
+};
+
 #if defined(GAME_DLL)
 typedef struct RobotSpawnData_s
 {
