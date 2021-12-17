@@ -71,7 +71,7 @@ public:
 	virtual unsigned int PlayerSolidMask( bool brushOnly = false );
 	virtual void		ProcessMovement( CBasePlayer *pBasePlayer, CMoveData *pMove );
 	virtual bool		CanAccelerate();
-	virtual bool		 CheckJumpButton();
+	virtual bool		CheckJumpButton();
 	virtual bool		CheckWater( void );
 	virtual void		WaterMove( void );
 	virtual void		FullWalkMove();
