@@ -1524,6 +1524,8 @@ void CTFFlameEntity::FlameThink( void )
 		return;
 	}
 
+	SetNextThink( gpGlobals->curtime );
+
 	// Do collision detection.  We do custom collision detection because we can do it more cheaply than the
 	// standard collision detection (don't need to check against world unless we might have hit an enemy) and
 	// flame entity collision detection w/o this was a bottleneck on the X360 server
@@ -1636,8 +1638,6 @@ void CTFFlameEntity::FlameThink( void )
 			NDebugOverlay::EntityBounds( this, 0, 100, 255, 0, 0 );
 		}
 	}
-
-	SetNextThink( gpGlobals->curtime );
 
 	m_vecPrevPos = GetAbsOrigin();
 }
