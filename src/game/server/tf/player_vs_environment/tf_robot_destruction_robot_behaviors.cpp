@@ -27,7 +27,7 @@ ActionResult<CTFRobotDestruction_Robot> CRobotBehavior::Update( CTFRobotDestruct
 		m_speakTimer.Start( 1.0 );
 		m_idleTimer.Start( RandomFloat( 6.0, 10.0 ) );
 
-		me->EmitSound( "TODO" ); 
+		me->EmitSound( g_RobotData[ me->GetType() ]->m_pszIdleSound ); 
 	}
 
 	return Continue();
@@ -49,7 +49,7 @@ EventDesiredResult<CTFRobotDestruction_Robot> CRobotBehavior::OnContact( CTFRobo
 	{
 		m_speakTimer.Start( 3.0 );
 
-		me->EmitSound( "TODO" );
+		me->EmitSound( g_RobotData[ me->GetType() ]->m_pszCollideSound );
 	}
 
 	return TryContinue();
@@ -198,7 +198,7 @@ ActionResult<CTFRobotDestruction_Robot> CRobotPanic::OnStart( CTFRobotDestructio
 	DispatchParticleEffect( "rocketjump_smoke", PATTACH_POINT_FOLLOW, me, "wheel" );
 
 	m_speakTimer.Start( 3.0f );
-	me->EmitSound( "TODO" );
+	me->EmitSound( g_RobotData[ me->GetType() ]->m_pszHurtSound );
 
 	return Continue();
 }
@@ -256,7 +256,7 @@ EventDesiredResult<CTFRobotDestruction_Robot> CRobotPanic::OnInjured( CTFRobotDe
 	if ( m_speakTimer.IsElapsed() )
 	{
 		m_speakTimer.Start( RandomFloat( 1.5f, 2.f ) );
-		me->EmitSound( "TODO" );
+		me->EmitSound( g_RobotData[ me->GetType() ]->m_pszHurtSound );
 	}
 
 	m_attackedTimer.Start( 5.0f );

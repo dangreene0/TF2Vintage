@@ -19,6 +19,22 @@ class CTFRobotDestruction_Robot;
 class CTFRobotDestruction_RobotGroup;
 class CTFRobotDestructionLogic;
 
+typedef struct RobotData_s
+{
+	RobotData_s( char const *pszModelName, char const *pszDamagedModelName, char const *pszHurtSound, char const *pszDeathSound, char const *pszCollideSound, char const *pszIdleSound, float flHealthBarOffset )
+		: m_pszModelName(pszModelName), m_pszDamagedModelName(pszDamagedModelName), m_pszHurtSound(pszHurtSound), 
+		m_pszDeathSound(pszDeathSound), m_pszCollideSound(pszCollideSound), m_pszIdleSound(pszIdleSound), m_flHealthBarOffset(flHealthBarOffset) {}
+	void Precache( void );
+
+	char const *m_pszModelName;
+	char const *m_pszDamagedModelName;
+	char const *m_pszHurtSound;
+	char const *m_pszDeathSound;
+	char const *m_pszCollideSound;
+	char const *m_pszIdleSound;
+	float m_flHealthBarOffset;
+} RobotData_t;
+
 enum ERobotType
 {
 	ROBOT_TYPE_SMALL,
@@ -27,6 +43,7 @@ enum ERobotType
 
 	NUM_ROBOT_TYPES,
 };
+extern RobotData_t *g_RobotData[NUM_ROBOT_TYPES];
 
 enum ERobotState
 {

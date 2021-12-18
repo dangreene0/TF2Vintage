@@ -332,6 +332,11 @@ void CTFRobotDestruction_Robot::Precache()
 	PrecacheParticleSystem( "sentrydamage_4" );
 
 	PrecacheScriptSound( "RD.BotDeathExplosion" );
+
+	for ( int i=0; i < ARRAYSIZE( g_RobotData ); ++i )
+	{
+		g_RobotData[i]->Precache();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -474,7 +479,7 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 
 	if ( m_spawnData.m_eType == ROBOT_TYPE_LARGE )
 	{
-		SetModel( "TODO" );
+		SetModel( g_RobotData[ m_eType ]->m_pszDamagedModelName );
 		ResetSequence( LookupSequence( "idle" ) );
 		m_takedamage = DAMAGE_NO;
 		SetContextThink( &CTFRobotDestruction_Robot::SpewBarsThink, gpGlobals->curtime, "spew_bars_context" );
@@ -494,7 +499,7 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CTFRobotDestruction_Robot::PlayDeathEffects()
 {
-	EmitSound( "TODO" ); 
+	EmitSound( g_RobotData[ m_eType ]->m_pszDeathSound ); 
 	EmitSound( "RD.BotDeathExplosion" );
 
 	DispatchParticleEffect( "rd_robot_explosion", GetAbsOrigin(), vec3_angle );
@@ -901,7 +906,7 @@ void CTFRobotDestruction_Robot::UpdateClientSideAnimation( void )
 //-----------------------------------------------------------------------------
 float CTFRobotDestruction_Robot::GetHealthBarHeightOffset() const
 {
-	return 32.0f; //TODO
+	return g_RobotData[ m_eType ]->m_flHealthBarOffset;
 }
 
 #endif

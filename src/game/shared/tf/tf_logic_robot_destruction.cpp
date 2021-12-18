@@ -14,6 +14,31 @@
 
 ConVar tf_rd_robot_attack_notification_cooldown( "tf_rd_robot_attack_notification_cooldown", "10", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
 
+
+RobotData_t *g_RobotData[NUM_ROBOT_TYPES] =
+{
+	new RobotData_t( "models/bots/bot_worker/bot_worker_A.mdl",	"models/bots/bot_worker/bot_worker_A.mdl", "Robot.Pain", "Robot.Death", "Robot.Collide", "Robot.Greeting", -35.f ),
+	new RobotData_t( "models/bots/bot_worker/bot_worker2.mdl", "models/bots/bot_worker/bot_worker2.mdl", "Robot.Pain", "Robot.Death", "Robot.Collide", "Robot.Greeting", -30.f ),
+	new RobotData_t( "models/bots/bot_worker/bot_worker3.mdl", "models/bots/bot_worker/bot_worker3_nohead.mdl", "Robot.Pain", "Robot.Death", "Robot.Collide", "Robot.Greeting", -10.f ),
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void RobotData_t::Precache( void )
+{
+	CBaseEntity::PrecacheModel( m_pszModelName );
+	PrecacheGibsForModel( modelinfo->GetModelIndex( m_pszModelName ) );
+	PrecachePropsForModel( modelinfo->GetModelIndex( m_pszModelName ), "spawn" );
+	CBaseEntity::PrecacheModel( m_pszDamagedModelName );
+
+	CBaseEntity::PrecacheScriptSound( m_pszHurtSound );
+	CBaseEntity::PrecacheScriptSound( m_pszDeathSound );
+	CBaseEntity::PrecacheScriptSound( m_pszCollideSound );
+	CBaseEntity::PrecacheScriptSound( m_pszIdleSound );
+}
+
+
 IMPLEMENT_NETWORKCLASS_ALIASED( TFRobotDestruction_RobotSpawn, DT_TFRobotDestructionRobotSpawn )
 
 BEGIN_NETWORK_TABLE_NOBASE( CTFRobotDestruction_RobotSpawn, DT_TFRobotDestructionRobotSpawn )
@@ -114,6 +139,11 @@ void CTFRobotDestruction_RobotSpawn::Precache( void )
 	PrecacheParticleSystem( "sentrydamage_4" );
 
 	PrecacheScriptSound( "RD.BotDeathExplosion" );
+
+	for ( int i=0; i < ARRAYSIZE( g_RobotData ); ++i )
+	{
+		g_RobotData[i]->Precache();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -162,7 +192,7 @@ void CTFRobotDestruction_RobotSpawn::SpawnRobot()
 	if ( m_hRobot == NULL )
 	{
 		m_hRobot = (CTFRobotDestruction_Robot *)CreateEntityByName( "tf_robot_destruction_robot" );
-		m_hRobot->SetModel( "TODO" );
+		m_hRobot->SetModel( g_RobotData[ m_spawnData.m_eType ]->m_pszModelName );
 		m_hRobot->ChangeTeam( m_hRobotGroup->GetTeamNumber() );
 		m_hRobot->SetHealth( m_spawnData.m_nRobotHealth );
 		m_hRobot->SetMaxHealth( m_spawnData.m_nRobotHealth );
