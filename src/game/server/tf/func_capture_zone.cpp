@@ -39,6 +39,7 @@ LINK_ENTITY_TO_CLASS( func_capturezone, CCaptureZone );
 
 
 IMPLEMENT_SERVERCLASS_ST( CCaptureZone, DT_CaptureZone )
+	SendPropInt( SENDINFO( m_bDisabled ) ),
 END_SEND_TABLE()
 
 

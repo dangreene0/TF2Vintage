@@ -25,8 +25,6 @@
 #include "view.h"
 #include "glow_outline_effect.h"
 
-extern CUtlVector<int>	g_Flags;
-
 ConVar cl_flag_return_size( "cl_flag_return_size", "20", FCVAR_CHEAT );
 
 #else
@@ -41,8 +39,11 @@ ConVar cl_flag_return_size( "cl_flag_return_size", "20", FCVAR_CHEAT );
 #include "func_flagdetectionzone.h"
 
 extern ConVar tf_flag_caps_per_round;
+extern ConVar tf_rd_min_points_to_steal;
 
 ConVar cl_flag_return_height( "cl_flag_return_height", "82", FCVAR_CHEAT );
+ConVar tf_rd_return_min_time( "tf_rd_return_min_time", "30" );
+ConVar tf_rd_return_max_time( "tf_rd_return_max_time", "90" );
 
 #endif
 
@@ -196,9 +197,7 @@ END_DATADESC()
 
 LINK_ENTITY_TO_CLASS( item_teamflag, CCaptureFlag );
 
-#ifdef GAME_DLL
 IMPLEMENT_AUTO_LIST( ICaptureFlagAutoList );
-#endif
 
 //=============================================================================
 //
@@ -459,14 +458,6 @@ void CCaptureFlag::Spawn( void )
 	{
 		m_tags.CopyAndAddToTail( tags[i] );
 	}
-#else
-
-	// add this element if it isn't already in the list
-	if ( g_Flags.Find( entindex() ) == -1 )
-	{
-		g_Flags.AddToTail( entindex() );
-	}
-
 #endif
 
 	SetDisabled( m_bDisabled );
@@ -663,6 +654,32 @@ int CCaptureFlag::GetIntelSkin(int iTeamNum, bool bPickupSkin)
 void CCaptureFlag::Reset( void )
 {
 #ifdef GAME_DLL
+	if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION && !IsDisabled() )
+	{
+		if ( m_nPointValue > 0 )
+		{
+			// Score points!
+			if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+			{
+				CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( GetTeamNumber(), 
+																				   m_nPointValue.Get(), 
+																				   SCORE_REACTOR_RETURNED, 
+																				   NULL );
+
+				CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
+				m_nPointValue = 0;
+			}
+		}
+
+		const int nTargetScore = CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetTargetScore( GetTeamNumber() );
+		SetDisabled( nTargetScore < tf_rd_min_points_to_steal.GetInt() );
+	}
+	else if ( m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		UTIL_Remove( this );
+		return;
+	}
+
 	// Set the flag position.
 	SetAbsOrigin( m_vecResetPos );
 	SetAbsAngles( m_vecResetAng );
@@ -675,7 +692,7 @@ void CCaptureFlag::Reset( void )
 	m_bAllowOwnerPickup = true;
 	m_hPrevOwner = NULL;
 
-	if ( m_nType == TF_FLAGTYPE_INVADE )
+	if ( m_nType == TF_FLAGTYPE_INVADE || m_nType == TF_FLAGTYPE_RESOURCE_CONTROL )
 	{
 		ChangeTeam( m_iOriginalTeam );
 	}
@@ -773,6 +790,22 @@ void CCaptureFlag::ResetMessage( void )
 		// Returned sound
 		CPASAttenuationFilter filter( this, TF_RESOURCE_FLAGSPAWN );
 		PlaySound( filter, TF_RESOURCE_FLAGSPAWN );
+	}
+	else if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+		{
+			if ( iTeam == GetTeamNumber() )
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_ENEMY_RETURNED );
+			}
+			else
+			{
+				CTeamRecipientFilter filter( iTeam, true );
+				PlaySound( filter, TF_RD_TEAM_RETURNED );
+			}
+		}
 	}
 
 	// Output.
@@ -1170,7 +1203,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 
 	if ( m_nFlagStatus == TF_FLAGINFO_NONE )
 	{
-		m_flLastResetDuration = m_flMaxResetTime;
+		m_flLastResetDuration = GetMaxReturnTime();
 	}
 	else
 	{
@@ -1312,6 +1345,25 @@ void CCaptureFlag::RemoveFollower( CTFBot *pBot )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+float CCaptureFlag::GetMaxReturnTime( void )
+{
+	float flReturnTime = m_flMaxResetTime.Get();
+	if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		int nMaxPoints = 300;
+		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		{
+			nMaxPoints = CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetMaxPoints();
+		}
+		flReturnTime = RemapValClamped( m_nPointValue, 0.0f, (float)nMaxPoints / 3, tf_rd_return_min_time.GetFloat(), tf_rd_return_max_time.GetFloat() );
+	}
+
+	return flReturnTime;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CCaptureFlag::AddPointValue( int nPoints )
 { 
 	m_nPointValue += nPoints;
@@ -1326,7 +1378,7 @@ void CCaptureFlag::AddPointValue( int nPoints )
 			gameeventmanager->FireEvent( pEvent );
 
 			// The return time is determined by how many points are in the flag, so update that. 
-			m_flLastResetDuration = m_flMaxResetTime.Get();
+			m_flLastResetDuration = GetMaxReturnTime();
 		}
 
 		if ( nPoints > 0 )
@@ -1729,10 +1781,6 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 	{
 		if ( bMessage  )
 		{
-			// Handle messages to the screen.
-			TFTeamMgr()->PlayerCenterPrint( pPlayer, "#TF_Invade_PlayerFlagDrop" );
-			TFTeamMgr()->PlayerTeamCenterPrint( pPlayer, "#TF_Invade_FlagDrop" );
-
 			const char *pszSound = TF_RESOURCE_TEAM_DROPPED;
 			if ( TFGameRules() && TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_DOOMSDAY ) )
 			{
@@ -1777,6 +1825,44 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 
 		SetFlagReturnIn( TF_AD_RESET_TIME );
 	}
+	else if ( m_nType == TF_FLAGTYPE_ROBOT_DESTRUCTION )
+	{
+		// If a player dropped this flag but the flag has less than the min to steal
+		// we just return the flag rather than have it exist on the ground
+		if ( GetPointValue() < tf_rd_min_points_to_steal.GetInt() )
+		{
+			Reset();
+			ResetMessage();
+			return;
+		}
+		else if ( bMessage )
+		{
+			for ( int iTeam = TF_TEAM_RED; iTeam < TF_TEAM_COUNT; ++iTeam )
+			{
+				// We only care about our own team dropping it in Special Delivery
+				if ( iTeam == pPlayer->GetTeamNumber() )
+				{
+					CTeamRecipientFilter filter( iTeam, true );
+					PlaySound( filter, TF_RD_TEAM_DROPPED, iTeam );
+				}
+				else
+				{
+					CTeamRecipientFilter filter( iTeam, true );
+					PlaySound( filter, TF_RD_ENEMY_DROPPED, iTeam );
+				}
+			}
+		}
+
+		SetFlagReturnIn( GetMaxReturnTime() );
+	}
+	else if ( m_nType == TF_FLAGTYPE_PLAYER_DESTRUCTION )
+	{
+		/*if ( CTFPlayerDestructionLogic::GetPlayerDestructionLogic() )
+		{
+			CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->CalcTeamLeader( pPlayer->GetTeamNumber() );
+			CTFPlayerDestructionLogic::GetPlayerDestructionLogic()->PlayPropDropSound( pPlayer );
+		}*/
+	}
 
 	if ( IsPoisonous() )
 	{
@@ -1796,7 +1882,7 @@ void CCaptureFlag::Drop( CTFPlayer *pPlayer, bool bVisible,  bool bThrown /*= fa
 	// Output.
 	m_outputOnDrop.FireOutput( this, this );
 
-	if ( !TFGameRules()->IsMannVsMachineMode() || ( m_flMaxResetTime.Get() < 600 ) )
+	if ( !TFGameRules()->IsMannVsMachineMode() || ( GetMaxReturnTime() < 600 ) )
 	{
 		CreateReturnIcon();
 	}

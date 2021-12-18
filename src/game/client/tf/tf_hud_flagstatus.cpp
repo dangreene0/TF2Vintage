@@ -27,19 +27,22 @@
 #include "c_team.h"
 #include "c_tf_team.h"
 #include "c_team_objectiveresource.h"
+#include "c_func_capture_zone.h"
 #include "tf_hud_objectivestatus.h"
 #include "tf_spectatorgui.h"
 #include "teamplayroundbased_gamerules.h"
 #include "tf_gamerules.h"
 #include "tf_hud_freezepanel.h"
+#include "tf_logic_robot_destruction.h"
 
 using namespace vgui;
 
-CUtlVector<int> g_Flags;
-CUtlVector<int> g_CaptureZones;
-
 DECLARE_BUILD_FACTORY( CTFArrowPanel );
 DECLARE_BUILD_FACTORY( CTFFlagStatus );
+
+DECLARE_HUDELEMENT( CTFFlagCalloutPanel );
+
+ConVar tf_rd_flag_ui_mode( "tf_rd_flag_ui_mode", "3", FCVAR_DEVELOPMENTONLY, "When flags are stolen and not visible: 0 = Show outlines (glows), 1 = Show most valuable enemy flag (icons), 2 = Show all enemy flags (icons), 3 = Show all flags (icons)." );
 
 extern ConVar tf_flag_caps_per_round;
 
@@ -467,9 +470,9 @@ void CTFHudFlagObjectives::SetPlayingToLabelVisible( bool bVisible )
 void CTFHudFlagObjectives::OnTick()
 {
 	// iterate through the flags to set their position in our HUD
-	for ( int i = 0; i < g_Flags.Count(); i++ )
+	for ( int i = 0; i < ICaptureFlagAutoList::AutoList().Count(); i++ )
 	{
-		CCaptureFlag *pFlag = dynamic_cast< CCaptureFlag* >( ClientEntityList().GetEnt( g_Flags[i] ) );
+		CCaptureFlag *pFlag = static_cast<CCaptureFlag *>( ICaptureFlagAutoList::AutoList()[i] );
 
 		if ( pFlag )
 		{
@@ -493,10 +496,14 @@ void CTFHudFlagObjectives::OnTick()
 				}
 			}
 		}
-		else
+
+		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() && CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetType() == CTFRobotDestructionLogic::TYPE_ROBOT_DESTRUCTION )
 		{
-			// this isn't a valid index for a flag
-			g_Flags.Remove( i );
+			if ( tf_rd_flag_ui_mode.GetInt() && !pFlag->IsDisabled() && !pFlag->IsHome() )
+			{
+				Vector vecLocation = pFlag->GetAbsOrigin() + Vector( 0.f, 0.f, 18.f );
+				//CTFFlagCalloutPanel::AddFlagCalloutIfNotFound( pFlag, FLT_MAX, vecLocation );
+			}
 		}
 	}
 
@@ -688,11 +695,10 @@ void CTFHudFlagObjectives::UpdateStatus( void )
 				if ( pLocalPlayer )
 				{
 					// go through all the capture zones and find ours
-					for ( int i = 0; i < g_CaptureZones.Count(); i++ )
+					for ( int i = 0; i < ICaptureZoneAutoList::AutoList().Count(); i++ )
 					{
-						C_BaseEntity *pZone = ClientEntityList().GetEnt( g_CaptureZones[i] );
-
-						if ( pZone )
+						C_CaptureZone *pZone = static_cast<C_CaptureZone *>( ICaptureZoneAutoList::AutoList()[i] );
+						if ( !pZone->IsDormant() )
 						{
 							if ( pZone->GetTeamNumber() == pLocalPlayer->GetTeamNumber() )
 							{

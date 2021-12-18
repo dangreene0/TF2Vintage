@@ -49,7 +49,7 @@ public:
 
 private:
 
-	bool			m_bDisabled;		// Enabled/Disabled?
+	CNetworkVar( bool, m_bDisabled );	// Enabled/Disabled?
 	
 	int				m_nCapturePoint;	// Used in non-CTF maps to identify this capture point
 

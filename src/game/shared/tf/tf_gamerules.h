@@ -631,6 +631,7 @@ private:
 	CNetworkVar( float, m_flHalloweenEffectStartTime );
 	CNetworkVar( float, m_flHalloweenEffectDuration );
 	CNetworkVar( int, m_halloweenScenario );
+	CNetworkVar( bool, m_bHelltowerPlayersInHell );
 
 public:
 

@@ -489,6 +489,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	RecvPropInt( RECVINFO( m_nMapHolidayType ) ),
 	RecvPropEHandle( RECVINFO( m_itHandle ) ),
 	RecvPropInt( RECVINFO( m_halloweenScenario ) ),
+	RecvPropInt( RECVINFO( m_nHalloweenEffect ) ),
+	RecvPropFloat( RECVINFO( m_flHalloweenEffectStartTime ) ),
+	RecvPropFloat( RECVINFO( m_flHalloweenEffectDuration ) ),
+	RecvPropBool( RECVINFO( m_bHelltowerPlayersInHell ) ),
 	RecvPropString( RECVINFO( m_pszCustomUpgradesFile ) ),
 	RecvPropBool( RECVINFO( m_bMannVsMachineAlarmStatus ) ),
 	RecvPropBool( RECVINFO( m_bHaveMinPlayersToEnableReady ) ),
@@ -518,6 +522,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	SendPropInt( SENDINFO( m_nMapHolidayType ), 3, SPROP_UNSIGNED ),
 	SendPropEHandle( SENDINFO( m_itHandle ) ),
 	SendPropInt( SENDINFO( m_halloweenScenario ) ),
+	SendPropInt( SENDINFO( m_nHalloweenEffect ) ),
+	SendPropFloat( SENDINFO( m_flHalloweenEffectStartTime ) ),
+	SendPropFloat( SENDINFO( m_flHalloweenEffectDuration ) ),
+	SendPropBool( SENDINFO( m_bHelltowerPlayersInHell ) ),
 	SendPropString( SENDINFO( m_pszCustomUpgradesFile ) ),
 	SendPropBool( SENDINFO( m_bMannVsMachineAlarmStatus ) ),
 	SendPropBool( SENDINFO( m_bHaveMinPlayersToEnableReady ) ),
@@ -1422,7 +1430,7 @@ void CTFGameRules::Activate()
 
 	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 	{
-		m_bPlayingRobotDestructionMode.Set( true );
+		m_bPlayingRobotDestructionMode = true;
 		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetType() == CTFRobotDestructionLogic::TYPE_ROBOT_DESTRUCTION )
 		{
 			tf_gamemode_rd.SetValue( 1 );
@@ -7274,11 +7282,27 @@ int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /*
 
 float CTFGameRules::GetRespawnWaveMaxLength( int iTeam, bool bScaleWithNumPlayers /* = true */ )
 {
-	return BaseClass::GetRespawnWaveMaxLength( iTeam, bScaleWithNumPlayers );
+	if ( IsMannVsMachineMode() )
+		bScaleWithNumPlayers = false;
+
+	float flTime = BaseClass::GetRespawnWaveMaxLength( iTeam, bScaleWithNumPlayers );
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+	{
+		flTime *= ( 1.0f - CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetRespawnScaleForTeam( iTeam ) );
+	}
+
+	return flTime;
 }
 
 bool CTFGameRules::ShouldBalanceTeams( void )
 {
+	if ( IsPVEModeActive() || m_bPlayingMannVsMachine )
+		return false;
+
+	// don't balance the teams while players are in hell
+	if ( m_bHelltowerPlayersInHell )
+		return false;
+
 	return BaseClass::ShouldBalanceTeams();
 }
 

@@ -9,6 +9,7 @@
 
 #ifdef GAME_DLL
 #include "triggers.h"
+#include "GameEventListener.h"
 #else
 #include "c_tf_player.h"
 #endif
@@ -228,7 +229,7 @@ public:
 	void			RobotCreated( CTFRobotDestruction_Robot *pRobot );
 	void			RobotRemoved( CTFRobotDestruction_Robot *pRobot );
 	void			SetMaxPoints( int nPoints ) { m_nMaxPoints = nPoints; }
-	void			ScorePoints( int nPoints, int i2, ERDScoreMethod eEvent, CTFPlayer *pScorer );
+	void			ScorePoints( int nTeam, int nPoints, ERDScoreMethod eEvent, CTFPlayer *pScorer );
 
 	void			InputRoundActivate( inputdata_t &inputdata );
 

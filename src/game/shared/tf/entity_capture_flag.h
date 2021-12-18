@@ -187,12 +187,8 @@ public:
 //
 // CTF Flag class.
 //
-#ifdef GAME_DLL
 DECLARE_AUTO_LIST( ICaptureFlagAutoList )
 class CCaptureFlag : public CTFItem, public ICaptureFlagAutoList
-#else
-class CCaptureFlag : public CTFItem
-#endif
 {
 public:
 
@@ -244,6 +240,8 @@ public:
 	void			Think( void );
 	
 	int				GetFlagStatus( void ) { return m_nFlagStatus; };
+	bool			IsCaptured( void ) { return m_bCaptured; }
+
 	void			ResetFlagReturnTime( void ) { m_flResetTime = 0; }
 	void			SetFlagReturnIn( float flTime )
 	{
@@ -257,7 +255,8 @@ public:
 		m_flNeutralTime = gpGlobals->curtime + flTime;
 		m_flMaxResetTime = flTime;
 	}
-	bool			IsCaptured( void ){ return m_bCaptured; }
+
+	float			GetMaxReturnTime( void );
 
 	int				UpdateTransmitState( void ) OVERRIDE;
 
