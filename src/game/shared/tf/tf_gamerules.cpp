@@ -17,6 +17,7 @@
 #include "entity_bossresource.h"
 #include "vscript_shared.h"
 #include "bannedwords.h"
+#include "tf_logic_robot_destruction.h"
 #ifdef CLIENT_DLL
 	#include <game/client/iviewport.h>
 	#include "c_tf_player.h"
@@ -1419,7 +1420,7 @@ void CTFGameRules::Activate()
 		engine->ServerCommand( "exec config_arena.cfg \n" );
 	}
 
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 	{
 		m_bPlayingRobotDestructionMode.Set( true );
 		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetType() == CTFRobotDestructionLogic::TYPE_ROBOT_DESTRUCTION )
@@ -1433,13 +1434,13 @@ void CTFGameRules::Activate()
 			m_nGameType.Set( TF_GAMETYPE_PD );
 		}
 	}
-	else if ( dynamic_cast<CMannVsMachineLogic *>( gEntList.FindEntityByClassname( NULL, "tf_logic_mann_vs_machine" ) ) )
+	/*else if ( dynamic_cast<CMannVsMachineLogic *>( gEntList.FindEntityByClassname( NULL, "tf_logic_mann_vs_machine" ) ) )
 	{
 		m_nGameType.Set( TF_GAMETYPE_MVM );
 		tf_gamemode_mvm.SetValue( 1 );
 		m_bPlayingMannVsMachine = true;
-	} 
-	else*/ if ( !Q_strncmp( STRING( gpGlobals->mapname ), "sd_", 3 )  )
+	}*/
+	else if ( !Q_strncmp( STRING( gpGlobals->mapname ), "sd_", 3 )  )
 	{
 		tf_gamemode_sd.SetValue( 1 );
 		m_bPlayingSpecialDeliveryMode = true;

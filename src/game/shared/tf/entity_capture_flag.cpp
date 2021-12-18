@@ -8,6 +8,7 @@
 #include "tf_gamerules.h"
 #include "tf_shareddefs.h"
 #include "filesystem.h"
+#include "tf_logic_robot_destruction.h"
 
 #ifdef CLIENT_DLL
 #include <vgui_controls/Panel.h>
@@ -948,7 +949,7 @@ void CCaptureFlag::PickUp( CTFPlayer *pPlayer, bool bInvisible )
 	{
 		if ( pPlayer->HasItem() && ( pPlayer->GetItem()->GetItemID() == TF_ITEM_CAPTURE_FLAG ) && pPlayer->GetItem() != this )
 		{
-			//CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
+			CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
 
 			CCaptureFlag* pOtherFlag = static_cast<CCaptureFlag *>( pPlayer->GetItem() );
 			pOtherFlag->AddPointValue( m_nPointValue );
@@ -1557,12 +1558,12 @@ void CCaptureFlag::Capture( CTFPlayer *pPlayer, int nCapturePoint )
 		}
 
 		// Score points!
-		/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		{
 			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( pPlayer->GetTeamNumber(), m_nPointValue.Get(), SCORE_REACTOR_CAPTURED, pPlayer );
 			CTFRobotDestructionLogic::GetRobotDestructionLogic()->FlagDestroyed( GetTeamNumber() );
 			m_nPointValue = 0;
-		}*/
+		}
 	}
 	
 	IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_flag_event" );

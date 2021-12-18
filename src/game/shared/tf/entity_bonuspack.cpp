@@ -6,6 +6,7 @@
 //=============================================================================
 #include "cbase.h"
 #include "entity_bonuspack.h"
+#include "tf_logic_robot_destruction.h"
 
 #ifdef GAME_DLL
 #include "particle_parse.h"
@@ -124,13 +125,13 @@ bool CBonusPack::MyTouch( CBasePlayer *pPlayer )
 			pPlayer->GiveAmmo( 5, i );
 		}
 
-		/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
  		{
- 			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( GetTeamNumber()
-																			  , tf_bonuspack_score.GetInt()
-																			  , 1
-																			  , ToTFPlayer( pPlayer ) );
- 		}*/
+ 			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( GetTeamNumber(), 
+																			   tf_bonuspack_score.GetInt(), 
+																			   SCORE_CORES_COLLECTED, 
+																			   ToTFPlayer( pPlayer ) );
+ 		}
 
 		pPlayer->SetLastObjectiveTime( gpGlobals->curtime );
 
