@@ -365,8 +365,8 @@ void CTFRobotDestruction_Robot::Spawn()
 		m_hRobotGroup->UpdateState();
 	}
 
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
-		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotCreated( this );*/
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotCreated( this );
 
 	m_hDispenser = dynamic_cast<CRobotDispenser *>( CreateEntityByName( "rd_robot_dispenser" ) );
 	m_hDispenser->SetParent( this );
@@ -405,8 +405,8 @@ void CTFRobotDestruction_Robot::UpdateOnRemove( void )
 {
 	BaseClass::UpdateOnRemove();
 
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
-		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotRemoved( this );*/
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotRemoved( this );
 }
 
 //-----------------------------------------------------------------------------
@@ -415,8 +415,8 @@ void CTFRobotDestruction_Robot::UpdateOnRemove( void )
 void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 {
 	// Let the game logic know that we died
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
-		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotRemoved( this );*/
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotRemoved( this );
 
 	PlayDeathEffects();
 
@@ -658,8 +658,8 @@ int CTFRobotDestruction_Robot::OnTakeDamage( const CTakeDamageInfo &info )
 
 	int nResult = BaseClass::OnTakeDamage( newInfo );
 
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
-		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotAttacked( this );*/
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotAttacked( this );
 
 	return nResult;
 }

@@ -8,11 +8,24 @@
 #include "tf_gamerules.h"
 #include "tf_robot_destruction_robot.h"
 #include "tf_logic_robot_destruction.h"
+#ifdef GAME_DLL
+	#include "tf_gamestats.h"
+	#include "entity_capture_flag.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 ConVar tf_rd_robot_attack_notification_cooldown( "tf_rd_robot_attack_notification_cooldown", "10", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+ConVar tf_rd_points_approach_interval( "tf_rd_points_approach_interval", "0.1f", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+ConVar tf_rd_points_per_approach( "tf_rd_points_per_approach", "5", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+ConVar tf_rd_steal_rate( "tf_rd_steal_rate", "0.5", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+ConVar tf_rd_points_per_steal( "tf_rd_points_per_steal", "5", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+ConVar tf_rd_min_points_to_steal( "tf_rd_min_points_to_steal", "25", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
+
+#ifdef CLIENT_DLL
+ConVar tf_rd_finale_beep_time( "tf_rd_finale_beep_time", "10", FCVAR_ARCHIVE );
+#endif
 
 
 RobotData_t *g_RobotData[NUM_ROBOT_TYPES] =
@@ -320,6 +333,9 @@ void CTFRobotDestruction_RobotGroup::Activate()
 	ChangeTeam( m_nTeamNumber );
 
 	Q_memset( sm_flNextAllowedAttackAlertTime, 0.f, sizeof( sm_flNextAllowedAttackAlertTime ) );
+
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->AddRobotGroup( this );
 }
 
 //-----------------------------------------------------------------------------
@@ -412,6 +428,9 @@ void CTFRobotDestruction_RobotGroup::OnRobotKilled()
 {
 	UpdateState();
 
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->ManageGameState();
+
 	// If all our robots are dead, fire the corresponding output
 	if ( GetNumAliveBots() == 0 )
 		m_OnAllRobotsDead.FireOutput( this, this );
@@ -453,6 +472,9 @@ void CTFRobotDestruction_RobotGroup::RespawnRobots()
 	{
 		m_vecSpawns[i]->SpawnRobot();
 	}
+
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->ManageGameState();
 
 	m_OnRobotsRespawn.FireOutput( this, this );
 }
@@ -563,4 +585,545 @@ void CTFRobotDestruction_RobotGroup::SetDormant( bool bDormant )
 	}
 }
 
+#endif
+
+LINK_ENTITY_TO_CLASS( tf_logic_robot_destruction, CTFRobotDestructionLogic );
+IMPLEMENT_NETWORKCLASS_ALIASED( TFRobotDestructionLogic, DT_TFRobotDestructionLogic )
+
+BEGIN_NETWORK_TABLE_NOBASE( CTFRobotDestructionLogic, DT_TFRobotDestructionLogic )
+#ifdef CLIENT_DLL
+	RecvPropInt( RECVINFO( m_nMaxPoints ) ),
+	RecvPropInt( RECVINFO( m_nBlueScore ) ),
+	RecvPropInt( RECVINFO( m_nRedScore ) ),
+	RecvPropInt( RECVINFO( m_nBlueTargetPoints ) ),
+	RecvPropInt( RECVINFO( m_nRedTargetPoints ) ),
+	RecvPropFloat( RECVINFO( m_flBlueTeamRespawnScale ) ),
+	RecvPropFloat( RECVINFO( m_flRedTeamRespawnScale ) ),
+	RecvPropFloat( RECVINFO( m_flBlueFinaleEndTime ) ),
+	RecvPropFloat( RECVINFO( m_flRedFinaleEndTime ) ),
+	RecvPropFloat( RECVINFO( m_flFinaleLength ) ),
+	RecvPropString( RECVINFO( m_szResFile ) ),
+	RecvPropArray3( RECVINFO_ARRAY( m_eWinningMethod ), RecvPropInt( RECVINFO( m_eWinningMethod[0] ) ) ),
+	RecvPropFloat( RECVINFO( m_flCountdownEndTime ) ),
+#else
+	SendPropInt( SENDINFO( m_nMaxPoints ), -1, SPROP_VARINT | SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nBlueScore ), -1, SPROP_VARINT | SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nRedScore ), -1, SPROP_VARINT | SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nBlueTargetPoints ), -1, SPROP_VARINT | SPROP_UNSIGNED ),
+	SendPropInt( SENDINFO( m_nRedTargetPoints ), -1, SPROP_VARINT | SPROP_UNSIGNED ),
+	SendPropFloat( SENDINFO( m_flBlueTeamRespawnScale ), -1, SPROP_NOSCALE ),
+	SendPropFloat( SENDINFO( m_flRedTeamRespawnScale ), -1, SPROP_NOSCALE ),
+	SendPropFloat( SENDINFO( m_flBlueFinaleEndTime ), -1, SPROP_NOSCALE ),
+	SendPropFloat( SENDINFO( m_flRedFinaleEndTime ), -1, SPROP_NOSCALE ),
+	SendPropFloat( SENDINFO( m_flFinaleLength ), -1, SPROP_NOSCALE ),
+	SendPropString( SENDINFO( m_szResFile ) ),
+	SendPropArray3( SENDINFO_ARRAY3( m_eWinningMethod ), SendPropInt( SENDINFO_ARRAY( m_eWinningMethod ), -1, SPROP_UNSIGNED | SPROP_VARINT ) ),
+	SendPropFloat( SENDINFO( m_flCountdownEndTime ), -1, SPROP_NOSCALE ),
+#endif
+END_NETWORK_TABLE()
+
+BEGIN_DATADESC( CTFRobotDestructionLogic )
+#if defined(GAME_DLL)
+	// Inputs
+	DEFINE_INPUTFUNC( FIELD_VOID, "RoundActivate", InputRoundActivate ),
+
+	// Outputs
+	DEFINE_OUTPUT( m_OnRedHitZeroPoints, "OnRedHitZeroPoints" ),
+	DEFINE_OUTPUT( m_OnRedHasPoints, "OnRedHasPoints" ),
+	DEFINE_OUTPUT( m_OnRedFinalePeriodEnd, "OnRedFinalePeriodEnd" ),
+
+	DEFINE_OUTPUT( m_OnBlueHitZeroPoints, "OnBlueHitZeroPoints" ),
+	DEFINE_OUTPUT( m_OnBlueHasPoints, "OnBlueHasPoints" ),
+	DEFINE_OUTPUT( m_OnBlueFinalePeriodEnd, "OnBlueFinalePeriodEnd" ),
+
+	DEFINE_OUTPUT( m_OnRedFirstFlagStolen, "OnRedFirstFlagStolen" ),
+	DEFINE_OUTPUT( m_OnRedFlagStolen, "OnRedFlagStolen" ),
+	DEFINE_OUTPUT( m_OnRedLastFlagReturned, "OnRedLastFlagReturned" ),
+	DEFINE_OUTPUT( m_OnBlueFirstFlagStolen, "OnBlueFirstFlagStolen" ),
+	DEFINE_OUTPUT( m_OnBlueFlagStolen, "OnBlueFlagStolen" ),
+	DEFINE_OUTPUT( m_OnBlueLastFlagReturned, "OnBlueLastFlagReturned" ),
+	DEFINE_OUTPUT( m_OnBlueLeaveMaxPoints, "OnBlueLeaveMaxPoints" ),
+	DEFINE_OUTPUT( m_OnRedLeaveMaxPoints, "OnRedLeaveMaxPoints" ),
+	DEFINE_OUTPUT( m_OnBlueHitMaxPoints, "OnBlueHitMaxPoints" ),
+	DEFINE_OUTPUT( m_OnRedHitMaxPoints, "OnRedHitMaxPoints" ),
+
+	// Keyfields
+	DEFINE_KEYFIELD( m_flRobotScoreInterval, FIELD_FLOAT, "score_interval" ),
+	DEFINE_KEYFIELD( m_flLoserRespawnBonusPerBot, FIELD_FLOAT, "loser_respawn_bonus_per_bot" ),
+	DEFINE_KEYFIELD( m_nMaxPoints, FIELD_INTEGER, "max_points" ),
+	DEFINE_KEYFIELD( m_flFinaleLength, FIELD_FLOAT, "finale_length" ),
+	DEFINE_KEYFIELD( m_iszResFile, FIELD_STRING, "res_file" ),
+#endif
+END_DATADESC()
+
+
+CTFRobotDestructionLogic *CTFRobotDestructionLogic::sm_CTFRobotDestructionLogic = NULL;
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFRobotDestructionLogic::CTFRobotDestructionLogic()
+{
+	sm_CTFRobotDestructionLogic = this;
+#ifdef GAME_DLL
+	Q_memset( m_nNumFlags, 0, sizeof( m_nNumFlags ) );
+	m_iszResFile = MAKE_STRING( "resource/UI/HudObjectiveRobotDestruction.res" );
+
+	ListenForGameEvent( "teamplay_pre_round_time_left" );
+	ListenForGameEvent( "player_spawn" );
+
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_eWinningMethod.Set( i, SCORE_UNDEFINED );
+	}
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFRobotDestructionLogic::~CTFRobotDestructionLogic()
+{
+	if ( sm_CTFRobotDestructionLogic == this )
+		sm_CTFRobotDestructionLogic = NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFRobotDestructionLogic *CTFRobotDestructionLogic::GetRobotDestructionLogic()
+{
+	return sm_CTFRobotDestructionLogic;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheScriptSound( "Announcer.HowToPlayRD" );
+	PrecacheScriptSound( "RD.TeamScoreCore" );
+	PrecacheScriptSound( "RD.EnemyScoreCore" );
+	PrecacheScriptSound( "RD.EnemyStealingPoints" );
+	PrecacheScriptSound( "RD.FlagReturn" );
+	PrecacheScriptSound( "RD.FinaleMusic" );
+
+#ifdef GAME_DLL
+	PrecacheScriptSound( "Announcer.EnemyTeamCloseToWinning" );
+	PrecacheScriptSound( "Announcer.OurTeamCloseToWinning" );
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::Spawn()
+{
+	Precache();
+	BaseClass::Spawn();
+
+#ifdef GAME_DLL
+	V_strncpy( m_szResFile.GetForModify(), STRING( m_iszResFile ), MAX_PATH );
+#endif
+}
+
+float CTFRobotDestructionLogic::GetFinaleWinTime( int nTeam ) const
+{
+	return nTeam == TF_TEAM_RED ? m_flRedFinaleEndTime.Get() : m_flBlueFinaleEndTime.Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFRobotDestructionLogic::GetScore( int nTeam ) const
+{
+	return nTeam == TF_TEAM_RED ? m_nRedScore.Get() : m_nBlueScore.Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int	CTFRobotDestructionLogic::GetTargetScore( int nTeam ) const
+{
+	return nTeam == TF_TEAM_RED ? m_nRedTargetPoints.Get() : m_nBlueTargetPoints.Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+float CTFRobotDestructionLogic::GetRespawnScaleForTeam( int nTeam ) const
+{
+	if ( nTeam == TF_TEAM_RED )
+	{
+		return m_flRedTeamRespawnScale;
+	}
+	else
+	{
+		return m_flBlueTeamRespawnScale;
+	}
+}
+
+#if defined(GAME_DLL)
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::Activate()
+{
+	BaseClass::Activate();
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "rd_rules_state_changed" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// TODO Play Announcer.HowToPlayRD to certain people
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::FireGameEvent( IGameEvent *event )
+{
+	const char *pszName = event->GetName();
+	if ( FStrEq( pszName, "teamplay_pre_round_time_left" ) )
+	{
+		const int nTimeLeft = event->GetInt( "time" );
+		if ( nTimeLeft == 0 )
+		{
+			
+		}
+		else if ( nTimeLeft == 20 )
+		{
+			CUtlVector<CTFPlayer *> players;
+			CollectHumanPlayers( &players );
+
+			FOR_EACH_VEC( players, i )
+			{
+				CTFPlayer *pPlayer = players[i];
+				if ( !pPlayer->IsAlive() )
+					continue;
+			}
+		}
+	}
+	else if ( FStrEq( pszName, "player_spawn" ) )
+	{
+		const int nUserID = event->GetInt( "userid" );
+		CTFPlayer *pPlayer = ToTFPlayer( UTIL_PlayerByUserId( nUserID ) );
+
+		if ( pPlayer && pPlayer->IsAlive() )
+		{
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFRobotDestructionLogic::UpdateTransmitState()
+{
+	return SetTransmitState( FL_EDICT_ALWAYS );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::AddRobotGroup( CTFRobotDestruction_RobotGroup *pGroup )
+{
+	m_vecRobotGroups.AddToTail( pGroup );
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "rd_rules_state_changed" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::ApproachTargetScoresThink()
+{
+	if ( !TFGameRules()->FlagsMayBeCapped() )
+		return;
+
+	// Approach
+	int nOldRedScore = m_nRedScore;
+	m_nRedScore = ApproachTeamTargetScore( TF_TEAM_RED, m_nRedTargetPoints, m_nRedScore.Get() );
+	if ( nOldRedScore != m_nRedScore )
+		OnRedScoreChanged();
+
+	int m_nOldBlueScore = m_nBlueScore;
+	m_nBlueScore = ApproachTeamTargetScore( TF_TEAM_BLUE, m_nBlueTargetPoints, m_nBlueScore.Get() );
+	if ( m_nOldBlueScore != m_nBlueScore )
+		OnBlueScoreChanged();
+
+	if ( m_nBlueTargetPoints != m_nBlueScore.Get() || m_nRedTargetPoints != m_nRedScore.Get() )
+	{
+		SetContextThink( &CTFRobotDestructionLogic::ApproachTargetScoresThink, 
+						 gpGlobals->curtime + tf_rd_points_approach_interval.GetFloat(), 
+						 "approach_points_think" );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFRobotDestructionLogic::ApproachTeamTargetScore( int nTeam, int nTargetScore, int nScore )
+{
+	return 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::BlueTeamWin()
+{
+	TeamWin( TF_TEAM_BLUE );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::FlagCreated( int nTeam )
+{
+	if ( nTeam == TF_TEAM_RED )
+	{
+		m_OnRedFlagStolen.FireOutput( this, this );
+		if ( m_nNumFlags[nTeam] == 0 )
+		{
+			m_OnRedFirstFlagStolen.FireOutput( this, this );
+		}
+	}
+	else
+	{
+		m_OnBlueFlagStolen.FireOutput( this, this );
+		if ( m_nNumFlags[nTeam] == 0 )
+		{
+			m_OnBlueFirstFlagStolen.FireOutput( this, this );
+		}
+	}
+
+	++m_nNumFlags[nTeam];
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::FlagDestroyed( int nTeam )
+{
+	if ( m_nNumFlags[nTeam] == 1 )
+	{
+		if ( nTeam == TF_TEAM_RED )
+		{
+			m_OnRedLastFlagReturned.FireOutput( this, this );
+		}
+		else
+		{
+			m_OnBlueLastFlagReturned.FireOutput( this, this );
+		}
+	}
+
+	--m_nNumFlags[nTeam];
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFRobotDestruction_Robot *CTFRobotDestructionLogic::IterateRobots( CTFRobotDestruction_Robot *pRobot )
+{
+	int nIndex = m_vecRobots.Find( pRobot );
+	if ( nIndex == m_vecRobots.InvalidIndex() && !m_vecRobots.IsEmpty() )
+		return m_vecRobots.Head();
+	
+	if ( ( nIndex + 1 ) >= m_vecRobots.Count() )
+		return NULL;
+	
+	return m_vecRobots[nIndex + 1];
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::ManageGameState( void )
+{
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::PlaySoundInPlayersEars( CTFPlayer *pSpeaker, EmitSound_t const &params )
+{
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool b1, int nScore, int nTeam, ERDScoreMethod eEvent )
+{
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::RedTeamWin()
+{
+	TeamWin( TF_TEAM_RED );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::RobotAttacked( CTFRobotDestruction_Robot *pRobot )
+{
+	// Duplicate code to CTFRobotDestruction_RobotGroup::OnRobotAttacked here
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::RobotCreated( CTFRobotDestruction_Robot *pRobot )
+{
+	m_vecRobots.AddToTail( pRobot );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::RobotRemoved( CTFRobotDestruction_Robot *pRobot )
+{
+	m_vecRobots.FindAndRemove( pRobot );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::ScorePoints( int nTeam, int nPoints, ERDScoreMethod eMethod, CTFPlayer *pScorer )
+{
+	if ( !TFGameRules()->FlagsMayBeCapped() )
+		return;
+
+	if ( nPoints == 0 )
+		return;
+
+	int nTargetScore = 0;
+	if ( nTeam == TF_TEAM_RED )
+	{
+		nTargetScore = m_nRedTargetPoints = clamp( m_nRedTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
+	}
+	else
+	{
+		nTargetScore = m_nBlueTargetPoints = clamp( m_nBlueTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
+	}
+
+	if ( GetNextThink( "approach_points_think" ) == TICK_NEVER_THINK )
+	{
+		SetContextThink( &CTFRobotDestructionLogic::ApproachTargetScoresThink, 
+						 gpGlobals->curtime + tf_rd_points_approach_interval.GetFloat(), 
+						 "approach_points_think" );
+	}
+
+	// TODO
+
+	if ( pScorer && nPoints > 0 )
+	{
+		CTF_GameStats.Event_PlayerAwardBonusPoints( pScorer, NULL, nPoints );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::TeamWin( int nTeam )
+{
+	ERDScoreMethod eMethod = (ERDScoreMethod)m_eWinningMethod.Get( nTeam );
+
+	int nWinReason = WINREASON_NONE;
+	switch ( eMethod )
+	{
+		case SCORE_REACTOR_CAPTURED:
+			nWinReason = WINREASON_RD_REACTOR_CAPTURED;
+			break;
+		case SCORE_REACTOR_RETURNED:
+			nWinReason = WINREASON_RD_REACTOR_RETURNED;
+			break;
+		case SCORE_CORES_COLLECTED:
+			nWinReason = WINREASON_RD_CORES_COLLECTED;
+			break;
+	}
+
+	if ( TFGameRules() )
+	{
+		TFGameRules()->SetWinningTeam( nTeam, nWinReason );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::InputRoundActivate( inputdata_t& )
+{
+	FOR_EACH_VEC( m_vecRobotGroups, i )
+	{
+		m_vecRobotGroups[i]->RespawnRobots();
+	}
+}
+#else
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::OnDataChanged( DataUpdateType_t type )
+{
+	BaseClass::OnDataChanged( type );
+
+	float flSoonestFinale = Min( m_flBlueFinaleEndTime.Get(), m_flRedFinaleEndTime.Get() ) - gpGlobals->curtime;
+	if ( flSoonestFinale <= m_flFinaleLength )
+	{
+		float flStartBeepAt = flSoonestFinale - tf_rd_finale_beep_time.GetFloat();
+		SetNextClientThink( gpGlobals->curtime + flStartBeepAt );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Play beeps when near end of game
+//-----------------------------------------------------------------------------
+void CTFRobotDestructionLogic::ClientThink()
+{
+	float flSoonestFinale = Min( m_flBlueFinaleEndTime.Get(), m_flRedFinaleEndTime.Get() ) - gpGlobals->curtime;
+	if ( flSoonestFinale <= tf_rd_finale_beep_time.GetFloat() && flSoonestFinale > 0 )
+	{
+		SetNextClientThink( gpGlobals->curtime + 1 );
+
+		C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+		if ( pPlayer )
+		{
+			bool bLastBeep = flSoonestFinale <= 1.0f;
+			float flScale = RemapValClamped( Bias( 1.0f - ( flSoonestFinale / tf_rd_finale_beep_time.GetFloat() ), 0.2f ), 0.0f, 1.0f, 0.3f, 1.0f );
+			EmitSound_t params;
+			params.m_flSoundTime = 0;
+			params.m_pSoundName = bLastBeep ? "Weapon_Grenade_Det_Pack.Timer" : "RD.FinaleBeep";
+			float dummy = 0;
+			params.m_pflSoundDuration = &dummy;
+			params.m_flVolume = flScale;
+			params.m_nPitch = bLastBeep ? PITCH_NORM : PITCH_NORM * ( 1.0f + flScale );
+			params.m_nFlags |= SND_CHANGE_VOL|SND_CHANGE_PITCH;
+			CBroadcastRecipientFilter filter;
+			pPlayer->EmitSound( filter, pPlayer->entindex(), params );
+		}
+	}
+}
+#endif
+
+#if defined(GAME_DLL)
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void cc_tf_rd_max_points_override( IConVar *pConVar, const char *pOldString, float flOldValue )
+{
+	ConVarRef var( pConVar );
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+		CTFRobotDestructionLogic::GetRobotDestructionLogic()->SetMaxPoints( var.GetInt() );
+}
+ConVar tf_rd_max_points_override( "tf_rd_max_points_override", "0", FCVAR_GAMEDLL, "When changed, overrides the current max points", cc_tf_rd_max_points_override );
 #endif

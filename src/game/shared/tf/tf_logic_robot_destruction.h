@@ -7,6 +7,12 @@
 #ifndef TF_LOGIC_ROBOT_DESTRUCTION_H
 #define TF_LOGIC_ROBOT_DESTRUCTION_H
 
+#ifdef GAME_DLL
+#include "triggers.h"
+#else
+#include "c_tf_player.h"
+#endif
+
 #include "tf_shareddefs.h"
 
 #if defined(CLIENT_DLL)
@@ -168,6 +174,125 @@ private:
 	CNetworkVar( float, m_flRespawnStartTime );
 	CNetworkVar( float, m_flRespawnEndTime );
 	CNetworkVar( float, m_flLastAttackedTime );
+};
+
+
+class CTFRobotDestructionLogic : public CBaseEntity
+#ifdef GAME_DLL
+	, public CGameEventListener
+#endif
+{
+	static CTFRobotDestructionLogic *sm_CTFRobotDestructionLogic;
+	DECLARE_CLASS( CTFRobotDestructionLogic, CBaseEntity );
+public:
+	DECLARE_NETWORKCLASS();
+	DECLARE_DATADESC();
+
+	enum
+	{
+		TYPE_ROBOT_DESTRUCTION,
+		TYPE_PLAYER_DESTRUCTION,
+	};
+
+	static CTFRobotDestructionLogic *GetRobotDestructionLogic();
+
+	CTFRobotDestructionLogic();
+	virtual ~CTFRobotDestructionLogic();
+
+	virtual void	Precache( void );
+	virtual void	Spawn( void );
+
+	float			GetFinaleWinTime( int nTeam ) const;
+	int				GetMaxPoints( void ) const { return m_nMaxPoints; }
+	float			GetRespawnScaleForTeam( int nTeam ) const;
+	int				GetScore( int nTeam ) const;
+	int				GetTargetScore( int nTeam ) const;
+
+#if defined(GAME_DLL)
+	virtual void	Activate( void );
+	virtual void	FireGameEvent( IGameEvent *event );
+	virtual int		UpdateTransmitState( void );
+
+	void			AddRobotGroup( CTFRobotDestruction_RobotGroup *pGroup );
+	void			ApproachTargetScoresThink( void );
+	int				ApproachTeamTargetScore( int nTeam, int nTargetScore, int nScore );
+	void			BlueTeamWin( void );
+	void			FlagCreated( int nTeam );
+	void			FlagDestroyed( int nTeam );
+	CTFRobotDestruction_Robot *IterateRobots( CTFRobotDestruction_Robot *pIter );
+	void			ManageGameState( void );
+	void			PlaySoundInPlayersEars( CTFPlayer *pSpeaker, EmitSound_t const &params );
+	void			PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool b1, int nScore, int nTeam, ERDScoreMethod eEvent = SCORE_UNDEFINED );
+	void			RedTeamWin( void );
+	void			RobotAttacked( CTFRobotDestruction_Robot *pRobot );
+	void			RobotCreated( CTFRobotDestruction_Robot *pRobot );
+	void			RobotRemoved( CTFRobotDestruction_Robot *pRobot );
+	void			SetMaxPoints( int nPoints ) { m_nMaxPoints = nPoints; }
+	void			ScorePoints( int nPoints, int i2, ERDScoreMethod eEvent, CTFPlayer *pScorer );
+
+	void			InputRoundActivate( inputdata_t &inputdata );
+
+	virtual int		GetHealDistance( void ) { return 64; }
+#else
+	virtual void ClientThink();
+	virtual void OnDataChanged( DataUpdateType_t type );
+
+	const char *GetResFile() const { return STRING( m_szResFile ); }
+#endif
+
+	virtual int GetType() const { return TYPE_ROBOT_DESTRUCTION; }
+
+	virtual void	SetCountdownEndTime( float flTime ) { m_flCountdownEndTime = flTime; }
+	virtual float	GetCountdownEndTime() { return m_flCountdownEndTime; }
+	virtual CTFPlayer *GetTeamLeader( int iTeam ) const { return NULL; }
+	virtual string_t GetCountdownImage( void ) { return NULL_STRING; }
+	virtual bool	IsUsingCustomCountdownImage( void ) { return false; }
+#if defined(GAME_DLL)
+	virtual void	OnRedScoreChanged() {}
+	virtual void	OnBlueScoreChanged() {}
+	virtual void	TeamWin( int nTeam );
+#endif
+
+	// Shared info with CTFPlayerDestructionLogic by using protected
+protected:
+#if defined(GAME_DLL)
+	CUtlVector<CTFRobotDestruction_Robot *> m_vecRobots;
+	CUtlVector<CTFRobotDestruction_RobotGroup *> m_vecRobotGroups;
+	int m_nNumFlags[TF_TEAM_COUNT];
+	float m_flLoserRespawnBonusPerBot;
+	float m_flRobotScoreInterval;
+	string_t m_iszResFile;
+
+	COutputEvent m_OnRedHitZeroPoints;
+	COutputEvent m_OnRedHasPoints;
+	COutputEvent m_OnRedFinalePeriodEnd;
+	COutputEvent m_OnBlueHitZeroPoints;
+	COutputEvent m_OnBlueHasPoints;
+	COutputEvent m_OnBlueFinalePeriodEnd;
+	COutputEvent m_OnRedFirstFlagStolen;
+	COutputEvent m_OnRedFlagStolen;
+	COutputEvent m_OnRedLastFlagReturned;
+	COutputEvent m_OnBlueFirstFlagStolen;
+	COutputEvent m_OnBlueFlagStolen;
+	COutputEvent m_OnBlueLastFlagReturned;
+	COutputEvent m_OnBlueLeaveMaxPoints;
+	COutputEvent m_OnRedLeaveMaxPoints;
+	COutputEvent m_OnBlueHitMaxPoints;
+	COutputEvent m_OnRedHitMaxPoints;
+#endif
+	CNetworkVar( int, m_nMaxPoints );
+	CNetworkVar( float, m_flFinaleLength );
+	CNetworkVar( float, m_flBlueFinaleEndTime );
+	CNetworkVar( float, m_flRedFinaleEndTime );
+	CNetworkVar( int, m_nBlueScore );
+	CNetworkVar( int, m_nRedScore );
+	CNetworkVar( int, m_nBlueTargetPoints );
+	CNetworkVar( int, m_nRedTargetPoints );
+	CNetworkVar( float, m_flBlueTeamRespawnScale );
+	CNetworkVar( float, m_flRedTeamRespawnScale );
+	CNetworkString( m_szResFile, MAX_PATH );
+	CNetworkArray( int, m_eWinningMethod, TF_TEAM_COUNT );
+	CNetworkVar( float, m_flCountdownEndTime );
 };
 
 #endif
