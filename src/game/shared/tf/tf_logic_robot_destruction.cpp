@@ -1116,6 +1116,173 @@ void CTFRobotDestructionLogic::ClientThink()
 #endif
 
 #if defined(GAME_DLL)
+
+LINK_ENTITY_TO_CLASS( trigger_rd_vault_trigger, CRobotDestructionVaultTrigger );
+
+BEGIN_DATADESC( CRobotDestructionVaultTrigger )
+	DEFINE_OUTPUT( m_OnPointsStolen, "OnPointsStolen" ),
+	DEFINE_OUTPUT( m_OnPointsStartStealing, "OnPointsStartStealing" ),
+	DEFINE_OUTPUT( m_OnPointsEndStealing, "OnPointsEndStealing" ),
+END_DATADESC()
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CRobotDestructionVaultTrigger::CRobotDestructionVaultTrigger()
+	: m_bStealing( false )
+{
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CRobotDestructionVaultTrigger::Spawn()
+{
+	BaseClass::Spawn();
+
+	InitTrigger();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CRobotDestructionVaultTrigger::Precache()
+{
+	BaseClass::Precache();
+
+	PrecacheScriptSound( "Cart.WarningSingle" );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CRobotDestructionVaultTrigger::PassesTriggerFilters( CBaseEntity *pOther )
+{
+	if ( pOther->GetTeamNumber() == GetTeamNumber() )
+		return false;
+
+	if ( !pOther->ClassMatches( "player" ) )
+		return false;
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CRobotDestructionVaultTrigger::StartTouch( CBaseEntity *pOther )
+{
+	if ( !PassesTriggerFilters( pOther ) )
+		return;
+
+	BaseClass::StartTouch( pOther );
+
+	if ( m_hTouchingEntities.Count() == 1 )
+	{
+		SetContextThink( &CRobotDestructionVaultTrigger::StealPointsThink, gpGlobals->curtime, "add_points_context" );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CRobotDestructionVaultTrigger::EndTouch( CBaseEntity *pOther )
+{
+	BaseClass::EndTouch( pOther );
+
+	if ( m_hTouchingEntities.Count() == 0 )
+	{
+		SetContextThink( NULL, 0, "add_points_context" );
+	}
+
+	CTFPlayer *pPlayer = dynamic_cast<CTFPlayer *>( pOther );
+	if ( pPlayer )
+	{
+		CCaptureFlag *pFlag = dynamic_cast<CCaptureFlag *>( pPlayer->GetItem() );
+		if ( pFlag )
+		{
+			if ( pFlag->GetPointValue() < tf_rd_min_points_to_steal.GetInt() )
+			{
+				pFlag->Drop( pPlayer, true, true );
+				pFlag->ResetMessage();
+				pFlag->Reset();
+			}
+
+			if ( m_bStealing )
+			{
+				m_bStealing = false;
+				m_OnPointsEndStealing.FireOutput( this, this );
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CRobotDestructionVaultTrigger::StealPointsThink()
+{
+	SetContextThink( &CRobotDestructionVaultTrigger::StealPointsThink, 
+					 gpGlobals->curtime + tf_rd_steal_rate.GetFloat(), 
+					 "add_points_context" );
+
+	int nNumStolen = 0;
+	FOR_EACH_VEC( m_hTouchingEntities, i )
+	{
+		CTFPlayer *pPlayer = static_cast<CTFPlayer *>( m_hTouchingEntities[i].Get() );
+		if ( pPlayer )
+		{
+			CCaptureFlag *pFlag = dynamic_cast<CCaptureFlag *>( pPlayer->GetItem() );
+			if ( pFlag )
+			{
+				nNumStolen = StealPoints( pPlayer );
+			}
+		}
+	}
+
+	if ( nNumStolen > 0 )
+	{
+		m_OnPointsStolen.FireOutput( this, this );
+	}
+	if ( nNumStolen && !m_bStealing )
+	{
+		m_OnPointsStartStealing.FireOutput( this, this );
+	}
+	else if ( !nNumStolen && m_bStealing )
+	{
+		m_OnPointsEndStealing.FireOutput( this, this );
+	}
+
+	m_bStealing = nNumStolen != 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CRobotDestructionVaultTrigger::StealPoints( CTFPlayer *pPlayer )
+{
+	CCaptureFlag *pFlag = dynamic_cast<CCaptureFlag *>( pPlayer->GetItem() );
+	if ( pFlag && CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+	{
+		int nEnemyTeam = GetEnemyTeam( pPlayer->GetTeamNumber() );
+		int nEnemyPoints = CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetTargetScore( nEnemyTeam );
+		if ( nEnemyPoints )
+		{
+			int nPointsToSteal = Min( nEnemyPoints, tf_rd_points_per_steal.GetInt() );
+			pFlag->AddPointValue( nPointsToSteal );
+			CTFRobotDestructionLogic::GetRobotDestructionLogic()->ScorePoints( nEnemyTeam, -nPointsToSteal, SCORE_REACTOR_STEAL, pPlayer );
+
+			SetContextThink( &CRobotDestructionVaultTrigger::StealPointsThink, 
+							 gpGlobals->curtime + tf_rd_steal_rate.GetFloat(), 
+							 "add_points_context" );
+
+			return nPointsToSteal;
+		}
+	}
+
+	return 0;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------

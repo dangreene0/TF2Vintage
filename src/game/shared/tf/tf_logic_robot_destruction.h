@@ -1,4 +1,4 @@
-//========= Copyright ï¿½ Valve LLC, All rights reserved. =======================
+//========= Copyright © Valve LLC, All rights reserved. =======================
 //
 // Purpose:		
 //
@@ -84,6 +84,31 @@ typedef struct RobotSpawnData_s
 	const char *m_pszPathName;
 	const char *m_pszGroupName;
 } RobotSpawnData_t;
+
+class CRobotDestructionVaultTrigger : public CBaseTrigger
+{
+	DECLARE_CLASS( CRobotDestructionVaultTrigger, CBaseTrigger );
+	DECLARE_DATADESC();
+
+public:
+	CRobotDestructionVaultTrigger();
+	virtual void	Precache();
+	virtual void	Spawn();
+
+	virtual bool	PassesTriggerFilters( CBaseEntity *pOther );
+	virtual void	StartTouch( CBaseEntity *pOther );
+	virtual void	EndTouch( CBaseEntity *pOther );
+
+	int				StealPoints( CTFPlayer *pPlayer );
+	void			StealPointsThink();
+
+private:
+	COutputEvent m_OnPointsStolen;
+	COutputEvent m_OnPointsStartStealing;
+	COutputEvent m_OnPointsEndStealing;
+
+	bool m_bStealing;
+};
 #endif
 
 class CTFRobotDestruction_RobotSpawn : public CBaseEntity
