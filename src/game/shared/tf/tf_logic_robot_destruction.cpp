@@ -205,16 +205,16 @@ void CTFRobotDestruction_RobotSpawn::SpawnRobot()
 	if ( m_hRobot == NULL )
 	{
 		m_hRobot = (CTFRobotDestruction_Robot *)CreateEntityByName( "tf_robot_destruction_robot" );
-		m_hRobot->SetModel( g_RobotData[ m_spawnData.m_eType ]->m_pszModelName );
 		m_hRobot->ChangeTeam( m_hRobotGroup->GetTeamNumber() );
-		m_hRobot->SetHealth( m_spawnData.m_nRobotHealth );
-		m_hRobot->SetMaxHealth( m_spawnData.m_nRobotHealth );
 		m_hRobot->SetRobotGroup( m_hRobotGroup.Get() );
 		m_hRobot->SetRobotSpawn( this );
 		m_hRobot->SetSpawnData( m_spawnData );
-		m_hRobot->SetName( AllocPooledString( CFmtStr( "%s_robot", STRING( GetEntityName() ) ) ) );
 		DispatchSpawn( m_hRobot );
 
+		m_hRobot->SetModel( g_RobotData[m_spawnData.m_eType]->m_pszModelName );
+		m_hRobot->SetName( AllocPooledString( CFmtStr( "%s_robot", STRING( GetEntityName() ) ) ) );
+		m_hRobot->SetHealth( m_spawnData.m_nRobotHealth );
+		m_hRobot->SetMaxHealth( m_spawnData.m_nRobotHealth );
 		m_hRobot->SetAbsOrigin( GetAbsOrigin() );
 		m_hRobot->SetAbsAngles( GetAbsAngles() );
 	}

@@ -354,6 +354,8 @@ void CTFRobotDestruction_Robot::Spawn()
 	m_nSkin = ( GetTeamNumber() == TF_TEAM_RED ) ? 0 : 1;
 
 #ifdef GAME_DLL
+	SetType( m_spawnData.m_eType );
+
 	m_hGoalPath = dynamic_cast<CPathTrack *>( gEntList.FindEntityByName( NULL, m_spawnData.m_pszPathName ) );
 	if ( !m_hGoalPath )
 	{
@@ -361,9 +363,7 @@ void CTFRobotDestruction_Robot::Spawn()
 	}
 
 	if ( m_hRobotGroup )
-	{
 		m_hRobotGroup->UpdateState();
-	}
 
 	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 		CTFRobotDestructionLogic::GetRobotDestructionLogic()->RobotCreated( this );
@@ -382,9 +382,7 @@ void CTFRobotDestruction_Robot::Spawn()
 bool CTFRobotDestruction_Robot::ShouldCollide( int collisionGroup, int contentsMask ) const
 {
 	if ( collisionGroup == COLLISION_GROUP_PLAYER_MOVEMENT )
-	{
 		return false;
-	}
 
 	return BaseClass::ShouldCollide( collisionGroup, contentsMask );
 }
@@ -468,14 +466,10 @@ void CTFRobotDestruction_Robot::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 	if ( m_hRobotSpawn )
-	{
 		m_hRobotSpawn->OnRobotKilled();
-	}
 
 	if ( m_hRobotGroup )
-	{
 		m_hRobotGroup->OnRobotKilled();
-	}
 
 	if ( m_spawnData.m_eType == ROBOT_TYPE_LARGE )
 	{
