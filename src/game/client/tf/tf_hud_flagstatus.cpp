@@ -29,6 +29,7 @@
 #include "c_team_objectiveresource.h"
 #include "c_func_capture_zone.h"
 #include "tf_hud_objectivestatus.h"
+#include "tf_hud_flagstatus.h"
 #include "tf_spectatorgui.h"
 #include "teamplayroundbased_gamerules.h"
 #include "tf_gamerules.h"
@@ -40,7 +41,7 @@ using namespace vgui;
 DECLARE_BUILD_FACTORY( CTFArrowPanel );
 DECLARE_BUILD_FACTORY( CTFFlagStatus );
 
-DECLARE_HUDELEMENT( CTFFlagCalloutPanel );
+//DECLARE_HUDELEMENT( CTFFlagCalloutPanel );
 
 ConVar tf_rd_flag_ui_mode( "tf_rd_flag_ui_mode", "3", FCVAR_DEVELOPMENTONLY, "When flags are stolen and not visible: 0 = Show outlines (glows), 1 = Show most valuable enemy flag (icons), 2 = Show all enemy flags (icons), 3 = Show all flags (icons)." );
 
