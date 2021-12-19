@@ -20,6 +20,7 @@
 #include "tf_weapon_shotgun.h"
 #include "tf_weapon_laser_pointer.h"
 #include "tf_bot_manager.h"
+#include "tf_robot_destruction_robot.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -1113,6 +1114,13 @@ bool CObjectSentrygun::ValidTargetBot( CBaseCombatCharacter *pActor )
 	// Make sure we can even hit it
 	if ( !pActor->IsSolid() )
 		return false;
+
+	if ( TFGameRules() && TFGameRules()->IsInRobotDestructionMode() )
+	{
+		CTFRobotDestruction_Robot *pRobot = dynamic_cast<CTFRobotDestruction_Robot *>( pActor );
+		if ( pRobot && pRobot->IsShielded() )
+			return false;
+	}
 
 	// Ray trace with respect to parents
 	CBaseEntity *pBlocker = nullptr;
