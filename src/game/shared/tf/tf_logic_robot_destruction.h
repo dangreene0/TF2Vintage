@@ -181,6 +181,7 @@ public:
 	virtual void	PostDataUpdate( DataUpdateType_t updateType );
 	virtual void	SetDormant( bool bDormant );
 #endif
+
 private:
 	IMPLEMENT_NETWORK_VAR_FOR_DERIVED( m_iTeamNum );
 #ifdef GAME_DLL
@@ -194,7 +195,7 @@ private:
 	COutputEvent m_OnRobotsRespawn;
 	COutputEvent m_OnAllRobotsDead;
 #endif
-
+public:
 	CNetworkString( m_pszHudIcon, MAX_PATH );
 	CNetworkVar( int, m_nGroupNumber );
 	CNetworkVar( int, m_nState );
