@@ -10,6 +10,7 @@
 #ifdef GAME_DLL
 #include "triggers.h"
 #include "GameEventListener.h"
+#include "tf_player.h"
 #else
 #include "c_tf_player.h"
 #endif
@@ -176,7 +177,7 @@ public:
 	void			StopRespawnTimer( void );
 	void			UpdateState( void );
 #else
-	virtual int		GetTeamNumber( void ) const { return m_iTeamNum; }
+	virtual int		GetTeamNumber( void ) const OVERRIDE { return m_iTeamNum; }
 	virtual void	PostDataUpdate( DataUpdateType_t updateType );
 	virtual void	SetDormant( bool bDormant );
 #endif
