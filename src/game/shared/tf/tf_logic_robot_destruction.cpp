@@ -100,15 +100,15 @@ void CTFRobotDestruction_RobotSpawn::Activate()
 		return;
 	}
 
-	// TODO
-	/*CTFRobotDestruction_RobotGroup *pGroup  = dynamic_cast<CTFRobotDestruction_RobotGroup *>( pEntity );
-	if ( )
+	CBaseEntity *pEntity = gEntList.FindEntityByName( NULL, m_spawnData.m_pszGroupName );
+	CTFRobotDestruction_RobotGroup *pGroup  = dynamic_cast<CTFRobotDestruction_RobotGroup *>( pEntity );
+	if ( pEntity != pGroup )
 	{
 		Warning( "%s", CFmtStr( "%s specified '%s' as its group, but %s is a %s", 
 								STRING( GetEntityName() ), 
 								m_spawnData.m_pszGroupName, 
 								m_spawnData.m_pszGroupName, 
-								pEnt->GetClassname() );
+								pEntity->GetClassname() ) );
 	}
 	
 	if ( pGroup )
@@ -120,14 +120,15 @@ void CTFRobotDestruction_RobotSpawn::Activate()
 		Warning( "Couldn't find robot destruction spawn group named '%s'!\n", m_spawnData.m_pszGroupName );
 	}
 
+	pEntity = gEntList.FindEntityByName( NULL, m_spawnData.m_pszPathName );
 	CPathTrack *pPath = dynamic_cast<CPathTrack *>( pEntity );
-	if ( )
+	if ( pEntity != pPath )
 	{
 		Warning( "%s", CFmtStr( "%s specified '%s' as its first path, but %s is a %s", 
 								STRING( GetEntityName() ), 
 								m_spawnData.m_pszPathName, 
 								m_spawnData.m_pszPathName, 
-								pEnt->GetClassname() ) );
+								pEntity->GetClassname() ) );
 	}
 	else if( pEntity == NULL )
 	{
@@ -136,7 +137,6 @@ void CTFRobotDestruction_RobotSpawn::Activate()
 								m_spawnData.m_pszPathName, 
 								m_spawnData.m_pszPathName ) );
 	}
-	*/
 #endif
 }
 

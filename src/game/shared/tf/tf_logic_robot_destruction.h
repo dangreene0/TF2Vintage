@@ -78,7 +78,7 @@ typedef struct RobotSpawnData_s
 		return *this;
 	}
 
-	int m_eType;
+	ERobotType m_eType;
 	int m_nRobotHealth;
 	int m_nPoints;
 	int m_nNumGibs;
