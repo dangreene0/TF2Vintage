@@ -1659,11 +1659,14 @@ void CTFFlameEntity::CheckCollision( CBaseEntity *pOther, bool *pbHitWorld )
 	if ( pOther->GetTeam() == GetTeam() )
 	{
 		CTFPlayer *pPlayer = ToTFPlayer( pOther );
-		pBow = dynamic_cast<CTFCompoundBow *>( pPlayer->GetActiveTFWeapon() );
-		if ( !pBow )
+		if ( pPlayer )
 		{
-			// not a valid target
-			return;
+			pBow = dynamic_cast<CTFCompoundBow *>( pPlayer->GetActiveTFWeapon() );
+			if ( !pBow )
+			{
+				// not a valid target
+				return;
+			}
 		}
 	}
 
