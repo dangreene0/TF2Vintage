@@ -132,7 +132,7 @@ int CTFBaseBoss::OnTakeDamage( const CTakeDamageInfo &info )
 		CTFPlayer *pAttacker = ToTFPlayer( info.GetAttacker() );
 
 		pAttacker->m_Shared.SetRageMeter( pAttacker->m_Shared.GetRageProgress() + ( info.GetDamage() / 6.0f ), TF_BUFF_OFFENSE );
-		if ( ( info.GetDamageType() & DMG_BURN | DMG_PLASMA ) != 0 )
+		if ( ( info.GetDamageType() & ( DMG_BURN|DMG_PLASMA ) ) != 0 )
 			pAttacker->m_Shared.SetFireRageMeter( pAttacker->m_Shared.GetFireRage() + ( info.GetDamage() / 30.0f ) );
 
 		if ( pAttacker && info.GetWeapon() )
