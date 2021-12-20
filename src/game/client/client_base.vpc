@@ -79,7 +79,7 @@ $Configuration
 		$AdditionalDependencies			"$BASE wsock32.lib Ws2_32.lib" [$BUILD_REPLAY]
 	}
 
-	$PostBuildEvent [!$ANALYZE]
+	$PostBuildEvent [!$ANALYZE && $WIN32]
 	{
 		$CommandLine		"$BASE" "copy $QUOTE$SRCDIR\thirdparty\discord_game_sdk\lib\x86\discord_game_sdk.dll$QUOTE $OUTBINDIR\discord_game_sdk.dll" "\n" \
 							"if ERRORLEVEL 1 goto BuildEventFailed" "\n"
