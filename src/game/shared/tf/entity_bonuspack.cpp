@@ -47,9 +47,10 @@ CBonusPack::CBonusPack()
 void CBonusPack::Spawn( void )
 {
 	Precache();
-	BaseClass::Spawn();
-
 #ifdef GAME_DLL
+	// We are skipping over our base class
+	CTFPowerup::Spawn();
+
 	const char *pszParticleName = GetTeamNumber() == TF_TEAM_RED ? "powercore_alert_blue" : "powercore_alert_red";
 	DispatchParticleEffect( pszParticleName, PATTACH_POINT_FOLLOW, this, "particle_spawn" );
 
@@ -62,6 +63,8 @@ void CBonusPack::Spawn( void )
 	m_flRemoveAt = gpGlobals->curtime + 25.0f;
 	SetContextThink( &CBonusPack::BlinkThink, m_flRemoveAt - 5.0f, "blink_think" );
 	SetContextThink( &CBonusPack::SUB_Remove, m_flRemoveAt, "RemoveThink" );
+#else
+	CBaseAnimating::Spawn();
 #endif
 }
 

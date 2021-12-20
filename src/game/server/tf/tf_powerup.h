@@ -39,6 +39,7 @@ public:
 
 	void			Spawn( void );
 	CBaseEntity*	Respawn( void );
+	virtual void	Precache( void );
 	virtual void	Materialize( void );
 	virtual bool	ValidTouch( CBasePlayer *pPlayer );
 	virtual bool	MyTouch( CBasePlayer *pPlayer );

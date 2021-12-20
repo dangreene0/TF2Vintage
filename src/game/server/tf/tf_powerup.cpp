@@ -61,7 +61,9 @@ CTFPowerup::CTFPowerup()
 //-----------------------------------------------------------------------------
 void CTFPowerup::Spawn( void )
 {
-	BaseClass::Precache();
+	Precache();
+	SetModel( GetPowerupModel() );
+
 	BaseClass::Spawn();
 
 	BaseClass::SetOriginalSpawnOrigin( GetAbsOrigin() );
@@ -93,6 +95,16 @@ CBaseEntity* CTFPowerup::Respawn( void )
 	SetNextThink( gpGlobals->curtime + GetRespawnDelay() );
 
 	return pReturn;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPowerup::Precache( void )
+{
+	PrecacheModel( GetPowerupModel() );
+
+	BaseClass::Precache();
 }
 
 //-----------------------------------------------------------------------------
