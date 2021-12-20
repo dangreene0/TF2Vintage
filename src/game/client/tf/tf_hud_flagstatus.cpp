@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2007, Valve Corporation, All rights reserved. ============//
+//========= Copyright ï¿½ 1996-2007, Valve Corporation, All rights reserved. ============//
 //
 // Purpose:
 //
@@ -34,6 +34,9 @@
 #include "teamplayroundbased_gamerules.h"
 #include "tf_gamerules.h"
 #include "tf_hud_freezepanel.h"
+#include "tier1/fmtstr.h"
+#include "view.h"
+#include "prediction.h"
 #include "tf_logic_robot_destruction.h"
 
 using namespace vgui;
@@ -41,7 +44,7 @@ using namespace vgui;
 DECLARE_BUILD_FACTORY( CTFArrowPanel );
 DECLARE_BUILD_FACTORY( CTFFlagStatus );
 
-//DECLARE_HUDELEMENT( CTFFlagCalloutPanel );
+DECLARE_HUDELEMENT( CTFFlagCalloutPanel );
 
 ConVar tf_rd_flag_ui_mode( "tf_rd_flag_ui_mode", "3", FCVAR_DEVELOPMENTONLY, "When flags are stolen and not visible: 0 = Show outlines (glows), 1 = Show most valuable enemy flag (icons), 2 = Show all enemy flags (icons), 3 = Show all flags (icons)." );
 
@@ -503,7 +506,7 @@ void CTFHudFlagObjectives::OnTick()
 			if ( tf_rd_flag_ui_mode.GetInt() && !pFlag->IsDisabled() && !pFlag->IsHome() )
 			{
 				Vector vecLocation = pFlag->GetAbsOrigin() + Vector( 0.f, 0.f, 18.f );
-				//CTFFlagCalloutPanel::AddFlagCalloutIfNotFound( pFlag, FLT_MAX, vecLocation );
+				CTFFlagCalloutPanel::AddFlagCalloutIfNotFound( pFlag, FLT_MAX, vecLocation );
 			}
 		}
 	}
@@ -791,4 +794,401 @@ void CTFHudFlagObjectives::FireGameEvent( IGameEvent *event )
 	{
 		UpdateStatus();
 	}
+}
+
+
+CUtlVector<CTFFlagCalloutPanel *> CTFFlagCalloutPanel::sm_FlagCalloutPanels;
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFFlagCalloutPanel::CTFFlagCalloutPanel( const char *name )
+	: CHudElement( name ), BaseClass( NULL, name )
+{
+	sm_FlagCalloutPanels.AddToTail( this );
+
+	SetParent( g_pClientMode->GetViewport() );
+
+	RegisterForRenderGroup( "mid" );
+	RegisterForRenderGroup( "commentary" );
+
+	SetHiddenBits( HIDEHUD_MISCSTATUS );
+
+	vgui::ivgui()->AddTickSignal( GetVPanel() );
+
+	m_pFlagCalloutPanel = new CTFImagePanel( this, "FlagCalloutPanel" );
+	m_pFlagValueLabel = new Label( this, "FlagValueLabel", "" );
+	m_pFlagStatusIcon = new CTFImagePanel( this, "StatusIcon" );
+
+	m_f1 = 1.0f;
+	m_flLastUpdate = 1.0f;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFFlagCalloutPanel::~CTFFlagCalloutPanel( void )
+{
+	FOR_EACH_VEC_BACK( sm_FlagCalloutPanels, i )
+	{
+		if ( sm_FlagCalloutPanels[i] == this )
+		{
+			sm_FlagCalloutPanels.Remove( i );
+			break;
+		}
+	}
+
+	if ( m_pArrowMaterial )
+	{
+		m_pArrowMaterial->DecrementReferenceCount();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+CTFFlagCalloutPanel *CTFFlagCalloutPanel::AddFlagCalloutIfNotFound( CCaptureFlag *pFlag, float f, Vector const &v )
+{
+	FOR_EACH_VEC( sm_FlagCalloutPanels, i )
+	{
+		if ( sm_FlagCalloutPanels[i]->m_hFlag == pFlag )
+		{
+			return nullptr;
+		}
+	}
+
+	CTFFlagCalloutPanel *pCallout = new CTFFlagCalloutPanel( "FlagCalloutHUD" );
+	if ( pCallout )
+	{
+		pCallout->SetFlag( pFlag, f, v );
+	}
+	return pCallout;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
+{
+	BaseClass::ApplySchemeSettings( pScheme );
+
+	LoadControlSettings( "resource/UI/FlagCalloutPanel.res" );
+
+	if ( m_pArrowMaterial )
+		m_pArrowMaterial->DecrementReferenceCount();
+
+	m_pArrowMaterial = materials->FindMaterial( "HUD/medic_arrow", TEXTURE_GROUP_VGUI );
+	m_pArrowMaterial->IncrementReferenceCount();
+
+	if ( !m_pFlagCalloutPanel || !m_pFlagValueLabel || !m_pFlagStatusIcon )
+		return;
+
+	m_pFlagCalloutPanel->GetSize( m_nPanelWide, m_nPanelTall );
+	m_pFlagValueLabel->GetSize( m_nLabelWide, m_nLabelTall );
+	m_pFlagStatusIcon->GetSize( m_nIconWide, m_nIconTall );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::OnTick( void )
+{
+	const int nUIMode = tf_rd_flag_ui_mode.GetInt();
+
+	CTFPlayer *pLocalPlayer = CTFPlayer::GetLocalTFPlayer();
+	if ( !pLocalPlayer || !m_hFlag || m_hFlag->IsHome() || m_hFlag->IsDisabled() || nUIMode == 0 )
+	{
+		MarkForDeletion();
+		return;
+	}
+
+	bool bShouldDraw = ShouldShowFlagIconToLocalPlayer();
+	if ( nUIMode == 1 )
+	{
+		int nHighestValue = 0;
+		CCaptureFlag *pHighestValueFlag = NULL;
+		for ( int i = 0; i < ICaptureFlagAutoList::AutoList().Count(); ++i )
+		{
+			CCaptureFlag *pFlag = static_cast<CCaptureFlag *>( ICaptureFlagAutoList::AutoList()[i] );
+			if ( pFlag && pFlag->GetPointValue() > nHighestValue )
+			{
+				if ( pFlag->IsDisabled() || pFlag->IsHome() || pFlag->InSameTeam( pLocalPlayer ) )
+					continue;
+
+				if ( nHighestValue < pFlag->GetPointValue() )
+				{
+					nHighestValue = pFlag->GetPointValue();
+					pHighestValueFlag = pFlag;
+				}
+			}
+		}
+
+		if ( pHighestValueFlag != m_hFlag )
+			bShouldDraw = false;
+	}
+
+	if ( IsVisible() != bShouldDraw )
+	{
+		if ( !IsVisible() )
+		{
+			m_flLastUpdate = gpGlobals->curtime;
+			m_flPrevScale = 0;
+		}
+
+		SetVisible( bShouldDraw );
+	}
+	if ( IsEnabled() != bShouldDraw )
+	{
+		SetEnabled( bShouldDraw );
+	}
+
+	if ( !bShouldDraw )
+		return;
+
+	if ( !m_hFlag->IsDropped() && m_hFlag->GetPrevOwner() && !prediction->IsFirstTimePredicted() )
+		return;
+
+	Vector vecToFlag = m_hFlag->GetAbsOrigin() - pLocalPlayer->GetAbsOrigin();
+	ScaleAndPositionCallout( RemapValClamped( vecToFlag.LengthSqr(), Sqr( 1000 ), Sqr( 4000 ), 1.0f, 0.6f ) );
+
+	Vector vecTargetPos = m_hFlag->GetAbsOrigin();
+	if ( !m_hFlag->IsDropped() && m_hFlag->GetPrevOwner() )
+		vecTargetPos = m_hFlag->GetPrevOwner()->GetAbsOrigin();
+
+	Vector vecToTarget = vecTargetPos - MainViewOrigin();
+	int nHalfWidth = GetWide() / 2;
+
+	int iX = 0, iY = 0;
+	bool bInHudSpace = GetVectorInHudSpace( vecToTarget, iX, iY );
+
+	if ( !bInHudSpace || iX < nHalfWidth || ( ScreenWidth() - nHalfWidth ) < iX )
+	{
+		if ( TFGameRules() && TFGameRules()->IsInRobotDestructionMode() && ( m_flLastUpdate + 5.0 ) < gpGlobals->curtime )
+		{
+			m_i1 = 0;
+			SetAlpha( 0 );
+		}
+		else
+		{
+			vecToTarget.NormalizeInPlace();
+
+			float flRotation;
+			GetCalloutPosition( vecToTarget, YRES( 100 ), &iX, &iY, &flRotation );
+
+			Vector vecFlagCenter = m_hFlag->WorldSpaceCenter();
+			m_i1 = ( DotProduct( MainViewRight(), vecFlagCenter - MainViewOrigin() ) > 0 ) ? 2 : 1;
+
+			SetPos( iX - nHalfWidth, iY - ( GetTall() / 2 ) );
+			SetAlpha( 128 );
+		}
+	}
+	else
+	{
+		trace_t	tr;
+		UTIL_TraceLine( vecToTarget, MainViewOrigin(), MASK_VISIBLE, NULL, COLLISION_GROUP_NONE, &tr );
+		if ( tr.fraction >= 1.f )
+		{
+			m_bInLOS = true;
+			SetAlpha( 0 );
+			return;
+		}
+		else
+		{
+			m_i1 = 0;
+			SetAlpha( 128 );
+			SetPos( iX - nHalfWidth, iY - ( GetTall() / 2 ) );
+		}
+	}
+	
+	m_bInLOS = false;
+
+	if ( !m_pFlagCalloutPanel || !m_pFlagValueLabel || !m_pFlagStatusIcon )
+		return;
+
+	const char *pszCalloutImage = NULL;
+	switch ( m_hFlag->GetTeamNumber() )
+	{
+		case TF_TEAM_RED:
+			pszCalloutImage = "../hud/obj_briefcase_red";
+			break;
+		case TF_TEAM_BLUE:
+			pszCalloutImage = "../hud/obj_briefcase_blue";
+			break;
+		case TF_TEAM_GREEN:
+			pszCalloutImage = "../hud/obj_briefcase_green";
+			break;
+		case TF_TEAM_YELLOW:
+			pszCalloutImage = "../hud/obj_briefcase_yellow";
+			break;
+		default:
+			return;
+	}
+	m_pFlagCalloutPanel->SetImage( pszCalloutImage );
+
+	m_pFlagValueLabel->SetText( CFmtStr( "%i", m_hFlag->GetPointValue() ) );
+
+	const char *pszIconImage = "../hud/objectives_flagpanel_ico_flag_home";
+	if ( m_hFlag->IsDropped() )
+	{
+		pszIconImage = "../hud/objectives_flagpanel_ico_flag_dropped";
+	}
+	else if ( m_hFlag->IsStolen() )
+	{
+		pszIconImage = "../hud/objectives_flagpanel_ico_flag_moving";
+	}
+	m_pFlagStatusIcon->SetImage( pszIconImage );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::Paint( void )
+{
+	if ( m_bInLOS )
+		return;
+
+	BaseClass::Paint();
+
+	if ( m_i1 == 0 )
+		return;
+
+	int iX = 0, iY = 0;
+	GetPos( iX, iY );
+
+	float f1, f2;
+	if ( m_i1 == 1 )
+	{
+		f1 = 0;
+		f2 = 1.0;
+	}
+	else
+	{
+		f1 = 1.0;
+		f2 = 0;
+	}
+
+	iY += ( ScreenHeight() - YRES( 10 ) + GetTall() ) * 0.5;
+
+	CMatRenderContextPtr pRenderContext( materials );
+	pRenderContext->Bind( m_pArrowMaterial );
+	IMesh *pMesh = pRenderContext->GetDynamicMesh( true );
+
+	CMeshBuilder meshBuilder;
+	meshBuilder.Begin( pMesh, MATERIAL_QUADS, 1 );
+
+	// TODO
+
+	meshBuilder.End();
+	pMesh->Draw();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::PaintBackground( void )
+{
+	CTFPlayer *pLocalPlayer = CTFPlayer::GetLocalTFPlayer();
+	if ( !pLocalPlayer )
+		return;
+
+	if ( !m_hFlag )
+	{
+		SetAlpha( 0 );
+		return;
+	}
+
+	BaseClass::PaintBackground();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::PerformLayout( void )
+{
+	BaseClass::PerformLayout();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::GetCalloutPosition( const Vector &vecToTarget, float flRadius, int *xpos, int *ypos, float *flRotation )
+{
+	QAngle viewportAngles = MainViewAngles();
+
+	Vector vecForward;
+	AngleVectors( viewportAngles, &vecForward );
+	vecForward.NormalizeInPlace();
+	vecForward.z = 0;
+
+	float flForward = vecToTarget.Dot( vecForward );
+	float flSide = (vecToTarget.x * vecForward.y - vecToTarget.y * vecForward.x) * flRadius;
+	*flRotation = RAD2DEG( atan2( -flSide * flRadius, -flForward * flRadius ) + M_PI );
+
+	float cos = 0, sin = 0;
+	SinCos( DEG2RAD( -(*flRotation) ), &cos, &sin );
+	*xpos = (int)( ( (float)ScreenWidth() / 2 ) + ( flRadius * sin ) );
+	*ypos = (int)( ( (float)ScreenHeight() / 2 ) - ( flRadius * cos ) );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::ScaleAndPositionCallout( float flScale )
+{
+	if ( flScale == m_flPrevScale )
+		return;
+
+	SetSize( ( XRES(30) * flScale ), ( YRES(30) * flScale ) );
+
+	if ( !m_pFlagCalloutPanel || !m_pFlagValueLabel || !m_pFlagStatusIcon )
+		return;
+
+	m_pFlagCalloutPanel->SetSize( ( m_nPanelWide * flScale ), ( m_nPanelTall * flScale ) );
+	m_pFlagCalloutPanel->SetPos( 0, 0 );
+
+	m_pFlagValueLabel->SetSize( ( m_nLabelWide * flScale ), ( m_nLabelTall * flScale ) );
+	const float flLabelX = ( m_pFlagCalloutPanel->GetWide() - m_pFlagValueLabel->GetWide() ) * 0.5f;
+	const float flLabelY = ( m_pFlagCalloutPanel->GetWide() - m_pFlagValueLabel->GetTall() ) * 0.65f;
+	m_pFlagValueLabel->SetPos( flLabelX, flLabelY );
+
+	m_pFlagStatusIcon->SetSize( ( m_nIconWide * flScale ), ( m_nIconTall * flScale ) );
+	const float flIconX = ( m_pFlagCalloutPanel->GetWide() - m_pFlagStatusIcon->GetWide() ) * 1.05f;
+	const float flIconY = ( m_pFlagCalloutPanel->GetWide() - m_pFlagStatusIcon->GetTall() ) * 0.85f;
+	m_pFlagStatusIcon->SetPos( flIconX, flIconY );
+
+	m_flPrevScale = flScale;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFFlagCalloutPanel::SetFlag( CCaptureFlag *pFlag, float f, Vector const &v )
+{
+	m_hFlag = pFlag;
+	m_f1 = gpGlobals->curtime + f;
+	m_v1 = v;
+	m_flLastUpdate = gpGlobals->curtime;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFFlagCalloutPanel::ShouldShowFlagIconToLocalPlayer( void ) const
+{
+	CTFPlayer *pLocalPlayer = CTFPlayer::GetLocalTFPlayer();
+	if ( !pLocalPlayer )
+		return false;
+
+	const int nUIMode = tf_rd_flag_ui_mode.GetInt();
+	if ( m_hFlag->IsStolen() && m_hFlag->InSameTeam( pLocalPlayer ) && nUIMode == 3 )
+		return false;
+
+	if ( m_hFlag->InSameTeam( pLocalPlayer ) && nUIMode < 3 )
+		return false;
+
+	// We shouldn't be notified of what we're carrying
+	if ( m_hFlag->IsStolen() && pLocalPlayer == m_hFlag->GetPrevOwner() )
+		return false;
+
+	return true;
 }
