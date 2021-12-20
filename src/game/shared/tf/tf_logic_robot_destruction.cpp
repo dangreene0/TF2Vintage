@@ -104,11 +104,11 @@ void CTFRobotDestruction_RobotSpawn::Activate()
 	CTFRobotDestruction_RobotGroup *pGroup  = dynamic_cast<CTFRobotDestruction_RobotGroup *>( pEntity );
 	if ( pEntity != pGroup )
 	{
-		Warning( "%s", CFmtStr( "%s specified '%s' as its group, but %s is a %s", 
+		Warning( "%s specified '%s' as its group, but %s is a %s", 
 								STRING( GetEntityName() ), 
 								m_spawnData.m_pszGroupName, 
 								m_spawnData.m_pszGroupName, 
-								pEntity->GetClassname() ) );
+								pEntity->GetClassname() );
 	}
 	
 	if ( pGroup )
@@ -124,18 +124,18 @@ void CTFRobotDestruction_RobotSpawn::Activate()
 	CPathTrack *pPath = dynamic_cast<CPathTrack *>( pEntity );
 	if ( pEntity != pPath )
 	{
-		Warning( "%s", CFmtStr( "%s specified '%s' as its first path, but %s is a %s", 
+		Warning( "%s specified '%s' as its first path, but %s is a %s", 
 								STRING( GetEntityName() ), 
 								m_spawnData.m_pszPathName, 
 								m_spawnData.m_pszPathName, 
-								pEntity->GetClassname() ) );
+								pEntity->GetClassname() );
 	}
 	else if( pEntity == NULL )
 	{
-		Warning( "%s", CFmtStr( "%s specified '%s' as its first path, but %s doesn't exist", 
+		Warning( "%s specified '%s' as its first path, but %s doesn't exist", 
 								STRING( GetEntityName() ), 
 								m_spawnData.m_pszPathName, 
-								m_spawnData.m_pszPathName ) );
+								m_spawnData.m_pszPathName );
 	}
 #endif
 }
@@ -535,7 +535,7 @@ void CTFRobotDestruction_RobotGroup::UpdateState()
 		}
 	}
 
-	ERobotState eState = ROBOT_STATE_INACIVE;
+	ERobotState eState = ROBOT_STATE_INACTIVE;
 	if ( bShielded )
 	{
 		eState = ROBOT_STATE_SHIELDED;
