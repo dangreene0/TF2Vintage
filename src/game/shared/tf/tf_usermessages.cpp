@@ -80,6 +80,7 @@ void RegisterUserMessages()
 	usermessages->Register("VoteSetup", -1);
 
 	usermessages->Register("PlayerBonusPoints", 3);
+	usermessages->Register("RDTeamPointsChanged", 4);
 
 	usermessages->Register("SpawnFlyingBird", -1);
 	usermessages->Register("PlayerGodRayEffect", -1);

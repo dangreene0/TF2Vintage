@@ -241,6 +241,22 @@ void __MsgFunc_PlayerShieldBlocked( bf_read &msg )
 	}
 }
 
+void __MsgFunc_RDTeamPointsChanged( bf_read &msg )
+{
+	int nPoints = (int)msg.ReadShort();
+	int nTeam = (int)msg.ReadByte();
+	int nMethod = (int)msg.ReadByte();
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "rd_team_points_changed" );
+	if ( event )
+	{
+		event->SetInt( "points", nPoints );
+		event->SetInt( "team", nTeam );
+		event->SetInt( "method", nMethod );
+		gameeventmanager->FireEventClientSide( event );
+	}
+}
+
 // --------------------------------------------------------------------------------- //
 // CTFModeManager.
 // --------------------------------------------------------------------------------- //
@@ -799,6 +815,7 @@ void ClientModeTFNormal::MessageHooks( void )
 	HOOK_MESSAGE( PlayerJaratedFade );
 	HOOK_MESSAGE( PlayerExtinguished );
 	HOOK_MESSAGE( PlayerShieldBlocked );
+	HOOK_MESSAGE( RDTeamPointsChanged );
 }
 
 //-----------------------------------------------------------------------------
