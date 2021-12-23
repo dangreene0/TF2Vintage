@@ -95,7 +95,7 @@ void CRobotBody::Update( void )
 	Approach( m_vecImpulse, vec3_origin, 200.0f );
 
 	Vector vecFwd, vecRight;
-	actor->GetVectors( &vecFwd, &vecRight, nullptr );
+	AngleVectors( actor->GetAbsAngles(), &vecFwd, &vecRight, NULL );
 
 	if ( m_iMoveX >= 0 )
 		actor->SetPoseParameter( m_iMoveX, vecFwd.Dot( m_vecLean ) );
@@ -131,26 +131,6 @@ bool CRobotBody::StartActivity( Activity act, unsigned int flags )
 	}
 
 	return false;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose:
-//-----------------------------------------------------------------------------
-void CRobotBody::Impulse( Vector const& vecImpulse )
-{ 
-	m_vecImpulse += vecImpulse * 5;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Shift a vector towards the target at the specified rate over time
-//-----------------------------------------------------------------------------
-void CRobotBody::Approach( Vector& vecIn, Vector const& vecTarget, float flRate )
-{
-	Vector vecApproach = (( vecTarget - vecIn ) * flRate) * gpGlobals->frametime;
-	if ( vecApproach.LengthSqr() > ( vecIn - vecTarget ).LengthSqr() )
-		vecIn = vecTarget;
-	else
-		vecIn += vecApproach;		
 }
 #else
 
@@ -192,27 +172,28 @@ void C_RobotBody::Update( void )
 	if ( m_iMoveY >= 0 )
 		m_Actor->SetPoseParameter( m_iMoveY, vecRight.Dot( m_vecLean ) );
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void C_RobotBody::Impulse( Vector const& vecImpulse )
-{ 
+void CRobotBody::Impulse( Vector const &vecImpulse )
+{
 	m_vecImpulse += vecImpulse * 5;
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Shift a vector towards the target at the specified rate over time
 //-----------------------------------------------------------------------------
-void C_RobotBody::Approach( Vector& vecIn, Vector const& vecTarget, float flRate )
+void CRobotBody::Approach( Vector &vecIn, Vector const &vecTarget, float flRate )
 {
-	Vector vecApproach = (( vecTarget - vecIn ) * flRate) * gpGlobals->frametime;
+	Vector const vecApproach = ( vecTarget - vecIn ) * flRate * gpGlobals->frametime;
 	if ( vecApproach.LengthSqr() > ( vecIn - vecTarget ).LengthSqr() )
 		vecIn = vecTarget;
 	else
-		vecIn += vecApproach;		
+		vecIn += vecApproach;
 }
-#endif
+
 
 BEGIN_DATADESC( CRobotDispenser )
 END_DATADESC()
