@@ -86,6 +86,14 @@ typedef struct RobotSpawnData_s
 	const char *m_pszGroupName;
 } RobotSpawnData_t;
 
+typedef struct RateLimitedSound_s
+{
+	RateLimitedSound_s( float flDelay )
+		: m_flDelay( flDelay ), m_NextAvailableTime( DefLessFunc( CBaseEntity const * ) ) {}
+	float m_flDelay;
+	CUtlMap<CBaseEntity const *, float> m_NextAvailableTime;
+} RateLimitedSound_t;
+
 class CRobotDestructionVaultTrigger : public CBaseTrigger
 {
 	DECLARE_CLASS( CRobotDestructionVaultTrigger, CBaseTrigger );
@@ -163,6 +171,8 @@ public:
 	virtual void	Spawn( void );
 	virtual int		UpdateTransmitState( void );
 
+	float			GetTeamRespawnScale() const { return m_flTeamRespawnReductionScale; }
+
 	void			AddToGroup( CTFRobotDestruction_RobotSpawn *pSpawn );
 	void			DisableUberForGroup( void );
 	void			EnableUberForGroup( void );
@@ -230,6 +240,7 @@ public:
 	virtual void	Precache( void );
 	virtual void	Spawn( void );
 
+	float			GetFinaleLength() const { return m_flFinaleLength; }
 	float			GetFinaleWinTime( int nTeam ) const;
 	int				GetMaxPoints( void ) const { return m_nMaxPoints; }
 	float			GetRespawnScaleForTeam( int nTeam ) const;
@@ -250,7 +261,7 @@ public:
 	CTFRobotDestruction_Robot *IterateRobots( CTFRobotDestruction_Robot *pIter );
 	void			ManageGameState( void );
 	void			PlaySoundInPlayersEars( CTFPlayer *pSpeaker, EmitSound_t const &params );
-	void			PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool b1, int nScore, int nTeam, ERDScoreMethod eEvent = SCORE_UNDEFINED );
+	void			PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool bEnemyScore, int nScore, int nTeam, ERDScoreMethod eEvent = SCORE_UNDEFINED );
 	void			RedTeamWin( void );
 	void			RobotAttacked( CTFRobotDestruction_Robot *pRobot );
 	void			RobotCreated( CTFRobotDestruction_Robot *pRobot );
@@ -290,6 +301,8 @@ protected:
 	float m_flLoserRespawnBonusPerBot;
 	float m_flRobotScoreInterval;
 	string_t m_iszResFile;
+
+	CUtlMap<char const *, RateLimitedSound_t *> m_RateLimitedSounds;
 
 	COutputEvent m_OnRedHitZeroPoints;
 	COutputEvent m_OnRedHasPoints;

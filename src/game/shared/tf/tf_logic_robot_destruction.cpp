@@ -663,7 +663,11 @@ CTFRobotDestructionLogic *CTFRobotDestructionLogic::sm_CTFRobotDestructionLogic 
 // Purpose: 
 //-----------------------------------------------------------------------------
 CTFRobotDestructionLogic::CTFRobotDestructionLogic()
+#ifdef GAME_DLL
+	: m_RateLimitedSounds( StringLessThan )
+#endif
 {
+	Assert( sm_CTFRobotDestructionLogic == NULL );
 	sm_CTFRobotDestructionLogic = this;
 #ifdef GAME_DLL
 	Q_memset( m_nNumFlags, 0, sizeof( m_nNumFlags ) );
@@ -671,6 +675,11 @@ CTFRobotDestructionLogic::CTFRobotDestructionLogic()
 
 	ListenForGameEvent( "teamplay_pre_round_time_left" );
 	ListenForGameEvent( "player_spawn" );
+
+	m_RateLimitedSounds.Insert( "RD.TeamScoreCore", new RateLimitedSound_t( 0.001f ) );
+	m_RateLimitedSounds.Insert( "RD.EnemyScoreCore", new RateLimitedSound_t( 0.001f ) );
+	m_RateLimitedSounds.Insert( "RD.EnemyStealingPoints", new RateLimitedSound_t( 0.45f ) );
+	m_RateLimitedSounds.Insert( "MVM.PlayerUpgraded", new RateLimitedSound_t( 0.2f ) );
 
 	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
 	{
@@ -686,6 +695,10 @@ CTFRobotDestructionLogic::~CTFRobotDestructionLogic()
 {
 	if ( sm_CTFRobotDestructionLogic == this )
 		sm_CTFRobotDestructionLogic = NULL;
+
+#ifdef GAME_DLL
+	m_RateLimitedSounds.PurgeAndDeleteElements();
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -804,6 +817,13 @@ void CTFRobotDestructionLogic::FireGameEvent( IGameEvent *event )
 				CTFPlayer *pPlayer = players[i];
 				if ( !pPlayer->IsAlive() )
 					continue;
+
+				float soundlen = 0;
+				EmitSound_t params;
+				params.m_flSoundTime = 0;
+				params.m_pSoundName = "Announcer.HowToPlayRD";
+				params.m_pflSoundDuration = &soundlen;
+				PlaySoundInPlayersEars( pPlayer, params );
 			}
 		}
 	}
@@ -842,6 +862,7 @@ void CTFRobotDestructionLogic::AddRobotGroup( CTFRobotDestruction_RobotGroup *pG
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// TODO: Four Team
 //-----------------------------------------------------------------------------
 void CTFRobotDestructionLogic::ApproachTargetScoresThink()
 {
@@ -869,10 +890,130 @@ void CTFRobotDestructionLogic::ApproachTargetScoresThink()
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// TODO: Four Team
 //-----------------------------------------------------------------------------
 int CTFRobotDestructionLogic::ApproachTeamTargetScore( int nTeam, int nTargetScore, int nScore )
 {
-	return 0;
+	if ( nTargetScore != nScore )
+	{
+		const int nApproachAmt = tf_rd_points_per_approach.GetInt();
+		const int nNewScore = Clamp( nTargetScore - nScore, -nApproachAmt, nApproachAmt );
+
+		const int nMinAmtToSteal = tf_rd_min_points_to_steal.GetInt();
+		if ( nScore < nMinAmtToSteal && nNewScore >= nMinAmtToSteal )
+		{
+			for ( int i=0; i < ICaptureFlagAutoList::AutoList().Count(); ++i )
+			{
+				CCaptureFlag *pFlag = static_cast<CCaptureFlag *>( ICaptureFlagAutoList::AutoList()[i] );
+				if ( pFlag->GetTeamNumber() == nTeam )
+				{
+					pFlag->SetDisabled( false );
+				}
+			}
+		}
+
+		if ( nNewScore == m_nMaxPoints )
+		{
+			switch ( nTeam )
+			{
+				case TF_TEAM_RED:
+				{
+					m_OnRedHitMaxPoints.FireOutput( this, this );
+					m_flRedFinaleEndTime = gpGlobals->curtime + m_flFinaleLength;
+					SetContextThink( &CTFRobotDestructionLogic::RedTeamWin, m_flRedFinaleEndTime, "RedWin" );
+
+					if ( m_flBlueFinaleEndTime == FLT_MAX && GetType() == TYPE_ROBOT_DESTRUCTION )
+						TFGameRules()->BroadcastSound( 255, "RD.FinaleMusic" );
+
+					break;
+				}
+				case TF_TEAM_BLUE:
+				{
+					m_OnBlueHitMaxPoints.FireOutput( this, this );
+					m_flBlueFinaleEndTime = gpGlobals->curtime + m_flFinaleLength;
+					SetContextThink( &CTFRobotDestructionLogic::BlueTeamWin, m_flBlueFinaleEndTime, "BlueWin" );
+
+					if ( m_flRedFinaleEndTime == FLT_MAX && GetType() == TYPE_ROBOT_DESTRUCTION )
+						TFGameRules()->BroadcastSound( 255, "RD.FinaleMusic" );
+
+					break;
+				}
+			}
+		}
+		else if ( nScore == m_nMaxPoints && nNewScore < m_nMaxPoints )
+		{
+			switch ( nTeam )
+			{
+				case TF_TEAM_RED:
+				{
+					m_OnRedLeaveMaxPoints.FireOutput( this, this );
+
+					m_flRedFinaleEndTime = FLT_MAX;
+					SetContextThink( NULL, 0.f, "RedWin" );
+
+					if ( m_flBlueFinaleEndTime == FLT_MAX )
+					{
+						CUtlVector< CTFPlayer * > players;
+						CollectHumanPlayers( &players );
+
+						FOR_EACH_VEC( players, i )
+						{
+							CTFPlayer *pPlayer = players[i];
+							pPlayer->StopSound( "RD.FinaleMusic" );
+						}
+					}
+
+					break;
+				}
+				case TF_TEAM_BLUE:
+				{
+					m_OnBlueLeaveMaxPoints.FireOutput( this, this );
+
+					m_flBlueFinaleEndTime = FLT_MAX;
+					SetContextThink( NULL, 0.f, "BlueWin" );
+
+					if ( m_flRedFinaleEndTime == FLT_MAX )
+					{
+						CUtlVector< CTFPlayer * > players;
+						CollectHumanPlayers( &players );
+
+						FOR_EACH_VEC( players, i )
+						{
+							CTFPlayer *pPlayer = players[i];
+							pPlayer->StopSound( "RD.FinaleMusic" );
+						}
+					}
+
+					break;
+				}
+			}
+		}
+		else if ( nNewScore <= 0 )
+		{
+			switch ( nTeam )
+			{
+				case TF_TEAM_RED:
+					m_OnRedHitZeroPoints.FireOutput( this, this );
+					break;
+				case TF_TEAM_BLUE:
+					m_OnBlueHitZeroPoints.FireOutput( this, this );
+			}
+		}
+		else if ( nScore <= 0 && nNewScore >= 1 )
+		{
+			switch ( nTeam )
+			{
+				case TF_TEAM_RED:
+					m_OnRedHasPoints.FireOutput( this, this );
+					break;
+				case TF_TEAM_BLUE:
+					m_OnBlueHasPoints.FireOutput( this, this );
+					break;
+			}
+		}
+	}
+
+	return nScore;
 }
 
 //-----------------------------------------------------------------------------
@@ -885,44 +1026,51 @@ void CTFRobotDestructionLogic::BlueTeamWin()
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// TODO: Four Team
 //-----------------------------------------------------------------------------
 void CTFRobotDestructionLogic::FlagCreated( int nTeam )
 {
-	if ( nTeam == TF_TEAM_RED )
+	bool bFirstFlag = m_nNumFlags[ nTeam ] == 0;
+	switch ( nTeam )
 	{
-		m_OnRedFlagStolen.FireOutput( this, this );
-		if ( m_nNumFlags[nTeam] == 0 )
+		case TF_TEAM_RED:
 		{
-			m_OnRedFirstFlagStolen.FireOutput( this, this );
+			m_OnRedFlagStolen.FireOutput( this, this );
+			if ( bFirstFlag )
+				m_OnRedFirstFlagStolen.FireOutput( this, this );
+
+			break;
 		}
-	}
-	else
-	{
-		m_OnBlueFlagStolen.FireOutput( this, this );
-		if ( m_nNumFlags[nTeam] == 0 )
+		case TF_TEAM_BLUE:
 		{
-			m_OnBlueFirstFlagStolen.FireOutput( this, this );
+			m_OnBlueFlagStolen.FireOutput( this, this );
+			if ( bFirstFlag )
+				m_OnBlueFirstFlagStolen.FireOutput( this, this );
+
+			break;
 		}
 	}
 
-	++m_nNumFlags[nTeam];
+	++m_nNumFlags[ nTeam ];
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// TODO: Four Team
 //-----------------------------------------------------------------------------
 void CTFRobotDestructionLogic::FlagDestroyed( int nTeam )
 {
-	if ( m_nNumFlags[nTeam] == 1 )
+	bool bLastFlag = m_nNumFlags[nTeam] == 1;
+	switch ( nTeam )
 	{
-		if ( nTeam == TF_TEAM_RED )
-		{
-			m_OnRedLastFlagReturned.FireOutput( this, this );
-		}
-		else
-		{
-			m_OnBlueLastFlagReturned.FireOutput( this, this );
-		}
+		case TF_TEAM_RED:
+			if ( bLastFlag )
+				m_OnRedLastFlagReturned.FireOutput( this, this );
+			break;
+		case TF_TEAM_BLUE:
+			if ( bLastFlag )
+				m_OnBlueLastFlagReturned.FireOutput( this, this );
+			break;
 	}
 
 	--m_nNumFlags[nTeam];
@@ -948,20 +1096,153 @@ CTFRobotDestruction_Robot *CTFRobotDestructionLogic::IterateRobots( CTFRobotDest
 //-----------------------------------------------------------------------------
 void CTFRobotDestructionLogic::ManageGameState( void )
 {
+	CUtlVector< CTFRobotDestruction_RobotGroup * > teamGroups[TF_TEAM_COUNT];
+	FOR_EACH_VEC( m_vecRobotGroups, i )
+	{
+		teamGroups[ m_vecRobotGroups[i]->GetTeamNumber() ].AddToTail( m_vecRobotGroups[i] );
+	}
+
+	CTFRobotDestruction_RobotGroup *pLowestAlive[TF_TEAM_COUNT]{0};
+	CTFRobotDestruction_RobotGroup *pHighestDead[TF_TEAM_COUNT]{0};
+	for ( int i = 0; i < TF_TEAM_COUNT; ++i )
+	{
+		FOR_EACH_VEC( teamGroups[i], i )
+		{
+			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[i][i];
+
+			if ( pGroup->GetNumAliveBots() > 0 )
+			{
+				if ( pLowestAlive[i] == NULL || pGroup->m_nGroupNumber < pLowestAlive[i]->m_nGroupNumber )
+					pLowestAlive[i] = pGroup;
+			}
+		}
+
+		FOR_EACH_VEC( teamGroups[i], i )
+		{
+			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[i][i];
+
+			if ( pGroup->GetNumAliveBots() == 0 )
+			{
+				if ( pHighestDead[i] == NULL || pGroup->m_nGroupNumber > pHighestDead[i]->m_nGroupNumber )
+					pHighestDead[i] = pGroup;
+			}
+		}
+	}
+
+	m_flRedTeamRespawnScale = m_flBlueTeamRespawnScale = 0.f;
+
+	for ( int nTeam = 0; nTeam < TF_TEAM_COUNT; ++nTeam )
+	{
+		if ( !teamGroups[nTeam].IsEmpty() )
+			continue;
+
+		CTFRobotDestruction_RobotGroup *pLowest = pLowestAlive[nTeam];
+		CTFRobotDestruction_RobotGroup *pHighest = pHighestDead[nTeam];
+		if ( pHighest )
+		{
+			pHighest->StartRespawnTimerIfNeeded( pHighest );
+			switch( nTeam )
+			{
+				case TF_TEAM_RED:
+					m_flRedTeamRespawnScale = pHighest->GetTeamRespawnScale();
+					break;
+				case TF_TEAM_BLUE:
+					m_flBlueTeamRespawnScale = pHighest->GetTeamRespawnScale();
+					break;
+			}
+		}
+		
+		if ( pLowest )
+			pLowest->DisableUberForGroup();
+
+		FOR_EACH_VEC( teamGroups[nTeam], i )
+		{
+			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[nTeam][i];
+			if ( pGroup != pLowest )
+				pGroup->EnableUberForGroup();
+
+			if ( pGroup != pHighest )
+				pGroup->StartRespawnTimerIfNeeded( pHighest );
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFRobotDestructionLogic::PlaySoundInPlayersEars( CTFPlayer *pSpeaker, EmitSound_t const &params )
+void CTFRobotDestructionLogic::PlaySoundInPlayersEars( CTFPlayer *pPlayer, EmitSound_t const &params )
 {
+	int nIndex = m_RateLimitedSounds.Find( params.m_pSoundName );
+	if ( nIndex != m_RateLimitedSounds.InvalidIndex() )
+	{
+		RateLimitedSound_t *pSound = m_RateLimitedSounds[nIndex];
+
+		int nPlayerIndex = pSound->m_NextAvailableTime.Find( pPlayer );
+		if ( nPlayerIndex == pSound->m_NextAvailableTime.InvalidIndex() )
+		{
+			nPlayerIndex = pSound->m_NextAvailableTime.Insert( pPlayer );
+			pSound->m_NextAvailableTime[nPlayerIndex] = 0.f;
+		}
+		
+		if ( pSound->m_NextAvailableTime[nPlayerIndex] > gpGlobals->curtime )
+			return;
+		pSound->m_NextAvailableTime[nPlayerIndex] = gpGlobals->curtime + m_RateLimitedSounds[nIndex]->m_flDelay;
+	}
+
+	CSingleUserRecipientFilter filter( pPlayer );
+	filter.MakeReliable();
+	if ( params.m_nFlags & SND_CHANGE_PITCH )
+	{
+		pPlayer->StopSound( params.m_pSoundName );
+	}
+	pPlayer->EmitSound( filter, pPlayer->entindex(), params );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFRobotDestructionLogic::PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool b1, int nScore, int nTeam, ERDScoreMethod eEvent )
+void CTFRobotDestructionLogic::PlaySoundInfoForScoreEvent( CTFPlayer *pSpeaker, bool bEnemyScore, int nScore, int nTeam, ERDScoreMethod eEvent )
 {
+	if ( eEvent == SCORE_UNDEFINED )
+		eEvent = (ERDScoreMethod)m_eWinningMethod[ nTeam ];
+
+	EmitSound_t params;
+	float dummy = 0;
+	params.m_pflSoundDuration = &dummy;
+
+	switch ( eEvent )
+	{
+		case SCORE_CORES_COLLECTED:
+			params.m_pSoundName = !bEnemyScore ? "RD.TeamScoreCore" : "RD.EnemyScoreCore";
+			params.m_nPitch = RemapValClamped( nScore, m_nMaxPoints * 0.75, m_nMaxPoints, 100, 120 );
+			params.m_flVolume = 0.25f;
+			params.m_nFlags |= SND_CHANGE_PITCH|SND_CHANGE_VOL;
+			break;
+		
+		case SCORE_REACTOR_CAPTURED:
+		case SCORE_REACTOR_RETURNED:
+			params.m_pSoundName = "RD.FlagReturn";
+			break;
+		
+		case SCORE_REACTOR_STEAL:
+			params.m_pSoundName = !bEnemyScore ? "MVM.PlayerUpgraded" : "RD.EnemyStealingPoints";
+			break;
+
+		default:
+			break;
+	}
+
+	if ( params.m_pSoundName )
+	{
+	#ifdef GAME_DLL
+		PlaySoundInPlayersEars( pSpeaker, params );
+	#else
+		pSpeaker->StopSound( params.m_pSoundName );
+
+		CBroadcastRecipientFilter filter;
+		pSpeaker->EmitSound( filter, pSpeaker->entindex(), params );
+	#endif
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -998,6 +1279,7 @@ void CTFRobotDestructionLogic::RobotRemoved( CTFRobotDestruction_Robot *pRobot )
 
 //-----------------------------------------------------------------------------
 // Purpose: 
+// TODO: Four Team
 //-----------------------------------------------------------------------------
 void CTFRobotDestructionLogic::ScorePoints( int nTeam, int nPoints, ERDScoreMethod eMethod, CTFPlayer *pScorer )
 {
@@ -1008,13 +1290,14 @@ void CTFRobotDestructionLogic::ScorePoints( int nTeam, int nPoints, ERDScoreMeth
 		return;
 
 	int nTargetScore = 0;
-	if ( nTeam == TF_TEAM_RED )
+	switch ( nTeam )
 	{
-		nTargetScore = m_nRedTargetPoints = clamp( m_nRedTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
-	}
-	else
-	{
-		nTargetScore = m_nBlueTargetPoints = clamp( m_nBlueTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
+		case TF_TEAM_RED:
+			nTargetScore = m_nRedTargetPoints = clamp( m_nRedTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
+			break;
+		case TF_TEAM_BLUE:
+			nTargetScore = m_nBlueTargetPoints = clamp( m_nBlueTargetPoints + nPoints, 0, m_nMaxPoints.Get() );
+			break;
 	}
 
 	if ( GetNextThink( "approach_points_think" ) == TICK_NEVER_THINK )
@@ -1024,11 +1307,73 @@ void CTFRobotDestructionLogic::ScorePoints( int nTeam, int nPoints, ERDScoreMeth
 						 "approach_points_think" );
 	}
 
-	// TODO
+	int nTeamsScore = 0;
+	switch ( nTeam )
+	{
+		case TF_TEAM_RED:
+			nTeamsScore = m_nRedScore.Get();
+			break;
+		case TF_TEAM_BLUE:
+			nTeamsScore = m_nBlueScore.Get();
+			break;
+	}
+
+	if ( nTeamsScore == m_nMaxPoints && nPoints > 0 )
+		return;
+	else if ( nTeamsScore == 0 && nPoints < 0 )
+		return;
+
+	if ( nTeamsScore != nTargetScore )
+		m_eWinningMethod.Set( nTeam, eMethod );
+
+	int nNewScore = Clamp( nTeamsScore + nPoints, 0, m_nMaxPoints.Get() );
+
+	CUtlVector<CTFPlayer *> players;
+	CollectPlayers( &players );
+	FOR_EACH_VEC( players, i )
+	{
+		CTFPlayer *pPlayer = players[i];
+		bool bEnemyScore = ( pPlayer->GetTeamNumber() != nTeam && nPoints > 0 ) || ( pPlayer->GetTeamNumber() == nTeam && nPoints < 0 );
+		PlaySoundInfoForScoreEvent( pPlayer, bEnemyScore, nPoints, nTeam, eMethod );
+	}
+
+	const int nCloseToWinningThreshold = m_nMaxPoints * 0.8333333f;
+	if ( eMethod == SCORE_CORES_COLLECTED && GetType() == TYPE_ROBOT_DESTRUCTION )
+	{
+		if ( ( nTeamsScore < nCloseToWinningThreshold ) && ( nNewScore >= nCloseToWinningThreshold ) )
+		{
+			TFGameRules()->BroadcastSound( nTeam, "Announcer.OurTeamCloseToWinning" );
+			TFGameRules()->BroadcastSound( GetEnemyTeam( nTeam ), "Announcer.EnemyTeamCloseToWinning" );
+		}
+	}
 
 	if ( pScorer && nPoints > 0 )
 	{
 		CTF_GameStats.Event_PlayerAwardBonusPoints( pScorer, NULL, nPoints );
+	}
+
+	int nDelta = nNewScore - nTeamsScore;
+	if ( nDelta != 0 )
+	{
+		CReliableBroadcastRecipientFilter filter;
+		UserMessageBegin( filter, "RDTeamPointsChanged" );
+			WRITE_SHORT( nDelta );
+			WRITE_BYTE( nTeam );
+			WRITE_BYTE( (int)eMethod );
+		MessageEnd();
+
+		if ( pScorer )
+		{
+			IGameEvent *pScoreEvent = gameeventmanager->CreateEvent( "rd_player_score_points" );
+			if ( pScoreEvent )
+			{
+				pScoreEvent->SetInt( "player", pScorer->GetUserID() );
+				pScoreEvent->SetInt( "method", (int)eMethod );
+				pScoreEvent->SetInt( "amount", nDelta );
+
+				gameeventmanager->FireEvent( pScoreEvent );
+			}
+		}
 	}
 }
 
