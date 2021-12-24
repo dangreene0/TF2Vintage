@@ -440,6 +440,21 @@ void CTFHudDeathNotice::OnGameEvent(IGameEvent *event, int iDeathNoticeMsg)
 
 		}
 	}
+	else if ( FStrEq( "rd_robot_killed", pszEventName ) )
+	{
+		DeathNoticeItem &msg = m_DeathNotices[iDeathNoticeMsg];
+
+		int killer = engine->GetPlayerForUserID( event->GetInt( "attacker" ) );
+		const char *killedwith = event->GetString( "weapon" );
+
+		msg.Killer.iTeam = g_PR->GetTeam( killer );
+		Q_strncpy( msg.Killer.szName, g_PR->GetPlayerName( killer ), ARRAYSIZE( msg.Killer.szName ) );
+
+		Q_strncpy( msg.Victim.szName, g_PR->GetTeam( killer ) == TF_TEAM_RED ? "BLUE ROBOT" : "RED ROBOT", ARRAYSIZE( msg.Victim.szName ) );
+		msg.Victim.iTeam = g_PR->GetTeam( killer ) == TF_TEAM_RED ? TF_TEAM_BLUE : TF_TEAM_RED;
+
+		Q_snprintf( msg.szIcon, sizeof( msg.szIcon ), "d_%s", killedwith );
+	}
 }
 
 //-----------------------------------------------------------------------------
