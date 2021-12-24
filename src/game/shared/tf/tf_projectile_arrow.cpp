@@ -22,6 +22,7 @@
 	#include "tf_generic_bomb.h"
 	#include "tf_obj.h"
 	#include "tf_halloween_boss.h"
+	#include "tf_robot_destruction_robot.h"
 #endif
 
 #ifdef GAME_DLL
@@ -369,11 +370,11 @@ void CTFProjectile_Arrow::ArrowTouch( CBaseEntity *pOther )
 		pActor = dynamic_cast<CBaseCombatCharacter *>( pOther->GetOwnerEntity() );
 	}
 
-	//CTFRobotDestruction_Robot *pRobot = dynamic_cast<CTFRobotDestruction_Robot *>( pOther );
+	CTFRobotDestruction_Robot *pRobot = dynamic_cast<CTFRobotDestruction_Robot *>( pOther );
 	//CTFMerasmusTrickOrTreatProp *pMerasProp = dynamic_cast<CTFMerasmusTrickOrTreatProp *>( pOther );
 
 	if ( !FNullEnt( pOther->edict() ) &&
-		( pActor != nullptr || pPumpkin != nullptr/* || pMerasProp != nullptr || pRobot != nullptr*/ || bImpactedItem ) )
+		( pActor != nullptr || pPumpkin != nullptr/* || pMerasProp != nullptr*/ || pRobot != nullptr || bImpactedItem ) )
 	{
 		CBaseAnimating *pAnimating = dynamic_cast<CBaseAnimating *>( pOther );
 		if ( !pAnimating )
