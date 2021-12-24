@@ -1106,22 +1106,16 @@ void CTFRobotDestructionLogic::ManageGameState( void )
 	CTFRobotDestruction_RobotGroup *pHighestDead[TF_TEAM_COUNT]{0};
 	for ( int i = 0; i < TF_TEAM_COUNT; ++i )
 	{
-		FOR_EACH_VEC( teamGroups[i], i )
+		FOR_EACH_VEC( teamGroups[i], j )
 		{
-			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[i][i];
+			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[i][j];
 
 			if ( pGroup->GetNumAliveBots() > 0 )
 			{
 				if ( pLowestAlive[i] == NULL || pGroup->m_nGroupNumber < pLowestAlive[i]->m_nGroupNumber )
 					pLowestAlive[i] = pGroup;
 			}
-		}
-
-		FOR_EACH_VEC( teamGroups[i], i )
-		{
-			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[i][i];
-
-			if ( pGroup->GetNumAliveBots() == 0 )
+			else if ( pGroup->GetNumAliveBots() == 0 )
 			{
 				if ( pHighestDead[i] == NULL || pGroup->m_nGroupNumber > pHighestDead[i]->m_nGroupNumber )
 					pHighestDead[i] = pGroup;
