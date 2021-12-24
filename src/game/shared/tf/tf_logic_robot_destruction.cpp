@@ -1129,15 +1129,15 @@ void CTFRobotDestructionLogic::ManageGameState( void )
 		}
 	}
 
-	m_flRedTeamRespawnScale = m_flBlueTeamRespawnScale = 0.f;
+	m_flRedTeamRespawnScale = m_flBlueTeamRespawnScale = 0;
 
 	for ( int nTeam = 0; nTeam < TF_TEAM_COUNT; ++nTeam )
 	{
-		if ( !teamGroups[nTeam].IsEmpty() )
+		if ( teamGroups[ nTeam ].IsEmpty() )
 			continue;
 
-		CTFRobotDestruction_RobotGroup *pLowest = pLowestAlive[nTeam];
-		CTFRobotDestruction_RobotGroup *pHighest = pHighestDead[nTeam];
+		CTFRobotDestruction_RobotGroup *pLowest = pLowestAlive[ nTeam ];
+		CTFRobotDestruction_RobotGroup *pHighest = pHighestDead[ nTeam ];
 		if ( pHighest )
 		{
 			pHighest->StartRespawnTimerIfNeeded( pHighest );
@@ -1155,9 +1155,9 @@ void CTFRobotDestructionLogic::ManageGameState( void )
 		if ( pLowest )
 			pLowest->DisableUberForGroup();
 
-		FOR_EACH_VEC( teamGroups[nTeam], i )
+		FOR_EACH_VEC( teamGroups[ nTeam ], i )
 		{
-			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[nTeam][i];
+			CTFRobotDestruction_RobotGroup *pGroup = teamGroups[ nTeam ][i];
 			if ( pGroup != pLowest )
 				pGroup->EnableUberForGroup();
 

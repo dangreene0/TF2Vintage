@@ -113,7 +113,7 @@ public:
 private:
 	void Approach( Vector& vecIn, Vector const& vecTarget, float flRate );
 
-	CHandle<CBaseCombatCharacter> m_Actor;
+	CBaseCombatCharacter *m_Actor;
 
 	int m_iMoveX;
 	int m_iMoveY;
