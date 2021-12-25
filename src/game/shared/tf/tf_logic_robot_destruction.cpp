@@ -693,8 +693,8 @@ CTFRobotDestructionLogic::CTFRobotDestructionLogic()
 //-----------------------------------------------------------------------------
 CTFRobotDestructionLogic::~CTFRobotDestructionLogic()
 {
-	if ( sm_CTFRobotDestructionLogic == this )
-		sm_CTFRobotDestructionLogic = NULL;
+	Assert( sm_CTFRobotDestructionLogic == this );
+	sm_CTFRobotDestructionLogic = NULL;
 
 #ifdef GAME_DLL
 	m_RateLimitedSounds.PurgeAndDeleteElements();
