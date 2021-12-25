@@ -163,10 +163,6 @@ public:
 	CTFRobotDestruction_Robot( void );
 	virtual ~CTFRobotDestruction_Robot( void );
 
-#ifdef CLIENT_DLL
-	virtual bool IsNPC( void ) OVERRIDE { return true; }
-#endif
-
 	virtual void Precache( void );
 
 	virtual void Spawn( void );
