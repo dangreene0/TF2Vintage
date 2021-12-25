@@ -329,6 +329,11 @@ public:
 	bool			HasWeaponRestriction( WeaponRestrictionType restrictionFlags ) const;
 	bool			IsWeaponRestricted( CTFWeaponBase *weapon ) const;
 	void			ClearWeaponRestrictions( void );
+
+	void			ClearTags( void );
+	void			AddTag( char const *tag );
+	void			RemoveTag( char const *tag );
+	bool			HasTag( char const *tag );
 	
 
 private:
@@ -349,6 +354,9 @@ private:
 	CTFBotSquad *m_pSquad;
 	float m_flFormationError;
 	bool m_bIsInFormation;
+
+	unsigned int m_behaviorFlags;
+	CUtlVector< CFmtStr > m_tags;
 
 	CHandle<CBaseObject> m_hTargetSentry;
 	Vector m_vecLastNoticedSentry;
@@ -474,6 +482,56 @@ inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
 inline void CTFBot::ClearAllAttributes()
 {
 	m_nBotAttributes = CTFBot::AttributeType::NONE;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearTags( void )
+{
+	m_tags.RemoveAll();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::AddTag( const char *tag )
+{
+	if ( !HasTag( tag ) )
+	{
+		m_tags.AddToTail( CFmtStr( "%s", tag ) );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::RemoveTag( const char *tag )
+{
+	for ( int i=0; i < m_tags.Count(); ++i )
+	{
+		if ( FStrEq( tag, m_tags[i] ) )
+		{
+			m_tags.Remove( i );
+			return;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasTag( const char *tag )
+{
+	for ( int i=0; i < m_tags.Count(); ++i )
+	{
+		if ( FStrEq( tag, m_tags[i] ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //-----------------------------------------------------------------------------
