@@ -1060,11 +1060,13 @@ void CTFFlagCalloutPanel::Paint( void )
 	{
 		f1 = 0;
 		f2 = 1.0;
+		iX -= XRES( 8 );
 	}
 	else
 	{
 		f1 = 1.0;
 		f2 = 0;
+		iX += m_pFlagCalloutPanel->GetWide();;
 	}
 
 	iY += ( ScreenHeight() - YRES( 10 ) + GetTall() ) * 0.5;
@@ -1076,7 +1078,25 @@ void CTFFlagCalloutPanel::Paint( void )
 	CMeshBuilder meshBuilder;
 	meshBuilder.Begin( pMesh, MATERIAL_QUADS, 1 );
 
-	// TODO
+	meshBuilder.Position3f( iX, iY, 0.0f );
+	meshBuilder.TexCoord2f( 0, f1, 0.0f );
+	meshBuilder.Color4ub( 255, 255, 255, 255 );
+	meshBuilder.AdvanceVertex();
+
+	meshBuilder.Position3f( iX + XRES( 8 ), iY, 0.0f );
+	meshBuilder.TexCoord2f( 0, f2, 0.0f );
+	meshBuilder.Color4ub( 255, 255, 255, 255 );
+	meshBuilder.AdvanceVertex();
+
+	meshBuilder.Position3f( iX + XRES( 8 ), iY + YRES( 10 ), 0.0f );
+	meshBuilder.TexCoord2f( 0, f2, 1.0f );
+	meshBuilder.Color4ub( 255, 255, 255, 255 );
+	meshBuilder.AdvanceVertex();
+
+	meshBuilder.Position3f( iX, iY + YRES( 10 ), 0.0f );
+	meshBuilder.TexCoord2f( 0, f1, 1.0f );
+	meshBuilder.Color4ub( 255, 255, 255, 255 );
+	meshBuilder.AdvanceVertex();
 
 	meshBuilder.End();
 	pMesh->Draw();
