@@ -1,3 +1,9 @@
+//========= Copyright © Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "tf_population_manager.h"
 #include "tf_objective_resource.h"
