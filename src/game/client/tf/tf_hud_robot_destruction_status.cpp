@@ -948,8 +948,14 @@ void CTFHUDRobotDestruction::CProgressPanel::PaintBackground()
 	}
 
 	// This is a doozy
-	float flLerp = Clamp( gpGlobals->curtime > ( m_flLastScoreUpdate + 0.25f ) ? ( m_flCurrentProgress >= m_flBlinkThreshold ? ( ( sin( gpGlobals->curtime * m_flBlinkRate ) * 0.5f ) + 0.5f ) : 1.f )
-		: ( ( gpGlobals->curtime - m_flLastScoreUpdate ) / 0.25f ), 0.0f, 1.0f );
+	float flLerp = gpGlobals->curtime > ( m_flLastScoreUpdate + 0.25f ) ? 
+		( m_flCurrentProgress >= m_flBlinkThreshold ) ? 
+		  ( sin( gpGlobals->curtime * m_flBlinkRate ) * 0.5f ) + 0.5f 
+		  : 
+		  1.0f
+		: 
+		( gpGlobals->curtime - m_flLastScoreUpdate ) / 0.25f;
+	flLerp = Clamp( flLerp, 0.0f, 1.0f );
 	
 	Color drawColor( ( 1.0 - flLerp ) * m_BrightColor.r() + flLerp * m_StandardColor.r(),
 					 ( 1.0 - flLerp ) * m_BrightColor.g() + flLerp * m_StandardColor.g(),
