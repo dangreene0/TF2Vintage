@@ -63,6 +63,7 @@
 	#include "player_vs_environment/merasmus.h"
 	#include "player_vs_environment/ghost.h"
 	#include "map_entities/tf_bot_roster.h"
+	#include "player_vs_environment/tf_mann_vs_machine_logic.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -237,6 +238,13 @@ ConVar tf_tournament_classchange_allowed( "tf_tournament_classchange_allowed", "
 ConVar tf_tournament_classchange_ready_allowed( "tf_tournament_classchange_ready_allowed", "1", FCVAR_REPLICATED, "Allow players to change class after they are READY?.\n" );
 ConVar tf_classlimit( "tf_classlimit", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Limit on how many players can be any class (i.e. tf_class_limit 2 would limit 2 players per class).\n" );
 
+ConVar tf_mvm_min_players_to_start( "tf_mvm_min_players_to_start", "3", FCVAR_REPLICATED | FCVAR_NOTIFY, "Minimum number of players connected to start a countdown timer" );
+ConVar tf_mvm_respec_enabled( "tf_mvm_respec_enabled", "1", FCVAR_CHEAT | FCVAR_REPLICATED, "Allow players to refund credits spent on player and item upgrades." );
+ConVar tf_mvm_respec_limit( "tf_mvm_respec_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "The total number of respecs a player can earn.  Default: 0 (no limit).", true, 0.f, true, 100.f );
+ConVar tf_mvm_respec_credit_goal( "tf_mvm_respec_credit_goal", "2000", FCVAR_CHEAT | FCVAR_REPLICATED, "When tf_mvm_respec_limit is non-zero, the total amount of money the team must collect to earn a respec credit." );
+ConVar tf_mvm_buybacks_method( "tf_mvm_buybacks_method", "0", FCVAR_REPLICATED | FCVAR_HIDDEN, "When set to 0, use the traditional, currency-based system.  When set to 1, use finite, charge-based system.", true, 0.0, true, 1.0 );
+ConVar tf_mvm_buybacks_per_wave( "tf_mvm_buybacks_per_wave", "3", FCVAR_REPLICATED | FCVAR_HIDDEN, "The fixed number of buybacks players can use per-wave." );
+
 // tf2v specific cvars.
 ConVar tf2v_falldamage_disablespread( "tf2v_falldamage_disablespread", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Toggles random 20% fall damage spread." );
 ConVar tf2v_allow_thirdperson( "tf2v_allow_thirdperson", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow players to switch to third person mode." );
@@ -377,6 +385,55 @@ bool TF_IsHolidayActive( /*EHoliday*/ int eHoliday )
 
 	return UTIL_IsHolidayActive( eHoliday );
 }
+
+#ifdef GAME_DLL
+CUtlString s_strNextMvMPopFile;
+CON_COMMAND_F( tf_mvm_popfile, "Change to a target popfile for MvM", FCVAR_GAMEDLL )
+{
+	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+		return;
+
+	if ( args.ArgC() <= 1 )
+	{
+		if ( TFGameRules() && g_pPopulationManager )
+		{
+			const char *pszFile = g_pPopulationManager->GetPopulationFilename();
+			if ( pszFile && pszFile[0] )
+			{
+				Msg( "Current popfile is: %s\n", pszFile );
+				return;
+			}
+		}
+
+		Msg( "Missing Popfile name\n" );
+		return;
+	}
+
+	if ( !TFGameRules() || !g_pPopulationManager )
+	{
+		Warning( "Cannot set population file before map load.\n" );
+		return;
+	}
+
+	if ( !g_pFullFileSystem )
+	{
+		Msg( "No File System to find Popfile to load\n" );
+		return;
+	}
+
+	CUtlString fullPath;
+	const char *pszShortName = args.Arg( 1 );
+	if ( g_pPopulationManager->FindPopulationFileByShortName( pszShortName, &fullPath ) )
+	{
+		g_pPopulationManager->SetPopulationFilename( fullPath );
+		g_pPopulationManager->ResetMap();
+		return;
+	}
+
+	// Give them a message to make it clear what file we were looking for
+	Warning( "Could not find a population file matching: %s.\n", pszShortName );
+}
+#endif
 
 struct StatueInfo_t
 {
@@ -7271,12 +7328,28 @@ int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /*
 		pTFPlayer->AddCurrency( nAmount );
 	}
 
-	/*if ( IsMannVsMachineMode() && g_pPopulationManager )
+	if ( IsMannVsMachineMode() && g_pPopulationManager )
 	{
 		g_pPopulationManager->OnCurrencyCollected( nAmount, b1, b2 );
-	}*/
+	}
 
 	return nAmount;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::SetNextMvMPopfile( const char *next )
+{
+	s_strNextMvMPopFile = next;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+const char *CTFGameRules::GetNextMvMPopfile()
+{
+	return s_strNextMvMPopFile.Get();
 }
 #endif
 

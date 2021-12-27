@@ -10,6 +10,7 @@
 #include "entity_capture_flag.h"
 #include "func_capture_zone.h"
 #include "func_flagdetectionzone.h"
+#include "tf_population_manager.h"
 
 
 BEGIN_DATADESC( CMannVsMachineLogic )
@@ -63,7 +64,7 @@ void CMannVsMachineLogic::SetupOnRoundStart( void )
 
 	if ( m_populationManager )
 	{
-		//m_populationManager->SetupOnRoundStart();
+		m_populationManager->SetupOnRoundStart();
 	}
 }
 
@@ -81,7 +82,7 @@ void CMannVsMachineLogic::Update( void )
 
 	if ( m_populationManager )
 	{
-		//m_populationManager->Update();
+		m_populationManager->Update();
 	}
 
 	if ( m_flNextAlarmCheck < gpGlobals->curtime )
@@ -104,6 +105,7 @@ void CMannVsMachineLogic::Update( void )
 							IGameEvent *event = gameeventmanager->CreateEvent( "mvm_bomb_alarm_triggered" );
 							if ( event )
 							{
+								//	WEE WOO WEE WOO WEE WOO
 								gameeventmanager->FireEvent( event );
 							}
 						}
@@ -124,4 +126,7 @@ void CMannVsMachineLogic::Update( void )
 //-----------------------------------------------------------------------------
 void CMannVsMachineLogic::InitPopulationManager(void)
 {
+	// TODO: This is a bit weird, they check that m_populationManager is null and if so, create one
+	// but they also use g_pPopulationManager and never validate it
+	TFGameRules()->SetNextMvMPopfile( "" );
 }

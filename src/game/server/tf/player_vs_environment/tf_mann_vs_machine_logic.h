@@ -7,7 +7,7 @@
 #ifndef TF_MANN_VS_MACHINE_LOGIC_H
 #define TF_MANN_VS_MACHINE_LOGIC_H
 
-class CPopulationManager;
+#include "tf_population_manager.h"
 
 class CMannVsMachineLogic : public CPointEntity
 {

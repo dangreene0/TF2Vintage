@@ -541,6 +541,8 @@ private:
 	int				CalculateCurrencyAmount_ByType( CurrencyRewards_t nType );
 	int				DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer = NULL, bool bShared = true, bool bCountAsDropped = false, bool bIsBonus = false );
 
+	void			SetNextMvMPopfile( const char *next );
+	const char*		GetNextMvMPopfile( void );
 private:
 
 	int				DefaultFOV( void ) { return 75; }

@@ -83,6 +83,17 @@ enum ERevengeCrits
 };
 
 //=============================================================================
+// For checkpointing upgrades Players have purchased in Mann Vs Machine
+class CUpgradeInfo
+{
+public:
+	int m_iPlayerClass;
+	item_def_index_t m_itemDefIndex;
+	int m_upgrade;
+	int m_nCost;
+};
+
+//=============================================================================
 //
 // Shared player class.
 //
