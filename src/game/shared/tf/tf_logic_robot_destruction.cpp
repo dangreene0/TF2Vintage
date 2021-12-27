@@ -670,6 +670,11 @@ CTFRobotDestructionLogic::CTFRobotDestructionLogic()
 	Assert( sm_CTFRobotDestructionLogic == NULL );
 	sm_CTFRobotDestructionLogic = this;
 #ifdef GAME_DLL
+	m_nBlueTargetPoints = 0;
+	m_nRedTargetPoints = 0;
+	m_flBlueFinaleEndTime = FLT_MAX;
+	m_flRedFinaleEndTime = FLT_MAX;
+
 	Q_memset( m_nNumFlags, 0, sizeof( m_nNumFlags ) );
 	m_iszResFile = MAKE_STRING( "resource/UI/HudObjectiveRobotDestruction.res" );
 
