@@ -330,6 +330,17 @@ public:
 	bool			IsWeaponRestricted( CTFWeaponBase *weapon ) const;
 	void			ClearWeaponRestrictions( void );
 
+	enum class MissionType
+	{
+		NONE = 0,
+		SEEK_AND_DESTROY,
+		DESTROY_SENTRIES,
+		SNIPER,
+		SPY,
+		ENGINEER,
+		REPROGRAMMED
+	}
+	m_eMission;
 	void			ClearTags( void );
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
