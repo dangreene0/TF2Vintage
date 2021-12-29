@@ -10,7 +10,9 @@
 #include "eventqueue.h"
 #include "tf_gamerules.h"
 #include "tf_objective_resource.h"
-//#include "tf_population_manager.h"
+#include "tf_population_manager.h"
+#include "engine/IEngineSound.h"
+//#include "tf_mann_vs_machine_stats.h"
 
 
 #define TANK_DAMAGE_MODEL_COUNT 4
@@ -36,6 +38,113 @@ static const char *s_TankModelRome[ TANK_DAMAGE_MODEL_COUNT ] =
 
 float CTFTankBoss::sm_flLastTankAlert = 0.0f;
 
+
+class CTFTankDestruction : public CBaseAnimating
+{
+	DECLARE_CLASS( CTFTankDestruction, CBaseAnimating );
+public:
+	DECLARE_DATADESC();
+
+	CTFTankDestruction( void );
+
+	virtual void Precache( void );
+	virtual void Spawn( void );
+
+	void AnimThink( void );
+
+	float m_flVanishTime;
+	bool m_bIsAtCapturePoint;
+	int m_nDeathAnimPick;
+	char m_szDeathPostfix[8];
+};
+
+PRECACHE_REGISTER( tank_destruction );
+
+BEGIN_DATADESC( CTFTankDestruction )
+	DEFINE_THINKFUNC( AnimThink ),
+END_DATADESC();
+
+LINK_ENTITY_TO_CLASS( tank_destruction, CTFTankDestruction );
+
+
+CTFTankDestruction::CTFTankDestruction( void )
+{
+	m_szDeathPostfix[0] = '\0';
+}
+
+void CTFTankDestruction::Precache( void )
+{
+	PrecacheModel( "models/bots/boss_bot/boss_tank_part1_destruction.mdl" );
+	PrecacheModel( "models/bots/tw2/boss_bot/boss_tank_part1_destruction.mdl" );
+
+	PrecacheParticleSystem( "explosionTrail_seeds_mvm" );
+	PrecacheParticleSystem( "fluidSmokeExpl_ring_mvm" );
+
+	PrecacheScriptSound( "MVM.TankExplodes" );
+
+	BaseClass::Precache();
+}
+
+void CTFTankDestruction::Spawn( void )
+{
+	SetModel( "models/bots/boss_bot/boss_tank_part1_destruction.mdl" );
+	SetModelIndexOverride( VISION_MODE_NONE, modelinfo->GetModelIndex( "models/bots/boss_bot/boss_tank_part1_destruction.mdl" ) );
+	SetModelIndexOverride( VISION_MODE_ROME, modelinfo->GetModelIndex( "models/bots/tw2/boss_bot/boss_tank_part1_destruction.mdl" ) );
+
+	BaseClass::Spawn();
+
+	int nDestroySequence = -1;
+	int nDeathAnimPick = ( m_nDeathAnimPick != 0 ? m_nDeathAnimPick : RandomInt( 1, 3 ) );
+	if ( m_bIsAtCapturePoint )
+		nDestroySequence = LookupSequence( UTIL_VarArgs( "destroy_%s%i%s", gpGlobals->mapname.ToCStr(), nDeathAnimPick, m_szDeathPostfix ) );
+	if ( nDestroySequence == -1 )
+		nDestroySequence = LookupSequence( UTIL_VarArgs( "destroy%i", nDeathAnimPick ) );
+
+	if ( nDestroySequence != -1 )
+	{
+		SetSequence( nDestroySequence );
+		SetPlaybackRate( 1.0f );
+		SetCycle( 0 );
+	}
+
+	DispatchParticleEffect( "explosionTrail_seeds_mvm", GetAbsOrigin(), GetAbsAngles() );
+	DispatchParticleEffect( "fluidSmokeExpl_ring_mvm", GetAbsOrigin(), GetAbsAngles() );
+
+	StopSound( "MVM.TankEngineLoop" );
+
+	CBroadcastRecipientFilter filter;
+	const Vector vecOrigin = GetAbsOrigin();
+	CBaseEntity::EmitSound( filter, SOUND_FROM_WORLD, "MVM.TankExplodes", &vecOrigin );
+	CBaseEntity::EmitSound( filter, SOUND_FROM_WORLD, "MVM.TankEnd" );
+
+	UTIL_ScreenShake( GetAbsOrigin(), 25.0f, 5.0f, 5.0f, 1000.0f, SHAKE_START );
+
+	m_flVanishTime = gpGlobals->curtime + SequenceDuration();
+
+	SetThink( &CTFTankDestruction::AnimThink );
+	SetNextThink( gpGlobals->curtime + 0.1f );
+
+	if ( nDestroySequence == -1 )
+	{
+		SetThink( &CTFTankDestruction::SUB_FadeOut );
+		SetNextThink( gpGlobals->curtime );
+	}
+}
+
+void CTFTankDestruction::AnimThink( void )
+{
+	if ( m_flVanishTime < gpGlobals->curtime )
+	{
+		SetThink( &CTFTankDestruction::SUB_FadeOut );
+		SetNextThink( gpGlobals->curtime );
+		return;
+	}
+
+	StudioFrameAdvance();
+	DispatchAnimEvents( this );
+
+	SetNextThink( gpGlobals->curtime + 0.1f );
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -119,6 +228,9 @@ LINK_ENTITY_TO_CLASS( tank_boss, CTFTankBoss );
 CTFTankBoss::CTFTankBoss()
 {
 	m_body = new CTFTankBossBody( this );
+	m_iExhaustAttachment = -1;
+	m_szDeathPostfix[0] = '\0';
+	m_pWaveSpawnPopulator = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -168,6 +280,14 @@ void CTFTankBoss::Precache( void )
 //-----------------------------------------------------------------------------
 void CTFTankBoss::Spawn( void )
 {
+	if ( ( !TFGameRules() || !TFGameRules()->IsMannVsMachineMode() ) && GetInitialHealth() == 0 )
+	{
+		if ( GetHealth() > 0 )
+			SetInitialHealth( GetHealth() );
+		else
+			SetInitialHealth( TANK_DEFAULT_HEALTH );
+	}
+
 	BaseClass::Spawn();
 
 	m_vecCollisionMins.Init();
@@ -239,6 +359,8 @@ void CTFTankBoss::Spawn( void )
 
 	m_body->StartSequence( "movement" );
 
+	m_iExhaustAttachment = LookupAttachment( "smoke_attachment" );
+
 	if ( m_hGoalNode == NULL )
 	{
 		m_hGoalNode = dynamic_cast<CPathTrack *>( gEntList.FindEntityByClassname( NULL, "path_track" ) );
@@ -273,12 +395,12 @@ void CTFTankBoss::Spawn( void )
 		{
 			if ( sm_flLastTankAlert + 5.0f < gpGlobals->curtime )
 			{
-				/*CWave *pWave = g_pPopulationManager ? g_pPopulationManager->GetCurrentWave() : NULL;
-				if ( pWave && pWave->NumTanksSpawned() > 1 )
+				CWave *pWave = g_pPopulationManager ? g_pPopulationManager->GetCurrentWave() : NULL;
+				if ( pWave && pWave->m_nTanksSpawned > 1 )
 				{
 					TFGameRules()->BroadcastSound( 255, "Announcer.MVM_Tank_Alert_Another" );
 				}
-				else*/
+				else
 				{
 					TFGameRules()->BroadcastSound( 255, "Announcer.MVM_Tank_Alert_Spawn" );
 				}
@@ -294,6 +416,34 @@ void CTFTankBoss::Spawn( void )
 		}
 
 		TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_TANK_CALLOUT, TF_TEAM_MVM_PLAYERS );
+	}
+
+	m_hEndNode = m_hStartNode = m_hGoalNode;
+
+	if ( m_hGoalNode != NULL )
+	{
+		CPathTrack *pNextNode = m_hGoalNode->GetNext();
+		if ( pNextNode )
+		{
+			const Vector vecDirection = pNextNode->GetAbsOrigin() - m_hGoalNode->GetAbsOrigin();
+
+			QAngle vecOrientation;
+			VectorAngles( vecDirection, vecOrientation );
+			SetAbsAngles( vecOrientation );
+
+			CPathTrack *pPrevNode = m_hGoalNode.Get();
+			Vector2D vecToTravel ={};
+			while ( pNextNode )
+			{
+				vecToTravel = pNextNode->GetAbsOrigin().AsVector2D() - pPrevNode->GetAbsOrigin().AsVector2D();
+
+				m_flTotalDistance += vecToTravel.Length();
+				m_CumulativeDistances.AddToTail( m_flTotalDistance );
+
+				pPrevNode = pNextNode;
+				pNextNode = pNextNode->GetNext();
+			}
+		}
 	}
 
 	CBroadcastRecipientFilter filter;
@@ -373,7 +523,13 @@ int CTFTankBoss::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 		CTFPlayer *pTFPlayer = dynamic_cast<CTFPlayer *>( info.GetAttacker() );
 		if ( pTFPlayer )
 		{
-			// TODO: Stat stuff
+			// Some achievement related logic goes here too
+
+			/*CMannVsMachineStats *pStats = MannVsMachineStats_GetInstance();
+			if ( pStats )
+			{
+				pStats->PlayerEvent_DealtDamageToTanks( pTFPlayer, info.GetDamage() );
+			}*/
 		}
 	}
 
@@ -385,7 +541,10 @@ int CTFTankBoss::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CTFTankBoss::Event_Killed( const CTakeDamageInfo &info )
 {
+	m_bKilledByPlayers = ( info.GetDamageType() & DMG_CRUSH ) == 0;
+
 	Explode();
+
 	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
 	{
 		if ( FStrEq( "mvm_rottenburg", STRING( gpGlobals->mapname ) ) )
@@ -402,7 +561,13 @@ void CTFTankBoss::Event_Killed( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 int CTFTankBoss::GetCurrencyValue( void )
 {
-	return 0;
+	if ( !m_hGoalNode && !m_bKilledByPlayers )
+		return 0;
+
+	if ( m_pWaveSpawnPopulator )
+		return m_pWaveSpawnPopulator->GetCurrencyAmountPerDeath();
+
+	return BaseClass::GetCurrencyValue();
 }
 
 //-----------------------------------------------------------------------------
@@ -469,8 +634,7 @@ void CTFTankBoss::TankBossThink( void )
 
 	if ( m_hLeftTrack )
 	{
-		Vector vecTrackCenter = GetAbsOrigin() - flTrackOffset * vecRight;
-
+		const Vector vecTrackCenter = GetAbsOrigin() - flTrackOffset * vecRight;
 		float flSpeed = ( vecTrackCenter - m_vecLeftTrackPrevPos ).Length() / gpGlobals->frametime;
 
 		if ( flSpeed >= flTrackMaxSpeed )
@@ -487,8 +651,7 @@ void CTFTankBoss::TankBossThink( void )
 
 	if ( m_hRightTrack )
 	{
-		Vector vecTrackCenter = GetAbsOrigin() + flTrackOffset * vecRight;
-
+		const Vector vecTrackCenter = GetAbsOrigin() + flTrackOffset * vecRight;
 		float flSpeed = ( vecTrackCenter - m_vecRightTrackPrevPos ).Length() / gpGlobals->frametime;
 
 		if ( flSpeed >= flTrackMaxSpeed )
@@ -501,6 +664,168 @@ void CTFTankBoss::TankBossThink( void )
 		}
 
 		m_vecRightTrackPrevPos = vecTrackCenter;
+	}
+
+	if ( m_hGoalNode != NULL )
+	{
+		Vector2D vecToGoal = m_hGoalNode->WorldSpaceCenter().AsVector2D() - GetAbsOrigin().AsVector2D();
+		float flDistance = vecToGoal.Length();
+
+		CBaseEntity *pParent = GetParent();
+		if ( pParent )
+		{
+			vecToGoal = m_hGoalNode->WorldSpaceCenter().AsVector2D() - pParent->GetAbsOrigin().AsVector2D();
+			flDistance = Min( flDistance, vecToGoal.Length() );
+		}
+
+		if ( TFGameRules() )
+		{
+			if ( m_nNodeNumber > 0 && gpGlobals->curtime > ( sm_flLastTankAlert + 5.0f ) )
+			{
+				float flDistancePerc = m_CumulativeDistances[m_nNodeNumber] - flDistance / m_flTotalDistance;
+				if ( !m_bPlayedNearAlert && flDistancePerc > 0.75f )
+				{
+					TFGameRules()->PlayThrottledAlert( 255, "Announcer.MVM_Tank_Alert_Near_Hatch", 5.0f );
+
+					sm_flLastTankAlert = gpGlobals->curtime;
+					m_bPlayedNearAlert = true;
+				}
+				else if ( !m_bPlayedHalfwayAlert && flDistancePerc > 0.5f )
+				{
+					int nTankCount = 0;
+					CBaseEntity *tank = NULL;
+					while ( ( tank = gEntList.FindEntityByClassname( tank, "tank_boss" ) ) != NULL )
+						nTankCount++;
+
+					if ( nTankCount > 1 )
+						TFGameRules()->PlayThrottledAlert( 255, "Announcer.MVM_Tank_Alert_Halfway_Multiple", 5.0f );
+					else
+						TFGameRules()->PlayThrottledAlert( 255, "Announcer.MVM_Tank_Alert_Halfway", 5.0f );
+
+					sm_flLastTankAlert = gpGlobals->curtime;
+					m_bPlayedHalfwayAlert = true;
+				}
+			}
+
+			if ( flDistance < 20.0f )
+			{
+				// reached node
+				inputdata_t dummyData;
+				dummyData.pActivator = this;
+				dummyData.pCaller = this;
+				dummyData.nOutputID = 0;
+
+				m_hGoalNode->InputPass( dummyData );
+
+				m_hGoalNode = m_hGoalNode->GetNext();
+				m_nNodeNumber++;
+
+				if ( m_hGoalNode == NULL && m_hBomb )
+				{
+					int animSequence = m_hBomb->LookupSequence( "deploy" );
+					if ( animSequence )
+					{
+						m_hBomb->SetSequence( animSequence );
+						m_hBomb->SetPlaybackRate( 1.0f );
+						m_hBomb->SetCycle( 0 );
+						m_hBomb->ResetSequenceInfo();
+					}
+
+					animSequence = LookupSequence( "deploy" );
+					if ( animSequence )
+					{
+						SetSequence( animSequence );
+						SetPlaybackRate( 1.0f );
+						SetCycle( 0 );
+						ResetSequenceInfo();
+					}
+
+					if ( ( sm_flLastTankAlert + 5.0f ) < gpGlobals->curtime )
+					{
+						TFGameRules()->PlayThrottledAlert( 255, "Announcer.MVM_Tank_Alert_Deploying", 5.0f );
+
+						sm_flLastTankAlert = gpGlobals->curtime;
+						m_bPlayedNearAlert = true;
+					}
+
+					m_bDroppingBomb = true;
+					m_flDroppingStart = gpGlobals->curtime;
+
+					StopSound( "MVM.TankEngineLoop" );
+
+					EmitSound( "MVM.TankDeploy" );
+
+					TFGameRules()->HaveAllPlayersSpeakConceptIfAllowed( MP_CONCEPT_MVM_TANK_DEPLOYING, TF_TEAM_MVM_BOTS );
+				}
+			}
+		}
+	}
+
+	if ( m_iExhaustAttachment > 0 )
+	{
+		Vector smokePos;
+		GetAttachment( m_iExhaustAttachment, smokePos );
+
+		trace_t result;
+		UTIL_TraceLine( smokePos, smokePos + Vector( 0, 0, 300.0f ), MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &result );
+
+		if ( result.DidHit() )
+		{
+			if ( m_bSmoking )
+			{
+				StopParticleEffects( this );
+				m_bSmoking = false;
+			}
+		}
+		else if ( !m_bSmoking )
+		{
+			DispatchParticleEffect( "smoke_train", PATTACH_POINT_FOLLOW, this, m_iExhaustAttachment );
+			m_bSmoking = true;
+		}
+	}
+
+	if ( m_hGoalNode != NULL )
+	{
+		Vector vecGoal = m_hGoalNode->WorldSpaceCenter();
+
+		GetLocomotionInterface()->SetDesiredSpeed( GetMaxSpeed() );
+		GetLocomotionInterface()->Approach( vecGoal );
+		GetLocomotionInterface()->FaceTowards( vecGoal );
+
+		if ( m_rumbleTimer.IsElapsed() )
+		{
+			m_rumbleTimer.Start( 0.25f );
+
+			UTIL_ScreenShake( GetAbsOrigin(), 2.0f, 5.0f, 1.0f, 500.0f, SHAKE_START );
+		}
+	}
+
+	if ( m_bDroppingBomb && IsSequenceFinished() )
+	{
+		FirePopFileEvent( &m_onBombDroppedEventInfo );
+		TFGameRules()->BroadcastSound( 255, "Announcer.MVM_Tank_Planted" );
+
+		m_bDroppingBomb = false;
+	}
+
+	if ( m_crushTimer.IsElapsed() )
+	{
+		m_crushTimer.Start( 0.5f );
+		
+		const Vector vecMins = WorldAlignMins() * 0.75f;
+		const Vector vecMaxs = WorldAlignMaxs() * 0.75f;
+
+		CBaseEntity *intersectingEntities[64];
+		int count = UTIL_EntitiesInBox( intersectingEntities, 64, GetAbsOrigin() + vecMins, GetAbsOrigin() + vecMaxs, FL_CLIENT|FL_OBJECT );
+		for ( int i = 0; i < count; ++i )
+		{
+			CBaseEntity *pVictim = intersectingEntities[i];
+			if ( pVictim == NULL || !pVictim->IsAlive() )
+				continue;
+
+			int nDamage = MAX( pVictim->GetMaxHealth(), pVictim->GetHealth() );
+			pVictim->TakeDamage( CTakeDamageInfo( this, this, 4 * nDamage, DMG_CRUSH, TF_DMG_CUSTOM_NONE ) );
+		}
 	}
 
 	UpdatePingSound();
@@ -558,6 +883,20 @@ void CTFTankBoss::ModifyDamage( CTakeDamageInfo *info )
 void CTFTankBoss::Explode( void )
 {
 	StopSound( "MVM.TankEngineLoop" );
+	FirePopFileEvent( &m_onKilledEventInfo );
+
+	CTFTankDestruction *pDestruction = dynamic_cast<CTFTankDestruction *>( CreateEntityByName( "tank_destruction" ) );
+	if ( pDestruction )
+	{
+		// Only do special capture point death if it was force killed by bomb drop
+		pDestruction->m_bIsAtCapturePoint = ( m_hGoalNode == NULL && !m_bKilledByPlayers );
+		pDestruction->m_nDeathAnimPick = m_nDeathAnimPick;
+		V_strncpy( pDestruction->m_szDeathPostfix, m_szDeathPostfix, sizeof pDestruction->m_szDeathPostfix );
+
+		pDestruction->SetAbsOrigin( GetAbsOrigin() );
+		pDestruction->SetAbsAngles( GetAbsAngles() );
+		DispatchSpawn( pDestruction );
+	}
 
 	if ( m_bKilledByPlayers )
 	{
@@ -573,6 +912,25 @@ void CTFTankBoss::Explode( void )
 		if ( TFGameRules()->IsMannVsMachineMode() )
 		{
 			// Achievement stuff goes here
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFTankBoss::FirePopFileEvent( EventInfo *eventInfo )
+{
+	if ( eventInfo && eventInfo->m_action.Length() > 0 )
+	{
+		CBaseEntity *targetEntity = gEntList.FindEntityByName( NULL, eventInfo->m_target );
+		if ( !targetEntity )
+		{
+			Warning( "CTFTankBoss: Can't find target entity '%s' for event\n", eventInfo->m_target.Access() );
+		}
+		else
+		{
+			g_EventQueue.AddEvent( targetEntity, eventInfo->m_action, 0.0f, NULL, NULL );
 		}
 	}
 }

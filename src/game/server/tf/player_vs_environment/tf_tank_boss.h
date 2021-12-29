@@ -11,6 +11,7 @@
 #include "NextBotBodyInterface.h"
 #include "tf_base_boss.h"
 #include "pathtrack.h"
+#include "tf_populators.h"
 
 class INextBot;
 
@@ -58,12 +59,32 @@ public:
 
 	void SetStartingPathTrackNode( char *pszName );
 
+	inline void SetOnKilledEvent( EventInfo *eventInfo )
+	{
+		if ( eventInfo )
+		{
+			m_onKilledEventInfo.m_action = eventInfo->m_action;
+			m_onKilledEventInfo.m_target = eventInfo->m_target;
+		}
+	}
+
+	inline void SetOnBombDroppedEvent( EventInfo *eventInfo )
+	{
+		if ( eventInfo )
+		{
+			m_onBombDroppedEventInfo.m_action = eventInfo->m_action;
+			m_onBombDroppedEventInfo.m_target = eventInfo->m_target;
+		}
+	}
+
+	inline void SetWaveSpawnPopulator( CWaveSpawnPopulator *pWave ) { m_pWaveSpawnPopulator = pWave; }
+
 protected:
 	virtual void ModifyDamage( CTakeDamageInfo *info ) OVERRIDE;
 
 private:
 	void Explode( void );
-
+	void FirePopFileEvent( EventInfo *eventInfo );
 	void UpdatePingSound( void );
 	float m_flLastPingTime;
 
@@ -74,13 +95,23 @@ private:
 	int m_nDeathAnimPick;
 	char m_szDeathPostfix[8];
 	bool m_bKilledByPlayers;
+	bool m_bDroppingBomb;
+	float m_flDroppingStart;
+	int m_iExhaustAttachment;
+	bool m_bSmoking;
+
+	EventInfo m_onKilledEventInfo;
+	EventInfo m_onBombDroppedEventInfo;
 
 	CHandle<CPathTrack> m_hStartNode;
 	CHandle<CPathTrack> m_hEndNode;
 	CHandle<CPathTrack> m_hGoalNode;
+	int m_nNodeNumber;
 
-	Vector m_vecCollisionMins;
-	Vector m_vecCollisionMaxs;
+	CUtlVector< float > m_CumulativeDistances;
+	float m_flTotalDistance;
+	bool m_bPlayedNearAlert;
+	bool m_bPlayedHalfwayAlert;
 
 	CHandle<CBaseAnimating> m_hBomb;
 	CHandle<CBaseAnimating> m_hLeftTrack;
@@ -88,6 +119,14 @@ private:
 
 	Vector m_vecRightTrackPrevPos;
 	Vector m_vecLeftTrackPrevPos;
+
+	CountdownTimer m_rumbleTimer;
+	CountdownTimer m_crushTimer;
+
+	CWaveSpawnPopulator *m_pWaveSpawnPopulator;
+
+	Vector m_vecCollisionMins;
+	Vector m_vecCollisionMaxs;
 };
 
 inline void CTFTankBoss::SetSkin( int nSkin )

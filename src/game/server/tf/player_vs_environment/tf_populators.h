@@ -249,6 +249,8 @@ public:
 	void ActiveWaveUpdate( void );
 	void WaveCompleteUpdate( void );
 	void WaveIntermissionUpdate( void );
+
+	int m_nTanksSpawned;
 };
 
 #endif
