@@ -6,6 +6,8 @@
 //=============================================================================
 #include "cbase.h"
 #include "tf_population_manager.h"
+#include "tf_populators.h"
+#include "tf_populator_spawners.h"
 #include "tf_objective_resource.h"
 
 extern ConVar tf_mvm_respec_limit;
@@ -21,6 +23,7 @@ ConVar tf_mvm_endless_bot_cash( "tf_mvm_endless_bot_cash", "120", FCVAR_DONTRECO
 ConVar tf_mvm_endless_tank_boost( "tf_mvm_endless_tank_boost", "0.2", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "In Endless, amount of extra health for the tank per wave" );
 
 ConVar tf_populator_debug( "tf_populator_debug", "0", FCVAR_DEVELOPMENTONLY );
+ConVar tf_populator_active_buffer_range( "tf_populator_active_buffer_range", "3000", FCVAR_DEVELOPMENTONLY, "Populate the world this far ahead of lead raider, and this far behind last raider" );
 ConVar tf_populator_health_multiplier( "tf_populator_health_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 ConVar tf_populator_damage_multiplier( "tf_populator_damage_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 
@@ -328,16 +331,16 @@ void CPopulationManager::GameRulesThink( void )
 
 CWave *CPopulationManager::GetCurrentWave( void )
 {
-	if ( !m_bIsInitialized || m_vecWaves.Count() == 0 )
+	if ( !m_bIsInitialized || m_Waves.Count() == 0 )
 		return nullptr;
 
 	if ( IsInEndlessWaves() )
 	{
-		return m_vecWaves[ m_nCurrentWaveIndex % m_vecWaves.Count() ];
+		return m_Waves[ m_nCurrentWaveIndex % m_Waves.Count() ];
 	}
-	else if ( m_nCurrentWaveIndex < m_vecWaves.Count() )
+	else if ( m_nCurrentWaveIndex < m_Waves.Count() )
 	{
-		return m_vecWaves[ m_nCurrentWaveIndex ];
+		return m_Waves[ m_nCurrentWaveIndex ];
 	}
 
 	return nullptr;
@@ -402,7 +405,7 @@ bool CPopulationManager::HasEventChangeAttributes( char const *psz )
 
 bool CPopulationManager::IsInEndlessWaves( void ) const
 {
-	return ( m_bEndlessWavesOn || tf_mvm_endless_force_on.GetBool() ) && !m_vecWaves.IsEmpty();
+	return ( m_bIsEndless || tf_mvm_endless_force_on.GetBool() ) && !m_Waves.IsEmpty();
 }
 
 bool CPopulationManager::IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer )
@@ -453,7 +456,174 @@ void CPopulationManager::OnPlayerKilled( CTFPlayer *pPlayer )
 
 bool CPopulationManager::Parse( void )
 {
-	return false;
+	if ( m_szPopfileFull[0] == '\0' )
+	{
+		Warning( "No population file specified.\n" );
+		return false;
+	}
+
+	KeyValuesAD pKV( "Population" );
+	if ( !pKV->LoadFromFile( filesystem, m_szPopfileFull, "GAME" ) )
+	{
+		Warning( "Can't open %s.\n", m_szPopfileFull );
+		pKV->deleteThis();
+		return false;
+	}
+
+	m_Populators.PurgeAndDeleteElements();
+	m_Waves.RemoveAll();
+
+	if ( m_pTemplates )
+	{
+		m_pTemplates->deleteThis();
+		m_pTemplates = NULL;
+	}
+
+	KeyValues *pKVTemplates = pKV->FindKey( "Templates" );
+	if ( pKVTemplates )
+	{
+		m_pTemplates = pKVTemplates->MakeCopy();
+	}
+
+	FOR_EACH_SUBKEY( pKV, pSubKey )
+	{
+		const char *pszKey = pSubKey->GetName();
+		if ( !V_stricmp( pszKey, "StartingCurrency" ) )
+		{
+			m_nStartingCurrency = pSubKey->GetInt();
+		}
+		else if ( !V_stricmp( pszKey, "RespawnBaveTime" ) )
+		{
+			m_nRespawnWaveTime = pSubKey->GetInt();
+		}
+		else if ( !V_stricmp( pszKey, "EventPopFile" ) )
+		{
+			if ( !V_stricmp( pSubKey->GetString(), "Halloween" ) )
+			{
+				m_nMvMEventPopfileType = MVM_EVENT_POPFILE_HALLOWEEN;
+			}
+			else
+			{
+				m_nMvMEventPopfileType = MVM_EVENT_POPFILE_NONE;
+			}
+		}
+		else if ( !V_stricmp( pszKey, "FixedRespawnWaveTime" ) )
+		{
+			m_bFixedRespawnWaveTime = true;
+		}
+		else if ( !V_stricmp( pszKey, "AddSentryBusterWhenDamageDealtExceeds" ) )
+		{
+			m_iSentryBusterDamageDealtThreshold = pSubKey->GetInt();
+		}
+		else if ( !V_stricmp( pszKey, "AddSentryBusterWhenKillCountExceeds" ) )
+		{
+			m_iSentryBusterKillThreshold = pSubKey->GetInt();
+		}
+		else if ( !V_stricmp( pszKey, "CanBotsAttackInSpawnRoom" ) )
+		{
+			// Why is "no" and "false" taken instead of pSubKey->GetBool ??
+			if ( !V_stricmp( pSubKey->GetString(), "no" ) || !V_stricmp( pSubKey->GetString(), "false" ) )
+			{
+				m_bCanBotsAttackWhileInSpawnRoom = false;
+			}
+			else
+			{
+				m_bCanBotsAttackWhileInSpawnRoom = true;
+			}
+		}
+		else if ( !V_stricmp( pszKey, "RandomPlacement" ) )
+		{
+			CRandomPlacementPopulator *pPopulator = new CRandomPlacementPopulator( this );
+			if ( !pPopulator->Parse( pSubKey ) )
+			{
+				Warning( "Error reading RandomPlacement definition\n" );
+				return false;
+			}
+
+			m_Populators.AddToTail( pPopulator );
+		}
+		else if ( !V_stricmp( pszKey, "PeriodicSpawn" ) )
+		{
+			CPeriodicSpawnPopulator *pPopulator = new CPeriodicSpawnPopulator( this );
+			if ( !pPopulator->Parse( pSubKey ) )
+			{
+				Warning( "Error reading PeriodicSpawn definition\n" );
+				return false;
+			}
+
+			m_Populators.AddToTail( pPopulator );
+		}
+		else if ( !V_stricmp( pszKey, "Wave" ) )
+		{
+			CWave *pWave = new CWave( this );
+			if ( !pWave->Parse( pSubKey ) )
+			{
+				Warning( "Error reading Wave definition\n" );
+				return false;
+			}
+
+			m_Waves.AddToTail( pWave );
+		}
+		else if ( !V_stricmp( pszKey, "Mission" ) )
+		{
+			CMissionPopulator *pPopulator = new CMissionPopulator( this );
+			if ( !pPopulator->Parse( pSubKey ) )
+			{
+				Warning( "Error reading RandomPlacement definition\n" );
+				return false;
+			}
+
+			m_Populators.AddToTail( pPopulator );
+		}
+		else if ( !V_stricmp( pszKey, "Templates" ) )
+		{
+
+		}
+		else if ( !V_stricmp( pszKey, "Advanced" ) )
+		{
+			m_bIsAdvanced = true;
+		}
+		else if ( !V_stricmp( pszKey, "IsEndless" ) )
+		{
+			m_bIsEndless = true;
+		}
+		else
+		{
+			Warning( "Invalid populator '%s'\n", pszKey );
+			return false;
+		}
+	}
+
+	FOR_EACH_VEC( m_Populators, i )
+	{
+		CMissionPopulator *pMission = dynamic_cast<CMissionPopulator *>( m_Populators[i] );
+		if ( pMission )
+		{
+			if ( pMission->m_spawner && !pMission->m_spawner->IsVarious() )
+			{
+				for ( int i = pMission->m_nStartWave; i < pMission->m_nEndWave; ++i )
+				{
+					if ( m_Waves.IsValidIndex( i ) )
+					{
+						CWave *pWave = m_Waves[i];
+
+						unsigned int iFlags = MVM_CLASS_FLAG_MISSION;
+						if ( pMission->m_spawner->IsMiniBoss() )
+						{
+							iFlags |= MVM_CLASS_FLAG_MINIBOSS;
+						}
+						if ( pMission->m_spawner->HasAttribute( CTFBot::AttributeType::ALWAYSCRIT ) )
+						{
+							iFlags |= MVM_CLASS_FLAG_ALWAYSCRIT;
+						}
+						pWave->AddClassType( pMission->m_spawner->GetClassIcon(), 0, iFlags );
+					}
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 void CPopulationManager::PauseSpawning( void )
@@ -473,14 +643,14 @@ void CPopulationManager::PostInitialize( void )
 		return;
 	}
 
-	FOR_EACH_VEC( m_vecPopulators, i )
+	FOR_EACH_VEC( m_Populators, i )
 	{
-		//m_vecPopulators[i]->PostInitialize();
+		m_Populators[i]->PostInitialize();
 	}
 
-	FOR_EACH_VEC( m_vecWaves, i )
+	FOR_EACH_VEC( m_Waves, i )
 	{
-		//m_vecWaves[i]->PostInitialize();
+		m_Waves[i]->PostInitialize();
 	}
 }
 
@@ -586,7 +756,7 @@ CON_COMMAND_F( tf_mvm_force_victory, "Force immediate victory.", FCVAR_CHEAT )
 {
 	if ( g_pPopulationManager )
 	{
-		g_pPopulationManager->JumpToWave( g_pPopulationManager->m_vecWaves.Count() - 1 );
+		g_pPopulationManager->JumpToWave( g_pPopulationManager->m_Waves.Count() - 1 );
 		g_pPopulationManager->WaveEnd( true );
 		g_pPopulationManager->MvMVictory();
 	}
