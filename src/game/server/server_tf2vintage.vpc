@@ -274,6 +274,10 @@ $Project "Server (TF)"
 				$File	"tf\player_vs_environment\tf_mann_vs_machine_logic.h"
 				$File	"tf\player_vs_environment\tf_population_manager.cpp"
 				$File	"tf\player_vs_environment\tf_population_manager.h"
+				$File	"tf\player_vs_environment\tf_populators.cpp"
+				$File	"tf\player_vs_environment\tf_populators.h"
+				$File	"tf\player_vs_environment\tf_populator_spawners.cpp"
+				$File	"tf\player_vs_environment\tf_populator_spawners.h"
 			}
 			
 			$Folder	"NPCs"
