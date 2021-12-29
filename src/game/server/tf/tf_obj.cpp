@@ -622,6 +622,10 @@ void CBaseObject::SpawnControlPanels()
 void CBaseObject::InitializeMapPlacedObject( void )
 {
 	m_bWasMapPlaced = true;
+	if ( m_hBuiltOnEntity.Get() )
+		return;
+
+	SetBuilder( NULL );
 
 	if ( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
 		SpawnControlPanels();

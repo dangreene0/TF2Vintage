@@ -51,6 +51,9 @@ public:
 
 	void DisbandAndDeleteSquad( void );
 
+	inline void SetFormationSize( float flSize ) { m_flFormationSize = flSize; }
+	inline void SetShouldPreserveSquad( bool bPreserve ) { m_bShouldPreserveSquad = bPreserve; }
+
 private:
 	CUtlVector< CHandle<CTFBot> > m_hMembers;
 	CHandle<CTFBot> m_hLeader;

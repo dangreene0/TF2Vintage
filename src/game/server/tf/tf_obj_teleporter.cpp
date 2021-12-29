@@ -477,16 +477,11 @@ void CObjectTeleporter::CopyUpgradeStateToMatch( CObjectTeleporter *pMatch, bool
 	CObjectTeleporter *pObjToCopyTo = bCopyFrom ? this : pMatch;
 
 	pObjToCopyTo->m_iUpgradeMetal = pObjToCopyFrom->m_iUpgradeMetal;
-	pObjToCopyTo->m_iMaxHealth = pObjToCopyFrom->m_iMaxHealth;
+	pObjToCopyTo->m_iHighestUpgradeLevel = pObjToCopyFrom->m_iHighestUpgradeLevel;
 	pObjToCopyTo->m_iUpgradeMetalRequired = pObjToCopyFrom->m_iUpgradeMetalRequired;
 	pObjToCopyTo->m_iUpgradeLevel = pObjToCopyFrom->m_iUpgradeLevel;
-
-	/**(pObjToCopyTo + 632) = *(this + 632);
-	*(pObjToCopyTo + 629) = *(this + 629);
-	*(pObjToCopyTo + 630) = *(this + 630);
-	*(pObjToCopyTo + 631) = *(this + 631);
-	*(pObjToCopyTo + 633) = *(this + 633);
-	*(pObjToCopyTo + 634) = *(this + 634);*/
+	pObjToCopyTo->m_iDefaultUpgrade = pObjToCopyFrom->m_iDefaultUpgrade;
+	pObjToCopyTo->m_flUpgradeCompleteTime = pObjToCopyFrom->m_flUpgradeCompleteTime;
 }
 
 bool CObjectTeleporter::CheckUpgradeOnHit( CTFPlayer *pPlayer )

@@ -246,6 +246,8 @@ public:
 
 	// Upgrades
 	int				GetUpgradeLevel(void) { return m_iUpgradeLevel; }
+	int				GetDefaultUpgradeLevel( void ) const { return m_iDefaultUpgrade; }
+	void			SetDefaultUpgradeLevel( int nLevel ) { m_iDefaultUpgrade  = nLevel; }
 
 	// If the players hit us with a wrench, should we upgrade
 	virtual bool	CanBeUpgraded( CTFPlayer *pPlayer );
