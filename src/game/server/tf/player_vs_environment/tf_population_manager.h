@@ -48,7 +48,7 @@ public:
 	void AdjustMinPlayerSpawnTime( void );
 	void AllocateBots( void );
 	void ClearCheckpoint( void );
-	void CollectMvMBots( CUtlVector<CTFPlayer *> *vecBotsOut );
+	static void CollectMvMBots( CUtlVector<CTFPlayer *> *vecBotsOut );
 	void CycleMission( void );
 	void DebugWaveStats( void );
 	void EndlessFlagHasReset( void );
@@ -74,6 +74,7 @@ public:
 	char const *GetPopulationFilename( void ) const;
 	char const *GetPopulationFilenameShort( void ) const;
 	void GetSentryBusterDamageAndKillThreshold( int &nNumDamage, int &nNumKills );
+	KeyValues *GetTemplate( const char *pszName ) const;
 	int GetTotalPopFileCurrency( void );
 	bool HasEventChangeAttributes( char const *psz );
 	bool IsInEndlessWaves( void ) const;
@@ -113,17 +114,30 @@ public:
 	void WaveEnd( bool b1 );
 
 	int m_nCurrentWaveIndex;
-	CUtlVector<CWave *> m_vecWaves;
+	CUtlVector<CWave *> m_Waves;
 
 private:
-	CUtlVector<IPopulator *> m_vecPopulators;
+	CUtlVector<IPopulator *> m_Populators;
 	char m_szPopfileFull[MAX_PATH];
 	char m_szPopfileShort[MAX_PATH];
+	KeyValues *m_pTemplates;
 	bool m_bIsInitialized;
+	int m_nStartingCurrency;
+	int m_nLobbyBonusCurrency;
+	int m_nMvMEventPopfileType;
+	int m_nRespawnWaveTime;
+	bool m_bFixedRespawnWaveTime;
+	bool m_bCanBotsAttackWhileInSpawnRoom;
 	int m_iSentryBusterDamageDealtThreshold;
 	int m_iSentryBusterKillThreshold;
-	bool m_bEndlessWavesOn;
+	bool m_bIsAdvanced;
+	bool m_bIsEndless;
 };
+
+inline KeyValues *CPopulationManager::GetTemplate( const char *pszName ) const
+{
+	return m_pTemplates->FindKey( pszName );
+}
 
 extern CPopulationManager *g_pPopulationManager;
 #endif
