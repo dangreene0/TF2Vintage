@@ -35,7 +35,7 @@ public:
 //-----------------------------------------------------------------------------
 // Purpose: Fire off output events
 //-----------------------------------------------------------------------------
-static void FireEvent( EventInfo *eventInfo, const char *eventName )
+void FireEvent( EventInfo *eventInfo, const char *eventName )
 {
 	if ( eventInfo )
 	{
@@ -54,7 +54,7 @@ static void FireEvent( EventInfo *eventInfo, const char *eventName )
 //-----------------------------------------------------------------------------
 // Purpose: Create output event pairings
 //-----------------------------------------------------------------------------
-static EventInfo *ParseEvent( KeyValues *data )
+EventInfo *ParseEvent( KeyValues *data )
 {
 	EventInfo *eventInfo = new EventInfo();
 
