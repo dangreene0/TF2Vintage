@@ -816,6 +816,10 @@ void CWave::Update( void )
 //-----------------------------------------------------------------------------
 void CWave::OnPlayerKilled( CTFPlayer *pPlayer )
 {
+	FOR_EACH_VEC( m_WaveSpawns, i )
+	{
+		m_WaveSpawns[i]->OnPlayerKilled( pPlayer );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -823,6 +827,13 @@ void CWave::OnPlayerKilled( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 bool CWave::HasEventChangeAttributes( const char *pszEventName ) const
 {
+	bool bHasEventChangeAttributes = false;
+	FOR_EACH_VEC( m_WaveSpawns, i )
+	{
+		bHasEventChangeAttributes |= m_WaveSpawns[i]->HasEventChangeAttributes( pszEventName );
+	}
+
+	return bHasEventChangeAttributes;
 }
 
 //-----------------------------------------------------------------------------
@@ -837,6 +848,13 @@ void CWave::AddClassType( string_t iszClassIconName, int nCount, unsigned int iF
 //-----------------------------------------------------------------------------
 CWaveSpawnPopulator *CWave::FindWaveSpawnPopulator( const char *name )
 {
+	FOR_EACH_VEC( m_WaveSpawns, i )
+	{
+		CWaveSpawnPopulator *pPopulator = m_WaveSpawns[i];
+		if ( !V_stricmp( pPopulator->m_name, name ) )
+			return pPopulator;
+	}
+
 	return nullptr;
 }
 
@@ -845,6 +863,10 @@ CWaveSpawnPopulator *CWave::FindWaveSpawnPopulator( const char *name )
 //-----------------------------------------------------------------------------
 void CWave::ForceFinish()
 {
+	FOR_EACH_VEC( m_WaveSpawns, i )
+	{
+		m_WaveSpawns[i]->ForceFinish();
+	}
 }
 
 //-----------------------------------------------------------------------------

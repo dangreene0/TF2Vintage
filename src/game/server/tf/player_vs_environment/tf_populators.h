@@ -251,6 +251,9 @@ public:
 	void WaveIntermissionUpdate( void );
 
 	int m_nTanksSpawned;
+
+private:
+	CUtlVector<CWaveSpawnPopulator *> m_WaveSpawns;
 };
 
 #endif
