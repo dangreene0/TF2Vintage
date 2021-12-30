@@ -294,6 +294,9 @@ CTFHUDRobotDestruction::CTFHUDRobotDestruction( vgui::Panel *parent, const char 
 
 	ivgui()->AddTickSignal( GetVPanel(), 50 );
 
+	m_hBlueFlag = m_hRedFlag = NULL;
+	m_bInRobotDestruction = false;
+
 	ListenForGameEvent( "rd_rules_state_changed" );
 	ListenForGameEvent( "flagstatus_update" );
 	ListenForGameEvent( "rd_team_points_changed" );
@@ -878,6 +881,10 @@ void CTFHUDRobotDestruction::UpdateStolenPoints( int nTeam, vgui::EditablePanel 
 CTFHUDRobotDestruction::CProgressPanel::CProgressPanel( vgui::Panel *parent, const char *name )
 	: ImagePanel( parent, name )
 {
+	m_nX = m_nY = m_nWide = m_nTall = 0;
+	m_flCurrentProgress = m_flEndProgress = 0;
+	m_flLastScoreUpdate = m_flLastTick = -1.0f;
+
 	ListenForGameEvent( "teamplay_round_start" );
 }
 
