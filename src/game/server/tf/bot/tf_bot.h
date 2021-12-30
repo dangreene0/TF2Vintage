@@ -343,6 +343,7 @@ public:
 	m_eMission;
 	MissionType		GetMission( void ) const;
 	bool			HasMission( MissionType mission ) const;
+	bool			IsOnAnyMission( void ) const;
 	void			ClearTags( void );
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
