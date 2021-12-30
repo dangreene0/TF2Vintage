@@ -160,6 +160,20 @@ const char *g_pszHeadGibs[] = {
 	"models/player/gibs/engineergib006.mdl",
 };
 
+const char *g_pszBotHeadGibs[] =
+{
+	"",
+	"models/bots/gibs/scoutbot_gib_head.mdl",
+	"models/bots/gibs/sniperbot_gib_head.mdl",
+	"models/bots/gibs/soldierbot_gib_head.mdl",
+	"models/bots/gibs/demobot_gib_head.mdl",
+	"models/bots/gibs/medicbot_gib_head.mdl",
+	"models/bots/gibs/heavybot_gib_head.mdl",
+	"models/bots/gibs/pyrobot_gib_head.mdl",
+	"models/bots/gibs/spybot_gib_head.mdl",
+	"models/bots/gibs/engineerbot_gib_head.mdl",
+};
+
 #define TF_PLAYER_HEAD_LABEL_RED 0
 #define TF_PLAYER_HEAD_LABEL_BLUE 1
 #define TF_PLAYER_HEAD_LABEL_GREEN 2
@@ -167,10 +181,10 @@ const char *g_pszHeadGibs[] = {
 
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheInvuln )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_blue.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_red.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_green.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_yellow.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_blue.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_red.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_green.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_yellow.vmt" )
 CLIENTEFFECT_REGISTER_END()
 
 // -------------------------------------------------------------------------------- //
@@ -2694,6 +2708,7 @@ void C_TFPlayer::OnPreDataChanged( DataUpdateType_t updateType )
 	m_bOldSaveMeParity = m_bSaveMeParity;
 	m_nOldWaterLevel = GetWaterLevel();
 	m_nOldCurrency = m_nCurrency;
+	m_bOldCustomModelVisible = m_PlayerClass.CustomModelIsVisibleToSelf();
 
 	m_iOldTeam = GetTeamNumber();
 	C_TFPlayerClass *pClass = GetPlayerClass();
@@ -2939,6 +2954,11 @@ void C_TFPlayer::OnDataChanged( DataUpdateType_t updateType )
 				event->SetInt( "currency", m_nCurrency );
 				gameeventmanager->FireEventClientSide( event );
 			}
+		}
+
+		if ( m_bOldCustomModelVisible != m_PlayerClass.CustomModelIsVisibleToSelf() )
+		{
+			UpdateVisibility();
 		}
 	}
 
@@ -4576,6 +4596,43 @@ int C_TFPlayer::DrawModel( int flags )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+bool C_TFPlayer::ShouldDraw()
+{
+	if ( IsLocalPlayer() )
+	{
+		if ( m_PlayerClass.HasCustomModel() && !m_PlayerClass.CustomModelIsVisibleToSelf() )
+			return false;
+	}
+
+	if ( this == C_TFPlayer::GetLocalTFPlayer() )
+	{
+		if ( this->m_Shared.InCond( TF_COND_ZOOMED ) )
+		{
+			return false;
+		}
+	}
+
+	return BaseClass::ShouldDraw();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+const Vector &C_TFPlayer::GetRenderOrigin( void )
+{
+	static Vector vecCustomModelOffset;
+	if ( GetPlayerClass()->HasCustomModel() )
+	{
+		vecCustomModelOffset = BaseClass::GetRenderOrigin() + GetPlayerClass()->GetCustomModelOffset();
+		return vecCustomModelOffset;
+	}
+
+	return BaseClass::GetRenderOrigin();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void C_TFPlayer::ProcessMuzzleFlashEvent()
 {
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
@@ -4893,7 +4950,9 @@ void C_TFPlayer::InitPlayerGibs( void )
 {
 	// Clear out the gib list and create a new one.
 	m_aGibs.Purge();
-	BuildGibList( m_aGibs, GetModelIndex(), 1.0f, COLLISION_GROUP_NONE );
+
+	int nModelIndex = GetPlayerClass()->HasCustomModel() ? modelinfo->GetModelIndex( GetPlayerClass()->GetModelName() ) : GetModelIndex();
+	BuildGibList( m_aGibs, nModelIndex, 1.0f, COLLISION_GROUP_NONE );
 
 	if ( ( TFGameRules() && TFGameRules()->IsBirthday() ) || UTIL_IsLowViolence() )
 	{
@@ -4947,9 +5006,9 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 			if ( pTFWearable->GetDropType() != DROPTYPE_DROP )
 				continue;
 
-			/*if ( bDisguised && !pTFWearable->m_bDisguiseWearable ||
-				 !bDisguised && pTFWearable->m_bDisguiseWearable )
-				continue;*/
+			if ( bDisguised && !pTFWearable->IsDisguiseWearable() ||
+				 !bDisguised && pTFWearable->IsDisguiseWearable() )
+				continue;
 
 			if ( pTFWearable->IsDynamicModelLoading() && pTFWearable->GetModelPtr() == nullptr )
 				continue;
@@ -5025,20 +5084,34 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 		// Break up the player.
 		m_hSpawnedGibs.Purge();
 
+		int nModelIndex = GetPlayerClass()->HasCustomModel() ? modelinfo->GetModelIndex( GetPlayerClass()->GetModelName() ) : GetModelIndex();
+
 		if ( bHeadGib )
 		{
 			if ( !UTIL_IsLowViolence() )
 			{
 				CUtlVector<breakmodel_t> list;
 				const int iClassIdx = GetPlayerClass()->GetClassIndex();
-				FOR_EACH_VEC( m_aGibs, i )
+				if ( GetPlayerClass()->HasCustomModel() )
 				{
-					breakmodel_t const &breakModel = m_aGibs[i];
-					if ( !V_stricmp( breakModel.modelName, g_pszHeadGibs[ iClassIdx ] ) )
-						list.AddToHead( breakModel );
+					FOR_EACH_VEC( m_aGibs, i )
+					{
+						breakmodel_t const &breakModel = m_aGibs[i];
+						if ( !V_stricmp( breakModel.modelName, g_pszBotHeadGibs[iClassIdx] ) )
+							list.AddToHead( breakModel );
+					}
+				}
+				else
+				{
+					FOR_EACH_VEC( m_aGibs, i )
+					{
+						breakmodel_t const &breakModel = m_aGibs[i];
+						if ( !V_stricmp( breakModel.modelName, g_pszHeadGibs[iClassIdx] ) )
+							list.AddToHead( breakModel );
+					}
 				}
 
-				m_hFirstGib = CreateGibsFromList( list, GetModelIndex(), NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
+				m_hFirstGib = CreateGibsFromList( list, nModelIndex, NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
 				if ( m_hFirstGib )
 				{
 					Vector velocity, impulse;
@@ -5067,7 +5140,7 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 				}
 			}
 
-			m_hFirstGib = CreateGibsFromList( m_aGibs, GetModelIndex(), NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
+			m_hFirstGib = CreateGibsFromList( m_aGibs, nModelIndex, NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
 		}
 	}
 

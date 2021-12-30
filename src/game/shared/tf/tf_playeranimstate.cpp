@@ -205,6 +205,33 @@ void CTFPlayerAnimState::Update( float eyeYaw, float eyePitch )
 	if ( !pStudioHdr )
 		return;
 
+	if ( pTFPlayer->GetPlayerClass()->HasCustomModel() )
+	{
+		if ( !pTFPlayer->GetPlayerClass()->CustomModelUsesClassAnimations() )
+		{
+			if ( pTFPlayer->GetPlayerClass()->CustomModelRotates() )
+			{
+				if ( pTFPlayer->GetPlayerClass()->CustomModelRotationSet() )
+				{
+					m_angRender = pTFPlayer->GetPlayerClass()->GetCustomModelRotation();
+				}
+				else
+				{
+					m_angRender = vec3_angle;
+					m_angRender[YAW] = AngleNormalize( eyeYaw );
+				}
+			}
+
+			if ( pTFPlayer->GetPlayerClass()->CustomModelHasChanged() )
+			{
+				RestartMainSequence();
+			}
+
+			ClearAnimationState();
+			return;
+		}
+	}
+
 	// Check to see if we should be updating the animation state - dead, ragdolled?
 	if ( !ShouldUpdateAnimState() )
 	{

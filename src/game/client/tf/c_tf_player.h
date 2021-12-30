@@ -66,6 +66,8 @@ public:
 
 	virtual Vector GetObserverCamOrigin( void );
 	virtual int DrawModel( int flags );
+	virtual bool ShouldDraw( void ) OVERRIDE;
+	virtual const Vector &GetRenderOrigin( void ) OVERRIDE;
 
 	virtual bool CreateMove( float flInputSampleTime, CUserCmd *pCmd );
 
@@ -389,6 +391,8 @@ private:
 	CNewParticleEffect *m_pTypingEffect;
 
 	bool m_bUpdateObjectHudState;
+
+	bool m_bOldCustomModelVisible;
 
 public:
 
