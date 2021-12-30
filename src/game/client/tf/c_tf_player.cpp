@@ -5006,8 +5006,9 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 			if ( pTFWearable->GetDropType() != DROPTYPE_DROP )
 				continue;
 
-			if ( bDisguised && !pTFWearable->IsDisguiseWearable() ||
-				 !bDisguised && pTFWearable->IsDisguiseWearable() )
+			if ( bDisguised && !pTFWearable->IsDisguiseWearable() )
+				continue;
+			if ( !bDisguised && pTFWearable->IsDisguiseWearable() )
 				continue;
 
 			if ( pTFWearable->IsDynamicModelLoading() && pTFWearable->GetModelPtr() == nullptr )
