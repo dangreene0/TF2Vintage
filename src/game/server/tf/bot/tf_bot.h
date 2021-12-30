@@ -341,6 +341,8 @@ public:
 		REPROGRAMMED
 	}
 	m_eMission;
+	MissionType		GetMission( void ) const;
+	bool			HasMission( MissionType mission ) const;
 	void			ClearTags( void );
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
@@ -645,6 +647,33 @@ inline bool CTFBot::HasPointRecentlyChanged( void ) const
 }
 
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::MissionType CTFBot::GetMission( void ) const
+{
+	return m_eMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasMission( MissionType mission ) const
+{
+	return m_eMission == mission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsOnAnyMission( void ) const
+{
+	return m_eMission != MissionType::NONE;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline CTFBot *ToTFBot( CBaseEntity *ent )
 {
 	CTFPlayer *player = ToTFPlayer( ent );

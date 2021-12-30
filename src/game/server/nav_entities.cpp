@@ -24,7 +24,7 @@
 #include "AmbientLight.h"
 #endif
 
-#ifdef TF_DLL
+#if defined( TF_DLL ) || defined( TF_VINTAGE )
 #include "tf_player.h"
 #include "bot/tf_bot.h"
 #endif
@@ -176,7 +176,7 @@ bool CFuncNavCost::IsApplicableTo( CBaseCombatCharacter *who ) const
 		}
 	}
 
-#ifdef TF_DLL
+#if defined( TF_DLL ) || defined( TF_VINTAGE )
 	// TODO: Make group comparison efficient and move to base combat character
 	CTFBot *bot = ToTFBot( who );
 	if ( bot )
@@ -205,7 +205,7 @@ bool CFuncNavCost::IsApplicableTo( CBaseCombatCharacter *who ) const
 			return false;
 		}
 
-		if ( bot->HasMission( CTFBot::MISSION_DESTROY_SENTRIES ) )
+		if ( bot->HasMission( CTFBot::MissionType::DESTROY_SENTRIES ) )
 		{
 			if ( HasTag( "mission_sentry_buster" ) )
 			{
@@ -213,7 +213,7 @@ bool CFuncNavCost::IsApplicableTo( CBaseCombatCharacter *who ) const
 			}
 		}
 		
-		if ( bot->HasMission( CTFBot::MISSION_SNIPER ) )
+		if ( bot->HasMission( CTFBot::MissionType::SNIPER ) )
 		{
 			if ( HasTag( "mission_sniper" ) )
 			{
@@ -221,7 +221,7 @@ bool CFuncNavCost::IsApplicableTo( CBaseCombatCharacter *who ) const
 			}
 		}
 		
-		if ( bot->HasMission( CTFBot::MISSION_SPY ) )
+		if ( bot->HasMission( CTFBot::MissionType::SPY ) )
 		{
 			if ( HasTag( "mission_spy" ) )
 			{
@@ -229,7 +229,7 @@ bool CFuncNavCost::IsApplicableTo( CBaseCombatCharacter *who ) const
 			}
 		}
 
-		if ( bot->HasMission( CTFBot::MISSION_REPROGRAMMED ) )
+		if ( bot->HasMission( CTFBot::MissionType::REPROGRAMMED ) )
 		{
 			return false;
 		}
