@@ -539,7 +539,7 @@ private:
 
 	int				CalculateCurrencyAmount_CustomPack( int nAmount );
 	int				CalculateCurrencyAmount_ByType( CurrencyRewards_t nType );
-	int				DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer = NULL, bool bShared = true, bool bCountAsDropped = false, bool bIsBonus = false );
+	int				DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer = NULL, bool bShared = true, bool b1 = false, bool bBonus = false );
 
 	void			SetNextMvMPopfile( const char *next );
 	const char*		GetNextMvMPopfile( void );

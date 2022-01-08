@@ -88,8 +88,8 @@ class CUpgradeInfo
 {
 public:
 	int m_iPlayerClass;
-	item_def_index_t m_itemDefIndex;
-	int m_upgrade;
+	item_def_index_t m_nItemDefIndex;
+	int m_iUpgrade;
 	int m_nCost;
 };
 

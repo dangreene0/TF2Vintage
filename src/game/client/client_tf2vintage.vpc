@@ -239,6 +239,8 @@ $Project "Client (TF)"
 				$File	"tf\player_vs_environment\c_tf_tank_boss.cpp"
 				$File	"tf\c_tf_mvm_boss_progress_user.cpp"
 				$File	"tf\c_tf_mvm_boss_progress_user.h"
+				$File	"$SRCDIR\game\shared\tf\tf_mann_vs_machine_stats.cpp"
+				$File	"$SRCDIR\game\shared\tf\tf_mann_vs_machine_stats.h"
 				$File	"$SRCDIR\game\shared\tf\tf_upgrades_shared.cpp"
 				$File	"$SRCDIR\game\shared\tf\tf_upgrades_shared.h"
 
