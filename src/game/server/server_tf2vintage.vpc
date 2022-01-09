@@ -797,6 +797,8 @@ $Project "Server (TF)"
 				
 				$Folder "Map Entities"
 				{
+					$File	"tf\bot\map_entities\tf_hint_engineer_nest.cpp"
+					$File	"tf\bot\map_entities\tf_hint_engineer_nest.h"
 					$File	"tf\bot\map_entities\tf_hint_sentrygun.cpp"
 					$File	"tf\bot\map_entities\tf_hint_sentrygun.h"
 					$File	"tf\bot\map_entities\tf_hint_teleexit.cpp"
