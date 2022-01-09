@@ -344,6 +344,9 @@ public:
 	MissionType		GetMission( void ) const;
 	bool			HasMission( MissionType mission ) const;
 	bool			IsOnAnyMission( void ) const;
+
+	bool			IsMiniBoss( void ) const;
+	void			SetIsMiniBoss( bool bSet );
 	void			ClearTags( void );
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
@@ -371,6 +374,7 @@ private:
 
 	unsigned int m_behaviorFlags;
 	CUtlVector< CFmtStr > m_tags;
+	bool m_bIsMiniBoss;
 
 	CHandle<CBaseObject> m_hTargetSentry;
 	Vector m_vecLastNoticedSentry;

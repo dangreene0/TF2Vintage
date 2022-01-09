@@ -28,13 +28,17 @@ public:
 	virtual QueryResultType ShouldHurry( const INextBot *me ) const OVERRIDE;
 	virtual QueryResultType ShouldRetreat( const INextBot *me ) const OVERRIDE;
 
+	virtual EventDesiredResult< CTFBot > OnContact( CTFBot *me, CBaseEntity *other, CGameTrace *result = NULL ) OVERRIDE;
+
 private:
+	bool UpgradeOverTime( CTFBot *me );
+
 	PathFollower m_PathFollower;
 	CountdownTimer m_recomputePathTimer;
-	// 4814 float
-	// 4818 CountdownTimer
-	// 4824 int
-	// 4828 CountdownTimer
+	float m_flTotalTravelDistance;
+	CountdownTimer m_upgradeTimer;
+	int m_nUpgradeLevel;
+	CountdownTimer m_buffPulseTimer;
 };
 
 
