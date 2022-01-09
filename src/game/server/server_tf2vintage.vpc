@@ -658,6 +658,8 @@ $Project "Server (TF)"
 				{
 					$File	"tf\bot\behavior\tf_bot_behavior.cpp"
 					$File	"tf\bot\behavior\tf_bot_behavior.h"
+					$File	"tf\bot\behavior\tf_bot_escort.cpp"
+					$File	"tf\bot\behavior\tf_bot_escort.h"
 					$File	"tf\bot\behavior\tf_bot_tactical_monitor.cpp"
 					$File	"tf\bot\behavior\tf_bot_tactical_monitor.h"
 					$File	"tf\bot\behavior\tf_bot_scenario_monitor.cpp"
