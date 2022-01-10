@@ -155,6 +155,9 @@ public:
 	void			SelectReachableObjects( CUtlVector<EHANDLE> const& append, CUtlVector<EHANDLE> *outVector, INextBotFilter const& func, CNavArea *pStartArea, float flMaxRange );
 	CTFPlayer *		SelectRandomReachableEnemy( void );
 
+	void			StartIdleSound( void );
+	void			StopIdleSound( void );
+
 	bool			CanChangeClass( void );
 	const char*		GetNextSpawnClassname( void );
 
@@ -415,6 +418,8 @@ private:
 	CBaseEntity *m_sniperGoalEnt;
 	Vector m_sniperGoal;
 	CountdownTimer m_sniperSpotTimer;
+
+	CSoundPatch *m_pIdleSound;
 };
 
 class CTFBotPathCost : public IPathCost

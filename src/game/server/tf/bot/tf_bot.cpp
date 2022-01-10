@@ -222,6 +222,7 @@ void CTFBot::Spawn( void )
 	m_requiredEquipStack.Clear();
 	m_hMyControlPoint = NULL;
 	m_hMyCaptureZone = NULL;
+	m_pIdleSound = NULL;
 
 	GetVisionInterface()->ForgetAllKnownEntities();
 
@@ -2194,6 +2195,78 @@ CTFPlayer *CTFBot::SelectRandomReachableEnemy( void )
 	return nullptr;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::StartIdleSound( void )
+{
+	StopIdleSound();
+
+	if ( TFGameRules() && !TFGameRules()->IsMannVsMachineMode() )
+		return;
+
+	if ( !IsMiniBoss() )
+		return;
+	
+	const char *pszSoundName = NULL;
+	switch ( GetPlayerClass()->GetClassIndex() )
+	{
+		case TF_CLASS_HEAVYWEAPONS:
+		{
+			pszSoundName = "MVM.GiantHeavyLoop";
+			break;
+		}
+		case TF_CLASS_SOLDIER:
+		{
+			pszSoundName = "MVM.GiantSoldierLoop";
+			break;
+		}
+		case TF_CLASS_DEMOMAN:
+		{
+			if ( m_eMission == MissionType::DESTROY_SENTRIES )
+			{
+				pszSoundName = "MVM.SentryBusterLoop";
+			}
+			else
+			{
+				pszSoundName = "MVM.GiantDemomanLoop";
+			}
+			break;
+		}
+		case TF_CLASS_SCOUT:
+		{
+			pszSoundName = "MVM.GiantScoutLoop";
+			break;
+		}
+		case TF_CLASS_PYRO:
+		{
+			pszSoundName = "MVM.GiantPyroLoop";
+			break;
+		}
+	}
+
+	if ( pszSoundName )
+	{
+		CSoundEnvelopeController &controller = CSoundEnvelopeController::GetController();
+
+		CReliableBroadcastRecipientFilter filter;
+		m_pIdleSound = controller.SoundCreate( filter, entindex(), pszSoundName );
+
+		controller.Play( m_pIdleSound, 1.0, 100 );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::StopIdleSound( void )
+{
+	if ( m_pIdleSound )
+	{
+		CSoundEnvelopeController::GetController().SoundDestroy( m_pIdleSound );
+		m_pIdleSound = NULL;
+	}
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
