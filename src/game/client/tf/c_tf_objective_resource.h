@@ -31,6 +31,27 @@ public:
 	const char		*GetGameSpecificCPBarBG( int index, int iCappingTeam );
 	void			SetCappingTeam( int index, int team );
 
+	int				GetMannVsMachineMaxWaveCount( void ) { return m_nMannVsMachineMaxWaveCount; }
+	int				GetMannVsMachineWaveCount( void ) { return m_nMannVsMachineWaveCount; }
+	int				GetMannVsMachineWaveEnemyCount( void ) { return m_nMannVsMachineWaveEnemyCount; }
+	int				GetMvMInWorldMoney( void ) { return m_nMvMWorldMoney; }
+
+	float			GetMannVsMachineNextWaveTime( void ) { return m_flMannVsMachineNextWaveTime; }
+	bool			GetMannVsMachineIsBetweenWaves( void ) { return m_bMannVsMachineBetweenWaves; }
+
+	int				GetMannVsMachineWaveClassCount( int nIndex ) { return m_nMannVsMachineWaveClassCounts[ nIndex ]; }
+	const char		*GetMannVsMachineWaveClassName( int nIndex ) { return m_iszMannVsMachineWaveClassNames[ nIndex ]; }
+	unsigned int	GetMannVsMachineWaveClassFlags( int nIndex ) { return m_nMannVsMachineWaveClassFlags[ nIndex ]; }
+	bool			GetMannVsMachineWaveClassActive( int nIndex ) { return m_bMannVsMachineWaveClassActive[ nIndex ]; }
+
+	int				GetFlagCarrierUpgradeLevel( void ) { return m_nFlagCarrierUpgradeLevel; }
+	float			GetBaseMvMBombUpgradeTime( void ) { return m_flMvMBaseBombUpgradeTime; }
+	float			GetNextMvMBombUpgradeTime( void ) { return m_flMvMNextBombUpgradeTime; }
+
+	int				GetMvMChallengeIndex( void ) { return m_iChallengeIndex; }
+	char const		*GetMvMPopFileName( void ) const { return m_iszMvMPopfileName; }
+	int				GetMvMEventPopfileType( void ) { return m_nMvMEventPopfileType; }
+
 private:
 	int m_nMannVsMachineMaxWaveCount;
 	int m_nMannVsMachineWaveCount;
