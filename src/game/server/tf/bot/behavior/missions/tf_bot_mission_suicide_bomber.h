@@ -17,14 +17,14 @@ public:
 
 	virtual const char *GetName() const override;
 
-	virtual ActionResult<CTFBot> OnStart( CTFBot *me, Action<CTFBot> *priorAction ) override;
-	virtual ActionResult<CTFBot> Update( CTFBot *me, float dt ) override;
-	virtual void OnEnd( CTFBot *me, Action<CTFBot> *newAction ) override;
+	virtual ActionResult<CTFBot> OnStart( CTFBot *me, Action<CTFBot> *priorAction ) OVERRIDE;
+	virtual ActionResult<CTFBot> Update( CTFBot *me, float dt ) OVERRIDE;
+	virtual void OnEnd( CTFBot *me, Action<CTFBot> *newAction ) OVERRIDE;
 
-	virtual EventDesiredResult<CTFBot> OnStuck( CTFBot *me ) override;
-	virtual EventDesiredResult<CTFBot> OnKilled( CTFBot *me, const CTakeDamageInfo &info ) override;
+	virtual EventDesiredResult<CTFBot> OnStuck( CTFBot *me ) OVERRIDE;
+	virtual EventDesiredResult<CTFBot> OnKilled( CTFBot *me, const CTakeDamageInfo &info ) OVERRIDE;
 
-	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *threat ) const override;
+	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *threat ) const OVERRIDE;
 
 private:
 	void StartDetonate( CTFBot *me, bool reached_goal, bool lost_all_health );

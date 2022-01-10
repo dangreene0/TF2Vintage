@@ -23,6 +23,7 @@ class CTeamControlPoint;
 class CCaptureFlag;
 class CCaptureZone;
 class CTFBotSquad;
+class CSoundPatch;
 
 class CClosestTFPlayer
 {

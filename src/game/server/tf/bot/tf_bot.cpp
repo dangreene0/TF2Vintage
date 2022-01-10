@@ -22,6 +22,7 @@
 #include "behavior/tf_bot_behavior.h"
 #include "behavior/tf_bot_use_item.h"
 #include "NextBotUtil.h"
+#include "soundenvelope.h"
 
 void DifficultyChanged( IConVar *var, const char *pOldValue, float flOldValue );
 void PrefixNameChanged( IConVar *var, const char *pOldValue, float flOldValue );
