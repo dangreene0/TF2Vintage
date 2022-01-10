@@ -199,6 +199,12 @@ void CTFGameStats::ResetRoundStats()
 	{		
 		m_aPlayerStats[i].statsCurrentRound.Reset();
 	}
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "stats_resetround" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
 }
 
 //-----------------------------------------------------------------------------
