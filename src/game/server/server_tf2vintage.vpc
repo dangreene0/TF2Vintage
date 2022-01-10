@@ -744,6 +744,18 @@ $Project "Server (TF)"
 					
 					$Folder	"Engineer"
 					{
+						$Folder "MvM"
+						{
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_build_sentry.cpp"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_build_sentry.h"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_build_teleporter.cpp"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_build_teleporter.h"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_idle.cpp"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_idle.h"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_teleport_spawn.cpp"
+							$File	"tf\bot\behavior\engineer\mvm_engineer\tf_bot_mvm_engineer_teleport_spawn.h"
+						}
+
 						$File	"tf\bot\behavior\engineer\tf_bot_engineer_build.cpp"
 						$File	"tf\bot\behavior\engineer\tf_bot_engineer_build.h"
 						$File	"tf\bot\behavior\engineer\tf_bot_engineer_move_to_build.cpp"
