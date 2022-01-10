@@ -122,11 +122,14 @@ public:
 	void RoundEvent_WaveEnd( bool bSuccess );
 	void RoundEvent_WaveStart( void );
 	void RoundOver( bool bSuccess );
-	void SW_ReportWaveSummary( int nWave, bool bSuccess );
 	void SendUpgradesToPlayer( CTFPlayer *pPlayer, CUtlVector<CUpgradeInfo> const *upgrades );
-	void SetCurrentWave( uint32 nWave );
 
+	void SetCurrentWave( uint32 nWave );
+	void SetAcquiredCreditsForRespec( uint32 nCredits ) { m_iCurrencyCollectedForRespec = nCredits; }
+	void SetNumRespecsEarnedInWave( uint16 nRespecs ) { m_nRespecsAwardedInWave = nRespecs; }
 	void SetPopFile( const char *pszPopfile ) { V_strcpy_safe( m_szPopFile, pszPopfile ); }
+
+	void SW_ReportWaveSummary( int nWave, bool bSuccess );
 #else
 	virtual void OnDataChanged( DataUpdateType_t updateType );
 
@@ -138,6 +141,7 @@ public:
 	CPlayerWaveSpendingStats *GetLocalSpending( int nWave );
 	int GetPlayerActiveUpgradeCosts( uint64 steamId );
 	void SetPlayerActiveUpgradeCosts( uint64 steamId, int nCosts );
+
 	void SW_ReportClientBuyBackPurchase( uint8 nWave, uint16 nCost );
 	void SW_ReportClientUpgradePurchase( uint8 nWave, uint16 i1, uint16 i2, uint8 i3, int16 nCost );
 	void SW_ReportClientWaveSummary( uint16 nServerWaveID, CMannVsMachinePlayerStats stats );
