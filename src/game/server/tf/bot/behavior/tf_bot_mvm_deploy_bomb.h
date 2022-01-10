@@ -15,15 +15,15 @@ public:
 	CTFBotMvMDeployBomb();
 	virtual ~CTFBotMvMDeployBomb();
 
-	virtual const char *GetName() const override;
+	virtual const char *GetName() const OVERRIDE;
 
-	virtual ActionResult<CTFBot> OnStart( CTFBot *me, Action<CTFBot> *action ) override;
-	virtual ActionResult<CTFBot> Update( CTFBot *me, float dt ) override;
-	virtual void OnEnd( CTFBot *me, Action<CTFBot> *action ) override;
+	virtual ActionResult<CTFBot> OnStart( CTFBot *me, Action<CTFBot> *action ) OVERRIDE;
+	virtual ActionResult<CTFBot> Update( CTFBot *me, float dt ) OVERRIDE;
+	virtual void OnEnd( CTFBot *me, Action<CTFBot> *action ) OVERRIDE;
 
-	virtual EventDesiredResult<CTFBot> OnContact( CTFBot *me, CBaseEntity *who, CGameTrace *trace ) override;
+	virtual EventDesiredResult<CTFBot> OnContact( CTFBot *me, CBaseEntity *who, CGameTrace *trace ) OVERRIDE;
 
-	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *threat ) const override;
+	virtual QueryResultType ShouldAttack( const INextBot *me, const CKnownEntity *threat ) const OVERRIDE;
 
 private:
 	CountdownTimer m_ctDelay;
