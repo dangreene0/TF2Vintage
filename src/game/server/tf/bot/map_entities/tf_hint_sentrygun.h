@@ -13,6 +13,8 @@
 
 #include "tf_hint_entity.h"
 
+class CTFPlayer;
+
 class CTFBotHintSentrygun : public CBaseTFBotHintEntity
 {
 	DECLARE_CLASS( CTFBotHintSentrygun, CBaseTFBotHintEntity );
