@@ -959,6 +959,7 @@ void CTFPlayerShared::OnConditionAdded(int nCond)
 
 	case TF_COND_OFFENSEBUFF:
 	case TF_COND_DEFENSEBUFF:
+	case TF_COND_DEFENSEBUFF_NO_CRIT_BLOCK:
 	case TF_COND_REGENONDAMAGEBUFF:
 	case TF_COND_RADIUSHEAL:
 		OnAddBuff();
@@ -1130,6 +1131,7 @@ void CTFPlayerShared::OnConditionRemoved(int nCond)
 		
 	case TF_COND_OFFENSEBUFF:
 	case TF_COND_DEFENSEBUFF:
+	case TF_COND_DEFENSEBUFF_NO_CRIT_BLOCK:
 	case TF_COND_REGENONDAMAGEBUFF:
 	case TF_COND_RADIUSHEAL:
 		OnRemoveBuff();
