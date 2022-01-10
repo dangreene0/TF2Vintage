@@ -9105,7 +9105,13 @@ CBaseObject *CTFPlayer::GetObjectOfType( int iType, int iMode )
 {
 	FOR_EACH_VEC( m_aObjects, i )
 	{
-		CBaseObject *obj = (CBaseObject *)m_aObjects[i].Get();
+		CBaseObject *obj = GetObject( i );
+		if ( obj == NULL )
+			continue;
+
+		if ( obj->IsDisposableBuilding() )
+			continue;
+
 		if ( obj->ObjectType() == iType && obj->GetObjectMode() == iMode )
 			return obj;
 	}
@@ -9131,6 +9137,15 @@ void CTFPlayer::RemoveAllObjects( bool bSilent )
 
 		if ( obj )
 		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "object_removed" );
+			if ( event )
+			{
+				event->SetInt( "userid", GetUserID() );
+				event->SetInt( "objecttype", obj->GetType() );
+				event->SetInt( "index", obj->entindex() );
+				gameeventmanager->FireEvent( event );
+			}
+
 			bSilent ? UTIL_Remove( obj ) : obj->DetonateObject();
 		}
 	}
