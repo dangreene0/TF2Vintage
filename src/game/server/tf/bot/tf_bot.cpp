@@ -2194,6 +2194,22 @@ CTFPlayer *CTFBot::SelectRandomReachableEnemy( void )
 	return nullptr;
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::SetMission( MissionType mission, bool bResetBehavior )
+{
+	m_prevMission = m_eMission;
+	m_eMission = mission;
+
+	if ( bResetBehavior )
+		GetIntentionInterface()->Reset();
+
+	if ( m_eMission > MissionType::NONE )
+		StartIdleSound();
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Can we change class? If nested or have uber then no
 //-----------------------------------------------------------------------------
