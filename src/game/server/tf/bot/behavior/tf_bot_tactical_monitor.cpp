@@ -1,6 +1,13 @@
+//========= Copyright © Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "NextBot/NavMeshEntities/func_nav_prerequisite.h"
 #include "tf_bot.h"
+#include "tf_bot_squad.h"
 #include "tf_weaponbase.h"
 #include "tf_bot_tactical_monitor.h"
 #include "tf_gamerules.h"
@@ -18,6 +25,7 @@
 #include "tf_bot_retreat_to_cover.h"
 #include "tf_bot_destroy_enemy_sentry.h"
 #include "tf_bot_use_teleporter.h"
+#include "squad/tf_bot_escort_squad_leader.h"
 
 
 ConVar tf_bot_force_jump( "tf_bot_force_jump", "0", FCVAR_CHEAT, "Force bots to continuously jump", true, 0.0f, true, 1.0f );
@@ -148,6 +156,9 @@ ActionResult<CTFBot> CTFBotTacticalMonitor::Update( CTFBot *me, float dt )
 		AvoidBumpingEnemies( me );
 
 	me->UpdateDelayedThreatNotices();
+
+	if ( me->GetSquad() && me->GetSquad()->GetLeader() == me && me->GetSquad()->ShouldSquadLeaderWaitForFormation() )
+		return SuspendFor( new CTFBotWaitForOutOfPositionSquadMember, "Waiting for squadmates to get back into formation" );
 
 	return Action<CTFBot>::Continue();
 }
