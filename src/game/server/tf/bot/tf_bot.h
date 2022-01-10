@@ -344,11 +344,15 @@ public:
 	}
 	m_eMission;
 	void			SetMission( MissionType mission, bool bResetBehavior = true );
+	void			SetPrevMission( MissionType mission );
 	MissionType		GetMission( void ) const;
+	MissionType		GetPrevMission( void ) const;
 	bool			HasMission( MissionType mission ) const;
 	bool			IsOnAnyMission( void ) const;
 	void			SetMissionTarget( CBaseEntity *target );
 	CBaseEntity		*GetMissionTarget( void ) const;
+	void			SetMissionString( CUtlString string );
+	CUtlString		*GetMissionString( void );
 
 	bool			IsMiniBoss( void ) const;
 	void			SetIsMiniBoss( bool bSet );
@@ -381,6 +385,10 @@ private:
 	unsigned int m_behaviorFlags;
 	CUtlVector< CFmtStr > m_tags;
 	bool m_bIsMiniBoss;
+
+	MissionType m_prevMission;
+	CHandle< CBaseEntity > m_hMissionTarget;
+	CUtlString m_szMission;
 
 	CHandle<CBaseObject> m_hTargetSentry;
 	Vector m_vecLastNoticedSentry;
@@ -657,6 +665,37 @@ inline bool CTFBot::HasPointRecentlyChanged( void ) const
 	return m_cpChangedTimer.HasStarted() && !m_cpChangedTimer.IsElapsed();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetMissionString( CUtlString string )
+{
+	m_szMission = string;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CUtlString *CTFBot::GetMissionString( void )
+{
+	return &m_szMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetMissionTarget( CBaseEntity *target )
+{
+	m_hMissionTarget = target;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CBaseEntity *CTFBot::GetMissionTarget( void ) const
+{
+	return m_hMissionTarget;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -664,6 +703,22 @@ inline bool CTFBot::HasPointRecentlyChanged( void ) const
 inline CTFBot::MissionType CTFBot::GetMission( void ) const
 {
 	return m_eMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetPrevMission( MissionType mission )
+{
+	m_prevMission = mission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::MissionType CTFBot::GetPrevMission( void ) const
+{
+	return m_prevMission;
 }
 
 //-----------------------------------------------------------------------------
