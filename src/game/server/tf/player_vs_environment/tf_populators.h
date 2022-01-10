@@ -31,7 +31,7 @@ struct EventInfo
 enum SpawnLocationResult
 {
 	SPAWN_LOCATION_NOT_FOUND = 0,
-	SPAWN_LOCATION_NAV,
+	SPAWN_LOCATION_NORMAL,
 	SPAWN_LOCATION_TELEPORTER
 };
 
@@ -246,6 +246,11 @@ public:
 	void ForceReset();
 	bool IsDoneWithNonSupportWaves( void );
 
+	int m_nTotalEnemyCount;
+	int m_nNumTanksSpawned;
+	int m_nNumSentryBustersSpawned;
+	int m_nNumEngineersTeleportSpawned;
+	int m_nNumSentryBustersKilled;
 	void ActiveWaveUpdate( void );
 	void WaveCompleteUpdate( void );
 	void WaveIntermissionUpdate( void );
