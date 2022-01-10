@@ -343,9 +343,12 @@ public:
 		REPROGRAMMED
 	}
 	m_eMission;
+	void			SetMission( MissionType mission, bool bResetBehavior = true );
 	MissionType		GetMission( void ) const;
 	bool			HasMission( MissionType mission ) const;
 	bool			IsOnAnyMission( void ) const;
+	void			SetMissionTarget( CBaseEntity *target );
+	CBaseEntity		*GetMissionTarget( void ) const;
 
 	bool			IsMiniBoss( void ) const;
 	void			SetIsMiniBoss( bool bSet );
@@ -353,6 +356,7 @@ public:
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
 	bool			HasTag( char const *tag );
+	CUtlStringList m_TeleportWhere;
 	
 
 private:
