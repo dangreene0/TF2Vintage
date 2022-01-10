@@ -122,6 +122,9 @@ ConVar tf_allow_sliding_taunt( "tf_allow_sliding_taunt", "0", 0, "Allow player t
 
 ConVar tf_halloween_giant_health_scale( "tf_halloween_giant_health_scale", "10", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
 
+ConVar tf_deploying_bomb_time( "tf_deploying_bomb_time", "1.90", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Time to deploy bomb before the point of no return." );
+ConVar tf_deploying_bomb_delay_time( "tf_deploying_bomb_delay_time", "0.0", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Time to delay before deploying bomb." );
+
 
 extern ConVar spec_freeze_time;
 extern ConVar spec_freeze_traveltime;
