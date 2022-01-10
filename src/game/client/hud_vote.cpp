@@ -544,7 +544,7 @@ void CVoteSetupDialog::OnCommand(const char *command)
 					}
 				}
 			}
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 			else if ( !V_stricmp( "ChangeMission", szIssueRaw ) )
 			{
 				int nSelectedParam = m_pVoteParameterList->GetSelectedItem();
@@ -667,7 +667,7 @@ void CVoteSetupDialog::OnItemSelected( vgui::Panel *panel )
 						continue;
 
 					bool bAllowKickUnassigned = false;
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 					// Allow kicking team unassigned in MvM
 					if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() && g_PR->IsConnected( playerIndex ) && pPlayer->GetTeamNumber() == TEAM_UNASSIGNED )
 					{
@@ -695,7 +695,7 @@ void CVoteSetupDialog::OnItemSelected( vgui::Panel *panel )
 					}
 				}
 
-#if defined TF_CLIENT_DLL || defined TF_VINTAGE_CLIENT
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 				SetDialogVariable( "combo_label", g_pVGuiLocalize->Find( "#TF_VoteKickReason" ) );
 				m_pComboBox->AddItem( g_pVGuiLocalize->Find( "TF_VoteKickReason_Other" ), new KeyValues( "other" ) );
 				m_pComboBox->AddItem( g_pVGuiLocalize->Find( "TF_VoteKickReason_Cheating" ), new KeyValues( "cheating" ) );
@@ -705,7 +705,7 @@ void CVoteSetupDialog::OnItemSelected( vgui::Panel *panel )
 				m_pComboBox->SetVisible( true );
 #endif
 			}
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 			// CHANGE POP FILE
 			else if ( !V_stricmp( "ChangeMission", pszIssueRaw ) )
 			{
@@ -1390,7 +1390,7 @@ void CHudVote::MsgFunc_VoteStart( bf_read &msg )
 		gameeventmanager->FireEventClientSide( event );
 	}
 
-#if defined TF_CLIENT_DLL || defined TF_VINTAGE_CLIENT
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 	if ( bShowNotif )
 	{
 		NotificationQueue_Add( new CTFVoteNotification( pszCallerName ) );
@@ -1547,7 +1547,7 @@ void CHudVote::MsgFunc_VoteSetup( bf_read &msg )
 	bool bMvM = false;
 	INetworkStringTable *pStringTable = g_pStringTableServerMapCycle;
 
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
 	{
 		bMvM = true;
@@ -1578,7 +1578,7 @@ void CHudVote::MsgFunc_VoteSetup( bf_read &msg )
 		}
 	}
 
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 	m_VoteSetupPopFiles.RemoveAll();
 	if ( g_pStringTableServerPopFiles )
 	{
@@ -1622,7 +1622,7 @@ void CHudVote::PropagateOptionParameters( void )
 
 	m_pVoteSetupDialog->AddVoteIssueParams_MapCycle( m_VoteSetupMapCycle );
 
-#if defined TF_CLIENT_DLL || defined TF_VINTAGE_CLIENT
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 	m_pVoteSetupDialog->AddVoteIssueParams_PopFiles( m_VoteSetupPopFiles );
 #endif // TF_CLIENT_DLL
 
@@ -1705,7 +1705,7 @@ void CHudVote::FireGameEvent( IGameEvent *event )
 		m_bPlayerVoted = true;
 
 		bool bForceActive = false;
-#ifdef TF_CLIENT_DLL
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
 		if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
 		{
 			if ( m_iVoteCallerIdx == GetLocalPlayerIndex() )
