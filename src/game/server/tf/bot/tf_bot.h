@@ -175,6 +175,8 @@ public:
 	bool			IsSquadmate( CTFPlayer *player ) const;
 	void			JoinSquad( CTFBotSquad *squad );
 	void			LeaveSquad();
+	void			SetSquadFormationError( float flError ) { m_flFormationError = flError; }
+	void			SetIsInFormation( bool bSet ) { m_bIsInFormation = bSet; }
 
 	struct DelayedNoticeInfo
 	{
@@ -318,7 +320,7 @@ public:
 
 	enum class WeaponRestrictionType
 	{
-		NONE			= 0,
+		UNRESTRICTED	= 0,
 
 		MELEEONLY		= ( 1 << 0 ),
 		PRIMARYONLY		= ( 1 << 1 ),
@@ -467,7 +469,7 @@ inline bool CTFBot::HasWeaponRestriction( CTFBot::WeaponRestrictionType restrict
 //-----------------------------------------------------------------------------
 inline void CTFBot::ClearWeaponRestrictions( void )
 {
-	m_nWeaponRestrictions = CTFBot::WeaponRestrictionType::NONE;
+	m_nWeaponRestrictions = CTFBot::WeaponRestrictionType::UNRESTRICTED;
 }
 
 //-----------------------------------------------------------------------------
