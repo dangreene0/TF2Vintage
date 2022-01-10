@@ -233,7 +233,7 @@ INetworkStringTable *g_pStringTableInfoPanel = NULL;
 INetworkStringTable *g_pStringTableClientSideChoreoScenes = NULL;
 INetworkStringTable *g_pStringTableServerMapCycle = NULL;
 
-#ifdef TF_DLL
+#if defined( TF_DLL ) || defined( TF_VINTAGE )
 INetworkStringTable *g_pStringTableServerPopFiles = NULL;
 INetworkStringTable *g_pStringTableServerMapCycleMvM = NULL;
 #endif
@@ -1632,7 +1632,7 @@ void CServerGameDLL::CreateNetworkStringTables( void )
 	g_pStringTableClientSideChoreoScenes = networkstringtable->CreateStringTable( "Scenes", MAX_CHOREO_SCENES_STRINGS );
 	g_pStringTableServerMapCycle = networkstringtable->CreateStringTable( "ServerMapCycle", 128 );
 
-#ifdef TF_DLL
+#if defined( TF_DLL ) || defined( TF_VINTAGE )
 	g_pStringTableServerPopFiles = networkstringtable->CreateStringTable( "ServerPopFiles", 128 );
 	g_pStringTableServerMapCycleMvM = networkstringtable->CreateStringTable( "ServerMapCycleMvM", 128 );
 #endif
@@ -1640,7 +1640,7 @@ void CServerGameDLL::CreateNetworkStringTables( void )
 	bool bPopFilesValid = true;
 	(void)bPopFilesValid; // Avoid unreferenced variable warning
 
-#ifdef TF_DLL
+#if defined( TF_DLL ) || defined( TF_VINTAGE )
 	bPopFilesValid = ( g_pStringTableServerPopFiles != NULL );
 #endif
 

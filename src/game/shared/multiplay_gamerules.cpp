@@ -1409,7 +1409,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 			g_pStringTableServerMapCycle->AddString( CBaseEntity::IsServer(), "ServerMapCycle", sFileList.Length() + 1, sFileList.String() );
 		}
 
-#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL )
+#if defined ( TF_DLL ) || defined ( TF_CLIENT_DLL ) || defined( TF_VINTAGE ) || defined( TF_VINTAGE_CLIENT )
 		if ( g_pStringTableServerPopFiles )
 		{
 			// Search for all pop files that are prefixed with the current map name
