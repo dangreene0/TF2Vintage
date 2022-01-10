@@ -1,3 +1,9 @@
+//========= Copyright � Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "tf_bot.h"
 #include "tf_bot_squad.h"
@@ -8,6 +14,7 @@
 #include "map_entities/tf_hint.h"
 #include "medic/tf_bot_medic_heal.h"
 #include "spy/tf_bot_spy_infiltrate.h"
+#include "spy/tf_bot_spy_leave_spawn_room.h"
 #include "sniper/tf_bot_sniper_lurk.h"
 #include "engineer/tf_bot_engineer_build.h"
 #include "scenario/capture_the_flag/tf_bot_fetch_flag.h"
@@ -16,6 +23,7 @@
 #include "scenario/capture_point/tf_bot_defend_point.h"
 #include "scenario/payload/tf_bot_payload_push.h"
 #include "scenario/payload/tf_bot_payload_guard.h"
+#include "squad/tf_bot_escort_squad_leader.h"
 #include "tf_gamerules.h"
 #include "entity_capture_flag.h"
 
@@ -87,6 +95,17 @@ ActionResult<CTFBot> CTFBotScenarioMonitor::Update( CTFBot *me, float dt )
 
 Action<CTFBot> *CTFBotScenarioMonitor::InitialContainedAction( CTFBot *actor )
 {
+	if ( actor->GetSquad() )
+	{
+		if ( actor->GetSquad()->GetLeader() == actor )
+			return DesiredScenarioAndClassAction( actor );
+
+		if ( actor->IsPlayerClass( TF_CLASS_MEDIC ) )
+			return new CTFBotMedicHeal;
+
+		return new CTFBotEscortSquadLeader( DesiredScenarioAndClassAction( actor ) );
+	}
+
 	return DesiredScenarioAndClassAction( actor );
 }
 
