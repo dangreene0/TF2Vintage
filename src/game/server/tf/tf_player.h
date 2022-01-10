@@ -329,7 +329,7 @@ public:
 	void				OwnedObjectDestroyed( CBaseObject *pObject );
 	void				RemoveObject( CBaseObject *pObject );
 	bool				PlayerOwnsObject( CBaseObject *pObject );
-	void				DetonateOwnedObjectsOfType( int iType, int iMode );
+	void				DetonateOwnedObjectsOfType( int iType, int iMode, bool bIgnoreBeingSapped = false );
 	void				StartBuildingObjectOfType( int iType, int iMode );
 	CBaseObject			*GetObjectOfType( int iType, int iMode=OBJECT_MODE_NONE );
 

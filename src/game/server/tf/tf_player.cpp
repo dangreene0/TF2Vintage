@@ -4608,41 +4608,45 @@ bool CTFPlayer::CanDisguise( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayer::DetonateOwnedObjectsOfType( int iType, int iMode )
+void CTFPlayer::DetonateOwnedObjectsOfType( int iType, int iMode, bool bIgnoreBeingSapped )
 {
-	int i;
-	int iNumObjects = GetObjectCount();
-	for ( i=0; i<iNumObjects; i++ )
+	CBaseObject *pObj = GetObjectOfType( iType, iMode );
+	if ( !pObj )
+		return;
+
+	if ( !bIgnoreBeingSapped && ( pObj->HasSapper() || pObj->IsDisabled() ) )
+		return;
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "object_removed" );
+	if ( event )
 	{
-		CBaseObject *pObj = GetObject( i );
+		event->SetInt( "userid", GetUserID() );
+		event->SetInt( "objecttype", iType );
+		event->SetInt( "index", pObj->entindex() );
+		gameeventmanager->FireEvent( event );
+	}
 
-		if ( pObj && pObj->GetType() == iType && pObj->GetObjectMode() == iMode )
-		{
-			SpeakConceptIfAllowed( MP_CONCEPT_DETONATED_OBJECT, pObj->GetResponseRulesModifier() );
-			pObj->DetonateObject();
+	SpeakConceptIfAllowed( MP_CONCEPT_DETONATED_OBJECT, pObj->GetResponseRulesModifier() );
+	pObj->DetonateObject();
 
-			const CObjectInfo *pInfo = GetObjectInfo( iType );
+	const CObjectInfo *pInfo = GetObjectInfo( iType );
 
-			if ( pInfo )
-			{
-				UTIL_LogPrintf( "\"%s<%i><%s><%s>\" triggered \"killedobject\" (object \"%s\") (weapon \"%s\") (objectowner \"%s<%i><%s><%s>\") (attacker_position \"%d %d %d\")\n",
-					GetPlayerName(),
-					GetUserID(),
-					GetNetworkIDString(),
-					GetTeam()->GetName(),
-					pInfo->m_pObjectName,
-					"pda_engineer",
-					GetPlayerName(),
-					GetUserID(),
-					GetNetworkIDString(),
-					GetTeam()->GetName(),
-					(int)GetAbsOrigin().x,
-					(int)GetAbsOrigin().y,
-					(int)GetAbsOrigin().z );
-			}
-
-			return;
-		}
+	if ( pInfo )
+	{
+		UTIL_LogPrintf( "\"%s<%i><%s><%s>\" triggered \"killedobject\" (object \"%s\") (weapon \"%s\") (objectowner \"%s<%i><%s><%s>\") (attacker_position \"%d %d %d\")\n",
+						GetPlayerName(),
+						GetUserID(),
+						GetNetworkIDString(),
+						GetTeam()->GetName(),
+						pInfo->m_pObjectName,
+						"pda_engineer",
+						GetPlayerName(),
+						GetUserID(),
+						GetNetworkIDString(),
+						GetTeam()->GetName(),
+						(int)GetAbsOrigin().x,
+						(int)GetAbsOrigin().y,
+						(int)GetAbsOrigin().z );
 	}
 }
 
