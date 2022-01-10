@@ -396,7 +396,7 @@ void CTFTankBoss::Spawn( void )
 			if ( sm_flLastTankAlert + 5.0f < gpGlobals->curtime )
 			{
 				CWave *pWave = g_pPopulationManager ? g_pPopulationManager->GetCurrentWave() : NULL;
-				if ( pWave && pWave->m_nTanksSpawned > 1 )
+				if ( pWave && pWave->m_nNumTanksSpawned > 1 )
 				{
 					TFGameRules()->BroadcastSound( 255, "Announcer.MVM_Tank_Alert_Another" );
 				}
