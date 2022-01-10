@@ -7293,9 +7293,9 @@ int CTFGameRules::CalculateCurrencyAmount_ByType( CurrencyRewards_t nType )
 		case CURRENCY_PACK_LARGE:
 			return 25;
 		/*case 10:
-			return 5;
-		case 11:
-			return 100;*/
+			return 5;*/
+		case CURRENCY_WAVE_COLLECTION_BONUS:
+			return 100;
 		default:
 			Assert( 0 );
 			return 0;
@@ -7305,7 +7305,7 @@ int CTFGameRules::CalculateCurrencyAmount_ByType( CurrencyRewards_t nType )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /* = NULL */, bool bShared /* = true */, bool b1 /*= false */, bool b2 /*= false */ )
+int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /* = NULL */, bool bShared /* = true */, bool b1 /*= false */, bool bBonus /*= false */ )
 {
 	if ( bShared )
 	{
@@ -7330,7 +7330,7 @@ int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /*
 
 	if ( IsMannVsMachineMode() && g_pPopulationManager )
 	{
-		g_pPopulationManager->OnCurrencyCollected( nAmount, b1, b2 );
+		g_pPopulationManager->OnCurrencyCollected( nAmount, b1, bBonus );
 	}
 
 	return nAmount;
