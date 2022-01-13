@@ -1,3 +1,9 @@
+//========= Copyright � Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #ifndef ECON_NOTIFICATIONS_H
 #define ECON_NOTIFICATIONS_H
 

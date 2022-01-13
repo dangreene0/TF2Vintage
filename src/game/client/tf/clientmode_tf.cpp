@@ -52,6 +52,7 @@
 #include "utlvector.h"
 #include "props_shared.h"
 #include "weapon_selection.h"
+#include "tf_mann_vs_machine_stats.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -60,10 +61,32 @@
 extern ConVar r_drawviewmodel;
 
 ConVar default_fov( "default_fov", "75", FCVAR_CHEAT );
-ConVar fov_desired( "fov_desired", "75", FCVAR_ARCHIVE | FCVAR_USERINFO, "Sets the base field-of-view.", true, 75.0, true, MAX_FOV_UNLOCKED );
+ConVar fov_desired( "fov_desired", "90", FCVAR_ARCHIVE | FCVAR_USERINFO, "Sets the base field-of-view.", true, 75.0, true, MAX_FOV_UNLOCKED );
 
 ConVar tf_hud_no_crosshair_on_scope_zoom( "tf_hud_no_crosshair_on_scope_zoom", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL );
 
+static void EnableSteamScreenshots( bool bEnable )
+{
+#if !defined(NO_STEAM)
+	if ( steamapicontext && steamapicontext->SteamScreenshots() )
+	{
+		ConVarRef cl_savescreenshotstosteam( "cl_savescreenshotstosteam" );
+		if ( cl_savescreenshotstosteam.IsValid() )
+		{
+			cl_savescreenshotstosteam.SetValue( bEnable );
+			steamapicontext->SteamScreenshots()->HookScreenshots( bEnable );
+		}
+	}
+#endif
+}
+
+#if !defined(NO_STEAM)
+void SteamScreenshotsCallBack( IConVar *var, const char *pOldString, float flOldValue )
+{
+	EnableSteamScreenshots( cl_steamscreenshots.GetBool() );
+}
+ConVar cl_steamscreenshots( "cl_steamscreenshots", "1", FCVAR_ARCHIVE, "Enable/disable saving screenshots to Steam", SteamScreenshotsCallBack );
+#endif
 
 void HUDMinModeChangedCallBack( IConVar *var, const char *pOldString, float flOldValue )
 {
@@ -129,7 +152,7 @@ void __MsgFunc_BreakModel_Pumpkin( bf_read &msg )
 
 	for ( int i=0; i < list.Count(); ++i )
 	{
-		breakmodel_t *model = &list[ i ];
+		breakmodel_t *model = &list[i];
 		model->burstScale = 1000.f;
 	}
 
@@ -147,7 +170,7 @@ void __MsgFunc_BreakModel_Pumpkin( bf_read &msg )
 
 	for ( int i=0; i < gibList.Count(); ++i )
 	{
-		C_BaseEntity *pGiblet = gibList[ i ];
+		C_BaseEntity *pGiblet = gibList[i];
 		if ( pGiblet == nullptr )
 			continue;
 
@@ -280,7 +303,7 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffectsGlow )
 	CLIENTEFFECT_MATERIAL( "dev/glow_color" )
 	CLIENTEFFECT_MATERIAL( "dev/glow_downsample" )
 	CLIENTEFFECT_MATERIAL( "dev/halo_add_to_screen" )
-CLIENTEFFECT_REGISTER_END_CONDITIONAL(	engine->GetDXSupportLevel() >= 90 )
+CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )
 
 // --------------------------------------------------------------------------------- //
 // CTFModeManager implementation.
@@ -291,13 +314,15 @@ CLIENTEFFECT_REGISTER_END_CONDITIONAL(	engine->GetDXSupportLevel() >= 90 )
 void CTFModeManager::Init()
 {
 	g_pClientMode = GetClientModeNormal();
-	
+
 	PanelMetaClassMgr()->LoadMetaClassDefinitionFile( SCREEN_FILE );
 
 	// Load the objects.txt file.
 	LoadObjectInfos( ::filesystem );
 
 	GetClientVoiceMgr()->SetHeadLabelOffset( 40 );
+
+	EnableSteamScreenshots( true );
 }
 
 void CTFModeManager::LevelInit( const char *newmap )
@@ -335,6 +360,10 @@ ClientModeTFNormal::ClientModeTFNormal()
 #if defined( _X360 )
 	m_pScoreboard = NULL;
 #endif
+
+#if !defined(NO_STEAM)
+	m_CallbackScreenshotRequested.Register( this, &ClientModeTFNormal::OnScreenshotRequested );
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -353,16 +382,16 @@ static CDllDemandLoader g_GameUI( "gameui" );
 //-----------------------------------------------------------------------------
 void ClientModeTFNormal::Init()
 {
-	m_pMenuEngyBuild = ( CHudMenuEngyBuild * )GET_HUDELEMENT( CHudMenuEngyBuild );
+	m_pMenuEngyBuild = (CHudMenuEngyBuild *)GET_HUDELEMENT( CHudMenuEngyBuild );
 	Assert( m_pMenuEngyBuild );
 
-	m_pMenuEngyDestroy = ( CHudMenuEngyDestroy * )GET_HUDELEMENT( CHudMenuEngyDestroy );
+	m_pMenuEngyDestroy = (CHudMenuEngyDestroy *)GET_HUDELEMENT( CHudMenuEngyDestroy );
 	Assert( m_pMenuEngyDestroy );
 
-	m_pMenuSpyDisguise = ( CHudMenuSpyDisguise * )GET_HUDELEMENT( CHudMenuSpyDisguise );
+	m_pMenuSpyDisguise = (CHudMenuSpyDisguise *)GET_HUDELEMENT( CHudMenuSpyDisguise );
 	Assert( m_pMenuSpyDisguise );
 
-	m_pFreezePanel = ( CTFFreezePanel * )GET_HUDELEMENT( CTFFreezePanel );
+	m_pFreezePanel = (CTFFreezePanel *)GET_HUDELEMENT( CTFFreezePanel );
 	Assert( m_pFreezePanel );
 
 	m_pInspectPanel = (CHudInspectPanel *)GET_HUDELEMENT( CHudInspectPanel );
@@ -371,7 +400,7 @@ void ClientModeTFNormal::Init()
 	CreateInterfaceFn gameUIFactory = g_GameUI.GetFactory();
 	if ( gameUIFactory )
 	{
-		m_pGameUI = (IGameUI *) gameUIFactory(GAMEUI_INTERFACE_VERSION, NULL );
+		m_pGameUI = (IGameUI *)gameUIFactory( GAMEUI_INTERFACE_VERSION, NULL );
 		if ( NULL != m_pGameUI )
 		{
 			// insert stats summary panel as the loading background dialog
@@ -380,7 +409,7 @@ void ClientModeTFNormal::Init()
 			pPanel->SetVisible( false );
 			pPanel->MakePopup( false );
 			m_pGameUI->SetLoadingBackgroundDialog( pPanel->GetVPanel() );
-		}		
+		}
 	}
 
 #if defined( _X360 )
@@ -390,6 +419,7 @@ void ClientModeTFNormal::Init()
 
 	BaseClass::Init();
 
+	MannVsMachineStats_Init();
 	ListenForGameEvent( "pumpkin_lord_summoned" );
 	ListenForGameEvent( "pumpkin_lord_killed" );
 	ListenForGameEvent( "eyeball_boss_summoned" );
@@ -422,11 +452,11 @@ IClientMode *GetClientModeNormal()
 }
 
 
-ClientModeTFNormal* GetClientModeTFNormal()
+ClientModeTFNormal *GetClientModeTFNormal()
 {
-	Assert( dynamic_cast< ClientModeTFNormal* >( GetClientModeNormal() ) );
+	Assert( dynamic_cast<ClientModeTFNormal *>( GetClientModeNormal() ) );
 
-	return static_cast< ClientModeTFNormal* >( GetClientModeNormal() );
+	return static_cast<ClientModeTFNormal *>( GetClientModeNormal() );
 }
 
 //-----------------------------------------------------------------------------
@@ -553,16 +583,16 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 	if ( !eventname || !eventname[0] )
 		return;
 
-	if (FStrEq( eventname, "pumpkin_lord_summoned" ))
+	if ( FStrEq( eventname, "pumpkin_lord_summoned" ) )
 	{
 		C_BasePlayer *pLocal = C_BasePlayer::GetLocalPlayer();
-		if (pLocal)
+		if ( pLocal )
 			pLocal->EmitSound( "Halloween.HeadlessBossSpawn" );
 	}
-	else if (FStrEq( eventname, "pumpkin_lord_killed" ))
+	else if ( FStrEq( eventname, "pumpkin_lord_killed" ) )
 	{
 		C_BasePlayer *pLocal = C_BasePlayer::GetLocalPlayer();
-		if (pLocal)
+		if ( pLocal )
 			pLocal->EmitSound( "Halloween.HeadlessBossDeath" );
 	}
 	else if ( FStrEq( eventname, "eyeball_boss_summoned" ) )
@@ -737,7 +767,7 @@ int	ClientModeTFNormal::HudElementKeyInput( int down, ButtonCode_t keynum, const
 #endif
 
 	C_TFPlayer *pPlayer = ToTFPlayer( C_BasePlayer::GetLocalPlayer() );
-	if( pPlayer )
+	if ( pPlayer )
 	{
 		if ( pPlayer->m_Shared.InCond( TF_COND_HALLOWEEN_THRILLER ) )
 			return 0;
@@ -801,6 +831,25 @@ int ClientModeTFNormal::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, 
 	return BaseClass::HandleSpectatorKeyInput( down, keynum, pszCurrentBinding );
 }
 
+void ClientModeTFNormal::OnDemoRecordStart( char const *pDemoBaseName )
+{
+	BaseClass::OnDemoRecordStart( pDemoBaseName );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void ClientModeTFNormal::OnDemoRecordStop( void )
+{
+	IGameEvent *event = gameeventmanager->CreateEvent( "ds_stop" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
+
+	BaseClass::OnDemoRecordStop();
+}
+
 // FIXME: This is causing crashes for Linux and I don't know why
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -821,18 +870,30 @@ void ClientModeTFNormal::MessageHooks( void )
 //-----------------------------------------------------------------------------
 // Purpose: Print messages to the chat
 //-----------------------------------------------------------------------------
-void ClientModeTFNormal::PrintTextToChat( const char *msg )
+void ClientModeTFNormal::PrintTextToChat( const char *msg, KeyValues *pData )
 {
 	CHudChat *pChat = GET_HUDELEMENT( CHudChat );
 	if ( pChat )
 	{
-		char buf[4096];
-		g_pVGuiLocalize->Find( msg );
-		g_pVGuiLocalize->ConvertUnicodeToANSI( g_pVGuiLocalize->Find( msg ), buf, sizeof( buf ) );
+		wchar_t wszText[1024]=L"";
+		g_pVGuiLocalize->ConstructString( wszText, ARRAYSIZE( wszText ), msg, pData );
 
-		pChat->ChatPrintf( 0, CHAT_FILTER_NONE, "%s", buf );
+		char buf[ sizeof wszText ];
+		g_pVGuiLocalize->ConvertUnicodeToANSI( wszText, buf, sizeof( buf ) );
+
+		pChat->Printf( CHAT_FILTER_NONE, "%s", buf );
 	}
 }
+
+#if !defined(NO_STEAM)
+void ClientModeTFNormal::OnScreenshotRequested( ScreenshotRequested_t *pParam )
+{
+	// Steam has requested a screenshot, act as if the key currently bound to screenshots
+	// has been pressed (we want tagging and the killcam screenshot behavior if applicable)
+	HudElementKeyInput( 0, BUTTON_CODE_INVALID, "screenshot" );
+	engine->ClientCmd( "screenshot" );
+}
+#endif
 
 void HandleBreakModel( bf_read &msg, bool bCheap )
 {

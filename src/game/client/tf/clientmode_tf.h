@@ -60,22 +60,29 @@ public:
 
 	virtual int		HudElementKeyInput( int down, ButtonCode_t keynum, const char *pszCurrentBinding );
 	virtual int		HandleSpectatorKeyInput( int down, ButtonCode_t keynum, const char *pszCurrentBinding );
+
+	virtual void	OnDemoRecordStart( char const *pDemoBaseName ) OVERRIDE;
+	virtual void	OnDemoRecordStop( void ) OVERRIDE;
+
+#if !defined(NO_STEAM)
+	STEAM_CALLBACK_MANUAL( ClientModeTFNormal, OnScreenshotRequested, ScreenshotRequested_t, m_CallbackScreenshotRequested );
+#endif
 	
 private:
 	
 	void			MessageHooks( void );
 	//void			UpdateSpectatorMode( void );
 
-	void			PrintTextToChat( const char *msg );
+	void			PrintTextToChat( const char *msg, KeyValues *pData );
 
 private:
 
-	CHudMenuEngyBuild *m_pMenuEngyBuild;
+	CHudMenuEngyBuild	*m_pMenuEngyBuild;
 	CHudMenuEngyDestroy *m_pMenuEngyDestroy;
 	CHudMenuSpyDisguise *m_pMenuSpyDisguise;
 	CTFFreezePanel		*m_pFreezePanel;
 	CHudInspectPanel	*m_pInspectPanel;
-	IGameUI			*m_pGameUI;
+	IGameUI				*m_pGameUI;
 
 #if defined( _X360 )
 	CTFClientScoreBoardDialog	*m_pScoreboard;

@@ -1,3 +1,9 @@
+//========= Copyright � Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "econ_notifications.h"
 

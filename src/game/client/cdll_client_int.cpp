@@ -2685,10 +2685,18 @@ bool CHLClient::CanRecordDemo( char *errorMsg, int length ) const
 
 void CHLClient::OnDemoRecordStart( char const* pDemoBaseName )
 {
+	if ( GetClientModeNormal() )
+	{
+		GetClientModeNormal()->OnDemoRecordStart( pDemoBaseName );
+	}
 }
 
 void CHLClient::OnDemoRecordStop()
 {
+	if ( GetClientModeNormal() )
+	{
+		GetClientModeNormal()->OnDemoRecordStop();
+	}
 }
 
 void CHLClient::OnDemoPlaybackStart( char const* pDemoBaseName )
