@@ -44,6 +44,8 @@ enum
 #define TF_TEAM_AUTOASSIGN (TF_TEAM_COUNT + 1 )
 #define TF_TEAM_VISUALS_COUNT (TF_TEAM_COUNT + 1)
 
+enum { k_nMvMPlayerTeamSize = 6, k_nMvMBotTeamSize = 22 };
+
 extern const char *g_aTeamNames[TF_TEAM_COUNT];
 extern const char *g_aTeamNamesShort[TF_TEAM_COUNT];
 extern const char *g_aTeamParticleNames[TF_TEAM_COUNT];

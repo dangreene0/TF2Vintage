@@ -543,6 +543,8 @@ private:
 
 	void			SetNextMvMPopfile( const char *next );
 	const char*		GetNextMvMPopfile( void );
+
+	int 			GetTeamAssignmentOverride( CTFPlayer *pPlayer, int iDesiredTeam, bool );
 private:
 
 	int				DefaultFOV( void ) { return 75; }

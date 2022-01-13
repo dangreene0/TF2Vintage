@@ -18,6 +18,7 @@
 #include "vscript_shared.h"
 #include "bannedwords.h"
 #include "tf_logic_robot_destruction.h"
+#include "tf_mann_vs_machine_stats.h"
 #ifdef CLIENT_DLL
 	#include <game/client/iviewport.h>
 	#include "c_tf_player.h"
@@ -7350,6 +7351,57 @@ void CTFGameRules::SetNextMvMPopfile( const char *next )
 const char *CTFGameRules::GetNextMvMPopfile()
 {
 	return s_strNextMvMPopFile.Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::GetTeamAssignmentOverride( CTFPlayer *pTFPlayer, int iDesiredTeam, bool )
+{
+	int iTeam = iDesiredTeam;
+	if ( IsMannVsMachineMode() )
+	{
+		if ( !pTFPlayer->IsBot() && iTeam != TEAM_SPECTATOR )
+		{
+			// Some MM logic goes here
+
+			int nDefenders = 0;
+			for ( int i=1; i <= gpGlobals->maxClients; ++i )
+			{
+				CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+				if ( pPlayer == NULL )
+					continue;
+
+				if ( pPlayer->GetTeamNumber() != TF_TEAM_MVM_PLAYERS )
+					continue;
+
+				nDefenders++;
+			}
+
+			int nSlotsLeft = k_nMvMPlayerTeamSize - nDefenders;
+			if ( nSlotsLeft >= 1 )
+			{
+				Log( "MVM assigned %s to defending team (%d more slots remaining after us)\n", pTFPlayer->GetPlayerName(), nSlotsLeft-1 );
+
+				int nCurrency = MannVsMachineStats_GetAcquiredCredits() + g_pPopulationManager->GetStartingCurrency();
+				int nCurrencySpent = g_pPopulationManager->GetPlayerCurrencySpent( pTFPlayer );
+				pTFPlayer->SetCurrency( nCurrency - nCurrencySpent );
+
+				iTeam = TF_TEAM_MVM_PLAYERS;
+			}
+			else
+			{
+				Log( "MVM assigned %s to spectator, all slots for defending team are in use, or reserved for lobby members\n", pTFPlayer->GetPlayerName() );
+				iTeam = TEAM_SPECTATOR;
+			}
+		}
+	}
+	else
+	{
+		// Some MM stuff
+	}
+
+	return iTeam;
 }
 #endif
 
