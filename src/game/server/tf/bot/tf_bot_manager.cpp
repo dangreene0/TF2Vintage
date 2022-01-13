@@ -1,4 +1,4 @@
-//========= Copyright © Valve LLC, All rights reserved. =======================
+//========= Copyright ï¿½ Valve LLC, All rights reserved. =======================
 //
 // Purpose:		
 //
@@ -355,6 +355,91 @@ void CTFBotManager::RevertOfflinePracticeConvars()
 }
 
 
+CTFBot *CTFBotManager::GetAvailableBotFromPool()
+{
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CTFPlayer *pPlayer = ToTFPlayer( UTIL_PlayerByIndex( i ) );
+		CTFBot *pBot = dynamic_cast<CTFBot *>( pPlayer );
+
+		if ( pBot == NULL )
+			continue;
+
+		if ( ( pBot->GetFlags() & FL_FAKECLIENT ) == 0 )
+			continue;
+
+		if ( pBot->GetTeamNumber() == TEAM_SPECTATOR || pBot->GetTeamNumber() == TEAM_UNASSIGNED )
+		{
+			pBot->ClearAttribute( CTFBot::AttributeType::QUOTAMANAGED );
+			return pBot;
+		}
+	}
+
+	return NULL;
+}
+
+bool CTFBotManager::RemoveBotFromTeamAndKick( int teamNum )
+{
+	CUtlVector<CTFBot *> validBots;
+	for ( int i=1; i < gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+		if ( pPlayer == nullptr || !pPlayer->IsPlayer() || !pPlayer->IsConnected() )
+			continue;
+
+		if ( ( pPlayer->GetFlags() & FL_FAKECLIENT ) == 0 )
+			continue;
+
+		CTFBot *pBot = ToTFBot( pPlayer );
+		if ( pBot == nullptr )
+			continue;
+
+		if ( !pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
+			continue;
+
+		if ( pPlayer->GetTeamNumber() != teamNum )
+			continue;
+
+		validBots.AddToTail( pBot );
+	}
+
+	CTFBot *pToKick = NULL;
+	FOR_EACH_VEC( validBots, i )
+	{
+		CTFBot *pBot = validBots[i];
+		if ( pBot && !pBot->IsAlive() )
+		{
+			pToKick = pBot;
+			break;
+		}
+	}
+
+	if ( !pToKick )
+	{
+		FOR_EACH_VEC( validBots, i )
+		{
+			CTFBot *pBot = validBots[i];
+			if ( pBot )
+			{
+				pToKick = pBot;
+				break;
+			}
+		}
+	}
+
+	if ( pToKick )
+	{
+		if ( pToKick->IsAlive() )
+			pToKick->CommitSuicide();
+		
+		pToKick->ForceChangeTeam( TEAM_UNASSIGNED );
+		UTIL_KickBotFromTeam( TEAM_UNASSIGNED );
+		return true;
+	}
+
+	return false;
+}
+
 void CTFBotManager::OnForceAddedBots( int count )
 {
 	tf_bot_quota.SetValue( Min( gpGlobals->maxClients, count + tf_bot_quota.GetInt() ) );
@@ -483,7 +568,11 @@ void CTFBotManager::MaintainBotQuota()
 		{
 			extern ConVar tf_bot_force_class;
 
-			CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( GetRandomBotName() );
+			CTFBot *pBot = GetAvailableBotFromPool();
+			if ( pBot == nullptr )
+			{
+				pBot = NextBotCreatePlayerBot< CTFBot >( GetRandomBotName() );
+			}
 			if ( pBot != nullptr )
 			{
 				pBot->SetAttribute( CTFBot::AttributeType::QUOTAMANAGED );
