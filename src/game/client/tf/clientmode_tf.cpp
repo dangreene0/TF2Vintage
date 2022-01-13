@@ -750,6 +750,16 @@ bool ClientModeTFNormal::CreateMove( float flInputSampleTime, CUserCmd *cmd )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void ClientModeTFNormal::Update( void )
+{
+	BaseClass::Update();
+
+	TFModalStack()->Update();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: See if hud elements want key input. Return 0 if the key is swallowed
 //-----------------------------------------------------------------------------
 int	ClientModeTFNormal::HudElementKeyInput( int down, ButtonCode_t keynum, const char *pszCurrentBinding )
