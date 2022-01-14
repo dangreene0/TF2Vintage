@@ -83,6 +83,7 @@ static void EnableSteamScreenshots( bool bEnable )
 #if !defined(NO_STEAM)
 void SteamScreenshotsCallBack( IConVar *var, const char *pOldString, float flOldValue )
 {
+	ConVarRef cl_steamscreenshots( var );
 	EnableSteamScreenshots( cl_steamscreenshots.GetBool() );
 }
 ConVar cl_steamscreenshots( "cl_steamscreenshots", "1", FCVAR_ARCHIVE, "Enable/disable saving screenshots to Steam", SteamScreenshotsCallBack );
