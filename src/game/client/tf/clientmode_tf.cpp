@@ -53,6 +53,7 @@
 #include "props_shared.h"
 #include "weapon_selection.h"
 #include "tf_mann_vs_machine_stats.h"
+#include "tf_modalstack.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -421,6 +422,7 @@ void ClientModeTFNormal::Init()
 	BaseClass::Init();
 
 	MannVsMachineStats_Init();
+	ListenForGameEvent( "localplayer_changeclass" );
 	ListenForGameEvent( "pumpkin_lord_summoned" );
 	ListenForGameEvent( "pumpkin_lord_killed" );
 	ListenForGameEvent( "eyeball_boss_summoned" );
@@ -733,6 +735,19 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 	{
 		return; // server sends a colorized text string for this
 	}
+	else if ( FStrEq( "localplayer_changeclass", eventname ) )
+	{
+		C_TFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
+		if ( pLocalPlayer && pLocalPlayer->GetPlayerClass() )
+		{
+			int iClass = pLocalPlayer->GetPlayerClass()->GetClassIndex();
+
+			// have the player to exec a <class>.cfg file for the class they have selected
+			char szCmd[128];
+			Q_snprintf( szCmd, sizeof( szCmd ), "exec %s.cfg", GetPlayerClassData( iClass )->m_szClassName );
+			engine->ExecuteClientCmd( szCmd );
+		}
+	}
 
 	BaseClass::FireGameEvent( event );
 }
@@ -758,6 +773,11 @@ void ClientModeTFNormal::Update( void )
 	BaseClass::Update();
 
 	TFModalStack()->Update();
+
+	if ( !engine->IsInGame() )
+	{
+		GetViewportAnimationController()->UpdateAnimations( gpGlobals->curtime );
+	}
 }
 
 //-----------------------------------------------------------------------------
