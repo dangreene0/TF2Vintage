@@ -11,6 +11,7 @@
 namespace vgui
 {
 	class VPanelHandle;
+	class Panel;
 };
 
 

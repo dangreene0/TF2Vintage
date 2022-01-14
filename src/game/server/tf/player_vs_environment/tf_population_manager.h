@@ -10,6 +10,7 @@
 #include "tf_bot.h"
 
 class CWave;
+class CMannVsMachineStats;
 class IPopulator;
 
 class CPopulationManager : public CPointEntity, public CGameEventListener
@@ -30,7 +31,10 @@ class CPopulationManager : public CPointEntity, public CGameEventListener
 		CUtlVector< CUpgradeInfo > m_upgradeVector;
 		int m_currencySpent;
 	};
-	mutable CUtlVector<PlayerUpgradeHistory *> m_playerUpgrades;
+	mutable CUtlVector<PlayerUpgradeHistory *> m_PlayerUpgrades;
+
+	static int m_nCheckpointWaveIndex;
+	static int m_nNumConsecutiveWipes;
 public:
 	DECLARE_DATADESC();
 
@@ -47,8 +51,9 @@ public:
 	void AddRespecToPlayer( CTFPlayer *pPlayer );
 	void AdjustMinPlayerSpawnTime( void );
 	void AllocateBots( void );
+	bool CanBotsAttackWhileInSpawnRoom( void ) const { return m_bCanBotsAttackWhileInSpawnRoom; }
 	void ClearCheckpoint( void );
-	static void CollectMvMBots( CUtlVector<CTFPlayer *> *vecBotsOut );
+	static int CollectMvMBots( CUtlVector<CTFPlayer *> *vecBotsOut );
 	void CycleMission( void );
 	void DebugWaveStats( void );
 	void EndlessFlagHasReset( void );
@@ -58,7 +63,7 @@ public:
 	bool EndlessShouldResetFlag( void );
 	CheckpointSnapshotInfo *FindCheckpointSnapshot( CSteamID steamID ) const;
 	CheckpointSnapshotInfo *FindCheckpointSnapshot( CTFPlayer *pPlayer ) const;
-	static void FindDefaultPopulationFileShortNames( CUtlVector<CUtlString> &vecNames );
+	static void FindDefaultPopulationFileShortNames( CUtlVector<CUtlString> &outNames );
 	PlayerUpgradeHistory *FindOrAddPlayerUpgradeHistory( CSteamID steamID ) const;
 	PlayerUpgradeHistory *FindOrAddPlayerUpgradeHistory( CTFPlayer *pPlayer ) const;
 	bool FindPopulationFileByShortName( char const *pszName, CUtlString *outFullName );
@@ -73,10 +78,13 @@ public:
 	CUtlVector<CUpgradeInfo> *GetPlayerUpgradeHistory( CTFPlayer *pPlayer );
 	char const *GetPopulationFilename( void ) const;
 	char const *GetPopulationFilenameShort( void ) const;
+	int GetRespawnWaveTime( void ) const { return m_nRespawnWaveTime; }
 	void GetSentryBusterDamageAndKillThreshold( int &nNumDamage, int &nNumKills );
+	int GetStartingCurrency( void ) const { return m_nStartingCurrency; }
 	KeyValues *GetTemplate( const char *pszName ) const;
 	int GetTotalPopFileCurrency( void );
-	bool HasEventChangeAttributes( char const *psz );
+	bool HasEventChangeAttributes( char const *pszEventName );
+	bool IsAdvanced( void ) const { return m_bIsAdvanced; }
 	bool IsInEndlessWaves( void ) const;
 	bool IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer );
 	bool IsValidMvMMap( char const *pszMapName );
@@ -91,7 +99,7 @@ public:
 	void OnPlayerKilled( CTFPlayer *pPlayer );
 	bool Parse( void );
 	void PauseSpawning( void );
-	bool PlayerDoneViewingLoot( CTFPlayer const *pPlayer );
+	void PlayerDoneViewingLoot( CTFPlayer const *pPlayer );
 	void PostInitialize( void );
 	void RemoveBuybackCreditFromPlayer( CTFPlayer *pPlayer );
 	void RemovePlayerAndItemUpgradesFromHistory( CTFPlayer *pPlayer );

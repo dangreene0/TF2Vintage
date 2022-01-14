@@ -13,8 +13,8 @@
 extern ConVar tf_mvm_respec_limit;
 extern ConVar tf_mvm_respec_credit_goal;
 
-ConVar tf_mvm_default_sentry_buster_damage_dealt_threshold( "tf_mvm_default_sentry_buster_damage_dealt_threshold", "3000", FCVAR_DEVELOPMENTONLY );
-ConVar tf_mvm_default_sentry_buster_kill_threshold( "tf_mvm_default_sentry_buster_kill_threshold", "15", FCVAR_DEVELOPMENTONLY );
+ConVar tf_mvm_default_sentry_buster_damage_dealt_threshold( "tf_mvm_default_sentry_buster_damage_dealt_threshold", "3000", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
+ConVar tf_mvm_default_sentry_buster_kill_threshold( "tf_mvm_default_sentry_buster_kill_threshold", "15", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
 
 ConVar tf_mvm_endless_force_on( "tf_mvm_endless_force_on", "0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "Force MvM Endless mode on" );
 ConVar tf_mvm_endless_wait_time( "tf_mvm_endless_wait_time", "5.0f", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
@@ -22,8 +22,8 @@ ConVar tf_mvm_endless_bomb_reset( "tf_mvm_endless_bomb_reset", "5", FCVAR_DONTRE
 ConVar tf_mvm_endless_bot_cash( "tf_mvm_endless_bot_cash", "120", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "In Endless, number of credits bots get per wave" );
 ConVar tf_mvm_endless_tank_boost( "tf_mvm_endless_tank_boost", "0.2", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "In Endless, amount of extra health for the tank per wave" );
 
-ConVar tf_populator_debug( "tf_populator_debug", "0", FCVAR_DEVELOPMENTONLY );
-ConVar tf_populator_active_buffer_range( "tf_populator_active_buffer_range", "3000", FCVAR_DEVELOPMENTONLY, "Populate the world this far ahead of lead raider, and this far behind last raider" );
+ConVar tf_populator_debug( "tf_populator_debug", "0", FCVAR_CHEAT );
+ConVar tf_populator_active_buffer_range( "tf_populator_active_buffer_range", "3000", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Populate the world this far ahead of lead raider, and this far behind last raider" );
 ConVar tf_populator_health_multiplier( "tf_populator_health_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 ConVar tf_populator_damage_multiplier( "tf_populator_damage_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 
@@ -120,6 +120,8 @@ PRECACHE_REGISTER( info_populator );
 
 
 CUtlVector<CPopulationManager::CheckpointSnapshotInfo *> CPopulationManager::sm_checkpointSnapshots;
+int CPopulationManager::m_nCheckpointWaveIndex;
+int CPopulationManager::m_nNumConsecutiveWipes;
 
 
 static int s_iLastKnownMissionCategory = 1;
@@ -224,6 +226,8 @@ void CPopulationManager::Precache( void )
 
 void CPopulationManager::Reset( void )
 {
+	m_iSentryBusterDamageDealtThreshold = tf_mvm_default_sentry_buster_damage_dealt_threshold.GetInt();
+	m_iSentryBusterKillThreshold = tf_mvm_default_sentry_buster_kill_threshold.GetInt();
 }
 
 void CPopulationManager::Spawn( void )
@@ -253,8 +257,25 @@ void CPopulationManager::ClearCheckpoint( void )
 {
 }
 
-void CPopulationManager::CollectMvMBots( CUtlVector<CTFPlayer *> *vecBotsOut )
+int CPopulationManager::CollectMvMBots( CUtlVector<CTFPlayer *> *pBotsOut )
 {
+	pBotsOut->RemoveAll();
+	for ( int i = 0; i < gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+		if ( pPlayer == NULL || FNullEnt( pPlayer->edict() ) || !pPlayer->IsPlayer() )
+			continue;
+
+		if ( !pPlayer->IsConnected() || !pPlayer->IsBot() )
+			continue;
+
+		if ( pPlayer->GetTeamNumber() != TF_TEAM_MVM_BOTS )
+			continue;
+
+		pBotsOut->AddToTail( (CTFPlayer *)pPlayer );
+	}
+
+	return pBotsOut->Count();
 }
 
 void CPopulationManager::CycleMission( void )
@@ -381,12 +402,12 @@ CUtlVector<CUpgradeInfo> *CPopulationManager::GetPlayerUpgradeHistory( CTFPlayer
 
 char const *CPopulationManager::GetPopulationFilename( void ) const
 {
-	return nullptr;
+	return m_szPopfileFull;
 }
 
 char const *CPopulationManager::GetPopulationFilenameShort( void ) const
 {
-	return nullptr;
+	return m_szPopfileShort;
 }
 
 void CPopulationManager::GetSentryBusterDamageAndKillThreshold( int &nNumDamage, int &nNumKills )
@@ -398,7 +419,7 @@ int CPopulationManager::GetTotalPopFileCurrency( void )
 	return 0;
 }
 
-bool CPopulationManager::HasEventChangeAttributes( char const *psz )
+bool CPopulationManager::HasEventChangeAttributes( char const *pszEventName )
 {
 	return false;
 }
@@ -630,9 +651,8 @@ void CPopulationManager::PauseSpawning( void )
 {
 }
 
-bool CPopulationManager::PlayerDoneViewingLoot( CTFPlayer const *pPlayer )
+void CPopulationManager::PlayerDoneViewingLoot( CTFPlayer const *pPlayer )
 {
-	return false;
 }
 
 void CPopulationManager::PostInitialize( void )
