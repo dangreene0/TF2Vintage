@@ -279,11 +279,6 @@ ConVar mp_waitingforplayers_time( "mp_waitingforplayers_time", "30", FCVAR_GAMED
 
 ConVar mp_humans_must_join_team( "mp_humans_must_join_team", "any", FCVAR_GAMEDLL | FCVAR_REPLICATED, "Restricts human players to a single team {any, blue, red, spectator}" );
 
-ConVar tf_arena_force_class( "tf_arena_force_class", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Force random classes in arena." );
-ConVar tf_arena_first_blood( "tf_arena_first_blood", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Toggles first blood criticals" );
-ConVar tf_arena_first_blood_length( "tf_arena_first_blood_length", "5.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Duration of first blood criticals" );
-ConVar tf_arena_override_cap_enable_time( "tf_arena_override_cap_enable_time", "-1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Overrides the time (in seconds) it takes for the capture point to become enable, -1 uses the level designer specified time." );
-
 ConVar tf_gamemode_arena( "tf_gamemode_arena", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
 ConVar tf_gamemode_cp( "tf_gamemode_cp", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
 ConVar tf_gamemode_ctf( "tf_gamemode_ctf", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
@@ -332,6 +327,11 @@ CON_COMMAND_F( tf_halloween_force_mob_spawn, "For testing.", FCVAR_DEVELOPMENTON
 	isZombieMobForceSpawning = true;
 }
 #endif
+
+ConVar tf_arena_force_class( "tf_arena_force_class", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Force random classes in arena." );
+ConVar tf_arena_first_blood( "tf_arena_first_blood", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Toggles first blood criticals" );
+ConVar tf_arena_first_blood_length( "tf_arena_first_blood_length", "5.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Duration of first blood criticals" );
+ConVar tf_arena_override_cap_enable_time( "tf_arena_override_cap_enable_time", "-1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Overrides the time (in seconds) it takes for the capture point to become enable, -1 uses the level designer specified time." );
 
 static bool BIsCvarIndicatingHolidayIsActive( int iCvarValue, /*EHoliday*/ int eHoliday )
 {
