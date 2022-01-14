@@ -97,19 +97,12 @@ const char *C_TFObjectiveResource::GetGameSpecificCPCappingSwipe( int index, int
 	{
 		case TF_TEAM_RED:
 			return "sprites/obj_icons/icon_obj_cap_red";
-			break;
 		case TF_TEAM_BLUE:
 			return "sprites/obj_icons/icon_obj_cap_blu";
-			break;
 		case TF_TEAM_GREEN:
 			return "sprites/obj_icons/icon_obj_cap_grn";
-			break;
 		case TF_TEAM_YELLOW:
 			return "sprites/obj_icons/icon_obj_cap_ylw";
-			break;
-		default:
-			return "sprites/obj_icons/icon_obj_cap_blu";
-			break;
 	}
 
 
@@ -127,19 +120,12 @@ const char *C_TFObjectiveResource::GetGameSpecificCPBarFG( int index, int iOwnin
 	{
 		case TF_TEAM_RED:
 			return "progress_bar_red";
-			break;
 		case TF_TEAM_BLUE:
 			return "progress_bar_blu";
-			break;
 		case TF_TEAM_GREEN:
 			return "progress_bar_grn";
-			break;
 		case TF_TEAM_YELLOW:
 			return "progress_bar_ylw";
-			break;
-		default:
-			return "progress_bar";
-			break;
 	}
 	return "progress_bar";
 }
@@ -156,22 +142,15 @@ const char *C_TFObjectiveResource::GetGameSpecificCPBarBG( int index, int iCappi
 	{
 		case TF_TEAM_RED:
 			return "progress_bar_red";
-			break;
 		case TF_TEAM_BLUE:
 			return "progress_bar_blu";
-			break;
 		case TF_TEAM_GREEN:
 			return "progress_bar_grn";
-			break;
 		case TF_TEAM_YELLOW:
 			return "progress_bar_ylw";
-			break;
-		default:
-			return "progress_bar";
-			break;
 	}
 
-	return "progress_bar_blu";
+	return "progress_bar";
 }
 
 void C_TFObjectiveResource::SetCappingTeam( int index, int team )
