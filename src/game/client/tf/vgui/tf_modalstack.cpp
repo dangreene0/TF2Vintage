@@ -63,11 +63,13 @@ void CPanelModalStack::PushModal( Panel *pDialog )
     VPanelHandle handle;
     handle.Set( pDialog->GetVPanel() );
 
-    Assert( m_Dialogs.Find( handle ) == m_Dialogs.InvalidIndex() );
     FOR_EACH_VEC( m_Dialogs, i )
     {
         if ( m_Dialogs[i] == handle )
+        {
+            Assert( false );
             return;
+        }
     }
 
     m_Dialogs.AddToHead( handle );
