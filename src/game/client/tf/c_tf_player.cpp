@@ -2129,6 +2129,66 @@ public:
 EXPOSE_INTERFACE( CProxyWeaponSkin, IMaterialProxy, "WeaponSkin" IMATERIAL_PROXY_INTERFACE_VERSION );
 
 //-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakIllum material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackIllum : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackIllum, IMaterialProxy, "StatTrakIllum" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+//-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakDigit material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackDigit : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+	virtual bool HelperOnBindGetStatTrakScore( void *pC_BaseEntity, int *piScore )
+	{
+		return false;
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackDigit, IMaterialProxy, "StatTrakDigit" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+ConVar tf_stattrak_icon_offset_x( "tf_stattrak_icon_offset_x", "0", FCVAR_DEVELOPMENTONLY );
+ConVar tf_stattrak_icon_offset_y( "tf_stattrak_icon_offset_y", "0", FCVAR_DEVELOPMENTONLY );
+//-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakIcon material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackIcon : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackIcon, IMaterialProxy, "StatTrakIcon" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+//-----------------------------------------------------------------------------
 // Purpose: Universal proxy from live tf2 used for spy invisiblity material
 //			Its' purpose is to replace weapon_invis, vm_invis and spy_invis
 //-----------------------------------------------------------------------------
