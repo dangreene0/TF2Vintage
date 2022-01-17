@@ -55,6 +55,7 @@ class CGhost;
 
 extern ConVar tf_avoidteammates;
 extern ConVar tf_avoidteammates_pushaway;
+extern ConVar tf_arena_force_class;
 
 extern ConVar fraglimit;
 
