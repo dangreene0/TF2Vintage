@@ -66,9 +66,9 @@ public:
 		SetText( "#GameUI_Vote_Notification_Text" );
 		AddStringToken( "initiator", m_wszPlayerName );
 	}
-	virtual bool CanBeTriggered()
+	virtual ENotificationType NotificationType( void )
 	{
-		return true;
+		return ENotificationType::AcceptOrDecline;
 	}
 	virtual void Trigger()
 	{
@@ -82,10 +82,6 @@ public:
 #endif
 		// so we aren't deleted
 		SetIsInUse( true );
-	}
-	virtual bool CanBeAcceptedOrDeclined()
-	{
-		return true;
 	}
 	virtual void Accept()
 	{
