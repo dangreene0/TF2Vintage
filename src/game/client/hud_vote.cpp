@@ -37,9 +37,9 @@
 #include "c_tf_player.h"
 #include "econ_notifications.h"
 #ifdef TF_CLIENT_DLL
-#include "confirm_dialog.h"
 #include "gc_clientsystem.h"
 #endif
+#include "tf_confirm_dialog.h"
 #include "tf_gamerules.h"
 #include "c_playerresource.h"
 #include "c_tf_objective_resource.h"
@@ -52,7 +52,6 @@ ConVar cl_vote_ui_active_after_voting( "cl_vote_ui_active_after_voting", "0" );
 ConVar cl_vote_ui_show_notification( "cl_vote_ui_show_notification", "0" );
 
 #if defined TF_CLIENT_DLL || defined TF_VINTAGE_CLIENT
-
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -72,14 +71,13 @@ public:
 	}
 	virtual void Trigger()
 	{
-#ifdef TF_CLIENT_DLL
 		CTFGenericConfirmDialog *pDialog = ShowConfirmDialog( "#GameUI_Vote_Notification_Title", 
 															  "#GameUI_Vote_Notification_Text", 
 															  "#GameUI_Vote_Notification_View", 
 															  "#cancel", &ConfirmShowVoteSetup );
 		pDialog->SetContext( this );
 		pDialog->AddStringToken( "initiator", m_wszPlayerName );
-#endif
+
 		// so we aren't deleted
 		SetIsInUse( true );
 	}
