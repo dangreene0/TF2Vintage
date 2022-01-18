@@ -531,7 +531,7 @@ CON_COMMAND_EXTERN( cl_trigger_first_notification, cl_trigger_first_notification
 	}
 }
 
-CON_COMMAND_EXTERN( cl_decline_first_notification, cl_trigger_first_notification_cc, "Tries to decline/remove the first notification" )
+CON_COMMAND_EXTERN( cl_decline_first_notification, cl_decline_first_notification_cc, "Tries to decline/remove the first notification" )
 {
 	if ( !g_notificationQueue.m_Notifications.IsEmpty() )
 	{
