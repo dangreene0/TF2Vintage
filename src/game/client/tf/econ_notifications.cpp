@@ -96,8 +96,8 @@ static void ColorizeText( CEconNotification *pNotification, CExLabel *pLabel, co
 
 static class CEconNotificationQueue
 {
-	friend void cl_trigger_first_notification( CCommand const & );
-	friend void cl_decline_first_notification( CCommand const & );
+	friend void cl_trigger_first_notification_cc( CCommand const & );
+	friend void cl_decline_first_notification_cc( CCommand const & );
 public:
 	CEconNotificationQueue() : m_nNextID( 0 ) {}
 	virtual ~CEconNotificationQueue() {}
@@ -508,7 +508,7 @@ vgui::EditablePanel *NotificationQueue_CreateMainMenuUIElement( vgui::EditablePa
 
 
 //-----------------------------------------------------------------------------
-CON_COMMAND_EXTERN( cl_trigger_first_notification, cl_trigger_first_notification, "Tries to accept/trigger the first notification" )
+CON_COMMAND_EXTERN( cl_trigger_first_notification, cl_trigger_first_notification_cc, "Tries to accept/trigger the first notification" )
 {
 	if ( !g_notificationQueue.m_Notifications.IsEmpty() )
 	{
@@ -531,7 +531,7 @@ CON_COMMAND_EXTERN( cl_trigger_first_notification, cl_trigger_first_notification
 	}
 }
 
-CON_COMMAND_EXTERN( cl_decline_first_notification, cl_trigger_first_notification, "Tries to decline/remove the first notification" )
+CON_COMMAND_EXTERN( cl_decline_first_notification, cl_trigger_first_notification_cc, "Tries to decline/remove the first notification" )
 {
 	if ( !g_notificationQueue.m_Notifications.IsEmpty() )
 	{
