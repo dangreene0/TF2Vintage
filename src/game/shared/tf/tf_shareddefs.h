@@ -146,6 +146,7 @@ enum
 
 #define TF_FIRST_NORMAL_CLASS	( TF_CLASS_UNDEFINED + 1 )
 #define TF_LAST_NORMAL_CLASS	( TF_CLASS_UNDEFINED + 9 )
+#define TF_NORMAL_CLASS_COUNT	( TF_LAST_NORMAL_CLASS + 1 ) // A bunch of code relies on TF_LAST_NORMAL_CLASS == TF_CLASS_ENGINEER, dumb
 
 #define TF_FIRST_BOSS_CLASS		( TF_LAST_NORMAL_CLASS + 1 )
 #define TF_LAST_BOSS_CLASS		( TF_CLASS_COUNT_ALL - 1 )
@@ -176,8 +177,8 @@ enum
 	TF_CLASS_RANDOM
 };
 
-extern const char *g_aPlayerClassNames[];				// localized class names
-extern const char *g_aPlayerClassNames_NonLocalized[];	// non-localized class names
+extern const char *g_aPlayerClassNames[TF_CLASS_COUNT_ALL];				// localized class names
+extern const char *g_aPlayerClassNames_NonLocalized[TF_CLASS_COUNT_ALL];	// non-localized class names
 extern const char *g_aRawPlayerClassNames[TF_CLASS_MENU_BUTTONS];
 extern const char *g_aRawPlayerClassNamesShort[TF_CLASS_MENU_BUTTONS];
 
@@ -185,6 +186,11 @@ bool IsPlayerClassName( const char *name );
 int GetClassIndexFromString( const char *name, int maxClass = TF_LAST_NORMAL_CLASS );
 char const *GetPlayerClassName( int iClassIdx );
 char const *GetPlayerClassLocalizationKey( int iClassIdx );
+
+extern const char g_szBotModels[TF_NORMAL_CLASS_COUNT][MAX_PATH];
+extern const char g_szBotBossModels[TF_NORMAL_CLASS_COUNT][MAX_PATH];
+extern const char g_szRomePromoItems_Hat[TF_NORMAL_CLASS_COUNT][MAX_PATH];
+extern const char g_szRomePromoItems_Misc[TF_NORMAL_CLASS_COUNT][MAX_PATH];
 
 extern const char *g_aDominationEmblems[];
 extern const char *g_aPlayerClassEmblems[];

@@ -172,6 +172,66 @@ const char *g_aRawPlayerClassNames[TF_CLASS_MENU_BUTTONS] =
 	"random"
 };
 
+const char g_szBotModels[][MAX_PATH] =
+{
+	"", //TF_CLASS_UNDEFINED
+
+	"models/bots/scout/bot_scout.mdl",
+	"models/bots/sniper/bot_sniper.mdl",
+	"models/bots/soldier/bot_soldier.mdl",
+	"models/bots/demo/bot_demo.mdl",
+	"models/bots/medic/bot_medic.mdl",
+	"models/bots/heavy/bot_heavy.mdl",
+	"models/bots/pyro/bot_pyro.mdl",
+	"models/bots/spy/bot_spy.mdl",
+	"models/bots/engineer/bot_engineer.mdl"
+};
+
+const char g_szBotBossModels[][MAX_PATH] =
+{
+	"", //TF_CLASS_UNDEFINED
+
+	"models/bots/scout_boss/bot_scout_boss.mdl",
+	"models/bots/sniper/bot_sniper.mdl",
+	"models/bots/soldier_boss/bot_soldier_boss.mdl",
+	"models/bots/demo_boss/bot_demo_boss.mdl",
+	"models/bots/medic/bot_medic.mdl",
+	"models/bots/heavy_boss/bot_heavy_boss.mdl",
+	"models/bots/pyro_boss/bot_pyro_boss.mdl",
+	"models/bots/spy/bot_spy.mdl",
+	"models/bots/engineer/bot_engineer.mdl"
+};
+
+const char g_szRomePromoItems_Hat[][MAX_PATH] =
+{
+	"", //TF_CLASS_UNDEFINED
+
+	"tw_scoutbot_hat",
+	"tw_sniperbot_helmet",
+	"tw_soldierbot_helmet",
+	"tw_demobot_helmet",
+	"tw_medibot_hat",
+	"tw_heavybot_helmet",
+	"tw_pyrobot_helmet",
+	"tw_spybot_hood",
+	"tw_engineerbot_helmet"
+};
+
+const char g_szRomePromoItems_Misc[][MAX_PATH] =
+{
+	"", //TF_CLASS_UNDEFINED
+
+	"tw_scoutbot_armor",
+	"tw_sniperbot_armor",
+	"tw_soldierbot_armor",
+	"tw_demobot_armor",
+	"tw_medibot_chariot",
+	"tw_heavybot_armor",
+	"tw_pyrobot_armor",
+	"tw_spybot_armor",
+	"tw_engineerbot_armor"
+};
+
 const char *g_aDominationEmblems[] =
 {
 	"../hud/leaderboard_dom1",

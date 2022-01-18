@@ -53,6 +53,7 @@ ConVar tf_bot_keep_items_after_death( "tf_bot_keep_items_after_death", "1", FCVA
 
 
 extern ConVar tf2v_force_melee;
+extern ConVar tf_mvm_miniboss_scale;
 
 
 LINK_ENTITY_TO_CLASS( tf_bot, CTFBot )
@@ -636,6 +637,52 @@ bool CTFBot::IsBarrageAndReloadWeapon( CTFWeaponBase *weapon ) const
 		default:
 			return false;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::AddItem( char const *pszItemName )
+{
+	CEconItemDefinition *pDefinition = GetItemSchema()->GetItemDefinitionByName( pszItemName );
+	if ( pDefinition )
+	{
+		CEconItemView econItem( pDefinition->index );
+		CBaseEntity *pItem = GiveNamedItem( pDefinition->GetClassName(), 0, &econItem );
+		if ( pItem )
+		{
+			int iSlot = pDefinition->GetLoadoutSlot( GetPlayerClass()->GetClassIndex() );
+			if ( iSlot < TF_FIRST_COSMETIC_SLOT )
+			{
+				CBaseEntity *pExisting = GetEntityForLoadoutSlot( iSlot );
+				if ( pExisting )
+				{
+					Weapon_Detach( pExisting->MyCombatWeaponPointer() );
+					UTIL_Remove( pExisting );
+				}
+			}
+
+			CEconEntity *pEconEntity = assert_cast<CEconEntity *>( pItem );
+			pEconEntity->GiveTo( this );
+
+			PostInventoryApplication();
+		}
+		else
+		{
+			if ( pszItemName && pszItemName[0] )
+			{
+				DevMsg( "CTFBotSpawner::AddItemToBot: Invalid item %s.\n", pszItemName );
+			}
+		}
+	}
+	else
+	{
+		if ( pszItemName && pszItemName[0] )
+		{
+			DevMsg( "CTFBotSpawner::AddItemToBot: Invalid item %s.\n", pszItemName );
+		}
+	}
+
 }
 
 //TODO: why does this only care about the current weapon?
@@ -2272,6 +2319,35 @@ void CTFBot::StopIdleSound( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CTFBot::ModifyMaxHealth( int nNewMaxHealth, bool bSetCurrentHealth, bool bScaleModel )
+{
+	if ( GetMaxHealth() != nNewMaxHealth )
+	{
+		static CSchemaAttributeHandle pAttrDef_HiddenMaxHealthNonBuffed( "hidden maxhealth non buffed" );
+		if ( !pAttrDef_HiddenMaxHealthNonBuffed )
+		{
+			Warning( "TFBotSpawner: Invalid attribute 'hidden maxhealth non buffed'\n" );
+		}
+		else
+		{
+			CAttributeList *pAttrList = GetAttributeList();
+			if ( pAttrList )
+			{
+				pAttrList->SetRuntimeAttributeValue( pAttrDef_HiddenMaxHealthNonBuffed, nNewMaxHealth - GetMaxHealth() );
+			}
+		}
+	}
+
+	if ( bSetCurrentHealth )
+		SetHealth( nNewMaxHealth );
+
+	if ( bScaleModel && IsMiniBoss() )
+		SetModelScale( m_flModelScaleOverride > 0.0f ? m_flModelScaleOverride : tf_mvm_miniboss_scale.GetFloat() );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CTFBot::SetMission( MissionType mission, bool bResetBehavior )
 {
 	m_prevMission = m_eMission;
@@ -2282,6 +2358,46 @@ void CTFBot::SetMission( MissionType mission, bool bResetBehavior )
 
 	if ( m_eMission > MissionType::NONE )
 		StartIdleSound();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::AddEventChangeAttributes( const CTFBot::EventChangeAttributes_t *newEvent )
+{
+	m_EventChangeAttributes.AddToTail( newEvent );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::ClearEventChangeAttributes( void )
+{
+	m_EventChangeAttributes.RemoveAll();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+const CTFBot::EventChangeAttributes_t *CTFBot::GetEventChangeAttributes( const char *pszEventName ) const
+{
+	for ( int i=0; i < m_EventChangeAttributes.Count(); ++i )
+	{
+		if ( FStrEq( m_EventChangeAttributes[i]->m_strName, pszEventName ) )
+		{
+			return m_EventChangeAttributes[i];
+		}
+	}
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFBot::OnEventChangeAttributes( const CTFBot::EventChangeAttributes_t *pEvent )
+{
+	if ( pEvent == nullptr )
+		return;
 }
 
 //-----------------------------------------------------------------------------

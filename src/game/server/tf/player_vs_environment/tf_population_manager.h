@@ -19,17 +19,17 @@ class CPopulationManager : public CPointEntity, public CGameEventListener
 
 	struct CheckpointSnapshotInfo
 	{
-		CSteamID m_steamId;
-		int m_currencySpent;
-		CUtlVector< CUpgradeInfo > m_upgradeVector;
+		CSteamID m_steamID;
+		int m_nCurrencySpent;
+		CUtlVector< CUpgradeInfo > m_Upgrades;
 	};
 	static CUtlVector<CheckpointSnapshotInfo *> sm_checkpointSnapshots;
 
 	struct PlayerUpgradeHistory
 	{
-		CSteamID m_steamId;							// which player this snapshot is for
-		CUtlVector< CUpgradeInfo > m_upgradeVector;
-		int m_currencySpent;
+		CSteamID m_steamID;
+		CUtlVector< CUpgradeInfo > m_Upgrades;
+		int m_nCurrencySpent;
 	};
 	mutable CUtlVector<PlayerUpgradeHistory *> m_PlayerUpgrades;
 
@@ -74,6 +74,7 @@ public:
 	float GetHealthMultiplier( bool bTankMultiplier ) const;
 	int GetNumBuybackCreditsForPlayer( CTFPlayer *pPlayer );
 	int GetNumRespecsAvailableForPlayer( CTFPlayer *pPlayer );
+	int GetNumRespecsEarned( void ) const { return m_nRespecsAwarded; }
 	int GetPlayerCurrencySpent( CTFPlayer *pPlayer );
 	CUtlVector<CUpgradeInfo> *GetPlayerUpgradeHistory( CTFPlayer *pPlayer );
 	char const *GetPopulationFilename( void ) const;
@@ -87,6 +88,7 @@ public:
 	bool IsAdvanced( void ) const { return m_bIsAdvanced; }
 	bool IsInEndlessWaves( void ) const;
 	bool IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer );
+	bool IsSpawningPaused() const { return m_bSpawningPaused; }
 	bool IsValidMvMMap( char const *pszMapName );
 	void JumpToWave( uint nWave, float f1 = -1.0f );
 	void LoadLastKnownMission( void );
@@ -123,6 +125,9 @@ public:
 
 	int m_nCurrentWaveIndex;
 	CUtlVector<CWave *> m_Waves;
+	CUtlString m_szDefaultEventChangeAttributesName;
+	bool byte58A;
+	CHandle<CBaseCombatCharacter> ehandle58C;
 
 private:
 	CUtlVector<IPopulator *> m_Populators;
@@ -139,7 +144,11 @@ private:
 	int m_iSentryBusterDamageDealtThreshold;
 	int m_iSentryBusterKillThreshold;
 	bool m_bIsAdvanced;
+	CMannVsMachineStats *m_pMVMStats;
+	KeyValues *m_pMvMMapCycle;
+	bool m_bSpawningPaused;
 	bool m_bIsEndless;
+	int m_nRespecsAwarded;
 };
 
 inline KeyValues *CPopulationManager::GetTemplate( const char *pszName ) const

@@ -30,6 +30,7 @@ class CBaseObject;
 class CTFWeaponBase;
 class CIntroViewpoint;
 class CTriggerAreaCapture;
+class CWaveSpawnPopulator;
 
 //=============================================================================
 //
@@ -620,9 +621,18 @@ public:
 	bool GetEurekaToTeleporter(void) { return m_bEurekaTeleportLocation; }
 
 
+	float				m_nAccumulatedSentryGunDamageDealt;	// for Sentry Buster missions in MvM
+	float				GetAccumulatedSentryGunDamageDealt( void ) const { return m_nAccumulatedSentryGunDamageDealt; }
+	int					m_nAccumulatedSentryGunKillCount;	// for Sentry Buster missions in MvM
+	float				GetAccumulatedSentryGunKillCount( void ) const { return m_nAccumulatedSentryGunKillCount; }
+
+	CWaveSpawnPopulator *m_pWaveSpawnPopulator;
+	bool				m_bLimitedSupport;
+
 protected:
 
-	int					GetAutoTeam( void );
+	int					GetAutoTeam( int nPreferedTeam = TF_TEAM_AUTOASSIGN );
+	bool				ShouldForceAutoTeam( void );
 	float	m_flStunTime;
 
 	// Creation/Destruction.

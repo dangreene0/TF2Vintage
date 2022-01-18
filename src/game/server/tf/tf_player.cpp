@@ -6726,6 +6726,16 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 			else
 				m_Shared.m_iDisguiseHealth -= ( flDamage + 0.5f );
 		}
+
+		if ( pTFAttacker )
+		{
+			CObjectSentrygun *sentry = dynamic_cast<CObjectSentrygun *>( info.GetInflictor() );
+			CTFProjectile_SentryRocket *sentryRocket = dynamic_cast<CTFProjectile_SentryRocket *>( info.GetInflictor() );
+			if ( ( sentry && !sentry->IsDisposableBuilding() ) || sentryRocket )
+			{
+				pTFAttacker->m_nAccumulatedSentryGunDamageDealt += ( iOldHealth - Max( m_iHealth.Get(), 0 ) );
+			}
+		}
 	}
 
 	m_flLastDamageTime = gpGlobals->curtime;

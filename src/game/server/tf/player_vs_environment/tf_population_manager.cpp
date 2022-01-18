@@ -9,6 +9,8 @@
 #include "tf_populators.h"
 #include "tf_populator_spawners.h"
 #include "tf_objective_resource.h"
+#include "tf_gamestats.h"
+#include "tf_mann_vs_machine_stats.h"
 
 extern ConVar tf_mvm_respec_limit;
 extern ConVar tf_mvm_respec_credit_goal;
@@ -135,6 +137,8 @@ CPopulationManager::CPopulationManager()
 	Assert( g_pPopulationManager == NULL );
 	g_pPopulationManager = this;
 
+	m_pMVMStats = MannVsMachineStats_GetInstance();
+
 	m_iSentryBusterDamageDealtThreshold = tf_mvm_default_sentry_buster_damage_dealt_threshold.GetInt();
 	m_iSentryBusterKillThreshold = tf_mvm_default_sentry_buster_kill_threshold.GetInt();
 
@@ -184,15 +188,15 @@ bool CPopulationManager::Initialize( void )
 	{
 		ClearCheckpoint();
 		m_nCurrentWaveIndex = 0;
-		//m_nNumConsecutiveWipes = 0;
-		//m_pMVMStats->SetCurrentWave( m_iCurrentWaveIndex );
+		m_nNumConsecutiveWipes = 0;
+		m_pMVMStats->SetCurrentWave( m_nCurrentWaveIndex );
 	}
 	else
 	{
 		RestoreCheckpoint();
 
-		//if ( m_bIsInitialized && ( m_iCurrentWaveIndex > 0 || m_nNumConsecutiveWipes > 1 ) )
-			//m_pMVMStats->RoundEvent_WaveEnd( false );
+		if ( m_bIsInitialized && ( m_nCurrentWaveIndex > 0 || m_nNumConsecutiveWipes > 1 ) )
+			m_pMVMStats->RoundEvent_WaveEnd( false );
 
 		IGameEvent *event = gameeventmanager->CreateEvent( "mvm_wave_failed" );
 		if ( event )
@@ -304,7 +308,7 @@ void CPopulationManager::EndlessSetAttributesForBot( CTFBot *pBot )
 
 bool CPopulationManager::EndlessShouldResetFlag( void )
 {
-	return false;
+	return m_bShouldResetFlag;
 }
 
 CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSnapshot( CSteamID steamID ) const
@@ -421,6 +425,18 @@ int CPopulationManager::GetTotalPopFileCurrency( void )
 
 bool CPopulationManager::HasEventChangeAttributes( char const *pszEventName )
 {
+	FOR_EACH_VEC( m_Waves, i )
+	{
+		if ( m_Waves[i]->HasEventChangeAttributes( pszEventName ) )
+			return true;
+	}
+
+	FOR_EACH_VEC( m_Populators, i )
+	{
+		if ( m_Populators[i]->HasEventChangeAttributes( pszEventName ) )
+			return true;
+	}
+
 	return false;
 }
 
@@ -473,6 +489,13 @@ void CPopulationManager::OnCurrencyPackFade( void )
 
 void CPopulationManager::OnPlayerKilled( CTFPlayer *pPlayer )
 {
+	FOR_EACH_VEC( m_Populators, i )
+	{
+		m_Populators[i]->OnPlayerKilled( pPlayer );
+	}
+
+	CWave *pWave = GetCurrentWave();
+	if ( pWave ) pWave->OnPlayerKilled( pPlayer );
 }
 
 bool CPopulationManager::Parse( void )
@@ -620,7 +643,7 @@ bool CPopulationManager::Parse( void )
 		CMissionPopulator *pMission = dynamic_cast<CMissionPopulator *>( m_Populators[i] );
 		if ( pMission )
 		{
-			if ( pMission->m_spawner && !pMission->m_spawner->IsVarious() )
+			if ( pMission->GetSpawner() && !pMission->GetSpawner()->IsVarious() )
 			{
 				for ( int i = pMission->m_nStartWave; i < pMission->m_nEndWave; ++i )
 				{
@@ -629,15 +652,15 @@ bool CPopulationManager::Parse( void )
 						CWave *pWave = m_Waves[i];
 
 						unsigned int iFlags = MVM_CLASS_FLAG_MISSION;
-						if ( pMission->m_spawner->IsMiniBoss() )
+						if ( pMission->GetSpawner()->IsMiniBoss() )
 						{
 							iFlags |= MVM_CLASS_FLAG_MINIBOSS;
 						}
-						if ( pMission->m_spawner->HasAttribute( CTFBot::AttributeType::ALWAYSCRIT ) )
+						if ( pMission->GetSpawner()->HasAttribute( CTFBot::AttributeType::ALWAYSCRIT ) )
 						{
 							iFlags |= MVM_CLASS_FLAG_ALWAYSCRIT;
 						}
-						pWave->AddClassType( pMission->m_spawner->GetClassIcon(), 0, iFlags );
+						pWave->AddClassType( pMission->GetSpawner()->GetClassIcon(), 0, iFlags );
 					}
 				}
 			}
@@ -649,6 +672,8 @@ bool CPopulationManager::Parse( void )
 
 void CPopulationManager::PauseSpawning( void )
 {
+	DevMsg( "Wave paused\n" );
+	m_bSpawningPaused = true;
 }
 
 void CPopulationManager::PlayerDoneViewingLoot( CTFPlayer const *pPlayer )
@@ -725,7 +750,7 @@ void CPopulationManager::SetPopulationFilename( char const *pszFileName )
 	V_strcpy_safe( m_szPopfileFull, pszFileName );
 	V_FileBase( m_szPopfileFull, m_szPopfileShort, sizeof( m_szPopfileShort ) );
 
-	//MannVsMachineStats_SetPopulationFile( m_szPopfileFull );
+	MannVsMachineStats_SetPopulationFile( m_szPopfileFull );
 	ResetMap();
 
 	if ( TFObjectiveResource() )
@@ -746,10 +771,27 @@ void CPopulationManager::ShowNextWaveDescription( void )
 
 void CPopulationManager::StartCurrentWave( void )
 {
+	if ( TFObjectiveResource() )
+	{
+		TFObjectiveResource()->SetMannVsMachineNextWaveTime( 0 );
+		TFObjectiveResource()->SetMannVsMachineBetweenWaves( false );
+	}
+
+	UpdateObjectiveResource();
+	m_pMVMStats->RoundEvent_WaveStart();
+
+	TFGameRules()->State_Transition( GR_STATE_RND_RUNNING );
 }
 
 void CPopulationManager::UnpauseSpawning( void )
 {
+	DevMsg( "Wave unpaused\n" );
+	m_bSpawningPaused = false;
+
+	FOR_EACH_VEC( m_Populators, i )
+	{
+		m_Populators[i]->UnpauseSpawning();
+	}
 }
 
 void CPopulationManager::Update( void )

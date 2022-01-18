@@ -108,6 +108,8 @@ public:
 	bool			IsContinuousFireWeapon( CTFWeaponBase *weapon = nullptr ) const;
 	bool			IsBarrageAndReloadWeapon( CTFWeaponBase *weapon = nullptr ) const;
 
+	void			AddItem( char const *pszItemName );
+
 	float			GetMaxAttackRange( void ) const;
 	float			GetDesiredAttackRange( void ) const;
 
@@ -158,6 +160,8 @@ public:
 
 	void			StartIdleSound( void );
 	void			StopIdleSound( void );
+
+	void			ModifyMaxHealth( int nNewhealth, bool bSetHealth = true, bool bScaleModel = true );
 
 	bool			CanChangeClass( void );
 	const char*		GetNextSpawnClassname( void );
@@ -360,10 +364,70 @@ public:
 
 	bool			IsMiniBoss( void ) const;
 	void			SetIsMiniBoss( bool bSet );
+
+	bool			ShouldUseBossHealthBar( void ) const;
+	void			SetUseBossHealthBar( bool bSet );
+
+	void			SetAutoJumpIntervals( float flMin, float flMax );
+
+	void			SetBehaviorFlag( unsigned int flags );
+	void			ClearBehaviorFlag( unsigned int flags );
+	bool			IsBehaviorFlagSet( unsigned int flags ) const;
+
 	void			ClearTags( void );
 	void			AddTag( char const *tag );
 	void			RemoveTag( char const *tag );
 	bool			HasTag( char const *tag );
+
+	struct EventChangeAttributes_t
+	{
+		struct item_attributes_t
+		{
+			CUtlString m_strItemName;
+			CCopyableUtlVector<static_attrib_t> m_Attrs;
+		};
+
+
+		EventChangeAttributes_t( const char *name = "default" )
+		{
+			this->Reset( name );
+		}
+
+		void Reset( const char *name = "default" )
+		{
+			this->m_strName = name;
+
+			this->m_iSkill          = DifficultyType::EASY;
+			this->m_nWeaponRestrict = WeaponRestrictionType::UNRESTRICTED;
+			this->m_nMission		= MissionType::NONE;
+			this->m_prevMission		= MissionType::NONE;
+			this->m_nBotAttrs       = AttributeType::NONE;
+			this->m_flVisionRange   = -1.0f;
+
+			this->m_ItemNames.RemoveAll();
+			this->m_ItemAttrs.RemoveAll();
+			this->m_CharAttrs.RemoveAll();
+			this->m_Tags.RemoveAll();
+		}
+
+		CUtlString m_strName;
+		DifficultyType m_iSkill;
+		WeaponRestrictionType m_nWeaponRestrict;
+		MissionType m_nMission;
+		MissionType m_prevMission;
+		AttributeType m_nBotAttrs;
+		float m_flVisionRange;
+		CUtlStringList m_ItemNames;
+		CUtlVector<item_attributes_t> m_ItemAttrs;
+		CUtlVector<static_attrib_t> m_CharAttrs;
+		CUtlStringList m_Tags;
+	};
+	void ClearEventChangeAttributes();
+	void AddEventChangeAttributes( const EventChangeAttributes_t *newEvent );
+	const EventChangeAttributes_t *GetEventChangeAttributes( const char *pszEventName ) const;
+	void OnEventChangeAttributes( const CTFBot::EventChangeAttributes_t *pEvent );
+
+	float m_flModelScaleOverride;
 	CUtlStringList m_TeleportWhere;
 	
 
@@ -389,6 +453,11 @@ private:
 	unsigned int m_behaviorFlags;
 	CUtlVector< CFmtStr > m_tags;
 	bool m_bIsMiniBoss;
+	bool m_bUseHealthBar;
+
+	float m_flAutoJumpMin;
+	float m_flAutoJumpMax;
+	CountdownTimer m_autoJumpTimer;
 
 	MissionType m_prevMission;
 	CHandle< CBaseEntity > m_hMissionTarget;
@@ -421,6 +490,8 @@ private:
 	CountdownTimer m_sniperSpotTimer;
 
 	CSoundPatch *m_pIdleSound;
+
+	CUtlVector<const EventChangeAttributes_t *> m_EventChangeAttributes;
 };
 
 class CTFBotPathCost : public IPathCost
@@ -758,6 +829,56 @@ inline void CTFBot::SetIsMiniBoss( bool bSet )
 {
 	m_bIsMiniBoss = bSet;
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::ShouldUseBossHealthBar( void ) const
+{
+	return m_bUseHealthBar;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetUseBossHealthBar( bool bSet )
+{
+	m_bUseHealthBar = bSet;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetAutoJumpIntervals( float flMin, float flMax )
+{
+	m_flAutoJumpMin = flMin;
+	m_flAutoJumpMax = flMax;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetBehaviorFlag( unsigned int flags )
+{
+	m_behaviorFlags |= flags;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearBehaviorFlag( unsigned int flags )
+{
+	m_behaviorFlags &= ~flags;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsBehaviorFlagSet( unsigned int flags ) const
+{
+	return ( m_behaviorFlags & flags ) ? true : false;
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

@@ -15,7 +15,6 @@ struct EventInfo;
 class IPopulationSpawner
 {
 public:
-	IPopulationSpawner( IPopulator *populator ) : m_populator( populator ) { }
 	virtual ~IPopulationSpawner() { }
 
 	static IPopulationSpawner *ParseSpawner( IPopulator *populator, KeyValues *data );
@@ -32,7 +31,7 @@ public:
 	virtual bool	HasAttribute( CTFBot::AttributeType type, int nSpawnNum = -1 ) { return false; }
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const = 0;
 
-	IPopulator *m_populator;
+	virtual IPopulator *GetPopulator( void ) const = 0;
 };
 
 class CTFBotSpawner : public IPopulationSpawner
@@ -51,7 +50,23 @@ public:
 	virtual bool	HasAttribute( CTFBot::AttributeType type, int nSpawnNum = -1 );
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const;
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	bool			ParseEventChangeAttributes( KeyValues *data );
+
+	int m_iClass;
+	string_t m_iszClassIcon;
+	int m_iHealth;
+	float m_flScale;
+	float m_flAutoJumpMin;
+	float m_flAutoJumpMax;
+	CUtlString m_name;
+	CUtlStringList m_TeleportWhere;
+	CTFBot::EventChangeAttributes_t m_defaultAttributes;
+	CUtlVector<CTFBot::EventChangeAttributes_t> m_EventChangeAttributes;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 class CTankSpawner : public IPopulationSpawner
@@ -68,6 +83,8 @@ public:
 	virtual bool	IsMiniBoss( int nSpawnNum = -1 ) OVERRIDE { return true; }
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const OVERRIDE { return false; }
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	int m_iHealth;
 	float m_flSpeed;
 	CUtlString m_szName;
@@ -75,6 +92,9 @@ public:
 	int m_nSkin;
 	EventInfo *m_onKilledEvent;
 	EventInfo *m_onBombDroppedEvent;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 class CSentryGunSpawner : public IPopulationSpawner
@@ -86,7 +106,12 @@ public:
 	virtual bool	Spawn( const Vector &vecPos, CUtlVector< CHandle<CBaseEntity> > *pOutVec = NULL );
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const OVERRIDE { return false; }
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	int m_nLevel;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 
@@ -108,9 +133,14 @@ public:
 	virtual bool	HasAttribute( CTFBot::AttributeType type, int nSpawnNum = -1 );
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const;
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	CUtlVector<IPopulationSpawner *> m_SquadSpawners;
 	float m_flFormationSize;
 	bool m_bShouldPreserveSquad;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 class CMobSpawner : public IPopulationSpawner
@@ -123,8 +153,13 @@ public:
 	virtual bool	Spawn( const Vector &vecPos, CUtlVector< CHandle<CBaseEntity> > *pOutVec = NULL );
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const;
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	int m_nSpawnCount;
 	IPopulationSpawner *m_pSpawner;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 class CRandomChoiceSpawner : public IPopulationSpawner
@@ -144,9 +179,14 @@ public:
 	virtual bool	HasAttribute( CTFBot::AttributeType type, int nSpawnNum = -1 );
 	virtual bool	HasEventChangeAttributes( const char *pszEventName ) const;
 
+	virtual IPopulator *GetPopulator( void ) const { return m_pPopulator; }
+
 	CUtlVector<IPopulationSpawner *> m_Spawners;
 	CUtlVector<int> m_RandomPicks;
 	int m_nNumSpawned;
+
+private:
+	IPopulator *m_pPopulator;
 };
 
 #endif

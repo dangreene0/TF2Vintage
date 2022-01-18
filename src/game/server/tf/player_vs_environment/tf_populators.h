@@ -1,4 +1,4 @@
-//========= Copyright � Valve LLC, All rights reserved. =======================
+//========= Copyright © Valve LLC, All rights reserved. =======================
 //
 // Purpose:		
 //
@@ -40,19 +40,7 @@ enum SpawnLocationResult
 class IPopulator
 {
 public:
-	IPopulator( CPopulationManager *pManager )
-	{
-		m_manager = pManager;
-		m_spawner = NULL;
-	}
-	virtual ~IPopulator()
-	{
-		if ( m_spawner )
-		{
-			delete m_spawner;
-		}
-		m_spawner = NULL;
-	}
+	virtual ~IPopulator() { }
 
 	virtual bool Parse( KeyValues *data ) = 0;
 
@@ -62,22 +50,18 @@ public:
 
 	virtual void OnPlayerKilled( CTFPlayer *pPlayer ) { }
 
-	CPopulationManager *GetManager( void ) const { return m_manager; }
-
 	virtual bool HasEventChangeAttributes( const char *pszEventName ) const
 	{
-		if ( m_spawner )
+		if ( GetSpawner() )
 		{
-			return m_spawner->HasEventChangeAttributes( pszEventName );
+			return GetSpawner()->HasEventChangeAttributes( pszEventName );
 		}
 
 		return false;
 	}
 
-	IPopulationSpawner *m_spawner;
-
-private:
-	CPopulationManager *m_manager;
+	virtual IPopulationSpawner *GetSpawner( void ) const = 0;
+	virtual CPopulationManager *GetManager( void ) const = 0;
 };
 
 
@@ -118,24 +102,39 @@ public:
 	virtual void	Update( void );
 	virtual void	UnpauseSpawning( void );
 
+	virtual IPopulationSpawner *GetSpawner( void ) const { return m_pSpawner; }
+	virtual CPopulationManager *GetManager( void ) const { return m_pManager; }
+
 	bool			UpdateMission( CTFBot::MissionType mission );
 	bool			UpdateMissionDestroySentries( void );
 
+	enum StateType
+	{
+		NOT_STARTED,
+		INITIAL_COOLDOWN,
+		RUNNING
+	};
+
 	CTFBot::MissionType m_eMission;
 	CSpawnLocation m_where;
+	StateType m_eState;
 	float m_flInitialCooldown;
 	float m_flCooldownDuration;
 	CountdownTimer m_cooldownTimer;
 	CountdownTimer m_checkSentriesTimer;
 	int m_nDesiredCount;
-
 	int m_nStartWave;
 	int m_nEndWave;
+
+private:
+	IPopulationSpawner *m_pSpawner;
+	CPopulationManager *m_pManager;
 };
 
 
 class CWaveSpawnPopulator : public IPopulator
 {
+	static int sm_reservedPlayerSlotCount;
 public:
 	CWaveSpawnPopulator( CPopulationManager *pManager );
 	virtual ~CWaveSpawnPopulator();
@@ -145,6 +144,9 @@ public:
 	virtual void	Update( void );
 
 	virtual void	OnPlayerKilled( CTFPlayer *pPlayer );
+
+	virtual IPopulationSpawner *GetSpawner( void ) const { return m_pSpawner; }
+	virtual CPopulationManager *GetManager( void ) const { return m_pManager; }
 
 	void			ForceFinish( void );
 	int				GetCurrencyAmountPerDeath( void );
@@ -163,13 +165,13 @@ public:
 	void			SetState( InternalStateType eState );
 
 	CSpawnLocation m_where;
-	int m_totalCount;
-	int m_remainingCount;
-	int m_classCounts;
-	int m_maxActive;
-	int m_spawnCount;
-	float m_waitBeforeStarting;
-	float m_waitBetweenSpawns;
+	int m_iTotalCount;
+	int m_iRemainingCount;
+	int m_nClassCounts;
+	int m_iMaxActive;
+	int m_nSpawnCount;
+	float m_flWaitBeforeStarting;
+	float m_flWaitBetweenSpawns;
 	bool m_bWaitBetweenSpawnsAfterDeath;
 	CFmtStr m_startWaveWarningSound;
 	EventInfo *m_startWaveEvent;
@@ -179,20 +181,26 @@ public:
 	EventInfo *m_lastSpawnEvent;
 	CFmtStr m_doneWarningSound;
 	EventInfo *m_doneEvent;
-	int m_totalCurrency;
-	int m_remainingCurrency;
+	int m_iTotalCurrency;
+	int m_iRemainingCurrency;
 	CUtlString m_name;
-	CUtlString m_waitForAllSpawned;
-	CUtlString m_waitForAllDead;
+	CUtlString m_szWaitForAllSpawned;
+	CUtlString m_szWaitForAllDead;
 	CountdownTimer m_timer;
 	CUtlVector<EHANDLE> m_activeSpawns;
-	int m_countSpawnedSoFar;
-	char gap4C8[4];
+	int m_nNumSpawnedSoFar;
+	int m_nReservedPlayerSlots;
 	bool m_bSupportWave;
 	bool m_bLimitedSupport;
 	CWave *m_parentWave;
-	bool m_bRandomSpawn;
 	InternalStateType m_eState;
+	bool m_bRandomSpawn;
+	SpawnLocationResult m_spawnLocationResult;
+	Vector m_vecSpawnPosition;
+
+private:
+	IPopulationSpawner *m_pSpawner;
+	CPopulationManager *m_pManager;
 };
 
 
@@ -204,14 +212,21 @@ public:
 
 	virtual bool Parse( KeyValues *data );
 
-	virtual void PostInitialize( void );		// create initial population at start of scenario
-	virtual void Update( void );			// continuously invoked to modify population over time
+	virtual void PostInitialize( void );
+	virtual void Update( void );
 	virtual void UnpauseSpawning( void );
+
+	virtual IPopulationSpawner *GetSpawner( void ) const { return m_pSpawner; }
+	virtual CPopulationManager *GetManager( void ) const { return m_pManager; }
 
 	CSpawnLocation m_where;
 	float m_flMinInterval;
 	float m_flMaxInterval;
 	CountdownTimer m_timer;
+
+private:
+	IPopulationSpawner *m_pSpawner;
+	CPopulationManager *m_pManager;
 };
 
 
@@ -223,9 +238,27 @@ public:
 
 	virtual bool Parse( KeyValues *data );
 
-	virtual void PostInitialize( void );		// create initial population at start of scenario
+	virtual void PostInitialize( void );
+
+	virtual IPopulationSpawner *GetSpawner( void ) const { return m_pSpawner; }
+	virtual CPopulationManager *GetManager( void ) const { return m_pManager; }
+
+	int m_iCount;
+	float m_flMinSeparation;
+	unsigned int m_nNavAreaFilter;
+
+private:
+	IPopulationSpawner *m_pSpawner;
+	CPopulationManager *m_pManager;
 };
 
+
+struct WaveClassCount_t
+{
+	int nClassCount;
+	string_t iszClassIconName;
+	unsigned int iFlags;
+};
 
 class CWave : public IPopulator
 {
@@ -239,11 +272,18 @@ public:
 	virtual void OnPlayerKilled( CTFPlayer *pPlayer );
 
 	virtual bool HasEventChangeAttributes( const char *pszEventName ) const;
+
+	virtual IPopulationSpawner *GetSpawner( void ) const { return m_pSpawner; }
+	virtual CPopulationManager *GetManager( void ) const { return m_pManager; }
 	
 	void AddClassType( string_t iszClassIconName, int nCount, unsigned int iFlags );
 	CWaveSpawnPopulator *FindWaveSpawnPopulator( const char *name );
 	void ForceFinish();
 	void ForceReset();
+	int GetClassCount( int i ) const { return m_WaveClassCounts[i].nClassCount; }
+	unsigned int GetClassFlags( int i ) const { return m_WaveClassCounts[i].iFlags; }
+	string_t GetClassIconName( int i ) const { return m_WaveClassCounts[i].iszClassIconName; }
+	int GetNumClassTypes( void ) const { return m_WaveClassCounts.Count(); }
 	bool IsDoneWithNonSupportWaves( void );
 
 	int m_nTotalEnemyCount;
@@ -251,14 +291,43 @@ public:
 	int m_nNumSentryBustersSpawned;
 	int m_nNumEngineersTeleportSpawned;
 	int m_nNumSentryBustersKilled;
+
+	CountdownTimer m_upgradeAlertTimer;
+
+	float m_flStartTime;
+
+private:
 	void ActiveWaveUpdate( void );
 	void WaveCompleteUpdate( void );
 	void WaveIntermissionUpdate( void );
 
-	int m_nTanksSpawned;
+	IPopulationSpawner *m_pSpawner;
+	CPopulationManager *m_pManager;
 
-private:
 	CUtlVector<CWaveSpawnPopulator *> m_WaveSpawns;
+
+	bool m_bStarted;
+	bool m_bFiredInitWaveOutput;
+
+	CUtlVector<WaveClassCount_t> m_WaveClassCounts;
+	int	m_iTotalCurrency;
+
+	EventInfo *m_startWaveEvent;
+	EventInfo *m_doneEvent;
+	EventInfo *m_initWaveEvent;
+
+	CFmtStr m_description;
+	CFmtStr m_soundName;
+
+	float m_flWaitWhenDone;
+	CountdownTimer m_doneTimer;
+
+	bool m_bCheckBonusCreditsMin;
+	bool m_bCheckBonusCreditsMax;
+	float m_flBonusCreditsTime;
+
+	bool m_bPlayedUpgradeAlert;
+	bool m_bEveryWaveSpawnDone;
 };
 
 #endif
