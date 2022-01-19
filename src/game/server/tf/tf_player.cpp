@@ -68,6 +68,8 @@
 #include "tf_weapon_shovel.h"
 #include "tf_weapon_flaregun.h"
 #include "tf_obj_teleporter.h"
+#include "player_vs_environment/tf_population_manager.h"
+#include "tf_mann_vs_machine_stats.h"
 
 #ifndef _X360
 #include "steam/isteamuserstats.h"
