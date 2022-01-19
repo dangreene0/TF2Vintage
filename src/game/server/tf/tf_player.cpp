@@ -140,6 +140,8 @@ extern ConVar tf_spy_invis_unstealth_time;
 extern ConVar tf_stalematechangeclasstime;
 extern ConVar tf_damage_disablespread;
 extern ConVar tf_scout_energydrink_consume_rate;
+extern ConVar tf_mvm_respec_enabled;
+extern ConVar tf_mvm_buybacks_per_wave;
 
 extern ConVar tf2v_allow_disguiseweapons;
 extern ConVar tf2v_use_new_cloak;
@@ -3324,17 +3326,17 @@ void CTFPlayer::BombHeadExplode( bool bKilled )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-int CTFPlayer::GetAutoTeam( void )
+int CTFPlayer::GetAutoTeam( int nPreferedTeam )
 {
 	int iTeam = TEAM_SPECTATOR;
 
 	CTFTeam *pBlue = TFTeamMgr()->GetTeam( TF_TEAM_BLUE );
 	CTFTeam *pRed = TFTeamMgr()->GetTeam( TF_TEAM_RED );
 
-	if (TFGameRules()->IsFourTeamGame())
+	if ( TFGameRules()->IsFourTeamGame() )
 	{
-		CTFTeam *pGreen = TFTeamMgr()->GetTeam(TF_TEAM_GREEN);
-		CTFTeam *pYellow = TFTeamMgr()->GetTeam(TF_TEAM_YELLOW);
+		CTFTeam *pGreen = TFTeamMgr()->GetTeam( TF_TEAM_GREEN );
+		CTFTeam *pYellow = TFTeamMgr()->GetTeam( TF_TEAM_YELLOW );
 
 		if (pBlue && pRed && pGreen && pYellow)
 		{
@@ -3364,6 +3366,45 @@ int CTFPlayer::GetAutoTeam( void )
 	{
 		if ( pBlue && pRed )
 		{
+			if ( TFGameRules() )
+			{
+				if ( TFGameRules()->IsInHighlanderMode() )
+				{
+					if ( pBlue->GetNumPlayers() >= TF_LAST_NORMAL_CLASS &&
+						 pRed->GetNumPlayers() >= TF_LAST_NORMAL_CLASS )
+					{
+						return TEAM_SPECTATOR;
+					}
+				}
+
+				if ( TFGameRules()->IsMannVsMachineMode() )
+				{
+					if ( g_pPopulationManager )
+					{
+						int nCurrency = MannVsMachineStats_GetAcquiredCredits() + g_pPopulationManager->GetStartingCurrency();
+						int nCurrencySpent = g_pPopulationManager->GetPlayerCurrencySpent( this );
+						if ( m_nCurrency < nCurrency )
+						{
+							SetCurrency( nCurrency - nCurrencySpent );
+						}
+
+						if ( tf_mvm_respec_enabled.GetBool() &&  g_pPopulationManager->GetNumRespecsAvailableForPlayer( this ) == 0 )
+						{
+							int nRespecs = g_pPopulationManager->GetNumRespecsEarned();
+							if ( nRespecs > 0 )
+								g_pPopulationManager->SetNumRespecsForPlayer( this, nRespecs );
+						}
+
+						if ( !g_pPopulationManager->IsPlayerBeingTrackedForBuybacks( this ) )
+						{
+							g_pPopulationManager->SetBuybackCreditsForPlayer( this, tf_mvm_buybacks_per_wave.GetInt() );
+						}
+					}
+
+					return TFGameRules()->GetTeamAssignmentOverride( this, TF_TEAM_MVM_PLAYERS, false );
+				}
+			}
+
 			if ( pBlue->GetNumPlayers() < pRed->GetNumPlayers() )
 			{
 				iTeam = TF_TEAM_BLUE;
@@ -3380,6 +3421,27 @@ int CTFPlayer::GetAutoTeam( void )
 	}
 
 	return iTeam;
+}
+
+bool CTFPlayer::ShouldForceAutoTeam( void )
+{
+	if ( mp_forceautoteam.GetBool() )
+		return true;
+
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+		return true;
+
+	if ( TFGameRules() && TFGameRules()->IsCompetitiveMode() )
+		return true;
+
+	bool bForce = false;
+	/*if ( TFGameRules() && TFGameRules()->IsDefaultGameMode() )
+	{
+		int nTimeSinceLast = TFGameRules()->PlayerHistory_GetTimeSinceLastSeen( this );
+		bForce = ( tf_mm_trusted.GetBool() && nTimeSinceLast > 0 && nTimeSinceLast < 60 );
+	}*/
+
+	return bForce;
 }
 
 //-----------------------------------------------------------------------------
