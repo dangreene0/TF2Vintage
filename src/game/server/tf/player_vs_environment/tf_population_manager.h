@@ -148,6 +148,7 @@ private:
 	KeyValues *m_pMvMMapCycle;
 	bool m_bSpawningPaused;
 	bool m_bIsEndless;
+	bool m_bShouldResetFlag;
 	int m_nRespecsAwarded;
 };
 
