@@ -117,7 +117,7 @@ public:
 	void PlayerEvent_PointsChanged( CTFPlayer *pPlayer, int nPoints );
 	void PlayerEvent_Upgraded( CTFPlayer *pPlayer, uint16, uint16, uint8, int16 nCost, bool bIsBottle );
 	void ResetWaveStats( void );
-	void RoundEvent_AcquiredCredits( uint32 nWave, int nAmount, bool = true );
+	void RoundEvent_AcquiredCredits( uint32 nWave, int nAmount, bool bBonus = true );
 	void RoundEvent_CreditsDropped( uint32 nWave, int nAmount );
 	void RoundEvent_WaveEnd( bool bSuccess );
 	void RoundEvent_WaveStart( void );

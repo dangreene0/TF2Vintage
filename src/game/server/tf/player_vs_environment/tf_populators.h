@@ -284,6 +284,7 @@ public:
 	unsigned int GetClassFlags( int i ) const { return m_WaveClassCounts[i].iFlags; }
 	string_t GetClassIconName( int i ) const { return m_WaveClassCounts[i].iszClassIconName; }
 	int GetNumClassTypes( void ) const { return m_WaveClassCounts.Count(); }
+	int GetTotalCurrency( void ) const { return m_iTotalCurrency; }
 	bool IsDoneWithNonSupportWaves( void );
 
 	int m_nTotalEnemyCount;

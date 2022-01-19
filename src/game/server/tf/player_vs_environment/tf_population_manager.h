@@ -13,6 +13,19 @@ class CWave;
 class CMannVsMachineStats;
 class IPopulator;
 
+
+class CMvMBotUpgrade
+{
+public:
+	char	m_szAttrib[128];
+	int		m_iAttribIndex;
+	float	m_flValue;
+	float	m_flMax;
+	int		m_nCost;
+	bool    m_bIsBotAttr;
+	bool	m_bIsSkillAttr;
+};
+
 class CPopulationManager : public CPointEntity, public CGameEventListener
 {
 	DECLARE_CLASS( CPopulationManager, CPointEntity );
@@ -90,13 +103,13 @@ public:
 	bool IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer );
 	bool IsSpawningPaused() const { return m_bSpawningPaused; }
 	bool IsValidMvMMap( char const *pszMapName );
-	void JumpToWave( uint nWave, float f1 = -1.0f );
+	void JumpToWave( int nWave, float f1 = -1.0f );
 	void LoadLastKnownMission( void );
-	void LoadMissionCycleFile( void );
-	void LoadMvMMission( KeyValues *pMissionKV );
+	bool LoadMissionCycleFile( void );
+	bool LoadMvMMission( KeyValues *pMissionKV );
 	void MarkAllCurrentPlayersSafeToLeave( void );
 	void MvMVictory( void );
-	void OnCurrencyCollected( int nCurrency, bool b1, bool b2 );
+	void OnCurrencyCollected( int nCurrency, bool bWasDropped, bool bBonus );
 	void OnCurrencyPackFade( void );
 	void OnPlayerKilled( CTFPlayer *pPlayer );
 	bool Parse( void );
@@ -135,6 +148,7 @@ private:
 	char m_szPopfileShort[MAX_PATH];
 	KeyValues *m_pTemplates;
 	bool m_bIsInitialized;
+	bool m_bAllocatedBots;
 	int m_nStartingCurrency;
 	int m_nLobbyBonusCurrency;
 	int m_nMvMEventPopfileType;
@@ -143,13 +157,25 @@ private:
 	bool m_bCanBotsAttackWhileInSpawnRoom;
 	int m_iSentryBusterDamageDealtThreshold;
 	int m_iSentryBusterKillThreshold;
+	float m_flTimeToRestart;
 	bool m_bIsAdvanced;
+	bool byte5D8;
 	CMannVsMachineStats *m_pMVMStats;
 	KeyValues *m_pMvMMapCycle;
 	bool m_bSpawningPaused;
+	bool m_bWaveJumping;
 	bool m_bIsEndless;
+	CUtlVector<CMvMBotUpgrade> m_BotUpgrades;
+	CUtlVector<CMvMBotUpgrade> m_ActiveBotUpgrades;
+	CUniformRandomStream m_random;
+	CUtlVector<int> m_RandomSeeds;
 	bool m_bShouldResetFlag;
+	CUtlVector<CTFPlayer const *> cutlvector6BC;
+	CUtlMap<uint64, int> cutlmap6D4;
 	int m_nRespecsAwarded;
+	int m_nCurrencyForRespec;
+	int m_nRespecsAwardedInWave;
+	CUtlMap<uint64, int> cutlmap70C;
 };
 
 inline KeyValues *CPopulationManager::GetTemplate( const char *pszName ) const

@@ -29,6 +29,10 @@ ConVar tf_populator_active_buffer_range( "tf_populator_active_buffer_range", "30
 ConVar tf_populator_health_multiplier( "tf_populator_health_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 ConVar tf_populator_damage_multiplier( "tf_populator_damage_multiplier", "1.0", FCVAR_DONTRECORD | FCVAR_REPLICATED | FCVAR_CHEAT );
 
+ConVar tf_mvm_disconnect_on_victory( "tf_mvm_disconnect_on_victory", "0", FCVAR_REPLICATED, "Enable to Disconnect Players after completing MvM" );
+ConVar tf_mvm_victory_reset_time( "tf_mvm_victory_reset_time", "60.0", FCVAR_REPLICATED, "Seconds to wait after MvM victory before cycling to the next mission.  (Only used if tf_mvm_disconnect_on_victory is false.)" );
+ConVar tf_mvm_victory_disconnect_time( "tf_mvm_victory_disconnect_time", "180.0", FCVAR_REPLICATED, "Seconds to wait after MvM victory before kicking players.  (Only used if tf_mvm_disconnect_on_victory is true.)" );
+
 void MvMMinibossScaleChangedCallBack( IConVar *pVar, const char *pOldString, float flOldValue );
 ConVar tf_mvm_miniboss_scale( "tf_mvm_miniboss_scale", "1.75", FCVAR_REPLICATED | FCVAR_CHEAT, 
 							  "Full body scale for minibosses.", MvMMinibossScaleChangedCallBack );
@@ -109,6 +113,19 @@ void MvMSkillChangedCallback( IConVar *pVar, const char *pOldString, float flOld
 }
 
 
+//-----------------------------------------------------------------------------
+static bool HaveMap( char const *pszMap )
+{
+	char szMap[64];
+	V_strcpy_safe( szMap, pszMap );
+
+	IVEngineServer::eFindMapResult result = engine->FindMap( szMap, sizeof( szMap ) );
+	if ( result == IVEngineServer::eFindMap_Found || result == IVEngineServer::eFindMap_PossiblyAvailable )
+		return true;
+
+	return false;
+}
+
 CPopulationManager *g_pPopulationManager = NULL;
 
 
@@ -142,10 +159,32 @@ CPopulationManager::CPopulationManager()
 	m_iSentryBusterDamageDealtThreshold = tf_mvm_default_sentry_buster_damage_dealt_threshold.GetInt();
 	m_iSentryBusterKillThreshold = tf_mvm_default_sentry_buster_kill_threshold.GetInt();
 
+	m_nCurrentWaveIndex = 0;
+	m_nStartingCurrency = 0;
+	m_nNumConsecutiveWipes = 0;
+	m_nRespawnWaveTime = 10;
+	m_szPopfileFull[0] = '\0';
+	m_szPopfileShort[0] = '\0';
+	m_bIsInitialized = false;
+	m_bIsAdvanced = false;
+	m_bAllocatedBots = false;
+	m_bFixedRespawnWaveTime = false;
+
+	m_bCanBotsAttackWhileInSpawnRoom = true;
+
 	SetThink( &CPopulationManager::Update );
 	SetNextThink( gpGlobals->curtime );
 
 	ListenForGameEvent( "pve_win_panel" );
+
+	m_random.SetSeed( 0 );
+	for ( int i = 0; i < 27; ++i )
+	{
+		int nRandom = m_random.RandomInt( 0, INT_MAX );
+		m_RandomSeeds.AddToTail( nRandom );
+	}
+
+	EndlessParseBotUpgrades();
 }
 
 //-----------------------------------------------------------------------------
@@ -158,6 +197,9 @@ CPopulationManager::~CPopulationManager()
 }
 
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::FireGameEvent( IGameEvent *event )
 {
 	const char *pszName = event->GetName();
@@ -168,6 +210,9 @@ void CPopulationManager::FireGameEvent( IGameEvent *event )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::Initialize( void )
 {
 	if ( ( TheNavMesh == NULL ) || ( TheNavMesh->GetNavAreaCount() <= 0 ) )
@@ -224,16 +269,53 @@ bool CPopulationManager::Initialize( void )
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::Precache( void )
 {
+	BaseClass::Precache();
+
+	PrecacheScriptSound( "music.mvm_end_wave" );
+	PrecacheScriptSound( "music.mvm_end_tank_wave" );
+	PrecacheScriptSound( "music.mvm_end_mid_wave" );
+	PrecacheScriptSound( "music.mvm_end_last_wave" );
+	PrecacheScriptSound( "MVM.PlayerUpgraded" );
+	PrecacheScriptSound( "MVM.PlayerBoughtIn" );
+	PrecacheScriptSound( "MVM.PlayerUsedPowerup" );
+	PrecacheScriptSound( "MVM.PlayerDied" );
+	PrecacheScriptSound( "MVM.PlayerDiedScout" );
+	PrecacheScriptSound( "MVM.PlayerDiedSniper" );
+	PrecacheScriptSound( "MVM.PlayerDiedSoldier" );
+	PrecacheScriptSound( "MVM.PlayerDiedDemoman" );
+	PrecacheScriptSound( "MVM.PlayerDiedMedic" );
+	PrecacheScriptSound( "MVM.PlayerDiedHeavy" );
+	PrecacheScriptSound( "MVM.PlayerDiedPyro" );
+	PrecacheScriptSound( "MVM.PlayerDiedSpy" );
+	PrecacheScriptSound( "MVM.PlayerDiedEngineer" );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::Reset( void )
 {
 	m_iSentryBusterDamageDealtThreshold = tf_mvm_default_sentry_buster_damage_dealt_threshold.GetInt();
 	m_iSentryBusterKillThreshold = tf_mvm_default_sentry_buster_kill_threshold.GetInt();
+
+	m_nStartingCurrency = 0;
+	m_nRespawnWaveTime = 10;
+
+	m_bSpawningPaused = false;
+	m_bIsAdvanced = false;
+	m_bCanBotsAttackWhileInSpawnRoom = true;
+
+	m_szDefaultEventChangeAttributesName = "Default";
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::Spawn( void )
 {
 	BaseClass::Spawn();
@@ -241,26 +323,63 @@ void CPopulationManager::Spawn( void )
 	Initialize();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::AddPlayerCurrencySpent( CTFPlayer *pPlayer, int nSpent )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::AddRespecToPlayer( CTFPlayer *pPlayer )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::AdjustMinPlayerSpawnTime( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::AllocateBots( void )
 {
+	if ( m_bAllocatedBots )
+		return;
+
+	CUtlVector<CTFPlayer *> bots;
+	int nNumBots = CollectMvMBots( &bots );
+
+	if ( nNumBots > 0 )
+	{
+		Warning( "%d bots were already allocated some how before "
+				 "CPopulationManager::AllocateBots was called\n", nNumBots );
+	}
+
+	for ( int i = nNumBots; i < k_nMvMBotTeamSize; ++i )
+	{
+		CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( "TFBot", false );
+		if ( pBot ) pBot->ChangeTeam( TEAM_SPECTATOR, false, true );
+	}
+
+	m_bAllocatedBots = true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::ClearCheckpoint( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 int CPopulationManager::CollectMvMBots( CUtlVector<CTFPlayer *> *pBotsOut )
 {
 	pBotsOut->RemoveAll();
@@ -282,35 +401,222 @@ int CPopulationManager::CollectMvMBots( CUtlVector<CTFPlayer *> *pBotsOut )
 	return pBotsOut->Count();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::CycleMission( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::DebugWaveStats( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::EndlessFlagHasReset( void )
 {
+	m_bShouldResetFlag = false;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::EndlessParseBotUpgrades( void )
 {
+	m_BotUpgrades.RemoveAll();
+
+	KeyValuesAD pKV( "Upgrades" );
+	if ( !pKV->LoadFromFile( filesystem, "scripts/items/mvm_botupgrades.txt", "MOD" ) )
+	{
+		Warning( "Can't open scripts/items/mvm_botupgrades.txt\n" );
+		return;
+	}
+
+	FOR_EACH_SUBKEY( pKV, pSubKey )
+	{
+		const char *pszAttrib = pSubKey->GetString( "attribute" );
+		bool bIsBotAttr = pSubKey->GetBool( "IsBotAttr" );
+		bool bIsSkillAttr = pSubKey->GetBool( "IsSkillAttr" );
+		float flValue = pSubKey->GetFloat( "value" );
+		float flMax = pSubKey->GetFloat( "max" );
+		int nCost = pSubKey->GetInt( "cost", 100 );
+		int nWeight = pSubKey->GetInt( "weight", 1 );
+
+		attrib_def_index_t iAttrIndex = 0;
+		if ( !bIsBotAttr && !bIsSkillAttr )
+		{
+			CEconAttributeDefinition const *pAttr = GetItemSchema()->GetAttributeDefinitionByName( pszAttrib );
+			if ( pAttr == NULL )
+			{
+				Warning( "Unable to Find Attribute %s when parsing EndlessParseBotUpgrades.\n", pszAttrib );
+				return;
+			}
+
+			iAttrIndex = pAttr->index;
+		}
+
+		int nIndex = m_BotUpgrades.AddToTail();
+
+		// ???
+		for ( int i =0; i < nWeight; ++i )
+		{
+			CMvMBotUpgrade *pUpgrade = &m_BotUpgrades[ nIndex ];
+			V_strncpy( pUpgrade->m_szAttrib, pszAttrib, sizeof( pUpgrade->m_szAttrib ) );
+			pUpgrade->m_flValue = flValue;
+			pUpgrade->m_flMax = flMax;
+			pUpgrade->m_nCost = nCost;
+			pUpgrade->m_bIsBotAttr = bIsBotAttr;
+			pUpgrade->m_bIsSkillAttr = bIsSkillAttr;
+			pUpgrade->m_iAttribIndex = iAttrIndex;
+		}
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::EndlessRollEscalation( void )
 {
+	m_ActiveBotUpgrades.Purge();
+
+	int nCurrency = tf_mvm_endless_bot_cash.GetFloat() * m_nCheckpointWaveIndex;
+
+	CUtlVector<CMvMBotUpgrade> availableUpgrades;
+	FOR_EACH_VEC( m_BotUpgrades, i )
+	{
+		if ( m_BotUpgrades[i].m_nCost <= nCurrency )
+			availableUpgrades.AddToTail( m_BotUpgrades[i] );
+	}
+
+	CUniformRandomStream random;
+	random.SetSeed( m_RandomSeeds[ m_nCurrentWaveIndex % m_RandomSeeds.Count() ] );
+	while ( nCurrency >= 100 && !availableUpgrades.IsEmpty() )
+	{
+		int nRandIndex = random.RandomInt( 0, availableUpgrades.Count() - 1 );
+		CMvMBotUpgrade upgrade = availableUpgrades[ nRandIndex ];
+
+		if ( m_ActiveBotUpgrades.IsEmpty() )
+		{
+			m_ActiveBotUpgrades.AddToTail( upgrade );
+
+			nCurrency -= upgrade.m_nCost;
+
+			if ( ( upgrade.m_flMax > 0 && upgrade.m_flMax <= upgrade.m_flValue ) ||
+				 ( upgrade.m_flMax < 0 && upgrade.m_flMax >= upgrade.m_flValue ) )
+			{
+				availableUpgrades.FastRemove( nRandIndex );
+			}
+		}
+		else
+		{
+			int nFoundIndex = -1;
+			FOR_EACH_VEC( m_ActiveBotUpgrades, i )
+			{
+				if ( !V_strcmp( upgrade.m_szAttrib, m_ActiveBotUpgrades[i].m_szAttrib ) )
+				{
+					m_ActiveBotUpgrades[i].m_flValue += upgrade.m_flValue;
+					float flValue = m_ActiveBotUpgrades[i].m_flValue;
+					
+					nCurrency -= upgrade.m_nCost;
+
+					if ( ( upgrade.m_flMax > 0 && upgrade.m_flMax <= flValue ) ||
+						 ( upgrade.m_flMax < 0 && upgrade.m_flMax >= flValue ) )
+					{
+						availableUpgrades.FastRemove( nRandIndex );
+					}
+
+					nFoundIndex = i;
+					break;
+				}
+			}
+
+			if ( !m_ActiveBotUpgrades.IsValidIndex( nFoundIndex ) )
+			{
+				m_ActiveBotUpgrades.AddToTail( upgrade );
+
+				nCurrency -= upgrade.m_nCost;
+
+				if ( ( upgrade.m_flMax > 0 && upgrade.m_flMax <= upgrade.m_flValue ) ||
+					 ( upgrade.m_flMax < 0 && upgrade.m_flMax >= upgrade.m_flValue ) )
+				{
+					availableUpgrades.FastRemove( nRandIndex );
+				}
+			}
+		}
+
+		if ( nCurrency > 0 )
+		{
+			FOR_EACH_VEC_BACK( availableUpgrades, i )
+			{
+				if ( availableUpgrades[i].m_nCost > nCurrency )
+					availableUpgrades.FastRemove( i );
+			}
+		}
+	}
+
+	char szMsg[255];
+	V_strcpy_safe( szMsg, "*** Bot Upgrades\n" );
+	FOR_EACH_VEC( m_ActiveBotUpgrades, i )
+	{
+		char szAttrib[sizeof( m_ActiveBotUpgrades[i].m_szAttrib ) + 20];
+		V_sprintf_safe( szAttrib, "-%s %.1f", m_ActiveBotUpgrades[i].m_szAttrib, m_ActiveBotUpgrades[i].m_flValue );
+		V_strcat_safe( szMsg, szAttrib );
+	}
+
+	UTIL_ClientPrintAll( HUD_PRINTCENTER, szMsg );
+	UTIL_ClientPrintAll( HUD_PRINTCONSOLE, szMsg );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::EndlessSetAttributesForBot( CTFBot *pBot )
 {
+	FOR_EACH_VEC( m_ActiveBotUpgrades, i )
+	{
+		CMvMBotUpgrade upgrade = m_ActiveBotUpgrades[i];
+		if ( upgrade.m_bIsBotAttr )
+		{
+			pBot->SetAttribute( (CTFBot::AttributeType)(int)upgrade.m_flValue );
+		}
+		else if ( upgrade.m_bIsSkillAttr )
+		{
+			pBot->SetDifficulty( (CTFBot::DifficultyType)(int)upgrade.m_flValue );
+		}
+		else
+		{
+			CEconAttributeDefinition const *pAttr = GetItemSchema()->GetAttributeDefinition( upgrade.m_iAttribIndex );
+			if ( pAttr )
+			{
+				float flValue = upgrade.m_flValue;
+				if ( pAttr->description_format == ATTRIB_FORMAT_PERCENTAGE ||
+						 pAttr->description_format == ATTRIB_FORMAT_INVERTED_PERCENTAGE )
+				{
+						flValue += 1.0f;
+				}
+
+				pBot->GetAttributeList()->SetRuntimeAttributeValue( pAttr, flValue );
+			}
+		}
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::EndlessShouldResetFlag( void )
 {
 	return m_bShouldResetFlag;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSnapshot( CSteamID steamID ) const
 {
 	FOR_EACH_VEC( sm_checkpointSnapshots, i )
@@ -321,39 +627,81 @@ CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSn
 	return nullptr;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSnapshot( CTFPlayer *pPlayer ) const
 {
 	return nullptr;
 }
 
-void CPopulationManager::FindDefaultPopulationFileShortNames( CUtlVector<CUtlString> &vecNames )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CPopulationManager::FindDefaultPopulationFileShortNames( CUtlVector<CUtlString> &outNames )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CPopulationManager::PlayerUpgradeHistory *CPopulationManager::FindOrAddPlayerUpgradeHistory( CSteamID steamID ) const
 {
-	return nullptr;
+	FOR_EACH_VEC( m_PlayerUpgrades, i )
+	{
+		if ( m_PlayerUpgrades[i]->m_steamID == steamID )
+			return m_PlayerUpgrades[i];
+	}
+
+	PlayerUpgradeHistory *pHistory = new PlayerUpgradeHistory;
+	pHistory->m_steamID = steamID;
+	pHistory->m_nCurrencySpent = 0;
+	m_PlayerUpgrades.AddToTail( pHistory );
+
+	return pHistory;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CPopulationManager::PlayerUpgradeHistory *CPopulationManager::FindOrAddPlayerUpgradeHistory( CTFPlayer *pPlayer ) const
 {
-	return nullptr;
+	CSteamID steamID;
+	if ( !pPlayer->GetSteamID( &steamID ) )
+	{
+		Log( "MvM : Unable to Find SteamID for player %s, unable to locate their upgrade history!", pPlayer->GetPlayerName() );
+		return nullptr;
+	}
+
+	return FindOrAddPlayerUpgradeHistory( steamID );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::FindPopulationFileByShortName( char const *pszName, CUtlString *outFullName )
 {
 	return false;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::ForgetOtherBottleUpgrades( CTFPlayer *pPlayer, CEconItemView *pItem, int nUpgradeKept )
 {
 }
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 
 void CPopulationManager::GameRulesThink( void )
 {
 	// Some MM logic goes here
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CWave *CPopulationManager::GetCurrentWave( void )
 {
 	if ( !m_bIsInitialized || m_Waves.Count() == 0 )
@@ -371,11 +719,17 @@ CWave *CPopulationManager::GetCurrentWave( void )
 	return nullptr;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 float CPopulationManager::GetDamageMultiplier( void ) const
 {
 	return tf_populator_damage_multiplier.GetFloat();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 float CPopulationManager::GetHealthMultiplier( bool bTankMultiplier ) const
 {
 	if ( bTankMultiplier && IsInEndlessWaves() )
@@ -384,45 +738,72 @@ float CPopulationManager::GetHealthMultiplier( bool bTankMultiplier ) const
 	return tf_populator_health_multiplier.GetFloat();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 int CPopulationManager::GetNumBuybackCreditsForPlayer( CTFPlayer *pPlayer )
 {
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 int CPopulationManager::GetNumRespecsAvailableForPlayer( CTFPlayer *pPlayer )
 {
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 int CPopulationManager::GetPlayerCurrencySpent( CTFPlayer *pPlayer )
 {
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 CUtlVector<CUpgradeInfo> *CPopulationManager::GetPlayerUpgradeHistory( CTFPlayer *pPlayer )
 {
 	return nullptr;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 char const *CPopulationManager::GetPopulationFilename( void ) const
 {
 	return m_szPopfileFull;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 char const *CPopulationManager::GetPopulationFilenameShort( void ) const
 {
 	return m_szPopfileShort;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::GetSentryBusterDamageAndKillThreshold( int &nNumDamage, int &nNumKills )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 int CPopulationManager::GetTotalPopFileCurrency( void )
 {
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::HasEventChangeAttributes( char const *pszEventName )
 {
 	FOR_EACH_VEC( m_Waves, i )
@@ -440,53 +821,241 @@ bool CPopulationManager::HasEventChangeAttributes( char const *pszEventName )
 	return false;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::IsInEndlessWaves( void ) const
 {
 	return ( m_bIsEndless || tf_mvm_endless_force_on.GetBool() ) && !m_Waves.IsEmpty();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer )
 {
 	return false;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::IsValidMvMMap( char const *pszMapName )
 {
+	if ( m_pMvMMapCycle == NULL )
+		LoadMissionCycleFile();
+
+	if ( !pszMapName || !pszMapName[0] )
+		return false;
+
+	int nCatagories = m_pMvMMapCycle->GetInt( "catagories" );
+	for ( int i = 1; i <= nCatagories; ++i )
+	{
+		KeyValues *pCatagory = m_pMvMMapCycle->FindKey( UTIL_VarArgs( "%d", i ) );
+		if ( pCatagory )
+		{
+			int nCount = pCatagory->GetInt( "count" );
+			for ( int j = 1; j <= nCount; ++j )
+			{
+				KeyValues *pMission = pCatagory->FindKey( UTIL_VarArgs( "%d", j ) );
+				if ( pMission )
+				{
+					if ( !V_strcmp( pszMapName, pMission->GetString( "map" ) ) )
+						return HaveMap( pszMapName );
+				}
+			}
+		}
+	}
+
 	return false;
 }
 
-void CPopulationManager::JumpToWave( uint nWave, float f1 )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CPopulationManager::JumpToWave( int nWave, float f1 )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::LoadLastKnownMission( void )
 {
+	if ( !m_pMvMMapCycle && !LoadMissionCycleFile() )
+	{
+		ResetMap();
+		return;
+	}
+
+	KeyValues *pCatagory = m_pMvMMapCycle->FindKey( UTIL_VarArgs( "%d", s_iLastKnownMissionCategory ) );
+	if ( pCatagory )
+	{
+		KeyValues *pMission = pCatagory->FindKey( UTIL_VarArgs( "%d", s_iLastKnownMission ) );
+		if ( pMission )
+		{
+			if ( LoadMvMMission( pMission ) )
+				return;
+		}
+	}
+
+	pCatagory = m_pMvMMapCycle->FindKey( UTIL_VarArgs( "%d", 1 ) );
+	if ( pCatagory )
+	{
+		KeyValues *pMission = pCatagory->FindKey( UTIL_VarArgs( "%d" ), 1 );
+		if ( pMission )
+		{
+			if ( !LoadMvMMission( pMission ) )
+			{
+				ResetMap();
+				return;
+			}
+		}
+	}
+
+	ResetMap();
+	
+	s_iLastKnownMission = 1;
+	s_iLastKnownMissionCategory = 1;
 }
 
-void CPopulationManager::LoadMissionCycleFile( void )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CPopulationManager::LoadMissionCycleFile( void )
 {
+	if ( m_pMvMMapCycle )
+		m_pMvMMapCycle->deleteThis();
+
+	char const *pszMissionCycle = tf_mvm_missioncyclefile.GetString();
+	m_pMvMMapCycle = new KeyValues( pszMissionCycle );
+	return m_pMvMMapCycle->LoadFromFile( g_pFullFileSystem, pszMissionCycle, "MOD" );
 }
 
-void CPopulationManager::LoadMvMMission( KeyValues *pMissionKV )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CPopulationManager::LoadMvMMission( KeyValues *pMissionKV )
 {
+	if ( pMissionKV == NULL )
+		return false;
+
+	char const *pszMap = pMissionKV->GetString( "map" );
+	char const *pszPopFile = pMissionKV->GetString( "popfile" );
+	if ( !pszMap || !pszPopFile )
+		return false;
+
+	char szPopFile[MAX_PATH];
+	V_sprintf_safe( szPopFile, "scripts/population/%s.pop", pszPopFile );
+	if ( !g_pFullFileSystem->FileExists( szPopFile, "MOD" ) )
+		return false;
+
+	if ( !HaveMap( pszMap ) )
+		return false;
+
+	engine->ChangeLevel( pszMap, NULL );
+	TFGameRules()->SetNextMvMPopfile( pszPopFile );
+
+	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::MarkAllCurrentPlayersSafeToLeave( void )
 {
+	// MM stuff
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::MvMVictory( void )
 {
+	for ( int i = 0; i <= gpGlobals->maxClients; ++i )
+	{
+		CTFPlayer *pPlayer = ToTFPlayer( UTIL_PlayerByIndex( i ) );
+		if ( !pPlayer || !pPlayer->IsAlive() )
+			continue;
+
+		pPlayer->m_Shared.AddCond( TF_COND_CRITBOOSTED_BONUS_TIME, 10.0f );
+	}
+
+	TFGameRules()->BroadcastSound( 255, "Game.YourTeamWon" );
+
+	m_pMVMStats->RoundOver( true );
+
+	bool bDisconnect = tf_mvm_disconnect_on_victory.GetBool();
+	float flActionTime = bDisconnect ? tf_mvm_victory_disconnect_time.GetFloat() : tf_mvm_victory_reset_time.GetFloat();
+
+	CReliableBroadcastRecipientFilter filter;
+	UserMessageBegin( filter, "MVMVictory" );
+		WRITE_BYTE( bDisconnect );
+		WRITE_BYTE( RoundFloatToByte( flActionTime ) );
+	MessageEnd();
+
+	// MM stuff
+	// GTFGCClientSystem()->SendMvMVictoryResult();
 }
 
-void CPopulationManager::OnCurrencyCollected( int nCurrency, bool b1, bool b2 )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CPopulationManager::OnCurrencyCollected( int nCurrency, bool bWasDropped, bool bBonus )
 {
+	bool bBetweenWaves = TFObjectiveResource()->GetMannVsMachineIsBetweenWaves();
+	int nCurrentWave = bBetweenWaves ? m_nCurrentWaveIndex - 1 : m_nCurrentWaveIndex;
+
+	if ( bWasDropped )
+		m_pMVMStats->RoundEvent_CreditsDropped( nCurrentWave, nCurrency );
+
+	m_pMVMStats->RoundEvent_AcquiredCredits( nCurrentWave, nCurrency, bBonus );
+
+	int const nRespecLimit = tf_mvm_respec_limit.GetInt();
+	if ( nRespecLimit != 0 )
+	{
+		if ( m_nRespecsAwarded < nRespecLimit )
+		{
+			m_nCurrencyForRespec += nCurrency;
+
+			int nRespecCreditGoal = tf_mvm_respec_credit_goal.GetFloat();
+			while ( m_nCurrencyForRespec > nRespecCreditGoal )
+			{
+				m_nRespecsAwardedInWave++;
+				m_nRespecsAwarded++;
+
+				CUtlVector<CTFPlayer *> humans;
+				CollectPlayers( &humans, TF_TEAM_MVM_PLAYERS );
+				FOR_EACH_VEC( humans, i )
+				{
+					AddRespecToPlayer( humans[i] );
+				}
+
+				if ( m_nRespecsAwarded < nRespecLimit )
+					m_nCurrencyForRespec -= nRespecCreditGoal;
+				else
+					m_nCurrencyForRespec = nRespecCreditGoal;
+			}
+
+			if ( m_pMVMStats )
+			{
+				m_pMVMStats->SetNumRespecsEarnedInWave( m_nRespecsAwardedInWave );
+				m_pMVMStats->SetAcquiredCreditsForRespec( m_nCurrencyForRespec );
+			}
+		}
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Unused
+//-----------------------------------------------------------------------------
 void CPopulationManager::OnCurrencyPackFade( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::OnPlayerKilled( CTFPlayer *pPlayer )
 {
 	FOR_EACH_VEC( m_Populators, i )
@@ -498,6 +1067,9 @@ void CPopulationManager::OnPlayerKilled( CTFPlayer *pPlayer )
 	if ( pWave ) pWave->OnPlayerKilled( pPlayer );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CPopulationManager::Parse( void )
 {
 	if ( m_szPopfileFull[0] == '\0' )
@@ -670,16 +1242,53 @@ bool CPopulationManager::Parse( void )
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::PauseSpawning( void )
 {
 	DevMsg( "Wave paused\n" );
 	m_bSpawningPaused = true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::PlayerDoneViewingLoot( CTFPlayer const *pPlayer )
 {
+	if ( cutlvector6BC.Find( pPlayer ) != cutlvector6BC.InvalidIndex() )
+		return;
+
+	CUtlVector<CTFPlayer const *> humans;
+	CollectPlayers( &humans, TF_TEAM_MVM_PLAYERS );
+	if ( humans.Find( pPlayer ) == humans.InvalidIndex() )
+		return;
+
+	cutlvector6BC.AddToTail( pPlayer );
+
+	float flTimeRemaining = m_flTimeToRestart - gpGlobals->curtime;
+	if ( flTimeRemaining > 15.0f )
+	{
+		float flTimeDeduction = ( /*tf_mm_trusted.GetBool() ||*/ tf_mvm_disconnect_on_victory.GetBool() ) ?
+								tf_mvm_victory_disconnect_time.GetFloat() 
+								:
+								tf_mvm_victory_reset_time.GetFloat();
+
+		flTimeDeduction = flTimeDeduction * 0.8 / humans.Count();
+		flTimeRemaining = fmaxf( 15.0, flTimeRemaining - flTimeDeduction );
+
+		m_flTimeToRestart = gpGlobals->curtime + flTimeRemaining;
+
+		CReliableBroadcastRecipientFilter filter;
+		UserMessageBegin( filter, "MVMServerKickTimeUpdate" );
+			WRITE_BYTE( RoundFloatToByte( flTimeRemaining ) );
+		MessageEnd();
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::PostInitialize( void )
 {
 	if ( TheNavMesh->GetNavAreaCount() <= 0 )
@@ -699,50 +1308,86 @@ void CPopulationManager::PostInitialize( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::RemoveBuybackCreditFromPlayer( CTFPlayer *pPlayer )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::RemovePlayerAndItemUpgradesFromHistory( CTFPlayer *pPlayer )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::ResetMap( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::ResetRespecPoints( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::RestoreCheckpoint( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::RestoreItemToCheckpoint( CTFPlayer *pPlayer, CEconItemView *pItem )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::RestorePlayerCurrency( void )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SendUpgradesToPlayer( CTFPlayer *pPlayer )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SetBuybackCreditsForPlayer( CTFPlayer *pPlayer, int nCredits )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SetCheckpoint( int nWave )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SetNumRespecsForPlayer( CTFPlayer *pplayer, int nRespecs )
 {
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SetPopulationFilename( char const *pszFileName )
 {
 	m_bIsInitialized = false;
@@ -760,15 +1405,25 @@ void CPopulationManager::SetPopulationFilename( char const *pszFileName )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::SetupOnRoundStart( void )
 {
+	Initialize();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::ShowNextWaveDescription( void )
 {
 	UpdateObjectiveResource();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::StartCurrentWave( void )
 {
 	if ( TFObjectiveResource() )
@@ -783,6 +1438,9 @@ void CPopulationManager::StartCurrentWave( void )
 	TFGameRules()->State_Transition( GR_STATE_RND_RUNNING );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::UnpauseSpawning( void )
 {
 	DevMsg( "Wave unpaused\n" );
@@ -794,17 +1452,203 @@ void CPopulationManager::UnpauseSpawning( void )
 	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::Update( void )
 {
+	VPROF_BUDGET( __FUNCTION__, "NextBot" );
+	SetNextThink( gpGlobals->curtime );
+
+	FOR_EACH_VEC( m_Populators, i )
+	{
+		m_Populators[i]->Update();
+	}
+
+	CWave *pWave = GetCurrentWave();
+	if ( pWave ) pWave->Update();
+
+	if ( TFGameRules()->State_Get() == GR_STATE_GAME_OVER )
+	{
+		if ( m_flTimeToRestart < gpGlobals->curtime )
+		{
+			if ( tf_mvm_disconnect_on_victory.GetBool() )
+			{
+				// TODO: Alternative to GC
+				/*if ( !TFGameRules()->IsManagedMatchEnded() )
+				{
+					TFGameRules()->EndManagedMvMMatch( true );
+				}*/
+			}
+			else
+			{
+				CycleMission();
+			}
+		}
+
+		if ( tf_mvm_disconnect_on_victory.GetBool() && ( m_flTimeToRestart + 5.0f ) < gpGlobals->curtime )
+		{
+			Log( "Kicking all players\n" );
+			engine->ServerCommand( "kickall #TF_PVE_Disconnect" );
+			CycleMission();
+		}
+
+		// Logic for achievements
+		if ( byte5D8 && MannVsMachineStats_GetDroppedCredits() && !MannVsMachineStats_GetMissedCredits() )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( m_bIsAdvanced ? "mvm_creditbonus_all_advanced" : "mvm_creditbonus_all" );
+			if ( event )
+			{
+				gameeventmanager->FireEvent( event );
+			}
+
+			byte5D8 = false;
+		}
+	}
+	else if ( TFGameRules()->State_Get() == GR_STATE_STARTGAME )
+	{
+		AllocateBots();
+	}
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CPopulationManager::UpdateObjectiveResource( void )
 {
+	if ( m_Waves.IsEmpty() || !TFObjectiveResource() )
+		return;
+
+	TFObjectiveResource()->SetMannVsMachineEventPopfileType( m_nMvMEventPopfileType );
+
+	if ( IsInEndlessWaves() )
+		TFObjectiveResource()->SetMannVsMachineMaxWaveCount( 0 );
+	else
+		TFObjectiveResource()->SetMannVsMachineMaxWaveCount( m_Waves.Count() );
+
+	TFObjectiveResource()->SetMannVsMachineWaveCount( m_nCurrentWaveIndex + 1 );
+
+	CWave *pWave = GetCurrentWave();
+	if ( pWave )
+	{
+		TFObjectiveResource()->SetMannVsMachineWaveEnemyCount( pWave->m_nTotalEnemyCount );
+
+		TFObjectiveResource()->ClearMannVsMachineWaveClassFlags();
+
+		int nTypes = 0; bool bHasEngineer = false;
+		while ( nTypes < MVM_CLASS_TYPES_PER_WAVE_MAX && nTypes < pWave->GetNumClassTypes() )
+		{
+			bHasEngineer |= FStrEq( pWave->GetClassIconName( nTypes ).ToCStr(), "engineer" );
+
+			TFObjectiveResource()->SetMannVsMachineWaveClassName( nTypes, pWave->GetClassIconName( nTypes ) );
+			TFObjectiveResource()->SetMannVsMachineWaveClassCount( nTypes, pWave->GetClassCount( nTypes ) );
+			TFObjectiveResource()->AddMannVsMachineWaveClassFlags( nTypes, pWave->GetClassFlags( nTypes ) );
+
+			nTypes++;
+		}
+
+		if ( bHasEngineer )
+		{
+			if ( nTypes < MVM_CLASS_TYPES_PER_WAVE_MAX )
+			{
+				TFObjectiveResource()->SetMannVsMachineWaveClassName( nTypes, AllocPooledString( "teleporter" ) );
+				TFObjectiveResource()->SetMannVsMachineWaveClassCount( nTypes, 0 );
+				TFObjectiveResource()->AddMannVsMachineWaveClassFlags( nTypes, MVM_CLASS_FLAG_MISSION );
+
+				nTypes++;
+			}
+		}
+
+		while ( nTypes++ <= MVM_CLASS_TYPES_PER_WAVE_MAX )
+		{
+			TFObjectiveResource()->SetMannVsMachineWaveClassCount( nTypes, 0 );
+			TFObjectiveResource()->SetMannVsMachineWaveClassName( nTypes, NULL_STRING );
+			TFObjectiveResource()->AddMannVsMachineWaveClassFlags( nTypes, MVM_CLASS_FLAG_NONE );
+		}
+	}
 }
 
-void CPopulationManager::WaveEnd( bool b1 )
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CPopulationManager::WaveEnd( bool bComplete )
 {
+	m_pMVMStats->RoundEvent_WaveEnd( bComplete );
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "scorestats_accumulated_update" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
+
+	CTF_GameStats.ResetRoundStats();
+	MarkAllCurrentPlayersSafeToLeave();
+
+	if ( bComplete )
+	{
+		if ( byte58A )
+		{
+			if ( ehandle58C )
+			{
+				UTIL_Remove( ehandle58C );
+				ehandle58C = NULL;
+			}
+
+			byte58A = false;
+		}
+		else
+		{
+			m_nCurrentWaveIndex++;
+		}
+
+		m_pMVMStats->SetCurrentWave( m_nCurrentWaveIndex );
+
+		CWave *pWave = GetCurrentWave();
+		if ( pWave )
+		{
+			SetCheckpoint( -1 );
+			UpdateObjectiveResource();
+
+			pWave->m_upgradeAlertTimer.Start( 3.0f );
+
+			if ( IsInEndlessWaves() )
+			{
+				EndlessRollEscalation();
+
+				pWave->ForceReset();
+
+				float flTime = gpGlobals->curtime + tf_mvm_endless_wait_time.GetFloat();
+				if ( m_nCurrentWaveIndex % tf_mvm_endless_bomb_reset.GetInt() == 0 )
+				{
+					flTime += tf_mvm_endless_wait_time.GetFloat();
+					m_bShouldResetFlag = true;
+				}
+
+				pWave->m_flStartTime = flTime;
+			}
+		}
+
+		if ( m_nCurrentWaveIndex >= m_Waves.Count() && !IsInEndlessWaves() )
+		{
+			if ( /*tf_mm_trusted.GetBool() ||*/ tf_mvm_disconnect_on_victory.GetBool() )
+				m_flTimeToRestart = gpGlobals->curtime + tf_mvm_victory_disconnect_time.GetFloat();
+			else
+				m_flTimeToRestart = gpGlobals->curtime + tf_mvm_victory_reset_time.GetFloat();
+
+			TFObjectiveResource()->SetMannVsMachineBetweenWaves( true );
+			TFGameRules()->State_Transition( GR_STATE_GAME_OVER );
+
+			return;
+		}
+	}
+
+	if ( !IsInEndlessWaves() )
+	{
+		TFGameRules()->State_Transition( GR_STATE_BETWEEN_RNDS );
+		TFObjectiveResource()->SetMannVsMachineBetweenWaves( true );
+	}
 }
+
 
 CON_COMMAND_F( tf_mvm_nextmission, "Load the next mission", FCVAR_CHEAT )
 {

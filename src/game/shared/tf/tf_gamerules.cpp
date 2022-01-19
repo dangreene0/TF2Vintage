@@ -5032,6 +5032,21 @@ bool CTFGameRules::UsePlayerReadyStatusMode( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CTFGameRules::PlayerReadyStatus_ResetState( void )
+{
+	ResetPlayerAndTeamReadyState();
+	SetTeamReadyState( false, TF_TEAM_RED );
+	SetTeamReadyState( false, TF_TEAM_BLUE );
+
+	m_flRestartRoundTime = -1.0f;
+	m_bAwaitingReadyRestart = true;
+
+	mp_restartgame.SetValue( 0 );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CTFGameRules::SetupSpawnPointsForRound( void )
 {
 	if ( !g_hControlPointMasters.Count() || !g_hControlPointMasters[0] || !g_hControlPointMasters[0]->PlayingMiniRounds() )
