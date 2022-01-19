@@ -5779,22 +5779,27 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 	}
 	
-	// Battalion's Backup resists
-	if ( m_Shared.InCond( TF_COND_DEFENSEBUFF ) )
+	int nPierceResists = 0;
+	CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nPierceResists, mod_ignore_resists_absorbs );
+	if ( nPierceResists == 0 )
 	{
-		// // Battalion's Backup negates all crit damage
-		// bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
+		// Battalion's Backup resists
+		if ( m_Shared.InCond( TF_COND_DEFENSEBUFF ) || m_Shared.InCond( TF_COND_DEFENSEBUFF_NO_CRIT_BLOCK ) )
+		{
+			// // Battalion's Backup negates all crit damage
+			// bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
 
-		float flDamage = info.GetDamage();
-		if ( bObject && tf2v_sentry_resist_bonus.GetBool() )
-		{
-			// 50% resistance to sentry damage
-			info.SetDamage( flDamage * 0.50f );
-		}
-		else
-		{
-			// 35% resistance to all other sources
-			info.SetDamage( flDamage * 0.65f );
+			float flDamage = info.GetDamage();
+			if ( bObject && tf2v_sentry_resist_bonus.GetBool() )
+			{
+				// 50% resistance to sentry damage
+				info.SetDamage( flDamage * 0.50f );
+			}
+			else
+			{
+				// 35% resistance to all other sources
+				info.SetDamage( flDamage * 0.65f );
+			}
 		}
 	}
 	
@@ -5807,56 +5812,58 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		info.SetDamage( flDamage * tf_stealth_damage_reduction.GetFloat() );
 	}
 	
-	
+	if ( nPierceResists == 0 )
+	{
 	// Vaccinator resists.
 	// Bullet, Explosions (Blast), Fire.
-	float flDamageResistor = info.GetDamage();
-	if ( bitsDamage & ( DMG_BULLET|DMG_BUCKSHOT ) )		// Bullets.
-	{
-		if (m_Shared.InCond(TF_COND_MEDIGUN_UBER_BULLET_RESIST))
+		float flDamageResistor = info.GetDamage();
+		if ( bitsDamage & ( DMG_BULLET | DMG_BUCKSHOT ) )		// Bullets.
 		{
-			// Decrease our damage by 75%.
-			info.SetDamage(flDamageResistor * 0.25f);
-			
-			// Negate all crit damage.
-			bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
+			if ( m_Shared.InCond( TF_COND_MEDIGUN_UBER_BULLET_RESIST ) )
+			{
+				// Decrease our damage by 75%.
+				info.SetDamage( flDamageResistor * 0.25f );
+
+				// Negate all crit damage.
+				bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
+			}
+			else if ( m_Shared.InCond( TF_COND_MEDIGUN_SMALL_BULLET_RESIST ) )
+			{
+				// Decrease our damage by 10%.
+				info.SetDamage( flDamageResistor * 0.90f );
+			}
 		}
-		else if (m_Shared.InCond(TF_COND_MEDIGUN_SMALL_BULLET_RESIST))
+		else if ( bitsDamage & ( DMG_BLAST ) )				// Explosions.
 		{
-			// Decrease our damage by 10%.
-			info.SetDamage(flDamageResistor * 0.90f);
+			if ( m_Shared.InCond( TF_COND_MEDIGUN_UBER_BLAST_RESIST ) )
+			{
+				// Decrease our damage by 75%.
+				info.SetDamage( flDamageResistor * 0.25f );
+
+				// Negate all crit damage.
+				bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
+			}
+			else if ( m_Shared.InCond( TF_COND_MEDIGUN_SMALL_BLAST_RESIST ) )
+			{
+				// Decrease our damage by 10%.
+				info.SetDamage( flDamageResistor * 0.90f );
+			}
 		}
-	}
-	else if ( bitsDamage & ( DMG_BLAST ) )				// Explosions.
-	{
-		if (m_Shared.InCond(TF_COND_MEDIGUN_UBER_BLAST_RESIST))
+		else if ( bitsDamage & ( DMG_IGNITE | DMG_BURN ) )		// Fire.
 		{
-			// Decrease our damage by 75%.
-			info.SetDamage(flDamageResistor * 0.25f);
-			
-			// Negate all crit damage.
-			bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
-		}
-		else if (m_Shared.InCond(TF_COND_MEDIGUN_SMALL_BLAST_RESIST))
-		{
-			// Decrease our damage by 10%.
-			info.SetDamage(flDamageResistor * 0.90f);
-		}
-	}
-	else if ( bitsDamage & ( DMG_IGNITE|DMG_BURN) )		// Fire.
-	{
-		if (m_Shared.InCond(TF_COND_MEDIGUN_UBER_FIRE_RESIST))
-		{
-			// Decrease our damage by 75%.
-			info.SetDamage(flDamageResistor * 0.25f);
-			
-			// Negate all crit damage.
-			bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
-		}
-		else if (m_Shared.InCond(TF_COND_MEDIGUN_SMALL_FIRE_RESIST))
-		{
-			// Decrease our damage by 10%.
-			info.SetDamage(flDamageResistor * 0.90f);
+			if ( m_Shared.InCond( TF_COND_MEDIGUN_UBER_FIRE_RESIST ) )
+			{
+				// Decrease our damage by 75%.
+				info.SetDamage( flDamageResistor * 0.25f );
+
+				// Negate all crit damage.
+				bitsDamage &= ~( DMG_CRITICAL | DMG_MINICRITICAL );
+			}
+			else if ( m_Shared.InCond( TF_COND_MEDIGUN_SMALL_FIRE_RESIST ) )
+			{
+				// Decrease our damage by 10%.
+				info.SetDamage( flDamageResistor * 0.90f );
+			}
 		}
 	}
 
@@ -7263,6 +7270,10 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 		{
 			pszCustomDeath = "customdeath:burning";
 		}
+		else if ( info.GetDamageCustom() == TF_DMG_CUSTOM_BURNING_FLARE )
+		{
+			pszCustomDeath = "customdeath:flareburn";
+		}
 
 		// special responses for mini-sentry
 		if ( V_strcmp( pszCustomDeath, "customdeath:sentrygun" ) == 0 )
@@ -7420,7 +7431,30 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 					m_Shared.StoreSapperKillCount();
 				
 			}
-			
+
+			CObjectSentrygun *sentry = dynamic_cast<CObjectSentrygun *>( info.GetInflictor() );
+			CTFProjectile_SentryRocket *sentryRocket = dynamic_cast<CTFProjectile_SentryRocket *>( info.GetInflictor() );
+			if ( ( sentry && !sentry->IsDisposableBuilding() ) || sentryRocket )
+			{
+				m_nAccumulatedSentryGunKillCount++;
+			}
+
+			if ( TF_IsHolidayActive( kHoliday_HalloweenOrFullMoon ) )
+			{
+				int nHalloweenDeathGhosts = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, nHalloweenDeathGhosts, halloween_death_ghosts );
+				if ( nHalloweenDeathGhosts > 0 )
+				{
+					if ( pTFVictim->GetTeam()->GetTeamNumber() == TF_TEAM_BLUE )
+					{
+						DispatchParticleEffect( "halloween_player_death_blue", pTFVictim->GetAbsOrigin() + Vector( 0, 0, 32 ), vec3_angle );
+					}
+					else if ( pTFVictim->GetTeam()->GetTeamNumber() == TF_TEAM_RED )
+					{
+						DispatchParticleEffect( "halloween_player_death", pTFVictim->GetAbsOrigin() + Vector( 0, 0, 32 ), vec3_angle );
+					}
+				}
+			}
 		}
 	}
 	else
