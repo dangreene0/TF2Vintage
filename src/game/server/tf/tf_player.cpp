@@ -127,6 +127,7 @@ ConVar tf_halloween_giant_health_scale( "tf_halloween_giant_health_scale", "10",
 ConVar tf_deploying_bomb_time( "tf_deploying_bomb_time", "1.90", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Time to deploy bomb before the point of no return." );
 ConVar tf_deploying_bomb_delay_time( "tf_deploying_bomb_delay_time", "0.0", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Time to delay before deploying bomb." );
 
+ConVar tf_mvm_death_penalty( "tf_mvm_death_penalty", "0", FCVAR_NOTIFY | FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "How much currency players lose when dying" );
 
 extern ConVar spec_freeze_time;
 extern ConVar spec_freeze_traveltime;
@@ -144,6 +145,8 @@ extern ConVar tf_damage_disablespread;
 extern ConVar tf_scout_energydrink_consume_rate;
 extern ConVar tf_mvm_respec_enabled;
 extern ConVar tf_mvm_buybacks_per_wave;
+extern ConVar tf_populator_damage_multiplier;
+extern ConVar tf_mvm_skill;
 
 extern ConVar tf2v_allow_disguiseweapons;
 extern ConVar tf2v_use_new_cloak;
@@ -1599,76 +1602,114 @@ void CTFPlayer::RemoveNemesisRelationships()
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-void CTFPlayer::Regenerate( void )
+void CTFPlayer::Regenerate( bool bRefillHealthAndAmmo /*= true*/ )
 {
 	// We may have been boosted over our max health. If we have, 
 	// restore it after we reset out class values
 	// unless our max health has changed.
 	int iCurrentHealth = GetHealth(), iMaxHealth = GetMaxHealth();
+
+	int nAmmo[TF_AMMO_COUNT]{};
+	if ( !bRefillHealthAndAmmo )
+	{
+		for ( int i = 0; i < TF_AMMO_COUNT; ++i )
+		{
+			nAmmo[i] = GetAmmoCount( i );
+		}
+	}
+
 	m_bRegenerating = true;
 	InitClass();
 	m_bRegenerating = false;
-	if ( iCurrentHealth > GetHealth() && iMaxHealth == GetMaxHealth() )
+
+	if ( iCurrentHealth > GetHealth() && iMaxHealth == GetMaxHealth() && bRefillHealthAndAmmo )
 	{
 		SetHealth( iCurrentHealth );
 	}
 
-	if ( m_Shared.InCond( TF_COND_BURNING ) )
+	if ( bRefillHealthAndAmmo )
 	{
-		m_Shared.RemoveCond( TF_COND_BURNING );
-		if (m_Shared.InCond(TF_COND_BURNING_PYRO))
-			m_Shared.RemoveCond(TF_COND_BURNING_PYRO);
-	}
+		if ( m_Shared.InCond( TF_COND_BURNING ) )
+		{
+			m_Shared.RemoveCond( TF_COND_BURNING );
+			if ( m_Shared.InCond( TF_COND_BURNING_PYRO ) )
+				m_Shared.RemoveCond( TF_COND_BURNING_PYRO );
+		}
 
-	// Remove jarate condition
-	if ( m_Shared.InCond( TF_COND_URINE ) )
-	{
-		m_Shared.RemoveCond( TF_COND_URINE );
-	}
+		// Remove jarate condition
+		if ( m_Shared.InCond( TF_COND_URINE ) )
+		{
+			m_Shared.RemoveCond( TF_COND_URINE );
+		}
 
-	// Remove Mad Milk condition
-	if ( m_Shared.InCond( TF_COND_MAD_MILK ) )
-	{
-		m_Shared.RemoveCond( TF_COND_MAD_MILK );
-	}
+		// Remove Mad Milk condition
+		if ( m_Shared.InCond( TF_COND_MAD_MILK ) )
+		{
+			m_Shared.RemoveCond( TF_COND_MAD_MILK );
+		}
 
-	if ( m_Shared.InCond( TF_COND_BLEEDING ) )
-	{
-		m_Shared.RemoveCond( TF_COND_BLEEDING );
-	}
-	
-	// Remove Gas Condition
-	if ( m_Shared.InCond( TF_COND_GAS ) )
-	{
-		m_Shared.RemoveCond( TF_COND_GAS );
-	}
+		if ( m_Shared.InCond( TF_COND_BLEEDING ) )
+		{
+			m_Shared.RemoveCond( TF_COND_BLEEDING );
+		}
 
-	// Remove bonk! atomic punch phase
-	if ( m_Shared.InCond( TF_COND_PHASE ) )
-	{
-		m_Shared.RemoveCond( TF_COND_PHASE );
-	}
-	
-	// Remove Soda Popper phase
-	if ( m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) )
-	{
-		m_Shared.RemoveCond( TF_COND_SODAPOPPER_HYPE );
-	}
-	
-	// Remove Marked for Death effects
-	if ( m_Shared.InCond( TF_COND_MARKEDFORDEATH ) )
-	{
-		m_Shared.RemoveCond( TF_COND_MARKEDFORDEATH );
-	}
+		// Remove Gas Condition
+		if ( m_Shared.InCond( TF_COND_GAS ) )
+		{
+			m_Shared.RemoveCond( TF_COND_GAS );
+		}
 
-	// Fill Spy cloak
-	m_Shared.SetSpyCloakMeter( 100.0f );
+		// Remove bonk! atomic punch phase
+		if ( m_Shared.InCond( TF_COND_PHASE ) )
+		{
+			m_Shared.RemoveCond( TF_COND_PHASE );
+		}
 
-	// Reset charge meter
-	m_Shared.SetShieldChargeMeter( 100.0f );
+		// Remove Soda Popper phase
+		if ( m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) )
+		{
+			m_Shared.RemoveCond( TF_COND_SODAPOPPER_HYPE );
+		}
+
+		// Remove Marked for Death effects
+		if ( m_Shared.InCond( TF_COND_MARKEDFORDEATH ) )
+		{
+			m_Shared.RemoveCond( TF_COND_MARKEDFORDEATH );
+		}
+
+		// Fill Spy cloak
+		m_Shared.SetSpyCloakMeter( 100.0f );
+
+		// Reset charge meter
+		m_Shared.SetShieldChargeMeter( 100.0f );
+	}
 
 	// Allow honorbound weapons to be switched away from without penalty for a bit
 	m_Shared.m_flFirstPrimaryAttack = MAX( m_Shared.m_flFirstPrimaryAttack, gpGlobals->curtime + 1.0f );
+
+	if ( bRefillHealthAndAmmo )
+	{
+		for ( int iAmmo = 0; iAmmo < TF_AMMO_COUNT; ++iAmmo )
+		{
+			if ( GetAmmoCount( iAmmo ) > GetMaxAmmo( iAmmo ) )
+			{
+				SetAmmoCount( GetMaxAmmo( iAmmo ), iAmmo );
+			}
+		}
+	}
+	else
+	{
+		for ( int iAmmo = 0; iAmmo < TF_AMMO_COUNT; ++iAmmo )
+		{
+			SetAmmoCount( nAmmo[iAmmo], iAmmo );
+		}
+	}
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "player_regenerate" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2218,6 +2259,25 @@ void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
 		break;
 	default:
 		break;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ClearUpgradeHistory( void )
+{
+	if ( g_pPopulationManager )
+	{
+		CUtlVector<CUpgradeInfo> *upgrades = g_pPopulationManager->GetPlayerUpgradeHistory( this );
+		if ( upgrades ) upgrades->RemoveAll();
+
+		m_nAccumulatedSentryGunDamageDealt = 0;
+		m_nAccumulatedSentryGunKillCount = 0;
+
+		g_pPopulationManager->SendUpgradesToPlayer( this );
+
+		DevMsg( "%3.2f: CLEAR_UPGRADE_HISTORY: Player '%s'\n", gpGlobals->curtime, GetPlayerName() );
 	}
 }
 
@@ -3323,6 +3383,27 @@ void CTFPlayer::BombHeadExplode( bool bKilled )
 	CTakeDamageInfo info( this, this, NULL, vecOrigin, vecOrigin, 40.f, DMG_BLAST | DMG_USEDISTANCEMOD, TF_DMG_CUSTOM_MERASMUS_PLAYER_BOMB, &vecOrigin );
 	CTFRadiusDamageInfo radiusInfo( &info, vecOrigin, 100.0f, bKilled ? this : NULL );
 	TFGameRules()->RadiusDamage( radiusInfo );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::PlayReadySound( void )
+{
+	if ( m_flNextReadySoundTime < gpGlobals->curtime && TFGameRules() )
+	{
+		const char *pszFormat = "%s.Ready";
+		if ( TFGameRules()->IsCompetitiveMode() )
+			pszFormat = "%s.ReadyComp";
+		if ( TFGameRules()->IsMannVsMachineMode() )
+			pszFormat = "%s.ReadyMvM";
+
+		const char *pszClassName = g_aPlayerClassNames_NonLocalized[ m_Shared.GetDesiredPlayerClassIndex() ];
+		TFGameRules()->BroadcastSound( GetTeamNumber(), UTIL_VarArgs( pszFormat, pszClassName ) );
+		TFGameRules()->BroadcastSound( TEAM_SPECTATOR, UTIL_VarArgs( pszFormat, pszClassName ) );
+
+		m_flNextReadySoundTime = gpGlobals->curtime + 4.0;
+	}
 }
 
 //-----------------------------------------------------------------------------
