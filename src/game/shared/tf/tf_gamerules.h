@@ -53,6 +53,8 @@ class CGhost;
 
 #endif
 
+struct CMannVsMachineUpgrades;
+
 extern ConVar tf_avoidteammates;
 extern ConVar tf_avoidteammates_pushaway;
 extern ConVar tf_arena_force_class;
@@ -352,6 +354,11 @@ public:
 	void			StartCompetitiveMatch( void );
 	void			StopCompetitiveMatch(/*CMsgGC_Match_Result_Status*/int eMatchResult=0 );
 	void			EndCompetitiveMatch( void );
+
+	int				GetUpgradeTier( int iUpgradeIdx ) const;
+	bool			IsUpgradeTierEnabled( CTFPlayer *pPlayer, int iItemSlot, int iUpgradeIdx );
+	int				GetCostForUpgrade( CMannVsMachineUpgrades *pUpgrade, int iItemSlot, int iPlayerClass, CTFPlayer *pPlayer );
+	bool			CanUpgradeWithAttrib( CTFPlayer *pPlayer, int iItemSlot, attrib_def_index_t iAttrIndex, CMannVsMachineUpgrades *pUpgrade );
 
 	bool			PlayerReadyStatus_ArePlayersOnTeamReady( int iTeam );
 	void			PlayerReadyStatus_ResetState( void );

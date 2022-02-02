@@ -363,7 +363,40 @@ char const *CUpgrades::GetUpgradeAttributeName( int iUpgrade ) const
 //-----------------------------------------------------------------------------
 void CUpgrades::GrantOrRemoveAllUpgrades( CTFPlayer *pPlayer, bool bRemove, bool bRefund )
 {
+	bool bRespec = bRemove && bRefund;
 
+	if ( pPlayer && ( ( sv_cheats && sv_cheats->GetBool() ) || bRemove ) )
+	{
+		FOR_EACH_VEC( g_MannVsMachineUpgrades.GetUpgradeVector(), i )
+		{
+			CMannVsMachineUpgrades *pUpgrade = &( g_MannVsMachineUpgrades.GetUpgradeVector()[i] );
+			if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_POWERUP )
+				continue;
+
+			CEconAttributeDefinition *pDefinition = GetItemSchema()->GetAttributeDefinitionByName( pUpgrade->szAttribute );
+			if ( pDefinition == NULL )
+				continue;
+
+			int const nLastLoadoutPos = bRespec ? TF_LOADOUT_SLOT_MISC2 : TF_LOADOUT_SLOT_HAT;
+			for ( int j = TF_LOADOUT_SLOT_PRIMARY; j < nLastLoadoutPos; ++j )
+			{
+				if ( bRespec && j == TF_LOADOUT_SLOT_ACTION )
+					continue;
+
+				if ( bRespec || ( TFGameRules() && TFGameRules()->CanUpgradeWithAttrib( pPlayer, j, pDefinition->index, pUpgrade ) ) )
+				{
+					bool bOverCap = false;
+					int iCurrentStep = 0;
+					int const iNumUpgradeSteps = GetUpgradeStepData( pPlayer, j, i, &iCurrentStep, &bOverCap );
+
+					for ( int k = 0; k < iNumUpgradeSteps; ++k )
+					{
+						PlayerPurchasingUpgrade( pPlayer, j, i, bRemove, ( !bRemove || !bRefund ), bRespec );
+					}
+				}
+			}
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -436,6 +469,89 @@ void CUpgrades::NotifyItemOnUpgrade( CTFPlayer *pPlayer, attrib_def_index_t nAtt
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+void CUpgrades::PlayerPurchasingUpgrade( CTFPlayer *pPlayer, int iItemSlot, int iUpgrade, bool bDowngrade, bool bFree, bool bRespec )
+{
+	if ( !pPlayer )
+		return;
+
+	if ( iUpgrade < 0 || iUpgrade >= g_MannVsMachineUpgrades.GetUpgradeCount() )
+		return;
+
+	CMannVsMachineUpgrades *pUpgrade = &( g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ] );
+	CEconAttributeDefinition *pDefinition = GetItemSchema()->GetAttributeDefinitionByName( pUpgrade->szAttribute );
+	if ( pDefinition == NULL )
+		return;
+
+	if ( !bRespec && ( !TFGameRules() || !TFGameRules()->CanUpgradeWithAttrib( pPlayer, iItemSlot, pDefinition->index, pUpgrade ) ) )
+		return;
+
+	int nCost = 0;
+	int iPlayerClass = pPlayer->GetPlayerClass()->GetClassIndex();
+
+	if ( !nCost )
+	{
+		nCost = TFGameRules()->GetCostForUpgrade( &g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ], iItemSlot, iPlayerClass, pPlayer );
+	}
+
+	if ( bDowngrade )
+	{
+		nCost *= -1;
+	}
+
+	if ( !bFree )
+	{
+		// Make sure the player can afford it
+		if ( pPlayer->GetCurrency() < nCost )
+			return;
+	}
+
+	CEconItemView *pItem = NULL;
+	if ( g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ].nUIGroup != UIGROUP_UPGRADE_PLAYER )
+	{
+		if ( iItemSlot != TF_LOADOUT_SLOT_ACTION )
+			return;
+
+		if ( iItemSlot < TF_LOADOUT_SLOT_PRIMARY || iItemSlot > TF_LOADOUT_SLOT_PDA2 )
+			return;
+
+		pItem = pPlayer->GetLoadoutItem( iPlayerClass, iItemSlot );
+	}
+
+	if ( bDowngrade )
+	{
+		if ( bRespec )
+		{
+			nCost = 0;
+		}
+		else
+		{
+		}
+	}
+	else
+	{
+		int nTier = TFGameRules()->GetUpgradeTier( iUpgrade );
+		if ( nTier && !TFGameRules()->IsUpgradeTierEnabled( pPlayer, iItemSlot, iUpgrade ) )
+			return;
+	}
+
+	const attrib_def_index_t nUpgradedAttrDefIndex = ApplyUpgradeToItem( pPlayer, pItem, iUpgrade, nCost, bDowngrade, !bFree );
+	if ( nUpgradedAttrDefIndex != INVALID_ATTRIBUTE_DEF_INDEX )
+	{
+		if ( !bFree )
+			pPlayer->RemoveCurrency( nCost );
+
+		pPlayer->RememberUpgrade( iPlayerClass, pItem, iUpgrade, nCost, bDowngrade );
+
+		pPlayer->Regenerate( TFObjectiveResource()->GetMannVsMachineIsBetweenWaves() );
+	}
+
+	// See if we need to notify items about an upgrade
+	NotifyItemOnUpgrade( pPlayer, nUpgradedAttrDefIndex, bDowngrade );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CUpgrades::ReportUpgrade( CTFPlayer *pPlayer, int iItemDef, int iAttributeDef, int nQuality, int nCost, bool bDowngrade, bool bIsFresh, bool bIsBottle )
 {
 	if ( pPlayer == nullptr )
@@ -457,14 +573,6 @@ void CUpgrades::ReportUpgrade( CTFPlayer *pPlayer, int iItemDef, int iAttributeD
 		event->SetInt( "userid", pPlayer->GetUserID() );
 		gameeventmanager->FireEvent( event );
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CUpgrades::PlayerPurchasingUpgrade( CTFPlayer *pPlayer, int iItemSlot, int iUpgrade, bool bDowngrade, bool bFree, bool bRespec )
-{
-
 }
 
 //-----------------------------------------------------------------------------
