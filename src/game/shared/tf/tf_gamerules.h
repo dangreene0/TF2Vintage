@@ -151,6 +151,7 @@ struct PlayerRoundScore_t
 };
 
 #define MAX_TEAMGOAL_STRING		256
+#define MAX_TEAMNAME_STRING		6
 
 class CTFGameRules : public CTeamplayRoundBasedRules
 {
@@ -252,6 +253,8 @@ public:
 
 	virtual void	RegisterScriptFunctions( void ) OVERRIDE;
 
+	bool			PlayerReadyStatus_HaveMinPlayersToEnable( void );
+
 #ifdef GAME_DLL
 public:
 	// Override this to prevent removal of game specific entities that need to persist
@@ -350,7 +353,10 @@ public:
 	void			StopCompetitiveMatch(/*CMsgGC_Match_Result_Status*/int eMatchResult=0 );
 	void			EndCompetitiveMatch( void );
 
+	bool			PlayerReadyStatus_ArePlayersOnTeamReady( int iTeam );
 	void			PlayerReadyStatus_ResetState( void );
+	bool			PlayerReadyStatus_ShouldStartCountdown( void );
+	void			PlayerReadyStatus_UpdatePlayerState( CTFPlayer *pPlayer, bool bState );
 
 	void			RegisterBoss( CBaseCombatCharacter *pNPC )  { if( m_hBosses.Find( pNPC ) == m_hBosses.InvalidIndex() ) m_hBosses.AddToHead( pNPC ); }
 	void			RemoveBoss( CBaseCombatCharacter *pNPC )    { EHANDLE hNPC( pNPC ); m_hBosses.FindAndRemove( hNPC ); }
@@ -489,8 +495,6 @@ private:
 
 	virtual VoiceCommandMenuItem_t *VoiceCommand( CBaseMultiplayerPlayer *pPlayer, int iMenu, int iItem );
 
-	bool			IsInPreMatch() const;
-	float			GetPreMatchEndTime() const;	// Returns the time at which the prematch will be over.
 	void			GoToIntermission( void );
 
 	virtual int		GetAutoAimMode() { return AUTOAIM_NONE; }
@@ -548,6 +552,12 @@ private:
 	const char*		GetNextMvMPopfile( void );
 
 	int 			GetTeamAssignmentOverride( CTFPlayer *pPlayer, int iDesiredTeam, bool );
+
+	virtual void	BetweenRounds_Start( void );
+	virtual void	BetweenRounds_End( void );
+	virtual void	BetweenRounds_Think( void );
+	virtual void	PreRound_Start( void ) OVERRIDE;
+	virtual void	PreRound_End( void ) OVERRIDE;
 private:
 
 	int				DefaultFOV( void ) { return 75; }

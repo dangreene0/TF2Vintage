@@ -2705,6 +2705,11 @@ CTFGameRules::~CTFGameRules()
 	// automatically be deleted from there, instead.
 	TFTeamMgr()->Shutdown();
 	ShutdownCustomResponseRulesDicts();
+
+	if ( IsMannVsMachineMode() )
+	{
+		mp_tournament.SetValue( 0 );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2717,6 +2722,32 @@ bool CTFGameRules::ClientCommand( CBaseEntity *pEdict, const CCommand &args )
 	CTFPlayer *pPlayer = ToTFPlayer( pEdict );
 
 	const char *pcmd = args[0];
+
+	if ( IsInTournamentMode() && IsInPreMatch() )
+	{
+		if ( FStrEq( pcmd, "tournament_player_readystate" ) )
+		{
+			if ( State_Get() != GR_STATE_BETWEEN_RNDS )
+				return true;
+
+			// MM check here..
+
+			if ( !PlayerReadyStatus_HaveMinPlayersToEnable() )
+				return true;
+
+			if ( args.ArgC() >= 2 )
+			{
+				bool bState = atoi( args[1] ) == 1;
+				PlayerReadyStatus_UpdatePlayerState( pPlayer, bState );
+
+				if ( bState )
+					pPlayer->PlayReadySound();
+			}
+
+			return true;
+		}
+	}
+
 	if ( FStrEq( pcmd, "objcmd" ) )
 	{
 		if ( args.ArgC() < 3 )
@@ -3369,18 +3400,6 @@ bool CTFGameRules::CheckFragLimit( void )
 	}
 
 	return false;
-}
-
-bool CTFGameRules::IsInPreMatch() const
-{
-	// TFTODO    return (cb_prematch_time > gpGlobals->time)
-	return false;
-}
-
-float CTFGameRules::GetPreMatchEndTime() const
-{
-	//TFTODO: implement this.
-	return gpGlobals->curtime;
 }
 
 void CTFGameRules::GoToIntermission( void )
@@ -4711,12 +4730,51 @@ void CTFGameRules::ClientDisconnected( edict_t *pClient )
 {
 	// clean up anything they left behind
 	CTFPlayer *pPlayer = ToTFPlayer( GetContainingEntity( pClient ) );
-	const char *pszPlayerName;
+	const char *pszPlayerName = NULL;
 
 	if ( pPlayer )
 	{
 		pPlayer->TeamFortress_ClientDisconnected();
 		pszPlayerName = pPlayer->GetPlayerName();
+
+		if ( UsePlayerReadyStatusMode() )
+		{
+			if ( !pPlayer->IsBot() && State_Get() != GR_STATE_RND_RUNNING )
+			{
+				if ( !IsTeamReady( pPlayer->GetTeamNumber() ) )
+				{
+					if ( IsPlayerReady( pPlayer->entindex() ) )
+					{
+						PlayerReadyStatus_UpdatePlayerState( pPlayer, false );
+					}
+					else
+					{
+						bool bAllReady = false;
+
+						CUtlVector<CBasePlayer *> players;
+						CollectHumanPlayers( &players, pPlayer->GetTeamNumber() );
+						FOR_EACH_VEC( players, i )
+						{
+							if ( players[i] == pPlayer )
+								continue;
+
+							if ( !IsPlayerReady( players[i]->entindex() ) )
+							{
+								bAllReady = false;
+								break;
+							}
+						}
+
+						if ( bAllReady )
+							PlayerReadyStatus_ResetState();
+					}
+				}
+				else if( GetRoundRestartTime() > 0 || mp_restartgame.GetInt() > 0 )
+				{
+					PlayerReadyStatus_ResetState();
+				}
+			}
+		}
 
 		// If they're queued up take them out
 		RemovePlayerFromQueue( pPlayer );
@@ -4739,7 +4797,7 @@ void CTFGameRules::ClientDisconnected( edict_t *pClient )
 	BaseClass::ClientDisconnected( pClient );
 
 	// Do this last so that the player isn't registered on the team anymore
-	Arena_ClientDisconnect( pPlayer->GetPlayerName() );
+	Arena_ClientDisconnect( pszPlayerName );
 }
 
 
@@ -5032,6 +5090,32 @@ bool CTFGameRules::UsePlayerReadyStatusMode( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_ArePlayersOnTeamReady( int iTeam )
+{
+	// Bots need to be set to ready automatically
+	if ( IsMannVsMachineMode() && iTeam == TF_TEAM_MVM_BOTS )
+		return true;
+
+	// TODO: Alternative to GC
+	// CMatchInfo *pMatch = GTFGCClientSystem()->dword3B8;
+
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+		if ( !pPlayer || pPlayer->GetTeamNumber() != iTeam )
+			continue;
+
+		// If at least 1 person is ready, we're good to go
+		if ( m_bPlayerReady[i] )
+			return true;
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CTFGameRules::PlayerReadyStatus_ResetState( void )
 {
 	ResetPlayerAndTeamReadyState();
@@ -5042,6 +5126,75 @@ void CTFGameRules::PlayerReadyStatus_ResetState( void )
 	m_bAwaitingReadyRestart = true;
 
 	mp_restartgame.SetValue( 0 );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_ShouldStartCountdown( void )
+{
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PlayerReadyStatus_UpdatePlayerState( CTFPlayer *pPlayer, bool bState )
+{
+	if ( !UsePlayerReadyStatusMode() )
+		return;
+
+	if ( !pPlayer || pPlayer->GetTeamNumber() <= TEAM_SPECTATOR )
+		return;
+
+	if ( State_Get() == GR_STATE_BETWEEN_RNDS || !PlayerReadyStatus_HaveMinPlayersToEnable() )
+		return;
+
+	if ( GetRoundRestartTime() > 0 && GetRoundRestartTime() <= gpGlobals->curtime + 10.0 )
+		return;
+
+	if ( bState != IsPlayerReady( pPlayer->entindex() ) )
+	{
+		SetPlayerReadyState( pPlayer->entindex(), bState );
+
+		if ( bState == false )
+		{
+			m_bTeamReady.Set( pPlayer->GetTeamNumber(), false );
+		}
+		else 
+		{
+			if ( IsMannVsMachineMode() || IsCompetitiveMode() )
+			{
+				if ( m_bPlayerReadyBefore[ pPlayer->entindex() ] || GetRoundRestartTime() <= gpGlobals->curtime + 60.0 )
+				{
+					if ( GetRoundRestartTime() < 0 && PlayerReadyStatus_ShouldStartCountdown() )
+					{
+						m_flRestartRoundTime = gpGlobals->curtime + 150.0;
+						m_bAwaitingReadyRestart = false;
+
+						IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_round_restart_seconds" );
+						if ( event )
+						{
+							event->SetInt( "seconds", 150 );
+							gameeventmanager->FireEvent( event );
+						}
+					}
+				}
+				else
+				{
+					if ( GetRoundRestartTime() < gpGlobals->curtime + 90.0 )
+						m_flRestartRoundTime -= m_flRestartRoundTime - gpGlobals->curtime - 60.0;
+					else
+						m_flRestartRoundTime -= 30.0;
+				}
+			}
+
+			// MM stuff..
+			// if( !GTFGCClientSystem()->dword3B8 && !IsMannVsMachineMode() )
+
+			m_bPlayerReadyBefore[ pPlayer->entindex() ] = true;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -6070,6 +6223,41 @@ bool CTFGameRules::ShouldScorePerRound( void )
 }
 
 #endif  // GAME_DLL
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_HaveMinPlayersToEnable( void )
+{
+	// MM check here..
+
+#ifdef GAME_DLL
+	int nNumPlayers = 0;
+
+	CUtlVector<CBasePlayer *> players;
+	CollectHumanPlayers( &players );
+	FOR_EACH_VEC( players, i )
+	{
+		if ( players[i]->IsReplay() || players[i]->IsHLTV() )
+			continue;
+
+		nNumPlayers++;
+	}
+
+	int nMinPlayers = 1;
+	// More MM stuff...
+	/*if ( )
+	else */
+	if ( IsMannVsMachineMode() && ( engine->IsDedicatedServer() || ( !engine->IsDedicatedServer() && nNumPlayers > 1 ) ) )
+		nMinPlayers = tf_mvm_min_players_to_start.GetInt();
+	else if ( UsePlayerReadyStatusMode() && engine->IsDedicatedServer() )
+		nMinPlayers = mp_tournament_readymode_min.GetInt();
+
+	m_bHaveMinPlayersToEnableReady = ( nNumPlayers >= nMinPlayers );
+#endif
+
+	return m_bHaveMinPlayersToEnableReady;
+}
 
 void CTFGameRules::LevelShutdownPostEntity( void )
 {
@@ -7417,6 +7605,112 @@ int CTFGameRules::GetTeamAssignmentOverride( CTFPlayer *pTFPlayer, int iDesiredT
 	}
 
 	return iTeam;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_Start( void )
+{
+	SetSetup( true );
+
+	if ( IsMannVsMachineMode() )
+	{
+		mp_tournament.SetValue( true );
+
+		RestartTournament();
+		SetInStopWatch( false );
+		SetTeamReadyState( true, TF_TEAM_MVM_BOTS );
+
+		char szName[16];
+		Q_strncpy( szName, "ROBOTS", MAX_TEAMNAME_STRING + 1 );
+		mp_tournament_blueteamname.SetValue( szName );
+
+		Q_strncpy( szName, "MANNCO", MAX_TEAMNAME_STRING + 1 );
+		mp_tournament_redteamname.SetValue( szName );
+
+	}
+
+	FOR_EACH_VEC( IBaseObjectAutoList::AutoList(), i )
+	{
+		CBaseObject *pObj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
+		if ( pObj->IsDisposableBuilding() || pObj->GetTeamNumber() == TF_TEAM_MVM_BOTS )
+		{
+			pObj->DetonateObject();
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_End( void )
+{
+	SetInWaitingForPlayers( false );
+	SetSetup( false );
+
+	if ( IsMannVsMachineMode() )
+	{
+		SetInStopWatch( false );
+		mp_tournament_stopwatch.SetValue( false );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_Think( void )
+{
+	if ( UsePlayerReadyStatusMode() )
+	{
+		if ( PlayerReadyStatus_ShouldStartCountdown() ||
+			 m_flRestartRoundTime > 0 && (int)( m_flRestartRoundTime - gpGlobals->curtime ) == mp_tournament_readymode_countdown.GetInt() )
+		{
+			if ( m_flRestartRoundTime < 0 || m_flRestartRoundTime >= gpGlobals->curtime + mp_tournament_readymode_countdown.GetFloat() + 0.1 )
+			{
+				m_flRestartRoundTime.Set( IsMannVsMachineMode() ? 10.0 : mp_tournament_readymode_countdown.GetFloat() );
+
+				ShouldResetScores( true, true );
+				ShouldResetRoundsPlayed( true );
+			}
+		}
+
+		if ( PlayerReadyStatus_HaveMinPlayersToEnable() )
+		{
+			CheckReadyRestart();
+		}
+	}
+
+	CheckRespawnWaves();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PreRound_Start( void )
+{
+	BaseClass::PreRound_Start();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PreRound_End( void )
+{
+	/*if ( IsHalloweenScenario( HALLOWEEN_SCENARIO_HIGHTOWER ) && !IsInWaitingForPlayers() )
+	{
+		if ( RandomFloat( 0.0, 1.0 ) < 0.15 )
+		{
+			PlayHelltowerAnnouncerVO( HELLTOWER_VO_RED_ROUNDSTART_RARE, HELLTOWER_VO_BLUE_ROUNDSTART_RARE );
+		}
+		else
+		{
+			PlayHelltowerAnnouncerVO( HELLTOWER_VO_RED_ROUNDSTART, HELLTOWER_VO_BLUE_ROUNDSTART );
+		}
+	}*/
+
+	BaseClass::PreRound_End();
 }
 #endif
 

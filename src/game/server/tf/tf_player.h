@@ -625,6 +625,7 @@ public:
 	void SetEurekaToTeleporter(bool bToTeleporter) { m_bEurekaTeleportLocation = bToTeleporter; }
 	bool GetEurekaToTeleporter(void) { return m_bEurekaTeleportLocation; }
 
+	void				PlayReadySound( void );
 
 	float				m_nAccumulatedSentryGunDamageDealt;	// for Sentry Buster missions in MvM
 	float				GetAccumulatedSentryGunDamageDealt( void ) const { return m_nAccumulatedSentryGunDamageDealt; }
@@ -821,6 +822,7 @@ private:
 	CountdownTimer		m_sapperTimer;
 
 	float				m_flNextCarryTalkTime;
+	float				m_flNextReadySoundTime;
 
 	int					m_nBlastJumpFlags;
 	bool				m_bJumpEffect;

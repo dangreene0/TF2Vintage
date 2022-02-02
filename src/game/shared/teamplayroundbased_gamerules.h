@@ -310,6 +310,7 @@ public:
 	virtual void	BetweenRounds_End( void ) { return; }
 	virtual void	BetweenRounds_Think( void ) { return; }
 
+	virtual void	PreRound_Start( void ) { return; }
 	virtual void	PreRound_End( void ) { return; }
 
 	bool PrevRoundWasWaitingForPlayers() { return m_bPrevRoundWasWaitingForPlayers; }
