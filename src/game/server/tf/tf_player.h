@@ -188,7 +188,7 @@ public:
 	void				SetItem( CTFItem *pItem );
 	CTFItem				*GetItem( void );
 
-	void				Regenerate( void );
+	void				Regenerate( bool bRefillHealthAndAmmo = true );
 	float				GetNextRegenTime( void ) { return m_flNextRegenerateTime; }
 	void				SetNextRegenTime( float flTime ) { m_flNextRegenerateTime = flTime; }
 
@@ -517,6 +517,11 @@ public:
 	void				ValidateWearables( void );
 
 	void 				ModifyWeaponMeters(CTFWeaponBase* pWeapon);
+
+	void				RememberUpgrade( int iPlayerClass, CEconItemView *pItem, int iUpgrade, int nCost, bool bDowngrade = false );
+	void				ReapplyItemUpgrades( CEconItemView *pItem );
+	void				ReapplyPlayerUpgrades( void );
+	void				ClearUpgradeHistory( void );
 	
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
 	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
@@ -628,6 +633,7 @@ public:
 
 	CWaveSpawnPopulator *m_pWaveSpawnPopulator;
 	bool				m_bLimitedSupport;
+	CUtlVector<CUpgradeInfo> m_RefundableUpgrades;
 
 protected:
 
