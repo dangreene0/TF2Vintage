@@ -9633,7 +9633,7 @@
 		"30143"
 		{
 			"name"		"tw_demobot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_demobot_armor"
@@ -9650,7 +9650,7 @@
 		"30144"
 		{
 			"name"		"tw_demobot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_demobot_helmet"
 			"item_description"		"#TF_tw_demobot_helmet_Desc"
@@ -9666,7 +9666,7 @@
 		"30145"
 		{
 			"name"		"tw_engineerbot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_engineerbot_armor"
@@ -9683,7 +9683,7 @@
 		"30146"
 		{
 			"name"		"tw_engineerbot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_engineerbot_helmet"
 			"item_description"		"#TF_tw_engineerbot_helmet_Desc"
@@ -9699,7 +9699,7 @@
 		"30147"
 		{
 			"name"		"tw_heavybot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_heavybot_armor"
@@ -9716,7 +9716,7 @@
 		"30148"
 		{
 			"name"		"tw_heavybot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_heavybot_helmet"
 			"item_description"		"#TF_tw_heavybot_helmet_Desc"
@@ -9732,7 +9732,7 @@
 		"30149"
 		{
 			"name"		"tw_medibot_chariot"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_medibot_chariot"
@@ -9749,7 +9749,7 @@
 		"30150"
 		{
 			"name"		"tw_medibot_hat"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_medibot_hat"
 			"item_description"		"#TF_tw_medibot_hat_Desc"
@@ -9765,7 +9765,7 @@
 		"30151"
 		{
 			"name"		"tw_pyrobot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_pyrobot_armor"
@@ -9782,7 +9782,7 @@
 		"30152"
 		{
 			"name"		"tw_pyrobot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_pyrobot_helmet"
 			"item_description"		"#TF_tw_pyrobot_helmet_Desc"
@@ -9798,7 +9798,7 @@
 		"30153"
 		{
 			"name"		"tw_scoutbot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_scoutbot_armor"
@@ -9815,7 +9815,7 @@
 		"30154"
 		{
 			"name"		"tw_scoutbot_hat"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_scoutbot_hat"
 			"item_description"		"#TF_tw_scoutbot_hat_Desc"
@@ -9831,7 +9831,7 @@
 		"30155"
 		{
 			"name"		"tw_sniperbot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_sniperbot_armor"
@@ -9848,7 +9848,7 @@
 		"30156"
 		{
 			"name"		"tw_sniperbot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_sniperbot_helmet"
 			"item_description"		"#TF_tw_sniperbot_helmet_Desc"
@@ -9864,7 +9864,7 @@
 		"30157"
 		{
 			"name"		"tw_soldierbot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_soldierbot_armor"
@@ -9881,7 +9881,7 @@
 		"30158"
 		{
 			"name"		"tw_soldierbot_helmet"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_soldierbot_helmet"
 			"item_description"		"#TF_tw_soldierbot_helmet_Desc"
@@ -9897,7 +9897,7 @@
 		"30159"
 		{
 			"name"		"tw_spybot_armor"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_type_name"		"#TF_Wearable_Armor"
 			"item_name"		"#TF_tw_spybot_armor"
@@ -9914,7 +9914,7 @@
 		"30160"
 		{
 			"name"		"tw_spybot_hood"
-			"prefab"		"no_craft hat"
+			"prefab"		"hat"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_spybot_hood"
 			"item_description"		"#TF_tw_spybot_hood_Desc"
@@ -9930,7 +9930,7 @@
 		"30161"
 		{
 			"name"		"tw_sentrybuster"
-			"prefab"		"no_craft misc"
+			"prefab"		"misc"
 			"show_in_armory"		"0"
 			"item_name"		"#TF_tw_sentrybuster"
 			"item_description"		"#TF_tw_sentrybuster_Desc"
