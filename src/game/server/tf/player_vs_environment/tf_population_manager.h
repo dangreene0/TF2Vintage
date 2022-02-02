@@ -118,6 +118,7 @@ public:
 	void PostInitialize( void );
 	void RemoveBuybackCreditFromPlayer( CTFPlayer *pPlayer );
 	void RemovePlayerAndItemUpgradesFromHistory( CTFPlayer *pPlayer );
+	void RemoveRespecFromPlayer( CTFPlayer *pPlayer );
 	void ResetMap( void );
 	void ResetRespecPoints( void );
 	void RestoreCheckpoint( void );
@@ -159,7 +160,7 @@ private:
 	int m_iSentryBusterKillThreshold;
 	float m_flTimeToRestart;
 	bool m_bIsAdvanced;
-	bool byte5D8;
+	bool m_bRestoringCheckpoint;
 	CMannVsMachineStats *m_pMVMStats;
 	KeyValues *m_pMvMMapCycle;
 	bool m_bSpawningPaused;
@@ -171,11 +172,11 @@ private:
 	CUtlVector<int> m_RandomSeeds;
 	bool m_bShouldResetFlag;
 	CUtlVector<CTFPlayer const *> cutlvector6BC;
-	CUtlMap<uint64, int> cutlmap6D4;
+	CUtlMap<uint64, int> m_mapRespecs;
 	int m_nRespecsAwarded;
 	int m_nCurrencyForRespec;
 	int m_nRespecsAwardedInWave;
-	CUtlMap<uint64, int> cutlmap70C;
+	CUtlMap<uint64, int> m_mapBuyBackCredits;
 };
 
 inline KeyValues *CPopulationManager::GetTemplate( const char *pszName ) const

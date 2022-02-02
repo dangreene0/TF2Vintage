@@ -11,9 +11,14 @@
 #include "tf_objective_resource.h"
 #include "tf_gamestats.h"
 #include "tf_mann_vs_machine_stats.h"
+#include "tf_upgrades_shared.h"
+#include "tf_powerup_bottle.h"
+#include "map_entities/tf_upgrades.h"
 
 extern ConVar tf_mvm_respec_limit;
 extern ConVar tf_mvm_respec_credit_goal;
+extern ConVar tf_mvm_buybacks_method;
+extern ConVar tf_mvm_buybacks_per_wave;
 
 ConVar tf_mvm_default_sentry_buster_damage_dealt_threshold( "tf_mvm_default_sentry_buster_damage_dealt_threshold", "3000", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
 ConVar tf_mvm_default_sentry_buster_kill_threshold( "tf_mvm_default_sentry_buster_kill_threshold", "15", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
@@ -52,7 +57,7 @@ void MvMMinibossScaleChangedCallBack( IConVar *pVar, const char *pOldString, flo
 	for ( int i = 1; i <= MAX_PLAYERS; i++ )
 	{
 		CTFBot *pBot = ToTFBot( UTIL_PlayerByIndex( i ) );
-		if ( pBot /* && pPlayer->IsMiniBoss()*/ )
+		if ( pBot && pBot->IsMiniBoss() )
 		{
 			pBot->SetModelScale( cvar.GetFloat(), 1.0f );
 		}
@@ -150,6 +155,7 @@ static int s_iLastKnownMission = 1;
 // Purpose: 
 //-----------------------------------------------------------------------------
 CPopulationManager::CPopulationManager()
+	: m_mapRespecs( DefLessFunc( uint64 ) ), m_mapBuyBackCredits( DefLessFunc( uint64 ) )
 {
 	Assert( g_pPopulationManager == NULL );
 	g_pPopulationManager = this;
@@ -305,12 +311,19 @@ void CPopulationManager::Reset( void )
 
 	m_nStartingCurrency = 0;
 	m_nRespawnWaveTime = 10;
+	m_nRespecsAwarded = 0;
+	m_nRespecsAwardedInWave = 0;
 
 	m_bSpawningPaused = false;
 	m_bIsAdvanced = false;
 	m_bCanBotsAttackWhileInSpawnRoom = true;
 
 	m_szDefaultEventChangeAttributesName = "Default";
+
+	cutlvector6BC.Purge();
+
+	if ( !m_bWaveJumping )
+		m_nCurrentWaveIndex = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -328,6 +341,9 @@ void CPopulationManager::Spawn( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::AddPlayerCurrencySpent( CTFPlayer *pPlayer, int nSpent )
 {
+	PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pPlayer );
+	if ( pHistory )
+		pHistory->m_nCurrencySpent += nSpent;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,6 +351,17 @@ void CPopulationManager::AddPlayerCurrencySpent( CTFPlayer *pPlayer, int nSpent 
 //-----------------------------------------------------------------------------
 void CPopulationManager::AddRespecToPlayer( CTFPlayer *pPlayer )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+
+		uint16 nIndex = m_mapRespecs.Find( ulSteamId );
+		if ( nIndex == m_mapRespecs.InvalidIndex() )
+			nIndex = m_mapRespecs.Insert( ulSteamId );
+
+		m_mapRespecs[ nIndex ] += 1;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -342,6 +369,14 @@ void CPopulationManager::AddRespecToPlayer( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 void CPopulationManager::AdjustMinPlayerSpawnTime( void )
 {
+	float flRespawnWaveTime = fminf( 2 * ( m_nCurrentWaveIndex + 1 ), m_nRespawnWaveTime );
+
+	if ( IsInEndlessWaves() )
+		flRespawnWaveTime = (float)( m_nCurrentWaveIndex + 1 ) / 3;
+	else if ( m_bFixedRespawnWaveTime )
+		flRespawnWaveTime = m_nRespawnWaveTime;
+
+	TFGameRules()->SetTeamRespawnWaveTime( TF_TEAM_MVM_PLAYERS, flRespawnWaveTime );
 }
 
 //-----------------------------------------------------------------------------
@@ -375,6 +410,19 @@ void CPopulationManager::AllocateBots( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::ClearCheckpoint( void )
 {
+	if( tf_populator_debug.GetBool() )
+		DevMsg( "%3.2f: CHECKPOINT_CLEAR\n", gpGlobals->curtime );
+
+	m_nNumConsecutiveWipes = 0;
+
+	sm_checkpointSnapshots.PurgeAndDeleteElements();
+
+	CUtlVector<CTFPlayer *> humans;
+	CollectHumanPlayers( &humans, TF_TEAM_MVM_PLAYERS );
+	FOR_EACH_VEC( humans, i )
+	{
+		humans[i]->ClearUpgradeHistory();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -406,6 +454,56 @@ int CPopulationManager::CollectMvMBots( CUtlVector<CTFPlayer *> *pBotsOut )
 //-----------------------------------------------------------------------------
 void CPopulationManager::CycleMission( void )
 {
+	bool bHaveMission = true;
+	if ( m_pMvMMapCycle == NULL )
+		bHaveMission = LoadMissionCycleFile();
+
+	if ( !bHaveMission )
+	{
+		LoadLastKnownMission();
+		return;
+	}
+
+	const char *pszCurrentMap = STRING( gpGlobals->mapname );
+	char szCurrentPopfile[MAX_PATH]{};
+	V_FileBase( m_szPopfileFull, szCurrentPopfile, sizeof( szCurrentPopfile ) );
+
+	int iNumCatagories = m_pMvMMapCycle->GetInt( "catagories" );
+	for ( int i = 1; i < iNumCatagories; ++i )
+	{
+		KeyValues *pCatagory = m_pMvMMapCycle->FindKey( UTIL_VarArgs( "%d", i ) );
+
+		if ( pCatagory )
+		{
+			int iNumMissions = pCatagory->GetInt( "count" );
+			for ( int j = 1; j < iNumMissions; ++j )
+			{
+				KeyValues *pMission = pCatagory->FindKey( UTIL_VarArgs( "%d", j ) );
+
+				if ( pMission )
+				{
+					const char *pszMap = pMission->GetString( "map" );
+					const char *pszPopfile = pMission->GetString( "popfile" );
+
+					if ( !V_strcmp( pszMap, pszCurrentMap ) && !V_strcmp( pszPopfile, szCurrentPopfile ) )
+					{
+						int nNextMission = ( j + 1 ) % iNumMissions;
+						KeyValues *pNextMission = pCatagory->FindKey( UTIL_VarArgs( "%d", nNextMission ) );
+
+						if ( LoadMvMMission( pNextMission ) )
+						{
+							s_iLastKnownMission = nNextMission;
+							s_iLastKnownMissionCategory = i;
+
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	LoadLastKnownMission();
 }
 
 //-----------------------------------------------------------------------------
@@ -413,6 +511,39 @@ void CPopulationManager::CycleMission( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::DebugWaveStats( void )
 {
+	if ( !m_Waves.IsEmpty() )
+	{
+		int nTotalPopCurrency = GetTotalPopFileCurrency();
+		int nTotalWaves = m_Waves.Count();
+
+		DevMsg( "---\n" );
+		DevMsg( "Credits: %d\n", nTotalPopCurrency );
+		DevMsg( "Waves: %d ( %3.2f credits per wave )\n", nTotalWaves, (float)nTotalPopCurrency / nTotalWaves );
+		DevMsg( "---\n" );
+	}
+
+	if ( !m_ActiveBotUpgrades.IsEmpty() )
+	{
+		DevMsg( "*** Endless Bot Upgrades - %.0f Cash *** \n", m_nCurrentWaveIndex * tf_mvm_endless_bot_cash.GetFloat() );
+		FOR_EACH_VEC( m_ActiveBotUpgrades, i )
+		{
+			DevMsg( "   - %s %.2f\n", m_ActiveBotUpgrades[i].m_szAttrib, m_ActiveBotUpgrades[i].m_flValue );
+		}
+
+		char msg[255];
+		V_strcpy_safe( msg, "***  Bot Upgrades\n" );
+		FOR_EACH_VEC( m_ActiveBotUpgrades, i )
+		{
+			char line[255];
+			V_sprintf_safe( line, "-%s %.1f\n", m_ActiveBotUpgrades[i].m_szAttrib, m_ActiveBotUpgrades[i].m_flValue );
+			V_strcat_safe( msg, line );
+		}
+
+		UTIL_CenterPrintAll( msg );
+		UTIL_ClientPrintAll( HUD_PRINTCONSOLE, msg );
+	}
+
+	DevMsg( "Popfile: %s\n", GetPopulationFilename() );
 }
 
 //-----------------------------------------------------------------------------
@@ -621,7 +752,8 @@ CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSn
 {
 	FOR_EACH_VEC( sm_checkpointSnapshots, i )
 	{
-
+		if ( sm_checkpointSnapshots[i]->m_steamID == steamID )
+			return sm_checkpointSnapshots[i];
 	}
 
 	return nullptr;
@@ -632,6 +764,10 @@ CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSn
 //-----------------------------------------------------------------------------
 CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSnapshot( CTFPlayer *pPlayer ) const
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+		return FindCheckpointSnapshot( steamID );
+
 	return nullptr;
 }
 
@@ -640,6 +776,65 @@ CPopulationManager::CheckpointSnapshotInfo *CPopulationManager::FindCheckpointSn
 //-----------------------------------------------------------------------------
 void CPopulationManager::FindDefaultPopulationFileShortNames( CUtlVector<CUtlString> &outNames )
 {
+	char szBaseName[_MAX_PATH];
+	V_snprintf( szBaseName, sizeof( szBaseName ), "scripts/population/%s*.pop", STRING( gpGlobals->mapname ) );
+
+	FileFindHandle_t popHandle;
+	const char *pPopFileName = filesystem->FindFirstEx( szBaseName, "GAME", &popHandle );
+	while ( pPopFileName && pPopFileName[0] != '\0' )
+	{
+		// Skip it if it's a directory or is the folder info
+		if ( filesystem->FindIsDirectory( popHandle ) )
+		{
+			pPopFileName = filesystem->FindNext( popHandle );
+			continue;
+		}
+
+		const char *pchPopPostfix = StringAfterPrefix( pPopFileName, STRING( gpGlobals->mapname ) );
+		if ( pchPopPostfix )
+		{
+			char szShortName[_MAX_PATH];
+			V_strncpy( szShortName, ( ( pchPopPostfix[0] == '_' ) ? ( pchPopPostfix + 1 ) : "normal" ), sizeof( szShortName ) ); // skip the '_'
+			V_StripExtension( szShortName, szShortName, sizeof( szShortName ) );
+
+			if( outNames.Find(szShortName) == outNames.InvalidIndex() )
+				outNames.AddToTail( szShortName );
+		}
+
+		pPopFileName = filesystem->FindNext( popHandle );
+	}
+	filesystem->FindClose( popHandle );
+
+	pPopFileName = filesystem->FindFirstEx( "scripts/population/*.pop", "BSP", &popHandle );
+	while ( pPopFileName && pPopFileName[0] != '\0' )
+	{
+		// Skip it if it's a directory or is the folder info
+		if ( filesystem->FindIsDirectory( popHandle ) )
+		{
+			pPopFileName = filesystem->FindNext( popHandle );
+			continue;
+		}
+
+		char szShortName[_MAX_PATH];
+		V_strncpy( szShortName, pPopFileName, sizeof( szShortName ) );
+		V_StripExtension( szShortName, szShortName, sizeof( szShortName ) );
+
+		if ( !V_stricmp( szShortName, STRING( gpGlobals->mapname ) ) )
+			V_strcpy_safe( szShortName, "normal" );
+
+		if ( outNames.Find( szShortName ) == outNames.InvalidIndex() )
+			outNames.AddToTail( szShortName );
+
+		pPopFileName = filesystem->FindNext( popHandle );
+	}
+	filesystem->FindClose( popHandle );
+
+	int nDefaultIndex = outNames.Find( "normal" );
+	if ( nDefaultIndex != outNames.InvalidIndex() && nDefaultIndex != 0 )
+	{
+		outNames.Remove( nDefaultIndex );
+		outNames.AddToHead( "normal" );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -681,6 +876,29 @@ CPopulationManager::PlayerUpgradeHistory *CPopulationManager::FindOrAddPlayerUpg
 //-----------------------------------------------------------------------------
 bool CPopulationManager::FindPopulationFileByShortName( char const *pszName, CUtlString *outFullName )
 {
+	char szFullPath[MAX_PATH]{0};
+	V_sprintf_safe( szFullPath, "scripts/population/%s.pop", pszName );
+
+	if ( g_pFullFileSystem->FileExists( szFullPath, "GAME" ) )
+	{
+		*outFullName = szFullPath;
+		return true;
+	}
+
+	V_sprintf_safe( szFullPath, "scripts/population/%s_%s.pop", STRING( gpGlobals->mapname ), pszName );
+	if ( g_pFullFileSystem->FileExists( szFullPath, "GAME" ) )
+	{
+		*outFullName = szFullPath;
+		return true;
+	}
+
+	V_sprintf_safe( szFullPath, "scripts/population/%s.pop", STRING( gpGlobals->mapname ) );
+	if ( g_pFullFileSystem->FileExists( szFullPath, "GAME" ) )
+	{
+		*outFullName = szFullPath;
+		return true;
+	}
+
 	return false;
 }
 
@@ -689,11 +907,28 @@ bool CPopulationManager::FindPopulationFileByShortName( char const *pszName, CUt
 //-----------------------------------------------------------------------------
 void CPopulationManager::ForgetOtherBottleUpgrades( CTFPlayer *pPlayer, CEconItemView *pItem, int nUpgradeKept )
 {
+	PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pPlayer );
+	int iClass = pPlayer->GetPlayerClass()->GetClassIndex();
+
+	FOR_EACH_VEC( pHistory->m_Upgrades, i )
+	{
+		CUpgradeInfo &info = pHistory->m_Upgrades[i];
+		if ( info.m_iPlayerClass != iClass )
+			continue;
+
+		if ( info.m_nItemDefIndex != pItem->GetItemDefIndex() )
+			continue;
+
+		if ( info.m_iUpgrade == nUpgradeKept )
+			continue;
+
+		pHistory->m_Upgrades.FastRemove( i-- );
+	}
 }
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-
 void CPopulationManager::GameRulesThink( void )
 {
 	// Some MM logic goes here
@@ -743,6 +978,16 @@ float CPopulationManager::GetHealthMultiplier( bool bTankMultiplier ) const
 //-----------------------------------------------------------------------------
 int CPopulationManager::GetNumBuybackCreditsForPlayer( CTFPlayer *pPlayer )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+		int nIndex = m_mapBuyBackCredits.Find( ulSteamId );
+
+		if ( nIndex != m_mapBuyBackCredits.InvalidIndex() )
+			return m_mapBuyBackCredits[ nIndex ];
+	}
+
 	return 0;
 }
 
@@ -751,6 +996,16 @@ int CPopulationManager::GetNumBuybackCreditsForPlayer( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 int CPopulationManager::GetNumRespecsAvailableForPlayer( CTFPlayer *pPlayer )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+		int nIndex = m_mapRespecs.Find( ulSteamId );
+
+		if ( nIndex != m_mapRespecs.InvalidIndex() )
+			return m_mapRespecs[ nIndex ];
+	}
+
 	return 0;
 }
 
@@ -759,6 +1014,10 @@ int CPopulationManager::GetNumRespecsAvailableForPlayer( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 int CPopulationManager::GetPlayerCurrencySpent( CTFPlayer *pPlayer )
 {
+	PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pPlayer );
+	if ( pHistory )
+		return pHistory->m_nCurrencySpent;
+
 	return 0;
 }
 
@@ -767,6 +1026,10 @@ int CPopulationManager::GetPlayerCurrencySpent( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 CUtlVector<CUpgradeInfo> *CPopulationManager::GetPlayerUpgradeHistory( CTFPlayer *pPlayer )
 {
+	PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pPlayer );
+	if ( pHistory )
+		return &pHistory->m_Upgrades;
+
 	return nullptr;
 }
 
@@ -791,6 +1054,28 @@ char const *CPopulationManager::GetPopulationFilenameShort( void ) const
 //-----------------------------------------------------------------------------
 void CPopulationManager::GetSentryBusterDamageAndKillThreshold( int &nNumDamage, int &nNumKills )
 {
+	int nNumSentryGuns = 0;
+	FOR_EACH_VEC( IBaseObjectAutoList::AutoList(), i )
+	{
+		CBaseObject *pObject = assert_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
+		if ( !pObject || pObject->GetType() != OBJ_SENTRYGUN || pObject->IsDisposableBuilding() )
+			continue;
+
+		if ( pObject->GetTeamNumber() == TF_TEAM_MVM_PLAYERS )
+			nNumSentryGuns++;
+	}
+
+	float flScale = RemapValClamped( nNumSentryGuns, 1.0, 6.0, 1.0, 0.5 );
+	if ( nNumSentryGuns <= 1 )
+	{
+		nNumDamage = m_iSentryBusterDamageDealtThreshold;
+		nNumKills = m_iSentryBusterKillThreshold;
+	}
+	else
+	{
+		nNumDamage = m_iSentryBusterDamageDealtThreshold * flScale;
+		nNumKills = m_iSentryBusterKillThreshold * flScale;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -798,7 +1083,13 @@ void CPopulationManager::GetSentryBusterDamageAndKillThreshold( int &nNumDamage,
 //-----------------------------------------------------------------------------
 int CPopulationManager::GetTotalPopFileCurrency( void )
 {
-	return 0;
+	int nTotalCurrency = 0;
+	FOR_EACH_VEC( m_Waves, i )
+	{
+		nTotalCurrency += m_Waves[i]->GetTotalCurrency();
+	}
+
+	return nTotalCurrency;
 }
 
 //-----------------------------------------------------------------------------
@@ -834,6 +1125,15 @@ bool CPopulationManager::IsInEndlessWaves( void ) const
 //-----------------------------------------------------------------------------
 bool CPopulationManager::IsPlayerBeingTrackedForBuybacks( CTFPlayer *pPlayer )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+		uint16 nIndex = m_mapBuyBackCredits.Find( ulSteamId );
+
+		return nIndex != m_mapBuyBackCredits.InvalidIndex();
+	}
+
 	return false;
 }
 
@@ -875,6 +1175,74 @@ bool CPopulationManager::IsValidMvMMap( char const *pszMapName )
 //-----------------------------------------------------------------------------
 void CPopulationManager::JumpToWave( int nWave, float f1 )
 {
+	if ( IsInEndlessWaves() && nWave >= m_Waves.Count() )
+	{
+		if ( !m_Waves.IsEmpty() )
+			Warning( "Invalid wave number %d\n", nWave );
+
+		return;
+	}
+
+	CWave *pWave = GetCurrentWave();
+	if ( pWave ) pWave->ForceFinish();
+
+	m_bWaveJumping = true;
+	m_nCurrentWaveIndex = nWave;
+
+	if ( f1 != -1.0f )
+	{
+		ClearCheckpoint();
+		Initialize();
+			
+		m_pMVMStats->ResetStats();
+
+		for ( m_nCurrentWaveIndex = 0; m_nCurrentWaveIndex < nWave; ++m_nCurrentWaveIndex )
+		{
+			pWave = GetCurrentWave();
+			if ( pWave )
+			{
+				int nCurrency = pWave->GetTotalCurrency();
+				m_pMVMStats->SetCurrentWave( m_nCurrentWaveIndex );
+
+				if ( m_nCurrentWaveIndex < nWave )
+				{
+					m_pMVMStats->RoundEvent_CreditsDropped( m_nCurrentWaveIndex, nCurrency );
+					m_pMVMStats->RoundEvent_AcquiredCredits( m_nCurrentWaveIndex, nCurrency * f1, false );
+				}
+			}
+		}
+	}
+
+	m_nCurrentWaveIndex = nWave;
+
+	pWave = GetCurrentWave();
+	if ( pWave ) pWave->ForceReset();
+
+	m_pMVMStats->SetCurrentWave( m_nCurrentWaveIndex );
+
+	if ( IsInEndlessWaves() )
+		EndlessRollEscalation();
+
+	UpdateObjectiveResource();
+	SetCheckpoint( -1 );
+	ResetRespecPoints();
+
+	TFGameRules()->SetAllowBetweenRounds( true );
+	TFGameRules()->State_Transition( GR_STATE_PREROUND );
+	TFGameRules()->PlayerReadyStatus_ResetState();
+
+	TFObjectiveResource()->SetMannVsMachineBetweenWaves( true );
+
+	RestorePlayerCurrency();
+	m_bWaveJumping = false;
+
+	CTF_GameStats.ResetRoundStats();
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "mvm_reset_stats" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1313,6 +1681,18 @@ void CPopulationManager::PostInitialize( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::RemoveBuybackCreditFromPlayer( CTFPlayer *pPlayer )
 {
+	if ( !tf_mvm_buybacks_method.GetInt() )
+		return;
+
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+
+		int nIndex = m_mapBuyBackCredits.Find( ulSteamId );
+		if ( nIndex != m_mapBuyBackCredits.InvalidIndex() )
+			m_mapBuyBackCredits[ nIndex ] -= 1;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1320,6 +1700,78 @@ void CPopulationManager::RemoveBuybackCreditFromPlayer( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 void CPopulationManager::RemovePlayerAndItemUpgradesFromHistory( CTFPlayer *pPlayer )
 {
+	CSteamID steamID;
+	if ( !pPlayer->GetSteamID( &steamID ) )
+		return;
+
+	FOR_EACH_VEC_BACK( sm_checkpointSnapshots, i )
+	{
+		CheckpointSnapshotInfo *pInfo = sm_checkpointSnapshots[i];
+		if ( pInfo->m_steamID == steamID )
+		{
+			FOR_EACH_VEC_BACK( pInfo->m_Upgrades, j )
+			{
+				int const iUpgrade = pInfo->m_Upgrades[j].m_iUpgrade;
+				CMannVsMachineUpgrades *pUpgrade = &( g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ] );
+
+				if ( pUpgrade )
+				{
+					if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_ITEM || pUpgrade->nUIGroup == UIGROUP_UPGRADE_PLAYER )
+					{
+						pInfo->m_nCurrencySpent -= pUpgrade->nCost;
+						pInfo->m_Upgrades.Remove( j );
+					}
+				}
+			}
+		}
+	}
+
+	FOR_EACH_VEC_BACK( m_PlayerUpgrades, i )
+	{
+		PlayerUpgradeHistory *pHistory = m_PlayerUpgrades[i];
+		if ( pHistory->m_steamID == steamID )
+		{
+			FOR_EACH_VEC_BACK( pHistory->m_Upgrades, j )
+			{
+				int const iUpgrade = pHistory->m_Upgrades[j].m_iUpgrade;
+				CMannVsMachineUpgrades *pUpgrade = &( g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ] );
+
+				if ( pUpgrade )
+				{
+					if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_ITEM || pUpgrade->nUIGroup == UIGROUP_UPGRADE_PLAYER )
+					{
+						pHistory->m_nCurrencySpent -= pUpgrade->nCost;
+						pHistory->m_Upgrades.Remove( j );
+					}
+				}
+			}
+		}
+	}
+
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() && m_pMVMStats )
+	{
+		int nTotalAcquiredCurrency = m_pMVMStats->GetAcquiredCredits( -1 ) + GetStartingCurrency();
+		pPlayer->SetCurrency( nTotalAcquiredCurrency - GetPlayerCurrencySpent( pPlayer ) );
+
+		// Reset the stat that tracks upgrade purchases
+		m_pMVMStats->ResetUpgradeSpending( pPlayer );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CPopulationManager::RemoveRespecFromPlayer( CTFPlayer *pPlayer )
+{
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+
+		int nIndex = m_mapRespecs.Find( ulSteamId );
+		if ( nIndex != m_mapRespecs.InvalidIndex() )
+			m_mapRespecs[ nIndex ] -= 1;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1327,6 +1779,38 @@ void CPopulationManager::RemovePlayerAndItemUpgradesFromHistory( CTFPlayer *pPla
 //-----------------------------------------------------------------------------
 void CPopulationManager::ResetMap( void )
 {
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+
+		if ( !pPlayer || FNullEnt( pPlayer->edict() ) )
+			continue;
+
+		if ( pPlayer->GetTeamNumber() != TF_TEAM_MVM_PLAYERS )
+			continue;
+
+		pPlayer->ResetScores();
+	}
+
+	m_pMVMStats->ResetStats();
+
+	ResetRespecPoints();
+	ClearCheckpoint();
+
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CTFPlayer *pPlayer = ToTFPlayer( UTIL_PlayerByIndex( i ) );
+
+		if ( !pPlayer || FNullEnt( pPlayer->edict() ) )
+			continue;
+
+		if ( pPlayer->IsBot() )
+			continue;
+
+		pPlayer->m_RefundableUpgrades.RemoveAll();
+	}
+
+	JumpToWave( 0, 0 );
 }
 
 //-----------------------------------------------------------------------------
@@ -1334,6 +1818,19 @@ void CPopulationManager::ResetMap( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::ResetRespecPoints( void )
 {
+	m_mapRespecs.RemoveAll();
+	m_nRespecsAwarded = 0;
+	m_nCurrencyForRespec = 0;
+	m_nRespecsAwardedInWave = 0;
+
+	if ( tf_mvm_respec_limit.GetBool() )
+	{
+		if ( m_pMVMStats )
+		{
+			m_pMVMStats->SetNumRespecsEarnedInWave( m_nRespecsAwardedInWave );
+			m_pMVMStats->SetAcquiredCreditsForRespec( m_nCurrencyForRespec );
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1341,6 +1838,54 @@ void CPopulationManager::ResetRespecPoints( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::RestoreCheckpoint( void )
 {
+	m_bRestoringCheckpoint = true;
+
+	if ( !IsInEndlessWaves() )
+		m_nCurrentWaveIndex = m_nCheckpointWaveIndex;
+
+	m_PlayerUpgrades.PurgeAndDeleteElements();
+	FOR_EACH_VEC( sm_checkpointSnapshots, i )
+	{
+		CheckpointSnapshotInfo *pInfo = sm_checkpointSnapshots[i];
+
+		PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pInfo->m_steamID );
+		pHistory->m_nCurrencySpent = pInfo->m_nCurrencySpent;
+
+		pHistory->m_Upgrades.RemoveAll();
+		FOR_EACH_VEC( pInfo->m_Upgrades, j )
+		{
+			pHistory->m_Upgrades.AddToTail( pInfo->m_Upgrades[j] );
+		}
+	}
+
+	CUtlVector<CTFPlayer *> humans;
+	CollectHumanPlayers( &humans, TF_TEAM_MVM_PLAYERS );
+	FOR_EACH_VEC( humans, i )
+	{
+		CTFPlayer *pPlayer = humans[i];
+
+		pPlayer->m_nAccumulatedSentryGunDamageDealt = 0;
+		pPlayer->m_nAccumulatedSentryGunKillCount = 0;
+
+		CEconWearable *pWearable = pPlayer->GetWearableForLoadoutSlot( TF_LOADOUT_SLOT_ACTION );
+		if ( pWearable )
+		{
+			CTFPowerupBottle *pBottle = dynamic_cast<CTFPowerupBottle *>( pWearable );
+			if ( pBottle )
+				pBottle->Reset();
+		}
+
+		SendUpgradesToPlayer( pPlayer );
+	}
+
+	m_nNumConsecutiveWipes++;
+	m_nRespecsAwardedInWave = 0;
+
+	m_pMVMStats->SetCurrentWave( m_nCurrentWaveIndex );
+
+	UpdateObjectiveResource();
+
+	TFGameRules()->BroadcastSound( 255, "Announcer.MVM_Get_To_Upgrade" );
 }
 
 //-----------------------------------------------------------------------------
@@ -1348,6 +1893,36 @@ void CPopulationManager::RestoreCheckpoint( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::RestoreItemToCheckpoint( CTFPlayer *pPlayer, CEconItemView *pItem )
 {
+	CheckpointSnapshotInfo *pInfo = FindCheckpointSnapshot( pPlayer );
+	if ( pInfo == NULL )
+		return;
+
+	if ( pItem == NULL )
+		return;
+
+	FOR_EACH_VEC( pInfo->m_Upgrades, i )
+	{
+		CUpgradeInfo &info = pInfo->m_Upgrades[i];
+
+		if ( info.m_nItemDefIndex != pItem->GetItemDefIndex() )
+			continue;
+
+		if ( pPlayer->GetPlayerClass()->GetClassIndex() != info.m_iPlayerClass )
+			continue;
+
+		if ( g_hUpgradeEntity->ApplyUpgradeToItem( pPlayer, pItem, info.m_iUpgrade, info.m_nCost ) )
+		{
+			if ( tf_populator_debug.GetBool() )
+			{
+				const char *pszUpgradeName = g_hUpgradeEntity->GetUpgradeAttributeName( info.m_iUpgrade );
+				DevMsg( "%3.2f: CHECKPOINT_RESTORE_ITEM: Player '%s', item '%s', upgrade '%s'\n",
+						gpGlobals->curtime,
+						pPlayer->GetPlayerName(),
+						pItem->GetStaticData()->GetName(),
+						pszUpgradeName ? pszUpgradeName : "<self>" );
+			}
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1355,6 +1930,14 @@ void CPopulationManager::RestoreItemToCheckpoint( CTFPlayer *pPlayer, CEconItemV
 //-----------------------------------------------------------------------------
 void CPopulationManager::RestorePlayerCurrency( void )
 {
+	int nCurrency = m_pMVMStats->GetAcquiredCredits( -1 ) + GetStartingCurrency();
+
+	CUtlVector<CTFPlayer *> humans;
+	CollectHumanPlayers( &humans, TF_TEAM_MVM_PLAYERS );
+	FOR_EACH_VEC( humans, i )
+	{
+		humans[i]->SetCurrency( nCurrency - GetPlayerCurrencySpent( humans[i] ) );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1362,6 +1945,15 @@ void CPopulationManager::RestorePlayerCurrency( void )
 //-----------------------------------------------------------------------------
 void CPopulationManager::SendUpgradesToPlayer( CTFPlayer *pPlayer )
 {
+	CUtlVector<CUpgradeInfo> *upgrades = NULL;
+
+	PlayerUpgradeHistory *pHistory = FindOrAddPlayerUpgradeHistory( pPlayer );
+	if ( pHistory )
+	{
+		upgrades = &pHistory->m_Upgrades;
+	}
+
+	m_pMVMStats->SendUpgradesToPlayer( pPlayer, upgrades );
 }
 
 //-----------------------------------------------------------------------------
@@ -1369,6 +1961,17 @@ void CPopulationManager::SendUpgradesToPlayer( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 void CPopulationManager::SetBuybackCreditsForPlayer( CTFPlayer *pPlayer, int nCredits )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+
+		uint16 nIndex = m_mapBuyBackCredits.Find( ulSteamId );
+		if ( nIndex == m_mapBuyBackCredits.InvalidIndex() )
+			nIndex = m_mapBuyBackCredits.Insert( ulSteamId );
+
+		m_mapBuyBackCredits[ nIndex ] = nCredits;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1376,13 +1979,76 @@ void CPopulationManager::SetBuybackCreditsForPlayer( CTFPlayer *pPlayer, int nCr
 //-----------------------------------------------------------------------------
 void CPopulationManager::SetCheckpoint( int nWave )
 {
+	if ( !IsInEndlessWaves() )
+	{
+		if ( nWave < 0 )
+		{
+			nWave = m_nCurrentWaveIndex;
+			if ( nWave < 0 )
+			{
+				Warning( "Warning: SetCheckpoint() called with invalid wave number %d\n", nWave );
+				return;
+			}
+		}
+
+		if ( m_Waves.Count() <= nWave )
+		{
+			Warning( "Warning: SetCheckpoint() called with invalid wave number %d\n", nWave );
+			return;
+		}
+
+		DevMsg( "Checkpoint Saved\n" );
+
+		m_nCheckpointWaveIndex = nWave;
+		m_nNumConsecutiveWipes = 0;
+
+		FOR_EACH_VEC( m_PlayerUpgrades, i )
+		{
+			CheckpointSnapshotInfo *pInfo = FindCheckpointSnapshot( m_PlayerUpgrades[i]->m_steamID );
+			if ( pInfo )
+			{
+				pInfo->m_nCurrencySpent = m_PlayerUpgrades[i]->m_nCurrencySpent;
+
+				pInfo->m_Upgrades.RemoveAll();
+				FOR_EACH_VEC( m_PlayerUpgrades[i]->m_Upgrades, k )
+				{
+					pInfo->m_Upgrades.AddToTail( m_PlayerUpgrades[i]->m_Upgrades[k] );
+				}
+
+				return;
+			}
+
+			pInfo = new CheckpointSnapshotInfo;
+			pInfo->m_steamID = m_PlayerUpgrades[i]->m_steamID;
+			pInfo->m_nCurrencySpent = m_PlayerUpgrades[i]->m_nCurrencySpent;
+			
+			pInfo->m_Upgrades.RemoveAll();
+			FOR_EACH_VEC( m_PlayerUpgrades[i]->m_Upgrades, j )
+			{
+				pInfo->m_Upgrades.AddToTail( m_PlayerUpgrades[i]->m_Upgrades[j] );
+			}
+
+			sm_checkpointSnapshots.AddToTail( pInfo );
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CPopulationManager::SetNumRespecsForPlayer( CTFPlayer *pplayer, int nRespecs )
+void CPopulationManager::SetNumRespecsForPlayer( CTFPlayer *pPlayer, int nRespecs )
 {
+	CSteamID steamID;
+	if ( pPlayer->GetSteamID( &steamID ) )
+	{
+		uint64 ulSteamId = steamID.ConvertToUint64();
+
+		uint16 nIndex = m_mapRespecs.Find( ulSteamId );
+		if ( nIndex == m_mapRespecs.InvalidIndex() )
+			nIndex = m_mapRespecs.Insert( ulSteamId );
+
+		m_mapRespecs[ nIndex ] = nRespecs;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1396,6 +2062,7 @@ void CPopulationManager::SetPopulationFilename( char const *pszFileName )
 	V_FileBase( m_szPopfileFull, m_szPopfileShort, sizeof( m_szPopfileShort ) );
 
 	MannVsMachineStats_SetPopulationFile( m_szPopfileFull );
+
 	ResetMap();
 
 	if ( TFObjectiveResource() )
@@ -1436,6 +2103,13 @@ void CPopulationManager::StartCurrentWave( void )
 	m_pMVMStats->RoundEvent_WaveStart();
 
 	TFGameRules()->State_Transition( GR_STATE_RND_RUNNING );
+
+	m_nRespecsAwardedInWave = 0;
+
+	FOR_EACH_MAP( m_mapBuyBackCredits, i )
+	{
+		m_mapBuyBackCredits[i] = tf_mvm_buybacks_per_wave.GetInt();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1494,7 +2168,7 @@ void CPopulationManager::Update( void )
 		}
 
 		// Logic for achievements
-		if ( byte5D8 && MannVsMachineStats_GetDroppedCredits() && !MannVsMachineStats_GetMissedCredits() )
+		if ( m_bRestoringCheckpoint && MannVsMachineStats_GetDroppedCredits() && !MannVsMachineStats_GetMissedCredits() )
 		{
 			IGameEvent *event = gameeventmanager->CreateEvent( m_bIsAdvanced ? "mvm_creditbonus_all_advanced" : "mvm_creditbonus_all" );
 			if ( event )
@@ -1502,7 +2176,7 @@ void CPopulationManager::Update( void )
 				gameeventmanager->FireEvent( event );
 			}
 
-			byte5D8 = false;
+			m_bRestoringCheckpoint = false;
 		}
 	}
 	else if ( TFGameRules()->State_Get() == GR_STATE_STARTGAME )

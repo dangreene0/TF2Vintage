@@ -13,6 +13,8 @@
 #include "tf_weapon_wrench.h"
 #include "tf_obj.h"
 #include "tf_powerup_bottle.h"
+#include "tf_objective_resource.h"
+#include "player_vs_environment/tf_population_manager.h"
 
 CHandle<CUpgrades> g_hUpgradeEntity;
 
@@ -314,8 +316,8 @@ attrib_def_index_t CUpgrades::ApplyUpgradeToItem( CTFPlayer *pPlayer, CEconItemV
 				pPowerupBottle->RemoveEffect();
 				pAttribList->RemoveAllAttributes();
 
-				/*if ( g_pPopulationManager )
-					g_pPopulationManager->ForgetOtherBottleUpgrades( pPlayer, pItem, nUpgrade );*/
+				if ( g_pPopulationManager )
+					g_pPopulationManager->ForgetOtherBottleUpgrades( pPlayer, pItem, nUpgrade );
 			}
 
 			return pAttribute->index;
@@ -331,8 +333,8 @@ attrib_def_index_t CUpgrades::ApplyUpgradeToItem( CTFPlayer *pPlayer, CEconItemV
 		pPowerupBottle->RemoveEffect();
 		pAttribList->RemoveAllAttributes();
 
-		/*if ( g_pPopulationManager )
-			g_pPopulationManager->ForgetOtherBottleUpgrades( pPlayer, pItem, nUpgrade );*/
+		if ( g_pPopulationManager )
+			g_pPopulationManager->ForgetOtherBottleUpgrades( pPlayer, pItem, nUpgrade );
 
 		pPowerupBottle->SetNumCharges( 1 );
 
@@ -354,6 +356,14 @@ char const *CUpgrades::GetUpgradeAttributeName( int iUpgrade ) const
 		return nullptr;
 
 	return g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgrade ].szAttribute;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CUpgrades::GrantOrRemoveAllUpgrades( CTFPlayer *pPlayer, bool bRemove, bool bRefund )
+{
+
 }
 
 //-----------------------------------------------------------------------------
@@ -447,6 +457,14 @@ void CUpgrades::ReportUpgrade( CTFPlayer *pPlayer, int iItemDef, int iAttributeD
 		event->SetInt( "userid", pPlayer->GetUserID() );
 		gameeventmanager->FireEvent( event );
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CUpgrades::PlayerPurchasingUpgrade( CTFPlayer *pPlayer, int iItemSlot, int iUpgrade, bool bDowngrade, bool bFree, bool bRespec )
+{
+
 }
 
 //-----------------------------------------------------------------------------
