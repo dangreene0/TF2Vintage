@@ -7,7 +7,6 @@
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api.h"
-#include "steam/isteamuser.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!

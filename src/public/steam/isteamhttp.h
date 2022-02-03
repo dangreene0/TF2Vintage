@@ -140,13 +140,15 @@ public:
 	virtual bool GetHTTPRequestWasTimedOut( HTTPRequestHandle hRequest, bool *pbWasTimedOut ) = 0;
 };
 
-#define STEAMHTTP_INTERFACE_VERSION "STEAMHTTP_INTERFACE_VERSION002"
+#define STEAMHTTP_INTERFACE_VERSION "STEAMHTTP_INTERFACE_VERSION003"
 
 // Global interface accessor
-S_API ISteamHTTP *S_CALLTYPE SteamHTTP();
+inline ISteamHTTP *SteamHTTP();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamHTTP *, SteamHTTP, STEAMHTTP_INTERFACE_VERSION );
 
 // Global accessor for the gameserver client
-S_API ISteamHTTP *S_CALLTYPE SteamGameServerHTTP();
+inline ISteamHTTP *SteamGameServerHTTP();
+STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamHTTP *, SteamGameServerHTTP, STEAMHTTP_INTERFACE_VERSION );
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )
@@ -159,7 +161,7 @@ S_API ISteamHTTP *S_CALLTYPE SteamGameServerHTTP();
 
 struct HTTPRequestCompleted_t
 {
-	enum { k_iCallback = k_iClientHTTPCallbacks + 1 };
+	enum { k_iCallback = k_iSteamHTTPCallbacks + 1 };
 
 	// Handle value for the request that has completed.
 	HTTPRequestHandle m_hRequest;
@@ -182,7 +184,7 @@ struct HTTPRequestCompleted_t
 
 struct HTTPRequestHeadersReceived_t
 {
-	enum { k_iCallback = k_iClientHTTPCallbacks + 2 };
+	enum { k_iCallback = k_iSteamHTTPCallbacks + 2 };
 
 	// Handle value for the request that has received headers.
 	HTTPRequestHandle m_hRequest;
@@ -194,7 +196,7 @@ struct HTTPRequestHeadersReceived_t
 
 struct HTTPRequestDataReceived_t
 {
-	enum { k_iCallback = k_iClientHTTPCallbacks + 3 };
+	enum { k_iCallback = k_iSteamHTTPCallbacks + 3 };
 
 	// Handle value for the request that has received data.
 	HTTPRequestHandle m_hRequest;
