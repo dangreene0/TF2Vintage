@@ -183,7 +183,7 @@ void CEconItemView::SetItemDefIndex( int iItemID )
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-int CEconItemView::GetItemDefIndex( void ) const
+item_def_index_t CEconItemView::GetItemDefIndex( void ) const
 {
 	return m_iItemDefinitionIndex;
 }

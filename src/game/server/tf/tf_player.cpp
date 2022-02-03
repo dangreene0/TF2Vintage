@@ -70,6 +70,7 @@
 #include "tf_obj_teleporter.h"
 #include "player_vs_environment/tf_population_manager.h"
 #include "tf_mann_vs_machine_stats.h"
+#include "tf_upgrades_shared.h"
 
 #ifndef _X360
 #include "steam/isteamuserstats.h"
@@ -2260,6 +2261,72 @@ void CTFPlayer::ModifyWeaponMeters(CTFWeaponBase* pWeapon)
 	default:
 		break;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::RememberUpgrade( int iPlayerClass, CEconItemView *pItem, int iUpgrade, int nCost, bool bDowngrade )
+{
+	if ( IsBot() )
+		return;
+
+	if ( !g_pPopulationManager )
+	{
+		Warning( "Remember Upgrade Error: Population Manager does not exist!\n" );
+		return;
+	}
+
+	CUtlVector<CUpgradeInfo> *upgrades = g_pPopulationManager->GetPlayerUpgradeHistory( this );
+
+	if ( !bDowngrade )
+	{
+		if ( upgrades )
+		{
+			upgrades->AddToTail( {iPlayerClass, pItem->GetItemDefIndex(), iUpgrade, nCost} );
+		}
+
+		m_RefundableUpgrades.AddToTail( {iPlayerClass, pItem->GetItemDefIndex(), iUpgrade, nCost} );
+	}
+	else
+	{
+		if ( upgrades )
+		{
+			for ( int i = 0; i < upgrades->Count(); ++i )
+			{
+				CUpgradeInfo info = upgrades->Element( i );
+				if ( info.m_nItemDefIndex == pItem->GetItemDefIndex() && info.m_iUpgrade == iUpgrade && info.m_nCost == -nCost )
+				{
+					upgrades->Remove( i );
+					break;
+				}
+			}
+		}
+
+		for ( int i = 0; i < m_RefundableUpgrades.Count(); ++i )
+		{
+			CUpgradeInfo info = m_RefundableUpgrades[i];
+			if ( info.m_nItemDefIndex == pItem->GetItemDefIndex() && info.m_iUpgrade == iUpgrade && info.m_nCost == -nCost )
+			{
+				m_RefundableUpgrades.Remove( i );
+				break;
+			}
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ReapplyItemUpgrades( CEconItemView *pItem )
+{
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ReapplyPlayerUpgrades( void )
+{
 }
 
 //-----------------------------------------------------------------------------

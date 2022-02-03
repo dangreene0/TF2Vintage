@@ -119,7 +119,7 @@ public:
 	CAttributeList const *GetAttributeList( void ) const { return &m_AttributeList; }
 
 	void SetItemDefIndex( int iItemID );
-	int GetItemDefIndex( void ) const;
+	item_def_index_t GetItemDefIndex( void ) const;
 	void SetItemQuality( int iQuality );
 	int GetItemQuality( void ) const;
 	void SetItemLevel( int nLevel );
