@@ -652,9 +652,10 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 	else if ( FStrEq( eventname, "server_spawn" ) )
 	{
 		char const *pszAddr = event->GetString( "address" );
-
+		const char *pszSteamID = event->GetString( "steamid" );
+		
 		long nIP = event->GetInt( "ip" );
-		if ( nIP == 0 && pszAddr && pszAddr[0] != '\0' )
+		if ( nIP == 0 && V_stricmp( pszAddr, "loopback" ) == -1 )
 		{
 			CUtlStringList ip_parts;
 			V_SplitString( pszAddr, ".", ip_parts );
@@ -669,7 +670,7 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 			nIP = ( nIPParts[0]<<24 ) + ( nIPParts[1]<<16 ) + ( nIPParts[2]<<8 ) + nIPParts[3];
 		}
 
-		g_pEconNetwork->ConnectToServer( nIP, ECON_SERVER_PORT );
+		g_pNetworking->ConnectToServer( nIP, ECON_SERVER_PORT, CSteamID( pszSteamID ) );
 	}
 
 	BaseClass::FireGameEvent( event );
