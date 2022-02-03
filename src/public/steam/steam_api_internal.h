@@ -232,7 +232,6 @@ class ISteamMusicRemote;
 class ISteamGameServerStats;
 class ISteamPS3OverlayRender;
 class ISteamHTTP;
-class ISteamUnifiedMessages;
 class ISteamController;
 class ISteamUGC;
 class ISteamAppList;
@@ -341,7 +340,6 @@ public:
 	ISteamRemoteStorage* SteamRemoteStorage() const			{ return m_pSteamRemoteStorage; }
 	ISteamScreenshots*	SteamScreenshots() const			{ return m_pSteamScreenshots; }
 	ISteamHTTP*			SteamHTTP() const					{ return m_pSteamHTTP; }
-	ISteamUnifiedMessages*	SteamUnifiedMessages()			{ return m_pSteamUnifiedMessages; }
 	ISteamController*	SteamController() const				{ return m_pController; }
 	ISteamUGC*			SteamUGC() const					{ return m_pSteamUGC; }
 	ISteamAppList*		SteamAppList() const				{ return m_pSteamAppList; }
@@ -366,7 +364,6 @@ private:
 	ISteamRemoteStorage *m_pSteamRemoteStorage;
 	ISteamScreenshots	*m_pSteamScreenshots;
 	ISteamHTTP			*m_pSteamHTTP;
-	ISteamUnifiedMessages*m_pSteamUnifiedMessages;
 	ISteamController	*m_pController;
 	ISteamUGC			*m_pSteamUGC;
 	ISteamAppList		*m_pSteamAppList;

@@ -381,13 +381,13 @@ STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamUGC *, SteamUGC, STEAMUGC_INTERFACE_
 inline ISteamUGC *SteamGameServerUGC();
 STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamUGC *, SteamGameServerUGC, STEAMUGC_INTERFACE_VERSION );
 
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
-S_API ISteamUGC *S_CALLTYPE SteamUGC();
+inline ISteamUGC *SteamUGC();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamUGC *, SteamUGC, STEAMUGC_INTERFACE_VERSION );
 
 // Global accessor for the gameserver client
-S_API ISteamUGC *S_CALLTYPE SteamGameServerUGC();
-#endif
+inline ISteamUGC *SteamGameServerUGC();
+STEAM_DEFINE_GAMESERVER_INTERFACE_ACCESSOR( ISteamUGC *, SteamGameServerUGC, STEAMUGC_INTERFACE_VERSION );
 
 //-----------------------------------------------------------------------------
 // Purpose: Callback for querying UGC

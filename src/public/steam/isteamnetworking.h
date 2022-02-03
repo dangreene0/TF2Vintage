@@ -290,7 +290,6 @@ public:
 };
 #define STEAMNETWORKING_INTERFACE_VERSION "SteamNetworking006"
 
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 inline ISteamNetworking *SteamNetworking();
 STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamNetworking *, SteamNetworking, STEAMNETWORKING_INTERFACE_VERSION );

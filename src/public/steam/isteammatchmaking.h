@@ -259,7 +259,6 @@ public:
 };
 #define STEAMMATCHMAKING_INTERFACE_VERSION "SteamMatchMaking009"
 
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 inline ISteamMatchmaking *SteamMatchmaking();
 STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamMatchmaking *, SteamMatchmaking, STEAMMATCHMAKING_INTERFACE_VERSION );

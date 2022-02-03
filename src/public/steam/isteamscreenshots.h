@@ -81,14 +81,10 @@ public:
 
 #define STEAMSCREENSHOTS_INTERFACE_VERSION "STEAMSCREENSHOTS_INTERFACE_VERSION003"
 
+
 // Global interface accessor
 inline ISteamScreenshots *SteamScreenshots();
 STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamScreenshots *, SteamScreenshots, STEAMSCREENSHOTS_INTERFACE_VERSION );
-
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
-// Global interface accessor
-S_API ISteamScreenshots *S_CALLTYPE SteamScreenshots();
-#endif
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

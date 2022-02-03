@@ -426,7 +426,6 @@ public:
 
 #define STEAMFRIENDS_INTERFACE_VERSION "SteamFriends017"
 
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 inline ISteamFriends *SteamFriends();
 STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamFriends *, SteamFriends, STEAMFRIENDS_INTERFACE_VERSION );

@@ -228,7 +228,6 @@ public:
 
 #define STEAMUTILS_INTERFACE_VERSION "SteamUtils010"
 
-#ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
 inline ISteamUtils *SteamUtils();
 STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamUtils *, SteamUtils, SteamInternal_FindOrCreateUserInterface( 0, STEAMUTILS_INTERFACE_VERSION ), "user", STEAMUTILS_INTERFACE_VERSION );
