@@ -63,7 +63,7 @@ public:
 
 		uint unVersion = 0;
 		FileHandle_t fh = g_pFullFileSystem->Open( "version.txt", "r", "MOD" );
-		if ( fh && g_pFullFileSystem->Tell( fh ) > 0 )
+		if ( fh && g_pFullFileSystem->Size( fh ) > 0 )
 		{
 			char version[48];
 			g_pFullFileSystem->ReadLine( version, sizeof( version ), fh );
@@ -105,8 +105,8 @@ public:
 	virtual bool ProcessMessage( CNetPacket *pPacket )
 	{
 	#if defined( GAME_DLL )
-		/*FileHandle_t fh = filesystem->Open("version.txt", "r", "MOD");
-		if ( fh && filesystem->Tell( fh ) > 0 )
+		FileHandle_t fh = filesystem->Open("version.txt", "r", "MOD");
+		if ( fh && filesystem->Size( fh ) > 0 )
 		{
 			CProtobufMsg<CClientHelloMsg> msg( pPacket );
 
@@ -120,13 +120,13 @@ public:
 				{
 					engine->ServerCommand( UTIL_VarArgs( 
 						"kickid %d \"The server you are trying to connect to is running a\\n different version of the game.\"\n",
-						UTIL_PlayerBySteamID( msg->steamid() )->GetUserID() ) 
+						UTIL_PlayerBySteamID( msg->remote_steamid() )->GetUserID() ) 
 					);
 				}
 			}
 		}
 
-		filesystem->Close( fh );*/
+		filesystem->Close( fh );
 	#endif
 
 		return true;
