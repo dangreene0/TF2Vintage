@@ -66,8 +66,8 @@ public:
 
 #ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
-S_API ISteamMusicRemote *S_CALLTYPE SteamMusicRemote();
-#endif
+inline ISteamMusicRemote *SteamMusicRemote();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamMusicRemote *, SteamMusicRemote, STEAMMUSICREMOTE_INTERFACE_VERSION );
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

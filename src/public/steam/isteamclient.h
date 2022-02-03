@@ -1,8 +1,9 @@
-﻿//====== Copyright � 1996-2008, Valve Corporation, All rights reserved. =======
+﻿//====== Copyright Valve Corporation, All rights reserved. ====================
 //
-// Purpose: Main interface for loading and accessing Steamworks API's from the 
-//			Steam client.
-//			For most uses, this code is wrapped inside of SteamAPI_Init()
+// Internal low-level access to Steamworks interfaces.
+//
+// Most users of the Steamworks SDK do not need to include this file.
+// You should only include this if you are doing something special.
 //=============================================================================
 
 #ifndef ISTEAMCLIENT_H
@@ -13,43 +14,38 @@
 
 #include "steam_api_common.h"
 
-// function prototype
-#if defined( POSIX )
-#define __cdecl
-#endif
-extern "C" typedef void (__cdecl *SteamAPIWarningMessageHook_t)(int, const char *);
-extern "C" typedef void( *SteamAPI_PostAPIResultInProcess_t )(SteamAPICall_t callHandle, void *, uint32 unCallbackSize, int iCallbackNum);
-extern "C" typedef uint32 ( *SteamAPI_CheckCallbackRegistered_t )( int iCallbackNum );
-#if defined( __SNC__ )
-	#pragma diag_suppress=1700	   // warning 1700: class "%s" has virtual functions but non-virtual destructor
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose: Interface to creating a new steam instance, or to
 //			connect to an existing steam instance, whether it's in a
 //			different process or is local.
 //
 //			For most scenarios this is all handled automatically via SteamAPI_Init().
-//			You'll only need to use these interfaces if you have a more complex versioning scheme,
-//			where you want to get different versions of the same interface in different dll's in your project.
+//			You'll only need these APIs if you have a more complex versioning scheme,
+//			or if you want to implement a multiplexed gameserver where a single process
+//			is handling multiple games at once with independent gameserver SteamIDs.
 //-----------------------------------------------------------------------------
 class ISteamClient
 {
 public:
-	// Creates a communication pipe to the Steam client
+	// Creates a communication pipe to the Steam client.
+	// NOT THREADSAFE - ensure that no other threads are accessing Steamworks API when calling
 	virtual HSteamPipe CreateSteamPipe() = 0;
 
 	// Releases a previously created communications pipe
+	// NOT THREADSAFE - ensure that no other threads are accessing Steamworks API when calling
 	virtual bool BReleaseSteamPipe( HSteamPipe hSteamPipe ) = 0;
 
 	// connects to an existing global user, failing if none exists
 	// used by the game to coordinate with the steamUI
+	// NOT THREADSAFE - ensure that no other threads are accessing Steamworks API when calling
 	virtual HSteamUser ConnectToGlobalUser( HSteamPipe hSteamPipe ) = 0;
 
 	// used by game servers, create a steam user that won't be shared with anyone else
+	// NOT THREADSAFE - ensure that no other threads are accessing Steamworks API when calling
 	virtual HSteamUser CreateLocalUser( HSteamPipe *phSteamPipe, EAccountType eAccountType ) = 0;
 
 	// removes an allocated user
+	// NOT THREADSAFE - ensure that no other threads are accessing Steamworks API when calling
 	virtual void ReleaseUser( HSteamPipe hSteamPipe, HSteamUser hUser ) = 0;
 
 	// retrieves the ISteamUser interface associated with the handle
@@ -60,7 +56,7 @@ public:
 
 	// set the local IP and Port to bind to
 	// this must be set before CreateLocalUser()
-	virtual void SetLocalIPBinding( uint32 unIP, uint16 usPort ) = 0; 
+	virtual void SetLocalIPBinding( const SteamIPAddress_t &unIP, uint16 usPort ) = 0; 
 
 	// returns the ISteamFriends interface
 	virtual ISteamFriends *GetISteamFriends( HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
@@ -95,8 +91,10 @@ public:
 	// user screenshots
 	virtual ISteamScreenshots *GetISteamScreenshots( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
 
-	// this needs to be called every frame to process matchmaking results
-	// redundant if you're already calling SteamAPI_RunCallbacks()
+	// game search
+	virtual ISteamGameSearch *GetISteamGameSearch( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Deprecated. Applications should use SteamAPI_RunCallbacks() or SteamGameServer_RunCallbacks() instead.
 	STEAM_PRIVATE_API( virtual void RunFrame() = 0; )
 
 	// returns the number of IPC calls made since the last time this function was called
@@ -108,23 +106,19 @@ public:
 	// API warning handling
 	// 'int' is the severity; 0 for msg, 1 for warning
 	// 'const char *' is the text of the message
-	// callbacks will occur directly after the API function is called that generated the warning or message
+	// callbacks will occur directly after the API function is called that generated the warning or message.
 	virtual void SetWarningMessageHook( SteamAPIWarningMessageHook_t pFunction ) = 0;
 
 	// Trigger global shutdown for the DLL
 	virtual bool BShutdownIfAllPipesClosed() = 0;
 
-#ifdef _PS3
-	virtual ISteamPS3OverlayRender *GetISteamPS3OverlayRender() = 0;
-#endif
-
 	// Expose HTTP interface
 	virtual ISteamHTTP *GetISteamHTTP( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
 
-	// Exposes the ISteamUnifiedMessages interface
-	virtual ISteamUnifiedMessages *GetISteamUnifiedMessages( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+	// Deprecated - the ISteamUnifiedMessages interface is no longer intended for public consumption.
+	STEAM_PRIVATE_API( virtual void *DEPRECATED_GetISteamUnifiedMessages( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0 ; )
 
-	// Exposes the ISteamController interface
+	// Exposes the ISteamController interface - deprecated in favor of Steam Input
 	virtual ISteamController *GetISteamController( HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
 
 	// Exposes the ISteamUGC interface
@@ -143,8 +137,8 @@ public:
 	virtual ISteamHTMLSurface *GetISteamHTMLSurface(HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion) = 0;
 
 	// Helper functions for internal Steam usage
-	STEAM_PRIVATE_API( virtual void Set_SteamAPI_CPostAPIResultInProcess( SteamAPI_PostAPIResultInProcess_t func ) = 0; )
-	STEAM_PRIVATE_API( virtual void Remove_SteamAPI_CPostAPIResultInProcess( SteamAPI_PostAPIResultInProcess_t func ) = 0; )
+	STEAM_PRIVATE_API( virtual void DEPRECATED_Set_SteamAPI_CPostAPIResultInProcess( void (*)() ) = 0; )
+	STEAM_PRIVATE_API( virtual void DEPRECATED_Remove_SteamAPI_CPostAPIResultInProcess( void (*)() ) = 0; )
 	STEAM_PRIVATE_API( virtual void Set_SteamAPI_CCheckCallbackRegisteredInProcess( SteamAPI_CheckCallbackRegistered_t func ) = 0; )
 
 	// inventory
@@ -152,15 +146,34 @@ public:
 
 	// Video
 	virtual ISteamVideo *GetISteamVideo( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Parental controls
+	virtual ISteamParentalSettings *GetISteamParentalSettings( HSteamUser hSteamuser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Exposes the Steam Input interface for controller support
+	virtual ISteamInput *GetISteamInput( HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Steam Parties interface
+	virtual ISteamParties *GetISteamParties( HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	// Steam Remote Play interface
+	virtual ISteamRemotePlay *GetISteamRemotePlay( HSteamUser hSteamUser, HSteamPipe hSteamPipe, const char *pchVersion ) = 0;
+
+	STEAM_PRIVATE_API( virtual void DestroyAllInterfaces() = 0; )
+
 };
+#define STEAMCLIENT_INTERFACE_VERSION		"SteamClient020"
 
-
-#define STEAMCLIENT_INTERFACE_VERSION		"SteamClient017"
+#ifndef STEAM_API_EXPORTS
 
 // Global ISteamClient interface accessor
-S_API ISteamClient *S_CALLTYPE SteamClient();
+inline ISteamClient *SteamClient();
+STEAM_DEFINE_INTERFACE_ACCESSOR( ISteamClient *, SteamClient, SteamInternal_CreateInterface( STEAMCLIENT_INTERFACE_VERSION ), "global", STEAMCLIENT_INTERFACE_VERSION );
 
-S_API ISteamClient *g_pSteamClientGameServer;
-inline ISteamClient *S_CALLTYPE SteamGameServerClient() { return g_pSteamClientGameServer; }
+// The internal ISteamClient used for the gameserver interface.
+// (This is actually the same thing.  You really shouldn't need to access any of this stuff directly.)
+inline ISteamClient *SteamGameServerClient() { return SteamClient(); }
+
+#endif
 
 #endif // ISTEAMCLIENT_H

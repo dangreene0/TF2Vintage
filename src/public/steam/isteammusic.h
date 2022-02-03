@@ -46,8 +46,8 @@ public:
 
 #ifndef VERSION_SAFE_STEAM_API_INTERFACES
 // Global interface accessor
-S_API ISteamMusic *S_CALLTYPE SteamMusic();
-#endif
+inline ISteamMusic *SteamMusic();
+STEAM_DEFINE_USER_INTERFACE_ACCESSOR( ISteamMusic *, SteamMusic, STEAMMUSIC_INTERFACE_VERSION );
 
 // callbacks
 #if defined( VALVE_CALLBACK_PACK_SMALL )

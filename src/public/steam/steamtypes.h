@@ -89,47 +89,8 @@ typedef unsigned int uintp;
 
 #endif // else _WIN32
 
-const int k_cubSaltSize   = 8;
-typedef	uint8 Salt_t[ k_cubSaltSize ];
-
-//-----------------------------------------------------------------------------
-// GID (GlobalID) stuff
-// This is a globally unique identifier.  It's guaranteed to be unique across all
-// racks and servers for as long as a given universe persists.
-//-----------------------------------------------------------------------------
-// NOTE: for GID parsing/rendering and other utils, see gid.h
-typedef uint64 GID_t;
-
-const GID_t k_GIDNil = 0xffffffffffffffffull;
-
-// For convenience, we define a number of types that are just new names for GIDs
-typedef uint64 JobID_t;			// Each Job has a unique ID
-typedef GID_t TxnID_t;			// Each financial transaction has a unique ID
-
-const GID_t k_TxnIDNil = k_GIDNil;
-const GID_t k_TxnIDUnknown = 0;
-
-const JobID_t k_JobIDNil = 0xffffffffffffffffull;
-
-// this is baked into client messages and interfaces as an int, 
-// make sure we never break this.
-typedef uint32 PackageId_t;
-const PackageId_t k_uPackageIdFreeSub = 0x0;
-const PackageId_t k_uPackageIdInvalid = 0xFFFFFFFF;
-
-typedef uint32 BundleId_t;
-const BundleId_t k_uBundleIdInvalid = 0;
-
-// this is baked into client messages and interfaces as an int, 
-// make sure we never break this.
 typedef uint32 AppId_t;
 const AppId_t k_uAppIdInvalid = 0x0;
-
-typedef uint64 AssetClassId_t;
-const AssetClassId_t k_ulAssetClassIdInvalid = 0x0;
-
-typedef uint32 PhysicalItemId_t;
-const PhysicalItemId_t k_uPhysicalItemIdInvalid = 0x0;
 
 // AppIds and DepotIDs also presently share the same namespace
 typedef uint32 DepotId_t;
@@ -139,25 +100,11 @@ const DepotId_t k_uDepotIdInvalid = 0x0;
 // It's the same as time_t, but it is always 32-bit and unsigned.  
 typedef uint32 RTime32;
 
-typedef uint32 CellID_t;
-const CellID_t k_uCellIDInvalid = 0xFFFFFFFF;
-
 // handle to a Steam API call
 typedef uint64 SteamAPICall_t;
 const SteamAPICall_t k_uAPICallInvalid = 0x0;
 
 typedef uint32 AccountID_t;
-
-typedef uint32 PartnerId_t;
-const PartnerId_t k_uPartnerIdInvalid = 0;
-
-// ID for a depot content manifest
-typedef uint64 ManifestId_t; 
-const ManifestId_t k_uManifestIdInvalid = 0;
-
-// ID for cafe sites
-typedef uint64 SiteId_t;
-const SiteId_t k_ulSiteIdInvalid = 0;
 
 // Party Beacon ID
 typedef uint64 PartyBeaconID_t;
