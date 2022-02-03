@@ -31,7 +31,7 @@ enum EBaseMsg
 	k_EInvalidMsg			= 0;
 	k_EClientHelloMsg		= 1;
 	k_EServerHelloMsg		= 2;
-	k_EMultiplexedMsg		= 3;
+	k_EMultiplexedMsg		= 5;
 	k_ESystemMessageMsg		= 10;
 	k_EBaseMsg_Max			= 50;
 }
@@ -39,20 +39,22 @@ enum EBaseMsg
 message CProtobufMsgHdr
 {
 	required uint32 protocol_version = 1;
-	required string dest_identity = 2; // This is required for P2P protocol
-	optional uint32 protocol_type = 3;
+	optional uint32 protocol_type = 2;
+	// For messages that expect a reply
+	optional fixed64 source_message_id = 4;
+	optional fixed64 target_message_id = 5;
 }
 
 message CClientHelloMsg
 {
 	required uint32 version = 1;
-	required fixed64 steamid = 2;
+	required fixed64 remote_steamid = 2;
 }
 
 message CServerHelloMsg
 {
 	required uint32 version = 1;
-	required fixed64 steamid = 2;
+	required fixed64 remote_steamid = 2;
 }
 
 message CMultiplexedMsg
@@ -81,8 +83,13 @@ message CUpdateItemSchemaMsg
 	optional bool use_online_backup = 4 [default = false];
 }
 
+message CUpdateLoadoutMsg
+{
+	required fixed32 class_id = 1;
+	repeated bytes inventory = 2; // Serialized bytes of the classes aviable loadout
+}
+
 message CUpdateInventoryMsg
 {
-	repeated bytes inventory = 1;			// Serialized payload of the inventory for each slot of each class
-											// !TODO! this is highly unoptimal and ideally would be split up
+	repeated CUpdateLoadoutMsg inventory = 1;
 }
