@@ -136,6 +136,10 @@
 #include "client_virtualreality.h"
 #include "mumble.h"
 
+#ifdef USES_ECON_ITEMS
+#include "econ_networking.h"
+#endif
+
 // NVNT includes
 #include "hud_macros.h"
 #include "haptics/ihaptics.h"
@@ -1267,6 +1271,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	if ( !IGameSystem::InitAllSystems() )
 		return false;
 
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Init();
+#endif
+
 	g_pClientMode->Enable();
 
 	if ( !view )
@@ -1435,6 +1443,10 @@ void CHLClient::Shutdown( void )
 	UncacheAllMaterials();
 
 	IGameSystem::ShutdownAllSystems();
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Shutdown();
+#endif
 	
 	gHUD.Shutdown();
 	VGui_Shutdown();
@@ -1504,6 +1516,10 @@ void CHLClient::HudUpdate( bool bActive )
 	CRTime::UpdateRealTime();
 
 	GetClientVoiceMgr()->Frame( frametime );
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Update( frametime );
+#endif
 
 	gHUD.UpdateHud( bActive );
 

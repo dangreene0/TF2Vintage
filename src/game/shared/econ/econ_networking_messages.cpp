@@ -7,6 +7,8 @@
 #include "steam/steamclientpublic.h"
 #endif
 
+#include <memory>
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -51,7 +53,7 @@ public:
 	{
 		CProtobufMsg<CServerHelloMsg> msg( pPacket );
 
-		CSteamID serverID( msg->steamid() );
+		CSteamID serverID( msg->remote_steamid() );
 		DbgVerify( serverID.BGameServerAccount() );
 		
 	#if defined( CLIENT_DLL )
@@ -59,27 +61,32 @@ public:
 		if ( !pPlayer || !engine->IsConnected() )
 			return false;
 
-		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
-		if ( fh && filesystem->Tell( fh ) > 0 )
+		uint unVersion = 0;
+		FileHandle_t fh = g_pFullFileSystem->Open( "version.txt", "r", "MOD" );
+		if ( fh && g_pFullFileSystem->Tell( fh ) > 0 )
 		{
 			char version[48];
-			filesystem->ReadLine( version, sizeof( version ), fh );
-			uint32 unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
+			g_pFullFileSystem->ReadLine( version, sizeof( version ), fh );
+			unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
 
 			if ( msg->version() != unVersion )
 				Warning( "The server you are trying to connect to is running a different version of the game.\n" );
-
-			CProtobufMsg<CClientHelloMsg> reply;
-			reply->set_version( unVersion );
-
-			CSteamID playerID;
-			pPlayer->GetSteamID( &playerID );
-			reply->set_steamid( playerID.ConvertToUint64() );
-
-			g_pEconNetwork->SendMessage( serverID, k_EClientHelloMsg, reply.Body() );
 		}
 
-		filesystem->Close( fh );
+		g_pFullFileSystem->Close( fh );
+
+		CProtobufMsg<CClientHelloMsg> reply;
+		reply->set_version( unVersion );
+
+		CSteamID playerID;
+		pPlayer->GetSteamID( &playerID );
+		reply->set_remote_steamid( playerID.ConvertToUint64() );
+
+		const int nLength = reply->ByteSize();
+		std::unique_ptr<byte[]> array = std::make_unique<byte[]>( nLength );
+		reply->SerializeWithCachedSizesToArray( array.get() );
+
+		g_pNetworking->SendMessage( serverID, k_EClientHelloMsg, array.get(), nLength );
 	#endif
 
 		return true;

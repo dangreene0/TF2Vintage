@@ -1213,27 +1213,31 @@ void CEconItemSchema::ParseAttributes( KeyValues *pKVData )
 void CEconItemSchema::ClientConnected( edict_t *pClient )
 {
 #if defined( GAME_DLL )
-	
+	if ( !pClient || pClient->IsFree() )
+		return;
+
+	CSteamID const *playerID = engine->GetClientSteamID( pClient );
+	if ( playerID == NULL )
+		return;
+
+	g_pNetworking->OnClientConnected( *playerID );
 #endif
 }
 
 void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 {
 #if defined( GAME_DLL )
-	if ( engine->IsDedicatedServer() )
-	{
-		CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
-		if ( !pPlayer || !pPlayer->IsPlayer() || pPlayer->IsFakeClient() )
-			return;
+	CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
+	if ( !pPlayer || pPlayer->IsFakeClient() )
+		return;
 
-		CSteamID playerID{};
-		pPlayer->GetSteamID( &playerID );
-		g_pEconNetwork->OnClientDisconnected( playerID );
+	CSteamID playerID{};
+	pPlayer->GetSteamID( &playerID );
+	g_pNetworking->OnClientDisconnected( playerID );
 
-		CSingleUserRecipientFilter filter( pPlayer );
-		UserMessageBegin( filter, "ResetInventory" );
-		MessageEnd();
-	}
+	CSingleUserRecipientFilter filter( pPlayer );
+	UserMessageBegin( filter, "ResetInventory" );
+	MessageEnd();
 #endif
 }
 

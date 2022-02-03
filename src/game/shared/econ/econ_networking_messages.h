@@ -8,9 +8,77 @@
 #include "tier1/mempool.h"
 #include "tier1/smartptr.h"
 
-class CNetPacket;
+// Currently only using protobuf
+enum EProtocolType
+{
+	k_EProtocolStruct		= 1,
+	k_EProtocolProtobuf		= 2
+};
 
-extern CUtlVector<CUtlMemoryPool*> s_vecMsgPools;
+struct MsgHdr_t
+{
+	MsgType_t m_eMsgType;	// Message type
+	uint32 m_unMsgSize;		// Size of message without header
+	uint8 m_ubProtoVer;
+	EProtocolType m_eProtoType;
+	uint64 m_ulSourceID;
+	uint64 m_ulTargetID;
+};
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+class CNetPacket : public IRefCounted
+{
+	DECLARE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket );
+public:
+	CNetPacket()
+	{
+		m_pMsg = NULL;
+		m_Hdr.m_eMsgType = k_EInvalidMsg;
+	}
+
+	void *Data( void ) const { return (byte *)m_pMsg; }
+	byte *MutableData( void ) { return (byte *)m_pMsg + sizeof(MsgHdr_t); }
+	uint32 Size( void ) const { return m_Hdr.m_unMsgSize + sizeof(MsgHdr_t); }
+	MsgHdr_t const &Hdr( void ) const { return m_Hdr; }
+
+protected:
+	virtual ~CNetPacket()
+	{
+		Assert( m_cRefCount == 0 );
+		Assert( m_pMsg == NULL );
+	}
+
+	friend class CEconNetworking;
+	void Init( uint32 size, MsgType_t eMsg );
+	void InitFromMemory( void const *pMemory, uint32 size );
+
+private:
+	void *m_pMsg;
+	MsgHdr_t m_Hdr;
+
+	friend class CRefCountAccessor;
+	virtual int AddRef( void )
+	{
+		return ThreadInterlockedIncrement( &m_cRefCount );
+	}
+	virtual int Release( void )
+	{
+		Assert( m_cRefCount > 0 );
+		int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
+		if ( nRefCounts == 0 )
+		{
+			if ( m_pMsg )
+				free( m_pMsg );
+
+			delete this;
+		}
+
+		return nRefCounts;
+	}
+	volatile uint m_cRefCount;
+};
 
 //-----------------------------------------------------------------------------
 // Purpose: Interface for processing network packets
@@ -52,14 +120,19 @@ public:
 		m_pBody = AllocMsg();
 		Assert( m_pBody );
 
-		m_pBody->ParseFromArray( m_pPacket->Data() + sizeof( MsgHdr_t ), 
-								 m_pPacket->Size() - sizeof( MsgHdr_t ) );
+		CRefCountAccessor::AddRef( m_pPacket );
+		m_pBody->ParseFromArray( m_pPacket->MutableData(), m_pPacket->Size() - sizeof(MsgHdr_t) );
 	}
 	virtual ~CProtobufMsg()
 	{
 		if ( m_pBody )
 		{
 			FreeMsg( m_pBody );
+		}
+
+		if ( m_pPacket )
+		{
+			CRefCountAccessor::Release( m_pPacket );
 		}
 	}
 
@@ -74,7 +147,6 @@ protected:
 		{
 			Assert( sm_MsgPool == NULL );
 			sm_MsgPool = new CUtlMemoryPool( sizeof( TProtoMsg ), 1 );
-			s_vecMsgPools.AddToTail( sm_MsgPool );
 
 			sm_bRegisteredPool = true;
 		}
@@ -91,7 +163,7 @@ protected:
 	}
 
 private:
-	CSmartPtr<CNetPacket> m_pPacket;
+	CNetPacket *m_pPacket;
 	TProtoMsg *m_pBody;
 
 	// Copying is illegal
