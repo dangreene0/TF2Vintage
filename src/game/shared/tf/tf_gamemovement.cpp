@@ -58,7 +58,8 @@ ConVar  tf2v_disable_updraft( "tf2v_disable_updraft", "1", FCVAR_REPLICATED, "En
 #define TF_MAX_AIR_DUCKS 2
 
 extern ConVar tf2v_use_new_atomizer;
-extern ConVar tf2v_use_new_sodapopper;
+extern ConVar tf2v_use_new_sodapopper_hype;
+extern ConVar tf2v_use_new_sodapopper_fill;
 
 class CTFGameMovement : public CGameMovement
 {
@@ -372,7 +373,7 @@ void CTFGameMovement::AirDash( void )
 		{
 			// Make sure we're not in any form of airjump buff.
 			if ( ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE )   // Not in any soda popper hype...
-			   || ( m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper.GetBool() ) ) // Or in old variant soda popper hype...
+			   || ( m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper_hype.GetBool() ) ) // Or in old variant soda popper hype...
 			    && !m_pTFPlayer->m_Shared.InCond( TF_COND_HALLOWEEN_SPEED_BOOST ) ) // And not in Halloween Speed Boost.
 			{
 				CTakeDamageInfo info( m_pTFPlayer, m_pTFPlayer, vec3_origin, m_pTFPlayer->WorldSpaceCenter(), 10.0f, DMG_BULLET );
@@ -1642,7 +1643,7 @@ void CTFGameMovement::FullWalkMove()
 	// Make sure velocity is valid.
 	CheckVelocity();
 
-	if ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) )
+	if ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper_fill.GetBool() )
 	{
 		CTFWeaponBase *pWeapon = m_pTFPlayer->GetActiveTFWeapon();
 		if ( pWeapon && pWeapon->IsWeapon( TF_WEAPON_SODA_POPPER ) )
