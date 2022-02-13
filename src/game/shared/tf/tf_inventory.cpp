@@ -163,14 +163,16 @@ void CTFInventory::AddNewItem( CEconItemDefinition *pItemDef, const int iClass, 
 
 		m_Items[iClass][iSlot][0] = pNewItem;
 	}
-	
-	if ( pItemDef->show_in_armory && ( pItemDef->is_reskin == 0 || bReskinsEnabled ) && ( pItemDef->specialitem == 0 || bSpecialsEnabled ) )
-	{
-		m_Items[iClass][iSlot].AddToTail( pNewItem );
-	}
 	else
 	{
-		delete pNewItem;
+		if (pItemDef->show_in_armory && (pItemDef->is_reskin == 0 || bReskinsEnabled) && (pItemDef->specialitem == 0 || bSpecialsEnabled))
+		{
+			m_Items[iClass][iSlot].AddToTail(pNewItem);
+		}
+		else
+		{
+			delete pNewItem;
+		}
 	}
 }
 
