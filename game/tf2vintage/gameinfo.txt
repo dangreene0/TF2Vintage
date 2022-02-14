@@ -1,6 +1,6 @@
 "GameInfo"
 {
-	game		"Team Fortress 2 Vintage"
+	game		"Team Fortress 2 Vintage (Beta)"
 	gamelogo		 0
 	type 		multiplayer_only 
 	icon		"resource/game"		
@@ -43,7 +43,6 @@
 			// that's used when writing to the "mod" path.
 			// TF2V takes priority, followed by Retail TF2.
 			game+mod+mod_write+default_write_path		|gameinfo_path|.
-			//game+mod									"|all_source_engine_paths|../Team Fortress 2/tf/."
 			
 			// Where the game's binaries are
 			gamebin									|gameinfo_path|bin	
