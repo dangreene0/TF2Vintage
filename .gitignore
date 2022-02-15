@@ -150,3 +150,8 @@ game/*/expressions/*
 
 # map compile products
 *.prt
+
+# migration blocks
+*.bik
+*.bsp
+*.vpk

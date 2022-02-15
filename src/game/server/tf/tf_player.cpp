@@ -157,6 +157,7 @@ extern ConVar tf2v_force_year_weapons;
 extern ConVar tf2v_allowed_year_weapons;
 extern ConVar tf2v_new_flame_damage;
 extern ConVar tf2v_use_new_axtinguisher;
+extern ConVar tf2v_use_new_sodapopper_fill;
 
 // TF2V commands
 ConVar tf2v_randomizer( "tf2v_randomizer", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout and class." );
@@ -5859,9 +5860,19 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				pTFAttacker->m_Shared.SetRageMeter(info.GetDamage() / (TF_BUFF_OFFENSE_COUNT / 100), TF_BUFF_DEFENSE);
 				pTFAttacker->m_Shared.SetRageMeter(info.GetDamage() / (TF_BUFF_REGENONDAMAGE_OFFENSE_COUNT_NEW / 100), TF_BUFF_REGENONDAMAGE);
 			}	
-
 			
+			if ( !pTFAttacker->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && tf2v_use_new_sodapopper_fill.GetBool() )
+			{
+				int nBuildsHype = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pTFAttacker, nBuildsHype, set_weapon_mode );
+				if ( nBuildsHype == 1 )
+				{
+					pTFAttacker->m_Shared.AddHypeMeter( ( info.GetDamage() ) / 350 );
+				}
+			}
+
 		}
+			
 
 		// Check if we're stunned and should have reduced damage taken
 		if ( m_Shared.InCond( TF_COND_STUNNED ) && ( m_Shared.GetStunFlags() & TF_STUNFLAG_RESISTDAMAGE ) )

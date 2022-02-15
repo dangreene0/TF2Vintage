@@ -122,7 +122,11 @@ ConVar tf2v_allow_disguiseweapons( "tf2v_allow_disguiseweapons", "1", FCVAR_NOTI
 ConVar tf2v_use_fast_redisguise( "tf2v_use_fast_redisguise", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Disguising while currently disguised is faster.", true, 0, true, 1);
 
 ConVar tf2v_use_new_atomizer( "tf2v_use_new_atomizer", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps between the old and modern Atomizer airdash mechanic.", true, 0, true, 1);
-ConVar tf2v_use_new_sodapopper( "tf2v_use_new_sodapopper", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps between minicrits versus five airdashes when under Soda Popper Hype.", true, 0, true, 1);
+ConVar tf2v_use_new_sodapopper_hype( "tf2v_use_new_sodapopper_hype", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps between minicrits versus five airdashes when under Soda Popper Hype.", true, 0, true, 1);
+ConVar tf2v_use_new_sodapopper_fill( "tf2v_use_new_sodapopper_fill", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps between hype based on distance versus hype based on damage.", true, 0, true, 1);
+ConVar tf2v_use_manual_sodapopper( "tf2v_use_manual_sodapopper", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows Sodapopper Hype to be automatically activated.", true, 0, true, 1);
+
+
 
 ConVar tf2v_use_new_short_circuit( "tf2v_use_new_short_circuit", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps the Short Circuit's Secondary Attack.", true, 0, true, 1);
 
@@ -628,7 +632,7 @@ bool CTFPlayerShared::IsMiniCritBoosted( void )
 	if (InCond( TF_COND_OFFENSEBUFF ) ||
 		InCond( TF_COND_ENERGY_BUFF ) ||
 		InCond( TF_COND_BERSERK ) ||
-		( InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper.GetBool() )||
+		( InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper_hype.GetBool() )||
 		InCond( TF_COND_MINICRITBOOSTED_RAGE_BUFF ) ||
 		InCond( TF_COND_MINICRITBOOSTED_ON_KILL ) )
 		return true;
@@ -4721,7 +4725,7 @@ bool CTFPlayerShared::CanAirDash( void )
 		CALL_ATTRIB_HOOK_INT_ON_OTHER( m_pOuter, nMaxAirJumps, air_dash_count );
 	
 	// If in Soda Popper mode, get five dashes. Do not overlap with attributes.
-	if ( InCond( TF_COND_SODAPOPPER_HYPE ) && tf2v_use_new_sodapopper.GetBool() )
+	if ( InCond( TF_COND_SODAPOPPER_HYPE ) && tf2v_use_new_sodapopper_hype.GetBool() )
 		nMaxAirJumps = 5;
 	
 	return ( nMaxAirJumps > GetAirDashCount() );
@@ -5242,6 +5246,7 @@ void CTFPlayerShared::UpdateChargeMeter( void )
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 {	
+	
 	if ( InCond( TF_COND_SODAPOPPER_HYPE ) )
 	{
 		m_flHypeMeter = Max( (float)( m_flHypeMeter - ( gpGlobals->frametime * ( m_flEnergyDrinkDrainRate * 0.75 ) )), 0.0f );
@@ -5278,6 +5283,16 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 	// No Bonk/Cola/Popper active, regen our meter	
 	m_flEnergyDrinkMeter = Min( m_flEnergyDrinkMeter + ( m_flEnergyDrinkRegenRate * gpGlobals->frametime ), 100.0f );
 
+	// If we auto activate sodapopper, activate it when we're full and it's active.
+	if ( ( m_flHypeMeter >= 100.0f ) && !tf2v_use_manual_sodapopper.GetBool() && !InCond( TF_COND_SODAPOPPER_HYPE ) )
+	{
+		CTFWeaponBase *pWeapon = m_pOuter->GetActiveTFWeapon();
+		if ( pWeapon && pWeapon->IsWeapon( TF_WEAPON_SODA_POPPER ) )
+		{
+			AddCond( TF_COND_SODAPOPPER_HYPE );
+		}
+	}
+	
 	if ( m_pOuter->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX_DRINK ) )
 	{
 		// TF_AMMO_SPECIAL2 = Ammo used by the Bonk Energy drink script. (This uses the grenade ammo in standard TF2.)
@@ -5300,7 +5315,6 @@ void CTFPlayerShared::UpdateEnergyDrinkMeter( void )
 			return;
 		}
 	}
-	
 }
 
 //-----------------------------------------------------------------------------

@@ -35,6 +35,8 @@ float AirBurstDamageForce( Vector const &vecSize, float damage, float scale )
 	return Min( flDamageForce, 1000.0f );
 }
 
+extern ConVar tf2v_use_manual_sodapopper;
+
 //=============================================================================
 //
 // Weapon Shotgun tables.
@@ -531,12 +533,15 @@ void CTFSodaPopper::SecondaryAttack(void)
 	if ( !pOwner )
 		return;
 
-	int nBuildsHype = 0;
-	CALL_ATTRIB_HOOK_INT( nBuildsHype, set_weapon_mode );
-	if ( nBuildsHype == 1 )
+	if ( tf2v_use_manual_sodapopper.GetBool() )
 	{
-		if ( pOwner->m_Shared.GetHypeMeter() >= 100.0f )
-			pOwner->m_Shared.AddCond( TF_COND_SODAPOPPER_HYPE );
+		int nBuildsHype = 0;
+		CALL_ATTRIB_HOOK_INT( nBuildsHype, set_weapon_mode );
+		if ( nBuildsHype == 1 )
+		{
+			if ( pOwner->m_Shared.GetHypeMeter() >= 100.0f )
+				pOwner->m_Shared.AddCond( TF_COND_SODAPOPPER_HYPE );
+		}
 	}
 }
 

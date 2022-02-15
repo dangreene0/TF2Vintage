@@ -24,6 +24,7 @@
 #include "steam/isteamfriends.h"
 #include "steam/steam_api.h"
 #include "tier0/icommandline.h"
+#include <inetchannelinfo.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -603,6 +604,7 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 	{
 		Q_strncpy( m_szHostName, event->GetString( "hostname" ), DISCORD_FIELD_MAXLEN );
 		Q_strncpy( m_szServerInfo, event->GetString( "address" ), DISCORD_FIELD_MAXLEN );
+		
 	}
 
 	if ( g_pDiscord == NULL )
@@ -705,6 +707,10 @@ bool CTFDiscordPresence::InitPresence( void )
 
 	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
 	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
+	
+	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
+	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
+	
 
 	char command[512];
 	V_snprintf( command, sizeof( command ), "%s -game \"%s\" -novid -steam", CommandLine()->GetParm( 0 ), CommandLine()->ParmValue( "-game" ) );
@@ -780,6 +786,9 @@ void CTFDiscordPresence::OnJoinedGame( const char *joinSecret )
 void CTFDiscordPresence::OnSpectateGame( const char *spectateSecret )
 {
 	ConColorMsg( DISCORD_COLOR, "[DRP] Spectate Game: %s\n", spectateSecret );
+	char szCommand[128];
+	Q_snprintf( szCommand, sizeof( szCommand ), "connect %s:27020\n", spectateSecret ); // We append this with port 27020, for STV.
+	engine->ExecuteClientCmd( szCommand );
 }
 
 //-----------------------------------------------------------------------------
@@ -789,6 +798,8 @@ void CTFDiscordPresence::OnJoinRequested( discord::User const &joinRequester )
 {
 	// TODO: Popup dialog
 	ConColorMsg( DISCORD_COLOR, "[DRP] Join Request: %s#%s\n", joinRequester.GetUsername(), joinRequester.GetDiscriminator() );
+	ConColorMsg(DISCORD_COLOR, "[DRP] Join Request Accepted\n" );
+	//Discord_Respond( joinRequester.GetId(), DISCORD_REPLY_YES );
 }
 
 //-----------------------------------------------------------------------------
@@ -855,6 +866,20 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 	m_Activity.SetState( szGameState );
 	m_Activity.GetAssets().SetSmallImage( "tf2v_drp_logo" );
 	m_Activity.GetTimestamps().SetStart( m_iCreationTimestamp );
+		
+	// From DMC:R
+	if ( engine->IsConnected() )
+	{
+		INetChannelInfo *ni = engine->GetNetChannelInfo();
+		if ( ni && ni->GetAddress() )
+		{
+			char partyId[128];
+			sprintf( partyId, "ip %s", ni->GetAddress() ); // adding -party here because secrets cannot match the party id
+			m_Activity.GetParty().SetId(partyId);
+			m_Activity.GetSecrets().SetJoin((ni->GetAddress()));
+			m_Activity.GetSecrets().SetSpectate((ni->GetAddress()));
+		}
+	}
 
 	if ( steamapicontext->SteamFriends() )
 	{
@@ -885,6 +910,7 @@ void CTFDiscordPresence::LevelShutdownPreEntity( void )
 void CTFDiscordPresence::ResetPresence( void )
 {
 	Q_memset( &m_Activity, 0, sizeof( discord::Activity ) );
+	Q_memset( &m_Activity, 0, sizeof( discord::Lobby ) );
 
 	if ( steamapicontext->SteamFriends() )
 	{
