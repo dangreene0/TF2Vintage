@@ -522,6 +522,10 @@ public:
 	void				ReapplyItemUpgrades( CEconItemView *pItem );
 	void				ReapplyPlayerUpgrades( void );
 	void				ClearUpgradeHistory( void );
+	void				BeginPurchasableUpgrades( void );
+	void				EndPurchasableUpgrades( void );
+
+	void				RemovePlayerAttributes( bool bSetBonuses );
 	
 	void				ManageRegularWeapons( TFPlayerClassData_t *pData );
 	//void				ManageRegularWeaponsLegacy( TFPlayerClassData_t *pData );
@@ -829,6 +833,8 @@ private:
 
 	CNetworkVar( int, m_nForceTauntCam );
 	CNetworkVar( bool, m_bTyping );
+
+	int					m_nCanPurchaseUpgradesCount;
 
 	COutputEvent		m_OnDeath;
 
