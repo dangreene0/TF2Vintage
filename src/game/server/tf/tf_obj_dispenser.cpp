@@ -40,8 +40,6 @@
 #define DISPENSE_CONTEXT		"DispenseContext"
 
 ConVar tf2v_explosive_dispensers("tf2v_explosive_dispensers","0", FCVAR_NOTIFY, "Exploding dispensers do nearby damage." );
-ConVar tf2v_use_dispenser_touch("tf2v_use_dispenser_touch","0", FCVAR_NOTIFY, "Players touching a dispenser receive double ammo." );
-
 
 //-----------------------------------------------------------------------------
 // Purpose: SendProxy that converts the Healing list UtlVector to entindices
@@ -562,29 +560,6 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 {
 	int iTotalPickedUp = 0;
 	float flAmmoRate = GetAmmoRate();
-	
-	// Double the ammo if the person is directly touching the dispenser.
-	if (tf2v_use_dispenser_touch.GetBool())
-	{
-		// for each player in touching list
-		if (m_hTouchingEntities)
-		{
-			int iSize = m_hTouchingEntities.Count();
-			for (int i = iSize - 1; i >= 0; i--)
-			{
-				EHANDLE hOther = m_hTouchingEntities[i];
-
-				CBaseEntity *pEnt = hOther.Get();
-				CTFPlayer *pToucher;
-				pToucher = ToTFPlayer(pEnt);
-				if ( pToucher && pPlayer == pToucher )
-				{
-					flAmmoRate *= 2;
-					break;
-				}
-			}
-		}
-	}
 
 	int nNoPrimaryAmmoFromDispensers = 0;
 	CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer->GetActiveWeapon(), nNoPrimaryAmmoFromDispensers, no_primary_ammo_from_dispensers );
