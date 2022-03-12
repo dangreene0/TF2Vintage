@@ -567,21 +567,18 @@ bool CObjectDispenser::DispenseAmmo( CTFPlayer *pPlayer )
 	if (tf2v_use_dispenser_touch.GetBool())
 	{
 		// for each player in touching list
-		if (m_hTouchingEntities)
+		for (int i = m_hTouchingEntities.Count() - 1; i >= 0; i--)
 		{
-			int iSize = m_hTouchingEntities.Count();
-			for (int i = iSize - 1; i >= 0; i--)
-			{
-				EHANDLE hOther = m_hTouchingEntities[i];
+			// See if this is our player
+			EHANDLE hEnt = m_hTouchingEntities[i];
 
-				CBaseEntity *pEnt = hOther.Get();
-				CTFPlayer *pToucher;
-				pToucher = ToTFPlayer(pEnt);
-				if ( pToucher && pPlayer == pToucher )
-				{
-					flAmmoRate *= 2;
-					break;
-				}
+			CBaseEntity* pOther = hEnt.Get();
+			CTFPlayer* pToucher;
+			pToucher = ToTFPlayer(pOther);
+			if (pToucher && pPlayer == pToucher)
+			{
+				flAmmoRate *= 2;
+				break;
 			}
 		}
 	}
