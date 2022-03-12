@@ -525,27 +525,6 @@ void CUpgrades::PlayerPurchasingUpgrade( CTFPlayer *pPlayer, int iItemSlot, int 
 		}
 		else
 		{
-			bool bCanSell = false;
-
-			FOR_EACH_VEC( pPlayer->m_RefundableUpgrades, i )
-			{
-				CUpgradeInfo info = pPlayer->m_RefundableUpgrades[i];
-				if ( info.m_iPlayerClass != pPlayer->GetPlayerClass()->GetClassIndex() )
-					continue;
-
-				if ( info.m_nItemDefIndex != pItem->GetItemDefIndex() )
-					continue;
-
-				if ( info.m_iUpgrade == iUpgrade )
-				{
-					nCost = -info.m_nCost;
-					bCanSell = true;
-					break;
-				}
-			}
-
-			if ( !bCanSell )
-				return;
 		}
 	}
 	else

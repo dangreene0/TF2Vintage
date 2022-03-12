@@ -71,7 +71,6 @@
 #include "player_vs_environment/tf_population_manager.h"
 #include "tf_mann_vs_machine_stats.h"
 #include "tf_upgrades_shared.h"
-#include "tf_objective_resource.h"
 
 #ifndef _X360
 #include "steam/isteamuserstats.h"
@@ -2322,12 +2321,6 @@ void CTFPlayer::RememberUpgrade( int iPlayerClass, CEconItemView *pItem, int iUp
 //-----------------------------------------------------------------------------
 void CTFPlayer::ReapplyItemUpgrades( CEconItemView *pItem )
 {
-	if ( IsBot() || !g_pPopulationManager )
-		return;
-
-	CUtlVector<CUpgradeInfo> *upgrades = g_pPopulationManager->GetPlayerUpgradeHistory( this );
-	if ( upgrades == NULL )
-		return;
 }
 
 //-----------------------------------------------------------------------------
@@ -2335,14 +2328,6 @@ void CTFPlayer::ReapplyItemUpgrades( CEconItemView *pItem )
 //-----------------------------------------------------------------------------
 void CTFPlayer::ReapplyPlayerUpgrades( void )
 {
-	if ( IsBot() || !g_pPopulationManager )
-		return;
-
-	RemovePlayerAttributes( false );
-
-	CUtlVector< CUpgradeInfo > *upgrades = g_pPopulationManager->GetPlayerUpgradeHistory( this );
-	if ( upgrades == NULL )
-		return;
 }
 
 //-----------------------------------------------------------------------------
@@ -2362,65 +2347,6 @@ void CTFPlayer::ClearUpgradeHistory( void )
 
 		DevMsg( "%3.2f: CLEAR_UPGRADE_HISTORY: Player '%s'\n", gpGlobals->curtime, GetPlayerName() );
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::BeginPurchasableUpgrades( void )
-{
-	m_nCanPurchaseUpgradesCount++;
-
-	if ( TFObjectiveResource()->GetMannVsMachineWaveCount() > 1 )
-	{
-		m_RefundableUpgrades.RemoveAll();
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::EndPurchasableUpgrades( void )
-{
-	if ( m_nCanPurchaseUpgradesCount <= 0 )
-		return;
-
-	m_nCanPurchaseUpgradesCount--;
-
-	if ( TFObjectiveResource()->GetMannVsMachineWaveCount() > 1 )
-	{
-		m_RefundableUpgrades.RemoveAll();
-	}
-
-	if ( g_pPopulationManager )
-	{
-		g_pPopulationManager->SendUpgradesToPlayer( this );
-	}
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::RemovePlayerAttributes( bool bSetBonuses )
-{
-	class CAttributeRemover : public IEconUntypedAttributeIterator
-	{
-	public:
-		CAttributeRemover( CAttributeList *pAttribList, bool bSetBonuses ) 
-			: m_pAttribList( pAttribList ), m_bSetBonuses( bSetBonuses ) {}
-
-		bool OnIterateAttributeValueUntyped( const CEconAttributeDefinition *pAttrDef ) OVERRIDE
-		{
-			m_pAttribList->RemoveAttribute( pAttrDef );
-			return true;
-		}
-	private:
-		CAttributeList *m_pAttribList;
-		bool m_bSetBonuses; // TODO: Set bonuses
-	};
-	
-	CAttributeRemover iter( &m_AttributeList, bSetBonuses );
-	GetAttributeList()->IterateAttributes( &iter );
 }
 
 //-----------------------------------------------------------------------------

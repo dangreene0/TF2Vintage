@@ -1,15 +1,8 @@
-//========= Copyright © Valve LLC, All rights reserved. =======================
-//
-// Purpose:		
-//
-// $NoKeywords: $
-//=============================================================================
 #include "cbase.h"
 #include "filesystem.h"
 #include "tf_shareddefs.h"
 #include "tf_upgrades_shared.h"
 #include "tf_gamerules.h"
-#include "tf_powerup_bottle.h"
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -164,7 +157,8 @@ int GetUpgradeStepData( CTFPlayer *pPlayer, int iItemSlot, int nUpgradeIndex, in
 	CEconEntity *pEntity = pPlayer->GetEntityForLoadoutSlot( iItemSlot );
 	CEconItemView const *pEconItem = pEntity->GetItem();
 
-	CTFPowerupBottle *pPowerupBottle = dynamic_cast<CTFPowerupBottle *>( pEntity );
+	// TODO
+	/*CTFPowerupBottle *pPowerupBottle = dynamic_cast<CTFPowerupBottle *>( pEntity );
 	if ( pPowerupBottle )
 	{
 		Assert( upgrade.nUIGroup == UIGROUP_UPGRADE_POWERUP );
@@ -175,8 +169,8 @@ int GetUpgradeStepData( CTFPlayer *pPlayer, int iItemSlot, int nUpgradeIndex, in
 
 		*bOverCap = pPowerupBottle->GetMaxNumCharges() == *nCurrentStep;
 
-		return pPowerupBottle->GetMaxNumCharges();
-	}
+		return pPowerupBottle->GetMaxCharges();
+	}*/
 
 	bool bIsPercentage = pAttribute->description_format == ATTRIB_FORMAT_PERCENTAGE || pAttribute->description_format == ATTRIB_FORMAT_INVERTED_PERCENTAGE;
 	const float flBaseValue = bIsPercentage ? 1.0f : 0.0f;

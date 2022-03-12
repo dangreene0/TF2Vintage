@@ -668,9 +668,9 @@ float CTFMinigun::GetWeaponSpread( void )
 //-----------------------------------------------------------------------------
 float CTFMinigun::GetSpinUpLength( void )
 {
-	float flSpinupTime = 1.0f;
-	if ( tf2v_use_new_minigun_spinup.GetBool() )
-		flSpinupTime *= 0.75f;
+	float flSpinupTime = 0.75f;
+	if (!tf2v_use_new_minigun_spinup.GetBool())
+	flSpinupTime *= (4/3);
 			
 	CALL_ATTRIB_HOOK_FLOAT( flSpinupTime, mult_minigun_spinup_time );
 	flSpinupTime = Max( flSpinupTime, FLT_EPSILON ); // Don't divide by 0
