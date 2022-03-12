@@ -104,3 +104,4 @@ tf2v_allow_combattext 0
 tf2v_allow_hitsounds 0
 tf2v_use_new_sodapopper_fill 0
 tf2v_use_manual_sodapopper 0
+tf2v_use_dispenser_touch 0
