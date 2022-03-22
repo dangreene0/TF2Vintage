@@ -1,6 +1,8 @@
 [![Linux](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml)
+
 [![Windows](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml)
-[![Release](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml/badge.svg?event=release)](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml)
+
+Want to compile your own binaries instead? This project uses the C++ Visual Studio 2015 - Windows XP (v140_xp) platform toolset.
 
 -------------------------------------------------------------------------------------------
 Team Fortress 2 Vintage
