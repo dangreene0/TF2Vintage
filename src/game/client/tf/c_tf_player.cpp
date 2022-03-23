@@ -1975,8 +1975,63 @@ public:
 				};
 
 				m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );
+				return;
 			}
-			return;
+			else	// We can check the paint value of the equivalent paint slot.
+			{
+				C_EconEntity *pOwner = dynamic_cast<C_EconEntity *>( pEntity->GetOwnerEntity() );
+				C_TFPlayer *pPlayer = ToTFPlayer( pOwner ); // This should also bypass the issue with player disguises.
+				if ( pPlayer )
+				{
+					int nLoadoutslot = -1, nLoadoutslotPaint = -1;
+					nLoadoutslot = pItem->GetItemSlot();
+					if ( (nLoadoutslot >= TF_LOADOUT_SLOT_HAT ) && (nLoadoutslot <= TF_LOADOUT_SLOT_MISC3) )
+					{
+						switch (nLoadoutslot) // We remap the slots from the cosmetic slot to the paint slot.
+						{
+							case TF_LOADOUT_SLOT_HAT:
+								nLoadoutslotPaint = TF_LOADOUT_SLOT_HAT_PAINT;
+								break;
+							case TF_LOADOUT_SLOT_MISC1:
+								nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC1_PAINT;
+								break;
+							case TF_LOADOUT_SLOT_MISC2:
+								nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC2_PAINT;
+								break;
+							case TF_LOADOUT_SLOT_MISC3:
+								nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC3_PAINT;
+								break;
+							default:
+								break;
+						}
+						if (nLoadoutslotPaint != -1) // We have a valid slot, keep checking.
+						{
+							// Pull the information about the paint slot from the owner.
+							int iPreset = pPlayer->GetInventoryPreset(pPlayer->GetPlayerClass()->GetClassIndex(), nLoadoutslotPaint);
+							if ( iPreset > 0 ) // Don't bother checking if the slot is unpainted.
+							{
+								CEconItemView* pPaintItem = NULL; // We check the item info for the paint here.
+								pPaintItem = GetTFInventory()->GetItem(pPlayer->GetPlayerClass()->GetClassIndex(), nLoadoutslotPaint, iPreset);
+								if (pPaintItem)
+								{
+									uint nPaintRGB = pItem->GetModifiedRGBValue(bBlueTeam);
+									if (nPaintRGB != 0)
+									{
+										float flPaint[3] = {
+											Clamp(((nPaintRGB & 0xFF0000) >> 16) / 255.0f, 0.0f, 1.0f),
+											Clamp(((nPaintRGB & 0x00FF00) >> 8) / 255.0f, 0.0f, 1.0f),
+											Clamp(((nPaintRGB & 0x0000FF)) / 255.0f, 0.0f, 1.0f)
+										};
+
+										m_pResult->SetVecValue(flPaint[0], flPaint[1], flPaint[2]);
+										return;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 
 		m_pResult->SetVecValue( 0, 0, 0 );
@@ -5798,12 +5853,15 @@ void C_TFPlayer::LoadInventory( void )
 {
 	for ( int iClass = TF_FIRST_NORMAL_CLASS; iClass <= TF_LAST_NORMAL_CLASS; iClass++ )
 	{
-		for ( int iSlot = 0; iSlot <= TF_LOADOUT_SLOT_MISC3; iSlot++ )
+		for ( int iSlot = 0; iSlot < TF_LOADOUT_SLOT_COUNT; iSlot++ )
 		{
-			int iPreset = GetTFInventory()->GetWeaponPreset( iClass, iSlot );
-			char szCmd[64];
-			Q_snprintf( szCmd, sizeof( szCmd ), "weaponpresetclass %d %d %d;", iClass, iSlot, iPreset );
-			engine->ExecuteClientCmd( szCmd );
+			if (iSlot != TF_LOADOUT_SLOT_EVENT && iSlot != TF_LOADOUT_SLOT_MEDAL) // Skip special slots
+			{
+				int iPreset = GetTFInventory()->GetWeaponPreset(iClass, iSlot);
+				char szCmd[64];
+				Q_snprintf(szCmd, sizeof(szCmd), "weaponpresetclass %d %d %d;", iClass, iSlot, iPreset);
+				engine->ExecuteClientCmd(szCmd);
+			}
 		}
 	}
 }
@@ -5812,6 +5870,11 @@ void C_TFPlayer::EditInventory( int iSlot, int iWeapon )
 {
 	int iClass = GetPlayerClass()->GetClassIndex();
 	GetTFInventory()->SetWeaponPreset( iClass, iSlot, iWeapon );
+}
+
+int C_TFPlayer::GetInventoryPreset(int iClass, int iSlot)
+{
+	return GetTFInventory()->GetWeaponPreset(iClass, iSlot);
 }
 
 //-----------------------------------------------------------------------------

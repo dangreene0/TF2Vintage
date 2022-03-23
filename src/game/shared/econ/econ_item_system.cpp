@@ -1151,6 +1151,13 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 	{
 		ParseItems( pHoliday );
 	}
+	
+	// Paints are self explanatory.
+	KeyValues *pPaints = pKVData->FindKey( "paints" );
+	if ( pPaints )
+	{
+		ParseItems( pPaints );
+	}
 #endif
 }
 
