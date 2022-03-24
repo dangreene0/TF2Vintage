@@ -111,6 +111,8 @@ jobs:
       ubuntu-20.04
     
     steps:
+      - name: Checkout [Windows]
+        uses: actions/checkout@v2
       - name: Download Windows Binary
         uses: actions/download-artifact@v3
         with:
