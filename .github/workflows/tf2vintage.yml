@@ -125,7 +125,7 @@ jobs:
         with:
           name: tf2vintage-linux
           path: Linux.tar.xz
-      - name: Upload product [Tar]
+      - name: Upload product [Zip]
         uses: actions/upload-artifact@v3
         with:
           name: tf2vintage-windows
