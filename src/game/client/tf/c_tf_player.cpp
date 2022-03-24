@@ -1936,6 +1936,48 @@ public:
 			m_pResult->SetVecValue( pPanelModel->m_vecModelColor.x, pPanelModel->m_vecModelColor.y, pPanelModel->m_vecModelColor.z );
 			return;
 		}
+		
+		CTFWearable *pWearable = dynamic_cast<CTFWearable *>( pEntity );
+		if (pWearable)
+		{
+			if (pWearable->HasPaint())
+			{
+				uint nPaintRGB = pWearable->GetPaint();
+				if ( nPaintRGB != 0 )
+				{
+					float flPaint[3] ={
+						Clamp( ( (nPaintRGB & 0xFF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
+						Clamp( ( (nPaintRGB & 0x00FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
+						Clamp( ( (nPaintRGB & 0x0000FF) ) / 255.0f, 0.0f, 1.0f )
+					};
+
+					m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );
+					return;
+				}
+			}
+		}
+		
+		C_EconWearableGib *pProp = dynamic_cast<C_EconWearableGib *>( pEntity );
+		if (pProp)
+		{
+			if (pProp->HasPaint())
+			{
+				uint nPaintRGB = pProp->GetPaint();
+				if ( nPaintRGB != 0 )
+				{
+					float flPaint[3] ={
+						Clamp( ( (nPaintRGB & 0xFF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
+						Clamp( ( (nPaintRGB & 0x00FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
+						Clamp( ( (nPaintRGB & 0x0000FF) ) / 255.0f, 0.0f, 1.0f )
+					};
+
+					m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );
+					return;
+				}
+			}
+		}	
+		
+		// If it's neither of these, do the long way and check the Econ.
 
 		bool bBlueTeam = pEntity->GetTeam() > 0 && pEntity->GetTeamNumber() == TF_TEAM_BLUE;
 		C_EconEntity *pEconEnt = dynamic_cast<C_EconEntity *>( pEntity );
@@ -1977,7 +2019,7 @@ public:
 				m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );
 				return;
 			}
-			else	// We can check the paint value of the equivalent paint slot.
+			else if( pEntity->GetOwnerEntity() )	// We can check the paint value of the equivalent paint slot, if this is a wearable.
 			{
 				C_EconEntity *pOwner = dynamic_cast<C_EconEntity *>( pEntity->GetOwnerEntity() );
 				C_TFPlayer *pPlayer = ToTFPlayer( pOwner ); // This should also bypass the issue with player disguises.
@@ -3763,6 +3805,8 @@ void C_TFPlayer::CreateBoneAttachmentsFromWearables( C_TFRagdoll *pRagdoll, bool
 		{
 			pProp->m_nSkin = pTFWearable->GetSkin();
 			pProp->AttachEntityToBone( this, -1, Vector(0,0,0), QAngle(0,0,0) );
+			if (pTFWearable->HasPaint())
+				pProp->SetPaint(pTFWearable->GetPaint());
 
 			// We set this when we update the wearables, no need to do it twice.
 			/*if ( pItem && pItem->GetStaticData() )

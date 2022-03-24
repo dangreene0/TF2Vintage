@@ -10495,7 +10495,7 @@
 		{
 			"name"	"Paint Can 21"
 			"prefab"	"paint_can"
-			"year"	"2011"
+			"year"	"2012"
 			"item_name"		"#TF_Tool_PaintCan_21"
 			"attributes"
 			{
@@ -10510,7 +10510,7 @@
 		{
 			"name"	"Paint Can 22"
 			"prefab"	"paint_can"
-			"year"	"2011"
+			"year"	"2012"
 			"item_name"		"#TF_Tool_PaintCan_22"
 			"attributes"
 			{

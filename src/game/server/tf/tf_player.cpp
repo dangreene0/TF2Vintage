@@ -1935,6 +1935,9 @@ void CTFPlayer::GiveDefaultItems()
 	// Give a builder weapon for each object the playerclass is allowed to build
 	ManageBuilderWeapons( pData );
 	
+	// Apply Paints.
+	ManagePlayerPaints( pData );
+	
 	// Update bodygroups and everything dealing with inventory processing.
 	PostInventoryApplication();
 
@@ -2978,6 +2981,84 @@ void CTFPlayer::ManageVIPMedal( TFPlayerClassData_t *pData )
             pEntity->GiveTo( this );
         }
     }
+
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ManagePlayerPaints( TFPlayerClassData_t *pData )
+{
+	for (int iSlot = TF_FIRST_PAINT_SLOT; iSlot <= TF_LAST_PAINT_SLOT; ++iSlot)
+	{
+	
+		if ( GetEntityForLoadoutSlot( iSlot ) != NULL )
+		{
+			// Nothing to do here.
+			continue;
+		}
+		
+		// Give us an item from the inventory.
+		CEconItemView *pItem = GetLoadoutItem( m_PlayerClass.GetClassIndex(), iSlot );
+		
+		// Don't equip defaults in order to prevent a memory crash.
+		if ( pItem == GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), iSlot, 0 ) )
+			continue;
+			
+		if (pItem)
+		{
+			if ( tf2v_force_year_cosmetics.GetBool() )
+			{
+				// Unlike weapons and cosmetics, we can outright skip anachronistic paints.
+				CEconItemDefinition *pItemDef = pItem->GetStaticData();
+				if ( tf2v_allowed_year_cosmetics.GetInt() <= 2007 )
+				{
+					// Prevent the value from being below 2007.
+					if ( pItemDef->year > 2007 ) 
+						continue;
+				}
+				else
+				{
+					if ( pItemDef->year > tf2v_allowed_year_cosmetics.GetInt() )
+						continue;
+				}
+			}
+			
+			bool bBlueTeam = GetTeamNumber() > 0 && GetTeamNumber() == TF_TEAM_BLUE;
+			uint nPaintRGB = pItem->GetModifiedRGBValue(bBlueTeam);
+			if (nPaintRGB != 0)
+			{
+				int nLoadoutslotCosmetic = -1;
+				switch (iSlot) // We remap the slots from the paint slot to the cosmetic slot.
+				{
+					case TF_LOADOUT_SLOT_HAT_PAINT:
+						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_HAT;
+						break;
+					case TF_LOADOUT_SLOT_MISC1_PAINT:
+						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC1;
+						break;
+					case TF_LOADOUT_SLOT_MISC2_PAINT:
+						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC2;
+						break;
+					case TF_LOADOUT_SLOT_MISC3_PAINT:
+						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC3;
+						break;
+					default:
+						break;
+				}
+				if (GetWearableForLoadoutSlot( nLoadoutslotCosmetic ) )
+				{
+					// Check for a wearable.
+					CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( nLoadoutslotCosmetic ) );
+					if (pWearable)
+					{
+						// Apply the paintjob to the wearable.
+						pWearable->ApplyPaint(nPaintRGB);
+					}
+				}
+			}
+		}
+	}
 
 }
 

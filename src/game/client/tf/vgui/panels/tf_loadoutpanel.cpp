@@ -418,7 +418,30 @@ void CTFLoadoutPanel::UpdateModelWeapons( void )
 					nSkin = pVisuals->skin;
 				}
 
-				m_pClassModelPanel->SetMergeMDL(pszModel, NULL, nSkin);
+				// We have to manually paint the wearables.
+				if ( (iSlot >= TF_LOADOUT_SLOT_HAT ) && (iSlot <= TF_LOADOUT_SLOT_MISC3) )
+				{
+					int nLoadoutslotPaint = 0;
+					switch (iSlot) // We remap the slots from the cosmetic slot to the paint slot.
+					{
+						case TF_LOADOUT_SLOT_HAT:
+							nLoadoutslotPaint = TF_LOADOUT_SLOT_HAT_PAINT;
+							break;
+						case TF_LOADOUT_SLOT_MISC1:
+							nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC1_PAINT;
+							break;
+						case TF_LOADOUT_SLOT_MISC2:
+							nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC2_PAINT;
+							break;
+						case TF_LOADOUT_SLOT_MISC3:
+							nLoadoutslotPaint = TF_LOADOUT_SLOT_MISC3_PAINT;
+							break;
+						default:
+							break;
+					}
+				}
+								
+				m_pClassModelPanel->SetMergeMDL(pszModel, dynamic_cast<IClientRenderable*>(pItem), nSkin);
 			}
 		}
 

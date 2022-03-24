@@ -87,10 +87,14 @@ public:
 	void FinishModelInitialization( void );
 	bool Initialize( bool bAttached );
 
+	void SetPaint( uint32 nPaintRGB ) { m_nPaint = nPaintRGB; }
+	bool HasPaint( void ) { return m_nPaint != 0; }
+	uint32 GetPaint( void ) { return m_nPaint; }
 private:
 	bool m_bAttachedModel;
 	bool m_bDynamicLoad;
 	float m_flFadeTime;
+	uint32 m_nPaint;
 };
 #endif
 
