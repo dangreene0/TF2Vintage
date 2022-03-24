@@ -93,27 +93,29 @@ jobs:
       - name: Build project [Linux]
         run: cd src && sudo make -f TF2vintage.mak
 
-  pack-game:
+  pack-tar:
     needs: [build-windows, build-linux]
     runs-on:
-      windows-2019
+      ubuntu-20.04
     steps:
       - name: Pack [Tar]
-        shell: bash
-        run: tar cJfv tf2vintage.tar.xz game/tf2vintage/bin
+        run: |
+          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
+          sudo bash .github/gh-cache.sh
 
       - name: Upload product [Tar]
         uses: actions/upload-artifact@v2
         with:
           name: tf2vintage
-          path: tf2vintage.tar.xz
+          path: Linux.tar.xz
 
-      - name: Pack [Zip]
-        shell: bash
-        run: zip -r tf2vintage.zip game/tf2vintage/bin
-
+  pack-zip:
+    needs: [build-windows, build-linux]
+    runs-on:
+      windows-2019
+    steps:
       - name: Upload product [Zip]
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tf2vintage
-          path: tf2vintage.zip
+          path: game/tf2vintage/bin/
