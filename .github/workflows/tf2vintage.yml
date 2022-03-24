@@ -105,7 +105,7 @@ jobs:
     needs: [build-linux]
     runs-on:
       ubuntu-20.04
-
+    
     steps:
       - name: Download Linux Binary
         uses: actions/download-artifact@v3
