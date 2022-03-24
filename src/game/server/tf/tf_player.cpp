@@ -7914,11 +7914,27 @@ void CTFPlayer::Event_Killed( const CTakeDamageInfo &info )
 		m_hObserverTarget.Set( NULL );
 	}
 
-	if ( bElectrocute && bGib )
+	if ( bGib )
 	{
-		const char *pszEffect = ConstructTeamParticle( "electrocuted_gibbed_%s", GetTeamNumber() );
-		DispatchParticleEffect( pszEffect, GetAbsOrigin(), vec3_angle );
-		EmitSound( "TFPlayer.MedicChargedDeath" );
+		if ( bElectrocute )
+		{
+			const char *pszEffect = ConstructTeamParticle( "electrocuted_gibbed_%s", GetTeamNumber() );
+			DispatchParticleEffect( pszEffect, GetAbsOrigin(), vec3_angle );
+			EmitSound( "TFPlayer.MedicChargedDeath" );
+		}
+		
+		// Todo: Add birds to TF2V.
+		/*
+		// Scouts when gibbed have a 1% chance of having a bird explode out of them.
+		if ( IsPlayerClass( TF_CLASS_SCOUT ) && RandomInt( 1, 100 ) <= 1 )
+		{
+			// Grab the player's coordinates, but modify them so they come above the player.
+			Vector vecOrigin = WorldSpaceCenter();
+			
+			// Spawn this like a healthkit/ammobox, except use the prop physics entity.
+			// SpawnBird(vecOrigin,true);
+		}
+		*/
 	}
 
 	bool bCritOnHardHit = false, bTurnToAsh = false;
