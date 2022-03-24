@@ -101,7 +101,7 @@ jobs:
       - name: Store Linux Binaries
         uses: actions/upload-artifact@v3
         with:
-          name: Linux
+          name: tf2vintage-linux
           path: game/tf2vintage/bin/
 
 
@@ -115,14 +115,18 @@ jobs:
       - name: Download Linux Binary
         uses: actions/download-artifact@v3
         with:
-          name: Linux
+          name: tf2vintage-linux
           path: game/tf2vintage/bin/
       - name: Pack [Tar]
         run: |
           sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
-          sudo bash .github/gh-cache.sh
       - name: Upload product [Tar]
         uses: actions/upload-artifact@v3
         with:
-          name: Tf2vintage-linux
+          name: tf2vintage-linux
           path: Linux.tar.xz
+      - name: Upload product [Tar]
+        uses: actions/upload-artifact@v3
+        with:
+          name: tf2vintage-windows
+          path: game/tf2vintage/bin/
