@@ -121,16 +121,18 @@ jobs:
         with:
           name: tf2vintage-linux
           path: game/tf2vintage/bin/
-      - name: Upload product [Zip]
+      - name: Pack [7z]
+        uses: edgarrc/action-7z@v1
+        with:
+          args: 7z a -t7z -mx=9 tf2vintage.7z ./game/
+      - name: Upload product [7z]
         uses: actions/upload-artifact@v3
         with:
-          name: tf2vintage-windows
-          path: game/
-      - name: Pack [Tar]
-        run: |
-          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
-      - name: Upload product [Tar]
-        uses: actions/upload-artifact@v3
+          name: tf2vintage
+          path: tf2vintage.7z
+      - name: Clean up leftover binaries
+        uses: geekyeggo/delete-artifact@v1
         with:
-          name: tf2vintage-linux
-          path: Linux.tar.xz
+          name: |
+            tf2vintage-windows
+            tf2vintage-linux
