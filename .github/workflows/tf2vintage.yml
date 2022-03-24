@@ -113,7 +113,7 @@ jobs:
           path: game/tf2vintage/bin/
 
 
-  pack-compile:
+  build-game:
     needs: [build-windows, build-linux]
     runs-on:
       ubuntu-20.04
