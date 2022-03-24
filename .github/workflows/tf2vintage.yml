@@ -100,6 +100,6 @@ jobs:
       ubuntu-20.04
     steps:
       - name: Store
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          path: game/tf2vintage/bin/**
+          path: game/tf2vintage/bin/
