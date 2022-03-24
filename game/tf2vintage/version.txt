@@ -1,1 +1,1 @@
-version=3.6/1.0 Beta Pandora
+version=3.6 Pandora
