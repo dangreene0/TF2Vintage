@@ -1,6 +1,14 @@
 name: tf2vintage
 
-on: workflow_dispatch
+on: 
+  push:
+    paths:
+      - 'src/**'
+      - 'game/tf2vintage/**'
+  pull_request:
+   paths:
+      - 'src/**'
+      - 'game/tf2vintage/**'
 
 env:
   STEAM_RUNTIME_PATH: /valve/steam-runtime
