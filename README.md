@@ -1,3 +1,9 @@
+Latest full compile, including game assets:
+
+[![tf2vintage](https://github.com/TF2V/TF2Vintage/actions/workflows/tf2vintage.yml/badge.svg?branch=3.6)](https://github.com/TF2V/TF2Vintage/actions/workflows/tf2vintage.yml)
+
+Binaries only:
+
 [![Linux](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml)
 
 [![Windows](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml)

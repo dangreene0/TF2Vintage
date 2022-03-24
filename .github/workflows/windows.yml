@@ -1,6 +1,12 @@
 name: Windows
 
-on: [ push, pull_request ]
+on: 
+  push:
+    paths:
+      - 'src/**'
+  pull_request:
+   paths:
+      - 'src/**'
 
 jobs:
   build:
@@ -26,12 +32,12 @@ jobs:
       - name: Build project
         run: cd src;devenv TF2vintage.sln /Build Release
 
-      - name: Pack
-        shell: bash
-        run: tar cJfv Windows.tar.xz game/tf2vintage/bin
-
-      - name: Upload product
-        uses: actions/upload-artifact@v2
+      - name: Pack [7z]
+        uses: edgarrc/action-7z@v1
         with:
-          name: TF2Vintage
-          path: Windows.tar.xz
+          args: 7z a -t7z -mx=9 Windows.7z ./game/tf2vintage/bin/
+      - name: Upload product [7z]
+        uses: actions/upload-artifact@v3
+        with:
+          name: tf2v-binaries-windows
+          path: Windows.7z
