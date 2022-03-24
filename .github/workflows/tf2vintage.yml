@@ -98,25 +98,3 @@ jobs:
         with:
           name: tf2vintage-linux
           path: game/tf2vintage/bin/
-          
-          
-  pack-tar:
-    #needs: [build-windows, build-linux]
-    needs: [build-linux]
-    runs-on:
-      ubuntu-20.04
-	  
-    steps:
-      - name: Download Linux Binary
-        uses: actions/download-artifact@v3
-        with:
-          name: tf2vintage-linux
-      - name: Pack [Tar]
-        run: |
-          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
-          sudo bash .github/gh-cache.sh
-      - name: Upload product [Tar]
-        uses: actions/upload-artifact@v3
-        with:
-          name: Tf2vintage-linux
-          path: Linux.tar.xz
