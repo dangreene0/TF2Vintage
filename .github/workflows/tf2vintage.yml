@@ -8,28 +8,28 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/src/ccache
 
 jobs:
-  build-windows:
-    runs-on:
-      windows-2019
+#  build-windows:
+ #   runs-on:
+  #    windows-2019
     
-    steps:
-      - name: Checkout [Windows]
-        uses: actions/checkout@v2
+   # steps:
+    #  - name: Checkout [Windows]
+     #   uses: actions/checkout@v2
 
-      - name: Configure dependencies [Windows]
-        uses: ilammy/msvc-dev-cmd@v1
+      #- name: Configure dependencies [Windows]
+       # uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure registry [Windows]
-        shell: powershell
-        run: |
-          REG ADD "HKLM\Software\Microsoft\VisualStudio\12.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}" /v "DefaultProjectExtension" /t REG_SZ  /d "vcxproj" /f /reg:32
-          REG ADD "HKLM\Software\Microsoft\VisualStudio\12.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}" /v "PossibleProjectExtensions" /t REG_SZ /d "vcxproj;vcxitems;vcproj;mak" /f /reg:32
+      #- name: Configure registry [Windows]
+      #  shell: powershell
+      #  run: |
+      #    REG ADD "HKLM\Software\Microsoft\VisualStudio\12.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}" /v "DefaultProjectExtension" /t REG_SZ  /d "vcxproj" /f /reg:32
+      #    REG ADD "HKLM\Software\Microsoft\VisualStudio\12.0\Projects\{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}" /v "PossibleProjectExtensions" /t REG_SZ /d "vcxproj;vcxitems;vcproj;mak" /f /reg:32
 
-      - name: Create project [Windows]
-        run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
+      #- name: Create project [Windows]
+      #  run: cd src;devtools/bin/vpc.exe /tf2vintage /2015 +game /mksln TF2vintage.sln
 
-      - name: Build project [Windows]
-        run: cd src;devenv TF2vintage.sln /Build Release
+      #- name: Build project [Windows]
+      #  run: cd src;devenv TF2vintage.sln /Build Release
 
 
   build-linux:
@@ -94,28 +94,12 @@ jobs:
         run: cd src && sudo make -f TF2vintage.mak
 
   pack-tar:
-    needs: [build-windows, build-linux]
+    #needs: [build-windows, build-linux]
+    needs: [build-linux]
     runs-on:
       ubuntu-20.04
     steps:
-      - name: Pack [Tar]
-        run: |
-          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
-          sudo bash .github/gh-cache.sh
-
-      - name: Upload product [Tar]
+      - name: Store
         uses: actions/upload-artifact@v2
         with:
-          name: tf2vintage
-          path: Linux.tar.xz
-
-  pack-zip:
-    needs: [build-windows, build-linux]
-    runs-on:
-      windows-2019
-    steps:
-      - name: Upload product [Zip]
-        uses: actions/upload-artifact@v3
-        with:
-          name: tf2vintage
-          path: game/tf2vintage/bin/
+          path: game/tf2vintage/bin/**
