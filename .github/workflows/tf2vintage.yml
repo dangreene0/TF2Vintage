@@ -1,4 +1,4 @@
-name: Combined
+name: tf2vintage
 
 on: workflow_dispatch
 
@@ -94,7 +94,7 @@ jobs:
       
       - name: Pack
         run: |
-          sudo zip -r tf2vintage.zip game/tf2vintage/bin
+          sudo zip -r tf2vintage.zip game/tf2vintage
           sudo bash .github/gh-cache.sh
 
       - name: Upload product
