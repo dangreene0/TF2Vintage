@@ -31,6 +31,11 @@ jobs:
       #- name: Build project [Windows]
       #  run: cd src;devenv TF2vintage.sln /Build Release
 
+     # - name: Store Windows Binaries
+        #uses: actions/upload-artifact@v3
+       # with:
+        #  name: Windows
+        #  path: game/tf2vintage/bin/
 
   build-linux:
     runs-on:
@@ -96,7 +101,7 @@ jobs:
       - name: Store Linux Binaries
         uses: actions/upload-artifact@v3
         with:
-          name: tf2vintage-linux
+          name: Linux
           path: game/tf2vintage/bin/
 
 
@@ -110,7 +115,8 @@ jobs:
       - name: Download Linux Binary
         uses: actions/download-artifact@v3
         with:
-          name: tf2vintage-linux
+          name: Linux
+          path: game/tf2vintage/bin/
       - name: Pack [Tar]
         run: |
           sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
