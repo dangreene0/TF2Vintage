@@ -78,9 +78,9 @@ jobs:
       - name: Pack [7z]
         uses: edgarrc/action-7z@v1
         with:
-          args: 7z a -t7z -mx=9 Linux.7z ./game/tf2vintage/bin/
+          args: 7z a -t7z -mx=9 tf2vintage.7z ./game/tf2vintage/bin/
       - name: Upload product [7z]
         uses: actions/upload-artifact@v3
         with:
           name: tf2v-binaries-linux
-          path: Linux.7z
+          path: tf2vintage.7z
