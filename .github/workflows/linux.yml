@@ -75,12 +75,13 @@ jobs:
       - name: Build project
         run: cd src && sudo make -f TF2vintage.mak
       
-      - name: Pack [7z]
-        uses: edgarrc/action-7z@v1
+      - name: Pack
+        run: |
+          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
+          sudo bash .github/gh-cache.sh
+
+      - name: Upload product
+        uses: actions/upload-artifact@v2
         with:
-          args: 7z a -t7z -mx=9 tf2vintage.7z ./game/tf2vintage/bin/
-      - name: Upload product [7z]
-        uses: actions/upload-artifact@v3
-        with:
-          name: tf2v-binaries-linux
-          path: tf2vintage.7z
+          name: TF2Vintage
+          path: Linux.tar.xz
