@@ -25,7 +25,7 @@
 
 #include "tier0/memdbgon.h"
 
-static IVEngineServer *g_pEngineServer = NULL;
+//static IVEngineServer *g_pEngineServer = NULL;
 
 extern int GetClusterForOrigin( const Vector& org );
 extern int GetPVSForCluster( int clusterIndex, int outputpvslength, byte* outputpvs );

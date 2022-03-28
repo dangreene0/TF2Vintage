@@ -517,7 +517,6 @@ $Project
 		$File	"$SRCDIR\game\client\c_vote_controller.cpp"
 		$File	"c_lights.cpp"
 		$File	"worldlight.cpp"
-		$File	"worldlight.cpp"
 		$File	"worldlight.h"
 		$File	"vis_tester.cpp"
 		//Haptics
