@@ -5294,7 +5294,7 @@ bool CTFGameRules::CanUpgradeWithAttrib( CTFPlayer *pPlayer, int iItemSlot, attr
 		{
 			if ( pUpgrade->nQuality == MVM_UPGRADE_QUALITY_LOW )
 				return iWeaponID == TF_WEAPON_MINIGUN;
-			else if ( iWeaponID == TF_WEAPON_GRENADELAUNCHER || iWeaponID == TF_WEAPON_GRENADELAUNCHER_LEGACY && pWeapon && pWeapon->AutoFiresFullClipAllAtOnce() )
+			else if ( ( iWeaponID == TF_WEAPON_GRENADELAUNCHER || iWeaponID == TF_WEAPON_GRENADELAUNCHER_LEGACY ) && pWeapon && pWeapon->AutoFiresFullClipAllAtOnce() )
 				return false;
 
 			if ( dynamic_cast<CTFWeaponBaseMelee *>( pEntity ) != NULL )
@@ -8124,8 +8124,8 @@ void CTFGameRules::BetweenRounds_Think( void )
 {
 	if ( UsePlayerReadyStatusMode() )
 	{
-		if ( PlayerReadyStatus_ShouldStartCountdown() ||
-			 m_flRestartRoundTime > 0 && (int)( m_flRestartRoundTime - gpGlobals->curtime ) == mp_tournament_readymode_countdown.GetInt() )
+		if ( ( PlayerReadyStatus_ShouldStartCountdown() ||
+			  ( m_flRestartRoundTime > 0 && (int)( m_flRestartRoundTime - gpGlobals->curtime ) ) == mp_tournament_readymode_countdown.GetInt() ) )
 		{
 			if ( m_flRestartRoundTime < 0 || m_flRestartRoundTime >= gpGlobals->curtime + mp_tournament_readymode_countdown.GetFloat() + 0.1 )
 			{
