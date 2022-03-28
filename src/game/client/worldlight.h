@@ -17,7 +17,7 @@ struct dworldlight_t;
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-class CWorldLights : public CAutoGameSystem
+class CWorldLights : public CAutoGameSystemPerFrame
 {
 public:
 	CWorldLights();
@@ -26,13 +26,15 @@ public:
 	//-------------------------------------------------------------------------
 	// Find the brightest light source at a point
 	//-------------------------------------------------------------------------
-	bool GetBrightestLightSource(const Vector &vecPosition, Vector &vecLightPos, Vector &vecLightBrightness);
+	bool GetBrightestLightSource( const Vector & vecPosition, Vector & vecLightPos, Vector & vecLightBrightness ) const;
 
 	// CAutoGameSystem overrides
 public:
-	virtual bool Init();
 	virtual void LevelInitPreEntity();
+	virtual void LevelInitPostEntity();
 	virtual void LevelShutdownPostEntity() { Clear(); }
+
+	virtual void PreRender();
 
 private:
 	void Clear();
