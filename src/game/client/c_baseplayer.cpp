@@ -1948,7 +1948,7 @@ bool C_BasePlayer::ShouldDrawThisPlayer()
 	{
 		return true;
 	}
-	if ( !UseVR() && cl_first_person_uses_world_model.GetBool() )
+	if ( !UseVR() && ( cl_first_person_uses_world_model.GetBool() || tf2v_use_fp_legs.GetBool() ) )
 	{
 		return true;
 	}
@@ -1970,7 +1970,7 @@ bool C_BasePlayer::ShouldDrawThisPlayer()
 bool C_BasePlayer::ShouldDrawFirstPersonLegs()
 {
 	if (tf2v_use_fp_legs.GetBool())
-		return ( !ShouldDrawThisPlayer() && InFirstPersonView() && DrawingMainView() );
+		return ( ShouldDrawThisPlayer() && InFirstPersonView() && DrawingMainView() );
 	
 	return false;
 }
@@ -2914,9 +2914,7 @@ void C_BasePlayer::BuildFirstPersonMeathookTransformations( CStudioHdr *hdr, Vec
 	}
 
 	// If we aren't drawing the player anyway, don't mess with the bones. This can happen in Portal.
-	// Also check here if we shouldn't draw the leg only variant either.
-	bool bLegOnlyTransform = ShouldDrawFirstPersonLegs();
-	if( !ShouldDrawThisPlayer() && !bLegOnlyTransform )
+	if( !ShouldDrawThisPlayer() )
 	{
 		return;
 	}
@@ -3004,6 +3002,7 @@ void C_BasePlayer::BuildFirstPersonMeathookTransformations( CStudioHdr *hdr, Vec
 		MatrixScaleByZero( transformhelmet );
 	}
 	
+	bool bLegOnlyTransform = ShouldDrawFirstPersonLegs();
 	// Leg only transformations also need additional steps.
 	if ( bLegOnlyTransform && GetModelPtr() )
 	{
