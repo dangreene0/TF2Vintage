@@ -156,4 +156,18 @@ game/*/expressions/*
 *.bsp
 *.vpk
 
+# caches
 src/.vs/*
+src/materialsystem/stdshaders/fxctmp9_tmp/*
+src/materialsystem/stdshaders/vshtmp9_tmp/*
+src/materialsystem/stdshaders/pshtmp9_tmp/*
+src/materialsystem/stdshaders/fxctmp9_360_tmp/*
+src/materialsystem/stdshaders/vshtmp9_360_tmp/*
+src/materialsystem/stdshaders/pshtmp9_360_tmp/*
+src/materialsystem/stdshaders/pshtmp9_360_tmp/*
+src/materialsystem/stdshaders/include/*
+src/materialsystem/stdshaders/shaders/*
+src/materialsystem/stdshaders/filestocopy.txt
+src/materialsystem/stdshaders/inclist.txt
+src/materialsystem/stdshaders/filelistgen.txt
+src/materialsystem/stdshaders/filelist.txt
