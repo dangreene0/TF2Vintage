@@ -152,8 +152,6 @@ game/*/expressions/*
 *.prt
 
 # migration blocks
-*.bik
-*.bsp
 *.vpk
 
 # caches
