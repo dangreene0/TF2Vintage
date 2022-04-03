@@ -10,34 +10,62 @@ $Include "$SRCDIR\materialsystem\stdshaders\game_shader_dx9_base.vpc"
 
 $Project "Shaders (tf2vintage)"
 {
-	$Folder "Header Files"
+	$Folder "PBR"
 	{
-		$File	"common_vertexlitgeneric_dx9.h"
-		$File	"common_lightmappedgeneric_fxc.h"
-		$File	"common_flashlight_fxc.h"
-	}
-
-	$Folder "Shader Source"
-	{
-		$Folder "fxc"
+		$Folder "Header Files"
 		{
-			$File	"pbr_ps30.fxc"
-			$File	"pbr_vs30.fxc"
-			$File	"pbr_ps20b.fxc"
-			$File	"pbr_vs20b.fxc"
+			$File	"common_vertexlitgeneric_dx9.h"
+			$File	"common_lightmappedgeneric_fxc.h"
+			$File	"common_flashlight_fxc.h"
 		}
 
-		$Folder "Headers"
+		$Folder "Shader Source"
 		{
-			$File	"pbr_common_ps2_3_x.h"
+			$Folder "fxc"
+			{
+				$File	"pbr_ps30.fxc"
+				$File	"pbr_vs30.fxc"
+				$File	"pbr_ps20b.fxc"
+				$File	"pbr_vs20b.fxc"
+			}
+
+			$Folder "Headers"
+			{
+				$File	"pbr_common_ps2_3_x.h"
+			}
+
+			$File	"pbr_dx9_30.txt"
+			$File	"pbr_dx9_20b.txt"
 		}
 
-		$File	"pbr_dx9_30.txt"
-		$File	"pbr_dx9_20b.txt"
+		$Folder "Source Files"
+		{
+			$File	"pbr_dx9.cpp"
+		}
 	}
-
-	$Folder "Source Files"
+	$Folder "SSAO"
 	{
-		$File	"pbr_dx9.cpp"
+		$Folder "Shader Source"
+		{
+			$Folder "fxc"
+			{
+				$File	"ssao_vs30.fxc"
+				$File	"ssao_ps30.fxc"
+				$File	"ssao_combine_vs30.fxc"
+				$File	"ssao_combine_ps30.fxc"
+				$File	"gauss_blur_3x3_vs30.fxc"
+				$File	"gauss_blur_3x3_ps30.fxc"
+			}
+
+
+			$File	"ssao_shaders_dx9_30.txt"
+		}
+
+		$Folder "Source Files"
+		{
+			$File	"ssao.cpp"
+			$File	"ssao_combine.cpp"
+			$File	"gaussian_blur_3x3.cpp"
+		}
 	}
 }

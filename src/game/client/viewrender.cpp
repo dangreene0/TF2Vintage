@@ -136,6 +136,9 @@ ConVar r_DrawDetailProps( "r_DrawDetailProps", "1", FCVAR_NONE, "0=Off, 1=Normal
 
 ConVar r_worldlistcache( "r_worldlistcache", "1" );
 
+//Crossroads devtest
+ConVar cr_ssao_enable( "cr_ssao_enable", "1", FCVAR_ARCHIVE );
+
 //-----------------------------------------------------------------------------
 // Convars related to fog color
 //-----------------------------------------------------------------------------
@@ -785,6 +788,11 @@ CLIENTEFFECT_REGISTER_BEGIN( PrecachePostProcessingEffects )
 	CLIENTEFFECT_MATERIAL( "dev/pyro_vignette" )
 	CLIENTEFFECT_MATERIAL( "dev/pyro_post" )
 #endif
+
+	//crossroads devtest
+	CLIENTEFFECT_MATERIAL( "dev/ssao" )
+	CLIENTEFFECT_MATERIAL( "dev/ssaoblur" )
+	CLIENTEFFECT_MATERIAL( "dev/ssao_combine" )
 
 CLIENTEFFECT_REGISTER_END_CONDITIONAL( engine->GetDXSupportLevel() >= 90 )
 
@@ -2307,6 +2315,12 @@ void CViewRender::RenderView( const CViewSetup &view, int nClearFlags, int whatT
 
 	}
 
+	// Crossroads devtest SSAO
+	if( cr_ssao_enable.GetBool() )
+	{
+		DoSSAO( view );
+	}
+	
 	if ( mat_viewportupscale.GetBool() && mat_viewportscale.GetFloat() < 1.0f ) 
 	{
 		CMatRenderContextPtr pRenderContext( materials );
