@@ -153,6 +153,7 @@ game/*/expressions/*
 
 # migration blocks
 *.vpk
+*.ain
 
 # caches
 src/.vs/*
