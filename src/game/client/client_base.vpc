@@ -519,6 +519,7 @@ $Project
 		$File	"worldlight.cpp"
 		$File	"worldlight.h"
 		$File	"vis_tester.cpp"
+		$File	"replmats.cpp"
 		//Haptics
 		$File	"$SRCDIR\public\haptics\haptic_msgs.cpp"	[!$X360]
 		$File	"$SRCDIR\public\haptics\haptic_utils.cpp"	[$WIN32&&!$X360]
