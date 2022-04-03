@@ -58,7 +58,7 @@ $Project "Shaders (tf2vintage)"
 			}
 
 
-			$File	"ssao_shaders_dx9_30.txt"
+			$File	"ssao_shaders.txt"
 		}
 
 		$Folder "Source Files"
