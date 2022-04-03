@@ -152,7 +152,7 @@ bool CTFItemPanel::Init()
 	m_pItemSlotLabel = new CExLabel( this, "ItemSlotLabel", "#PrimaryWeapon" );
 
 	CTFAdvItemButton *itembutton = nullptr;
-	for (int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++)
+	for (int i = 0; i < INVENTORY_VECTOR_NUM; i++)
 	{
 		itembutton = new CTFAdvItemButton( m_pWeaponSetPanel, "WeaponIcons", chEmptyLoc );
 		itembutton->SetVisible( false );
@@ -251,7 +251,7 @@ void CTFItemPanel::DefaultLayout()
 		m_pItemSlotLabel->SetText( g_szEquipSlotHeader[m_iCurrentSlot] );
 
 		int itemCount = 0;
-		for ( int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++ )
+		for ( int i = 0; i < INVENTORY_VECTOR_NUM; i++ )
 		{
 			CEconItemView *pItem = NULL;
 			if ( m_iCurrentSlot != -1 )
@@ -276,11 +276,11 @@ void CTFItemPanel::SetupItemsPage( int iPage )
 	SetDialogVariable( "backpackpage", VarArgs( "%d/%d", m_nPage + 1, m_nPageCount ) );
 
 	// hide all previously visible items
-	for ( int i = 0; i < INVENTORY_VECTOR_NUM_SELECTION; i++ )
+	for ( int i = 0; i < INVENTORY_VECTOR_NUM; i++ )
 		m_pWeaponIcons[i]->SetVisible( false );
 
 	int first = m_nPage * m_pWeaponSetPanel->m_nItemColumns * m_pWeaponSetPanel->m_nItemRows;
-	int last = MIN( first + m_pWeaponSetPanel->m_nItemColumns * m_pWeaponSetPanel->m_nItemRows, INVENTORY_VECTOR_NUM_SELECTION );
+	int last = MIN( first + m_pWeaponSetPanel->m_nItemColumns * m_pWeaponSetPanel->m_nItemRows, INVENTORY_VECTOR_NUM );
 
 	for ( int i = first; i < last; i++ )
 	{

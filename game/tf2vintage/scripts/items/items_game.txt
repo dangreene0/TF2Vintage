@@ -4363,6 +4363,8 @@
 			"prefab"	"paint_can"
 			"year"	"2010"
 			"item_quality" "normal"
+			"image_inventory"	"backpack/player/items/all_class/all_tf2v"
+			"item_name"	"#TF_Pyromancer_Style1"
 			"baseitem"	"1"
 		}
 	}
