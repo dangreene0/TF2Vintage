@@ -43,4 +43,29 @@ $Project "Shaders (tf2vintage)"
 			$File	"pbr_dx9.cpp"
 		}
 	}
+	$Folder "SSAO"
+	{
+		$Folder "Shader Source"
+		{
+			$Folder "fxc"
+			{
+				$File	"ssao_vs30.fxc"
+				$File	"ssao_ps30.fxc"
+				$File	"ssao_combine_vs30.fxc"
+				$File	"ssao_combine_ps30.fxc"
+				$File	"gauss_blur_3x3_vs30.fxc"
+				$File	"gauss_blur_3x3_ps30.fxc"
+			}
+
+
+			$File	"ssao_shaders.txt"
+		}
+
+		$Folder "Source Files"
+		{
+			$File	"ssao.cpp"
+			$File	"ssao_combine.cpp"
+			$File	"gaussian_blur_3x3.cpp"
+		}
+	}
 }
