@@ -160,6 +160,9 @@ src/.vs/*
 src/materialsystem/stdshaders/fxctmp9_tmp/*
 src/materialsystem/stdshaders/vshtmp9_tmp/*
 src/materialsystem/stdshaders/pshtmp9_tmp/*
+src/materialsystem/stdshaders/fxctmp9/*
+src/materialsystem/stdshaders/vshtmp9/*
+src/materialsystem/stdshaders/pshtmp9/*
 src/materialsystem/stdshaders/fxctmp9_360_tmp/*
 src/materialsystem/stdshaders/vshtmp9_360_tmp/*
 src/materialsystem/stdshaders/pshtmp9_360_tmp/*

@@ -22,8 +22,8 @@ set tt_all_chkpt=%tt_start%
 set BUILD_SHADER=call buildshaders.bat
 set ARG_EXTRA=
 
-%BUILD_SHADER% pp_shaders		 -game %GAMEDIR% -source %SOURCEDIR%
-%BUILD_SHADER% pp_shaders		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
+%BUILD_SHADER% shaders		 -game %GAMEDIR% -source %SOURCEDIR%
+%BUILD_SHADER% shaders		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
 
 %BUILD_SHADER% light_volumetrics_shaders -game %GAMEDIR% -source %SOURCEDIR%
 %BUILD_SHADER% light_volumetrics_shaders -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
