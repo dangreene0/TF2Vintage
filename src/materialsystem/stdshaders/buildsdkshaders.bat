@@ -29,10 +29,7 @@ set ARG_EXTRA=
 %BUILD_SHADER% light_volumetrics_shaders -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
 
 %BUILD_SHADER% pbr_dx9_20b		 -game %GAMEDIR% -source %SOURCEDIR%
-%BUILD_SHADER% pbr_dx9_30		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
-
-%BUILD_SHADER% ssao_shaders 		 -game %GAMEDIR% -source %SOURCEDIR%
-%BUILD_SHADER% ssao_shaders		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
+%BUILD_SHADER% pbr_dx9_30		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30  
 
 %BUILD_SHADER% sdk_shaders		 -game %GAMEDIR% -source %SOURCEDIR%
 %BUILD_SHADER% sdk_shaders		 -game %GAMEDIR% -source %SOURCEDIR% -dx9_30	-force30 
