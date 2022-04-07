@@ -164,7 +164,6 @@ src/materialsystem/stdshaders/fxctmp9_360_tmp/*
 src/materialsystem/stdshaders/vshtmp9_360_tmp/*
 src/materialsystem/stdshaders/pshtmp9_360_tmp/*
 src/materialsystem/stdshaders/pshtmp9_360_tmp/*
-src/materialsystem/stdshaders/include/*
 src/materialsystem/stdshaders/shaders/*
 src/materialsystem/stdshaders/filestocopy.txt
 src/materialsystem/stdshaders/inclist.txt
