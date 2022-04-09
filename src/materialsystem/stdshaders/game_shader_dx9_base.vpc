@@ -56,7 +56,7 @@ $Project
 
 		$File	"Bloom.cpp"
 		$File	"screenspace_general.cpp"
-
+		
 		$File	"cloak_blended_pass_helper.cpp"
 		$File	"emissive_scroll_blended_pass_helper.cpp"
 		$File	"flesh_interior_blended_pass_helper.cpp"
@@ -64,7 +64,7 @@ $Project
 		$File	"lightmappedgeneric_dx9_helper.cpp"
 		$File	"depthwrite.cpp"
 		$File	"refract.cpp"
-		$File	"light_volumetrics.cpp"				   
+		$File	"light_volumetrics.cpp"
 		$File	"refract_dx9_helper.cpp"
 		$File	"shadow.cpp"
 		$File	"shadowbuild_dx9.cpp"
