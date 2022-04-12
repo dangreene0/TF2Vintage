@@ -238,6 +238,7 @@ ConVar tf2v_use_new_demo_explosion_variance( "tf2v_use_new_demo_explosion_varian
 ConVar tf2v_new_sentry_wrangle_location( "tf2v_new_sentry_wrangle_location", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Calculates Wrangler damage falloff based on Sentry location rather than the Engineer's." );
 ConVar tf2v_new_sentry_damage_falloff( "tf2v_new_sentry_damage_falloff", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Increases the optimal damage distance curve of a sentry to the maximum targeting range." );
 
+ConVar tf2v_use_new_uber_taunt( "tf2v_use_new_uber_taunt", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Changes the way the Spinal Tap taunt builds uber." );
 
 
 // -------------------------------------------------------------------------------- //
@@ -11433,6 +11434,17 @@ void CTFPlayer::DoTauntAttack( void )
 				{
 					m_flTauntAttackTime = gpGlobals->curtime + 0.75f;
 					m_iTauntAttack = TAUNTATK_MEDIC_UBERSLICE_KILL;
+					
+					if ( tf2v_use_new_uber_taunt.GetBool() && !( pPlayer->m_Shared.InCond( TF_COND_INVULNERABLE ) || pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) ) )
+					{
+						CWeaponMedigun *pMedigun = GetMedigun();
+
+						if ( pMedigun )
+						{
+							// Successful thrusts give 25% ubercharge
+							pMedigun->AddCharge( 0.50 );
+						}
+					}
 				}
 				else if ( iTauntType == TAUNTATK_MEDIC_UBERSLICE_KILL )
 				{
@@ -11440,8 +11452,17 @@ void CTFPlayer::DoTauntAttack( void )
 
 					if ( pMedigun )
 					{
-						// Successful kills gain +50% ubercharge
-						pMedigun->AddCharge( 0.50 );
+
+						if ( tf2v_use_new_uber_taunt.GetBool() && !( pPlayer->m_Shared.InCond( TF_COND_INVULNERABLE ) || pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) ) )
+						{
+							// Successful extracts give 75% ubercharge, but only if the target isn't ubered or disguised.
+							pMedigun->AddCharge( 0.75 );
+						}
+						else
+						{
+							// Successful kills gain +50% ubercharge
+							pMedigun->AddCharge( 0.50 );
+						}
 					}
 				}
 				else if ( iTauntType == TAUNTATK_ENGINEER_ARM_IMPALE )
