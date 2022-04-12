@@ -44,7 +44,10 @@ ConVar	tf2v_bunnyjump_max_speed_factor("tf2v_bunnyjump_max_speed_factor", "1.2",
 ConVar  tf2v_autojump("tf2v_autojump", "0", FCVAR_REPLICATED, "Automatically jump while holding the jump button down");
 ConVar  tf2v_duckjump("tf2v_duckjump", "0", FCVAR_REPLICATED, "Toggles jumping while ducked");
 ConVar  tf2v_groundspeed_cap("tf2v_groundspeed_cap", "1", FCVAR_REPLICATED, "Toggles the max speed cap imposed when a player is standing on the ground");
-ConVar  tf2v_use_triple_jump_sound( "tf2v_use_triple_jump_sound", "1", FCVAR_REPLICATED, "Play the post MYM banana slip multijump sound?" );
+
+#ifdef GAME_DLL
+ConVar  tf2v_use_triple_jump_sound( "tf2v_use_triple_jump_sound", "1", FCVAR_SERVER_CAN_EXECUTE, "Play the post MYM banana slip multijump sound?" );
+#endif
 
 ConVar  tf2v_disable_updraft( "tf2v_disable_updraft", "1", FCVAR_REPLICATED, "Enables updraft effects when using a parachute on fire." );
 

@@ -30,8 +30,11 @@ extern ConVar tf2v_muzzlelight;
 #define TF_WEAPON_ENERGYRING_MODEL	"models/weapons/w_models/w_drg_ball.mdl"
 #define TF_WEAPON_ENERGYRING_INTERVAL	0.15f
 
+
 ConVar tf2v_use_new_bison_damage( "tf2v_use_new_bison_damage", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes Bison's damage mechanics.", true, 0, true, 2 );
-ConVar tf2v_use_new_bison_speed( "tf2v_use_new_bison_speed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Decreases Bison speed by 30%." );
+#ifdef GAME_DLL
+ConVar tf2v_use_new_bison_speed( "tf2v_use_new_bison_speed", "0", FCVAR_NOTIFY, "Decreases Bison speed by 30%." );
+#endif
 
 //=============================================================================
 //

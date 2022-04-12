@@ -156,7 +156,6 @@ extern ConVar tf2v_random_weapons;
 ConVar tf2v_force_year_weapons( "tf2v_force_year_weapons", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Limit weapons based on year." );
 ConVar tf2v_allowed_year_weapons( "tf2v_allowed_year_weapons", "2021", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum year allowed for items." );
 
-extern ConVar tf2v_assault_ctf_rules;
 
 #define TF_SPY_STEALTH_BLINKTIME   0.3f
 #define TF_SPY_STEALTH_BLINKSCALE  0.85f
@@ -5962,9 +5961,6 @@ void CTFPlayer::TeamFortress_SetSpeed()
 			{
 				maxfbspeed *= 0.5;
 			}
-			else // If we're playing Assault rules CTF, reduce speed.
-			if ( pFlag->GetGameType() == TF_FLAGTYPE_CTF && tf2v_assault_ctf_rules.GetBool() )
-				maxfbspeed *= 0.80;
 		}
 	}
 

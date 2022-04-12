@@ -48,7 +48,9 @@ ConVar tf_rd_return_max_time( "tf_rd_return_max_time", "90" );
 #endif
 
 ConVar tf_flag_return_on_touch( "tf_flag_return_on_touch", "0", FCVAR_REPLICATED, "If this is set, your flag must be at base in order to capture the enemy flag. Remote friendly flags return to your base instantly when you touch them" );
-ConVar tf2v_assault_ctf_rules( "tf2v_assault_ctf_rules", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses reversed CTF locations and instant respawning flags. Applied on map switch." );
+#ifdef GAME_DLL
+ConVar tf2v_assault_ctf_rules( "tf2v_assault_ctf_rules", "0", FCVAR_NOTIFY, "Uses reversed CTF locations and instant respawning flags. Applied on map switch." );
+#endif
 
 #define FLAG_EFFECTS_NONE		0
 #define FLAG_EFFECTS_ALL		1
