@@ -178,17 +178,17 @@ ConVar tf2v_enforce_whitelist( "tf2v_enforce_whitelist", "0", FCVAR_NOTIFY, "Req
 
 ConVar tf2v_force_stock_weapons( "tf2v_force_stock_weapons", "0", FCVAR_NOTIFY, "Forces players to use the stock loadout." );
 
-ConVar tf2v_disable_holiday_loot( "tf2v_disable_holiday_loot", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Disable loot drops in holiday gamemodes" );
+ConVar tf2v_disable_holiday_loot( "tf2v_disable_holiday_loot", "0", FCVAR_NOTIFY, "Disable loot drops in holiday gamemodes" );
 
-ConVar tf2v_player_misses( "tf2v_player_misses", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Whether or not random misses are enabled." );
-ConVar tf2v_misschance( "tf2v_misschance", "2.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Percent chance for a random miss.");
+ConVar tf2v_player_misses( "tf2v_player_misses", "0", FCVAR_NOTIFY, "Whether or not random misses are enabled." );
+ConVar tf2v_misschance( "tf2v_misschance", "2.0", FCVAR_NOTIFY, "Percent chance for a random miss.");
 
-ConVar tf2v_sentry_resist_bonus( "tf2v_sentry_resist_bonus", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables extra damage resistance on sentries for Defensive Buffs." );
-ConVar tf2v_use_new_buff_charges( "tf2v_use_new_buff_charges", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses the modern charges for banner rage." );
+ConVar tf2v_sentry_resist_bonus( "tf2v_sentry_resist_bonus", "1", FCVAR_NOTIFY, "Enables extra damage resistance on sentries for Defensive Buffs." );
+ConVar tf2v_use_new_buff_charges( "tf2v_use_new_buff_charges", "0", FCVAR_NOTIFY, "Uses the modern charges for banner rage." );
 
-ConVar tf2v_force_year_cosmetics( "tf2v_force_year_cosmetics", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Limit cosmetics based on year." );
+ConVar tf2v_force_year_cosmetics( "tf2v_force_year_cosmetics", "0", FCVAR_NOTIFY, "Limit cosmetics based on year." );
 
-ConVar tf2v_allowed_year_cosmetics( "tf2v_allowed_year_cosmetics", "2020", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum year allowed for items." );
+ConVar tf2v_allowed_year_cosmetics( "tf2v_allowed_year_cosmetics", "2020", FCVAR_NOTIFY, "Maximum year allowed for items." );
 
 ConVar tf2v_use_new_fallsounds( "tf2v_use_new_fallsounds", "1", FCVAR_NOTIFY, "Allows servers to choose between the launch, retail, and F2P fall damage sound types.", true, 0, true, 2 );
 ConVar tf2v_use_new_wrench_mechanics( "tf2v_use_new_wrench_mechanics", "0", FCVAR_NOTIFY, "Allows servers to choose between early and modern wrench build and repair mechanics." );
@@ -197,48 +197,48 @@ ConVar tf2v_force_melee( "tf2v_force_melee", "0", FCVAR_NOTIFY, "Allow players t
 
 ConVar tf2v_blastjump_only_airborne("tf2v_blastjump_only_airborne", "0", FCVAR_NOTIFY, "Allows conditions for airborne to be counted only when blastjumping.", true, 0, true, 1);
 
-ConVar tf2v_generic_voice_death("tf2v_generic_voice_death", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Turns the death screams into the trailer versions.", true, 0, true, 1);
-ConVar tf2v_generic_voice_medic("tf2v_generic_voice_medic", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Turns the medic calls into the trailer versions.", true, 0, true, 1);
+ConVar tf2v_generic_voice_death("tf2v_generic_voice_death", "0", FCVAR_NOTIFY, "Turns the death screams into the trailer versions.", true, 0, true, 1);
+ConVar tf2v_generic_voice_medic("tf2v_generic_voice_medic", "0", FCVAR_NOTIFY, "Turns the medic calls into the trailer versions.", true, 0, true, 1);
 
 
-ConVar tf2v_use_new_ammo_drops("tf2v_use_new_ammo_drops","0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Drops generic ammoboxes instead of weapons.", true, 0, true, 1);
+ConVar tf2v_use_new_ammo_drops("tf2v_use_new_ammo_drops","0", FCVAR_NOTIFY, "Drops generic ammoboxes instead of weapons.", true, 0, true, 1);
 
-ConVar tf2v_use_new_dead_ringer("tf2v_use_new_dead_ringer","0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Adds temporary afterburn and speed boost to Dead Ringers.", true, 0, true, 1);
+ConVar tf2v_use_new_dead_ringer("tf2v_use_new_dead_ringer","0", FCVAR_NOTIFY, "Adds temporary afterburn and speed boost to Dead Ringers.", true, 0, true, 1);
 
-ConVar tf2v_use_new_caber( "tf2v_use_new_caber", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes the Ullapool Caber's explosion behavior to the newer format." );
-ConVar tf2v_use_new_pomson( "tf2v_use_new_pomson", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes Pomson's Drain Uber+Cloak to be based on modern falloff settings." );
-ConVar tf2v_use_shortstop_slowdown( "tf2v_use_shortstop_slowdown", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables the Shortstop's slowdown on hit ability." );
+ConVar tf2v_use_new_caber( "tf2v_use_new_caber", "0", FCVAR_NOTIFY, "Changes the Ullapool Caber's explosion behavior to the newer format." );
+ConVar tf2v_use_new_pomson( "tf2v_use_new_pomson", "0", FCVAR_NOTIFY, "Changes Pomson's Drain Uber+Cloak to be based on modern falloff settings." );
+ConVar tf2v_use_shortstop_slowdown( "tf2v_use_shortstop_slowdown", "0", FCVAR_NOTIFY, "Enables the Shortstop's slowdown on hit ability." );
 
 
-ConVar tf2v_use_new_phlog_fill( "tf2v_use_new_phlog_fill", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Swaps between the old 225 damage to fill Mmmph versus the modern 300." );
+ConVar tf2v_use_new_phlog_fill( "tf2v_use_new_phlog_fill", "0", FCVAR_NOTIFY, "Swaps between the old 225 damage to fill Mmmph versus the modern 300." );
 
-ConVar tf2v_use_new_medic_regen( "tf2v_use_new_medic_regen", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes Medic to use the old regen logic of 1HP/s-3HP/s.", true, 0, true, 1 );
+ConVar tf2v_use_new_medic_regen( "tf2v_use_new_medic_regen", "1", FCVAR_NOTIFY, "Changes Medic to use the old regen logic of 1HP/s-3HP/s.", true, 0, true, 1 );
 
-ConVar tf2v_use_spawn_glows( "tf2v_use_spawn_glows", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows players to see the glow of teammates when spawning. Input is seconds." );
+ConVar tf2v_use_spawn_glows( "tf2v_use_spawn_glows", "0", FCVAR_NOTIFY, "Allows players to see the glow of teammates when spawning. Input is seconds." );
 
-ConVar tf2v_use_new_ambassador("tf2v_use_new_ambassador", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Adds damage falloff and crit falloff to long range Ambassador headshots.", true, 0, true, 2 );
+ConVar tf2v_use_new_ambassador("tf2v_use_new_ambassador", "1", FCVAR_NOTIFY, "Adds damage falloff and crit falloff to long range Ambassador headshots.", true, 0, true, 2 );
 
-ConVar tf2v_use_new_healonkill("tf2v_use_new_healonkill", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Does not grant overheal when getting health on kill." );
+ConVar tf2v_use_new_healonkill("tf2v_use_new_healonkill", "0", FCVAR_NOTIFY, "Does not grant overheal when getting health on kill." );
 
-ConVar tf_preround_push_from_damage_enable( "tf_preround_push_from_damage_enable", "1", FCVAR_REPLICATED, "If enabled, this will allow players using damage to move during the pre-round freeze time." );
+ConVar tf_preround_push_from_damage_enable( "tf_preround_push_from_damage_enable", "1", FCVAR_NOTIFY, "If enabled, this will allow players using damage to move during the pre-round freeze time." );
 
-ConVar tf2v_misc_slot_count("tf2v_misc_slot_count", "3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Sets the maximum miscs allowed on a player. Slots higher than this are not loaded.", true, 0, true, 3 );
+ConVar tf2v_misc_slot_count("tf2v_misc_slot_count", "3", FCVAR_NOTIFY, "Sets the maximum miscs allowed on a player. Slots higher than this are not loaded.", true, 0, true, 3 );
 
-ConVar tf2v_use_new_health_regen_attrib("tf2v_use_new_health_regen_attrib", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes health regen attributes from a flate rate to based on damage time." );
+ConVar tf2v_use_new_health_regen_attrib("tf2v_use_new_health_regen_attrib", "0", FCVAR_NOTIFY, "Changes health regen attributes from a flate rate to based on damage time." );
 
-ConVar tf2v_new_feign_death_activate( "tf2v_new_feign_death_activate", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Reduces the damage reduction of Dead Ringer activation.", true, 0, true, 2 );
-ConVar tf2v_new_feign_death_stealth( "tf2v_new_feign_death_stealth", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Makes Dead Ringer damage resistance while cloaked scale based on cloak amount." );
+ConVar tf2v_new_feign_death_activate( "tf2v_new_feign_death_activate", "0", FCVAR_NOTIFY, "Reduces the damage reduction of Dead Ringer activation.", true, 0, true, 2 );
+ConVar tf2v_new_feign_death_stealth( "tf2v_new_feign_death_stealth", "0", FCVAR_NOTIFY, "Makes Dead Ringer damage resistance while cloaked scale based on cloak amount." );
 
-ConVar tf2v_use_new_diamondback( "tf2v_use_new_diamondback", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Allows Diamondback to earn crits by backstabs." );
+ConVar tf2v_use_new_diamondback( "tf2v_use_new_diamondback", "0", FCVAR_NOTIFY, "Allows Diamondback to earn crits by backstabs." );
 
-ConVar tf2v_use_new_big_earner( "tf2v_use_new_big_earner", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Enables the Speed Boost on backstab when using the Big Earner." );
+ConVar tf2v_use_new_big_earner( "tf2v_use_new_big_earner", "0", FCVAR_NOTIFY, "Enables the Speed Boost on backstab when using the Big Earner." );
 
-ConVar tf2v_use_new_demo_explosion_variance( "tf2v_use_new_demo_explosion_variance", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Reduce the damage variance on Demoman explosives from +/- 10% damage to +/- 2%." );
+ConVar tf2v_use_new_demo_explosion_variance( "tf2v_use_new_demo_explosion_variance", "0", FCVAR_NOTIFY, "Reduce the damage variance on Demoman explosives from +/- 10% damage to +/- 2%." );
 
-ConVar tf2v_new_sentry_wrangle_location( "tf2v_new_sentry_wrangle_location", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Calculates Wrangler damage falloff based on Sentry location rather than the Engineer's." );
-ConVar tf2v_new_sentry_damage_falloff( "tf2v_new_sentry_damage_falloff", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Increases the optimal damage distance curve of a sentry to the maximum targeting range." );
+ConVar tf2v_new_sentry_wrangle_location( "tf2v_new_sentry_wrangle_location", "0", FCVAR_NOTIFY, "Calculates Wrangler damage falloff based on Sentry location rather than the Engineer's." );
+ConVar tf2v_new_sentry_damage_falloff( "tf2v_new_sentry_damage_falloff", "0", FCVAR_NOTIFY, "Increases the optimal damage distance curve of a sentry to the maximum targeting range." );
 
-ConVar tf2v_use_new_uber_taunt( "tf2v_use_new_uber_taunt", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Changes the way the Spinal Tap taunt builds uber." );
+ConVar tf2v_use_new_uber_taunt( "tf2v_use_new_uber_taunt", "0", FCVAR_NOTIFY, "Changes the way the Spinal Tap taunt builds uber." );
 
 
 // -------------------------------------------------------------------------------- //
