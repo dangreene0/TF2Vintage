@@ -4774,19 +4774,23 @@ bool CTFPlayer::ClientCommand( const CCommand &args )
 	}
 	else if ( FStrEq( pcmd, "eureka_teleport" ) )
 	{
-		CTFWeaponBase* pWeapon = GetActiveTFWeapon();
-			if ( !pWeapon )
-				return true;
-		
-		if ( pWeapon->GetWeaponID() != TF_WEAPON_WRENCH )
-			return true;
-		
-		CTFWrench *pWrench = dynamic_cast<CTFWrench* >( pWeapon );
-		if ( pWrench && pWrench->IsEurekaEffect() )
+		if ( args.ArgC() >= 2 )
 		{
-			bool bTeleporttoTeleporter = (args.ArgC() != 0);
-			pWrench->EurekaTeleport(bTeleporttoTeleporter);
+			CTFWeaponBase* pWeapon = GetActiveTFWeapon();
+				if ( !pWeapon )
+					return true;
+			
+			if ( pWeapon->GetWeaponID() != TF_WEAPON_WRENCH )
+				return true;
+			
+			CTFWrench *pWrench = dynamic_cast<CTFWrench* >( pWeapon );
+			if ( pWrench && pWrench->IsEurekaEffect() )
+			{
+				bool bTeleporttoTeleporter = ( atoi( args[1] ) != 0 );
+				pWrench->EurekaTeleport(bTeleporttoTeleporter);
+			}
 		}
+		return true;
 	}
 	else if ( FStrEq( pcmd, "arena_changeclass" ) )
 	{
