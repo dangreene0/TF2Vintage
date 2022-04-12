@@ -27,6 +27,7 @@
 #include "te_effect_dispatch.h"
 #include "game.h"
 #include "tf_weapon_builder.h"
+#include "tf_weapon_wrench.h"
 #include "tf_obj.h"
 #include "tf_powerup.h"
 #include "tf_ammo_pack.h"
@@ -4770,6 +4771,22 @@ bool CTFPlayer::ClientCommand( const CCommand &args )
 		}
 
 		return true;
+	}
+	else if ( FStrEq( pcmd, "eureka_teleport" ) )
+	{
+		CTFWeaponBase* pWeapon = GetActiveTFWeapon();
+			if ( !pWeapon )
+				return true;
+		
+		if ( pWeapon->GetWeaponID() != TF_WEAPON_WRENCH )
+			return true;
+		
+		CTFWrench *pWrench = dynamic_cast<CTFWrench* >( pWeapon );
+		if ( pWrench && pWrench->IsEurekaEffect() )
+		{
+			bool bTeleporttoTeleporter = (args.ArgC() != 0);
+			pWrench->EurekaTeleport(bTeleporttoTeleporter);
+		}
 	}
 	else if ( FStrEq( pcmd, "arena_changeclass" ) )
 	{
