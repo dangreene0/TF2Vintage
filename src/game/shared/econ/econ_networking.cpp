@@ -103,11 +103,11 @@ private:
 	#ifdef NO_STEAM
 		return nullptr;
 	#else
-		ISteamNetworking *pNetworking = steamapicontext->SteamNetworking();
+		ISteamNetworking *pNetworking = ::SteamNetworking();
 	#ifdef GAME_DLL
 		if ( pNetworking == NULL )
 		{
-			pNetworking = steamgameserverapicontext->SteamGameServerNetworking();
+			pNetworking = ::SteamGameServerNetworking();
 		}
 	#endif
 		return pNetworking;
@@ -132,7 +132,11 @@ private:
 	bool									m_bIsLoopback;
 };
 
+//-----------------------------------------------------------------------------
+static CEconNetworking g_Networking;
+IEconNetworking *g_pNetworking = &g_Networking;
 
+//-----------------------------------------------------------------------------
 DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 128, UTLMEMORYPOOL_GROW_FAST );
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -251,14 +255,14 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 	CSteamSocket *pSocket = OpenConnection( steamID, socket );
 	if ( pSocket )
 	{
-		if ( !steamgameserverapicontext->SteamGameServer() )
+		if ( !SteamGameServer() )
 		{
 			CloseConnection( pSocket );
 			return;
 		}
 
 		CProtobufMsg<CServerHelloMsg> msg;
-		CSteamID remoteID = steamgameserverapicontext->SteamGameServer()->GetSteamID();
+		CSteamID remoteID = SteamGameServer()->GetSteamID();
 
 		uint unVersion = 0;
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
@@ -727,8 +731,6 @@ bool CEconNetworking::AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandl
 
 
 //-----------------------------------------------------------------------------
-static CEconNetworking g_Networking;
-IEconNetworking *g_pNetworking = &g_Networking;
 
 void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
 {
