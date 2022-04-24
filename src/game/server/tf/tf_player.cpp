@@ -160,6 +160,9 @@ extern ConVar tf2v_new_flame_damage;
 extern ConVar tf2v_use_new_axtinguisher;
 extern ConVar tf2v_use_new_sodapopper_fill;
 
+extern ConVar tf2v_allowed_year_cosmetics;
+extern ConVar tf2v_force_year_cosmetics;
+
 // TF2V commands
 ConVar tf2v_randomizer( "tf2v_randomizer", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout and class." );
 
@@ -186,10 +189,6 @@ ConVar tf2v_misschance( "tf2v_misschance", "2.0", FCVAR_NOTIFY, "Percent chance 
 
 ConVar tf2v_sentry_resist_bonus( "tf2v_sentry_resist_bonus", "1", FCVAR_NOTIFY, "Enables extra damage resistance on sentries for Defensive Buffs." );
 ConVar tf2v_use_new_buff_charges( "tf2v_use_new_buff_charges", "0", FCVAR_NOTIFY, "Uses the modern charges for banner rage." );
-
-ConVar tf2v_force_year_cosmetics( "tf2v_force_year_cosmetics", "0", FCVAR_NOTIFY, "Limit cosmetics based on year." );
-
-ConVar tf2v_allowed_year_cosmetics( "tf2v_allowed_year_cosmetics", "2020", FCVAR_NOTIFY, "Maximum year allowed for items." );
 
 ConVar tf2v_use_new_fallsounds( "tf2v_use_new_fallsounds", "1", FCVAR_NOTIFY, "Allows servers to choose between the launch, retail, and F2P fall damage sound types.", true, 0, true, 2 );
 ConVar tf2v_use_new_wrench_mechanics( "tf2v_use_new_wrench_mechanics", "0", FCVAR_NOTIFY, "Allows servers to choose between early and modern wrench build and repair mechanics." );
@@ -1938,7 +1937,7 @@ void CTFPlayer::GiveDefaultItems()
 	ManageBuilderWeapons( pData );
 	
 	// Apply Paints.
-	ManagePlayerPaints( pData );
+	m_Shared.ManagePlayerPaints( pData );
 	
 	// Update bodygroups and everything dealing with inventory processing.
 	PostInventoryApplication();
@@ -2983,84 +2982,6 @@ void CTFPlayer::ManageVIPMedal( TFPlayerClassData_t *pData )
             pEntity->GiveTo( this );
         }
     }
-
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayer::ManagePlayerPaints( TFPlayerClassData_t *pData )
-{
-	for (int iSlot = TF_FIRST_PAINT_SLOT; iSlot <= TF_LAST_PAINT_SLOT; ++iSlot)
-	{
-	
-		if ( GetEntityForLoadoutSlot( iSlot ) != NULL )
-		{
-			// Nothing to do here.
-			continue;
-		}
-		
-		// Give us an item from the inventory.
-		CEconItemView *pItem = GetLoadoutItem( m_PlayerClass.GetClassIndex(), iSlot );
-		
-		// Don't equip defaults in order to prevent a memory crash.
-		if ( pItem == GetTFInventory()->GetItem( m_PlayerClass.GetClassIndex(), iSlot, 0 ) )
-			continue;
-			
-		if (pItem)
-		{
-			if ( tf2v_force_year_cosmetics.GetBool() )
-			{
-				// Unlike weapons and cosmetics, we can outright skip anachronistic paints.
-				CEconItemDefinition *pItemDef = pItem->GetStaticData();
-				if ( tf2v_allowed_year_cosmetics.GetInt() <= 2007 )
-				{
-					// Prevent the value from being below 2007.
-					if ( pItemDef->year > 2007 ) 
-						continue;
-				}
-				else
-				{
-					if ( pItemDef->year > tf2v_allowed_year_cosmetics.GetInt() )
-						continue;
-				}
-			}
-			
-			bool bBlueTeam = GetTeamNumber() > 0 && GetTeamNumber() == TF_TEAM_BLUE;
-			uint nPaintRGB = pItem->GetModifiedRGBValue(bBlueTeam);
-			if (nPaintRGB != 0)
-			{
-				int nLoadoutslotCosmetic = -1;
-				switch (iSlot) // We remap the slots from the paint slot to the cosmetic slot.
-				{
-					case TF_LOADOUT_SLOT_HAT_PAINT:
-						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_HAT;
-						break;
-					case TF_LOADOUT_SLOT_MISC1_PAINT:
-						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC1;
-						break;
-					case TF_LOADOUT_SLOT_MISC2_PAINT:
-						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC2;
-						break;
-					case TF_LOADOUT_SLOT_MISC3_PAINT:
-						nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC3;
-						break;
-					default:
-						break;
-				}
-				if (GetWearableForLoadoutSlot( nLoadoutslotCosmetic ) )
-				{
-					// Check for a wearable.
-					CTFWearable *pWearable = assert_cast<CTFWearable *>( GetWearableForLoadoutSlot( nLoadoutslotCosmetic ) );
-					if (pWearable)
-					{
-						// Apply the paintjob to the wearable.
-						pWearable->ApplyPaint(nPaintRGB);
-					}
-				}
-			}
-		}
-	}
 
 }
 

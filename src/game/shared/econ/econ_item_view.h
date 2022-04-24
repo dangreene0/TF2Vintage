@@ -107,7 +107,7 @@ public:
 	const char* GetActivityOverride( int iTeamNumber, const char *name );
 	const char* GetSoundOverride( int iIndex, int iTeamNum = TEAM_UNASSIGNED ) const;
 	const char* GetCustomSound( int iIndex, int iTeamNum = TEAM_UNASSIGNED ) const;
-	unsigned int GetModifiedRGBValue( bool bAlternate );
+	uint32 GetModifiedRGBValue( bool bAlternate );
 	int GetSkin( int iTeamNum, bool bViewmodel ) const;
 	bool HasCapability( const char* name );
 	bool HasTag( const char* name );
