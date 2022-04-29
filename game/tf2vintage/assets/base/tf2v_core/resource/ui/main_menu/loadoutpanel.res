@@ -293,12 +293,12 @@
 		}
 	}
 	
-	// left side (weapons)
+	// left side
 	"weaponbutton0"
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton0"		
-		"xpos"			"c-360"
+		"xpos"			"c-280"
 		"ypos"			"94"		
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -320,7 +320,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton1"		
-		"xpos"			"c-360"
+		"xpos"			"c-280"
 		"ypos"			"160"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -342,7 +342,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton2"		
-		"xpos"			"c-360"
+		"xpos"			"c-280"
 		"ypos"			"226"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -364,7 +364,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton3"		
-		"xpos"			"c-360"
+		"xpos"			"c-280"
 		"ypos"			"292"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -382,12 +382,12 @@
 		}
 	}
 	
-	// right side (cosmetics)
+	// right side
 	"weaponbutton4"
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton4"		
-		"xpos"			"c230"
+		"xpos"			"c175"
 		"ypos"			"94"		
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -409,7 +409,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton5"		
-		"xpos"			"c230"
+		"xpos"			"c175"
 		"ypos"			"160"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -431,7 +431,7 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton6"		
-		"xpos"			"c230"
+		"xpos"			"c175"
 		"ypos"			"226"
 		"zpos"			"-1"		
 		"wide"			"105"
@@ -453,99 +453,10 @@
 	{
 		"ControlName"	"CTFAdvItemButton"
 		"fieldName"		"weaponbutton7"		
-		"xpos"			"c230"
+		"xpos"			"c175"
 		"ypos"			"292"
 		"zpos"			"-1"		
 		"wide"			"105"
-		"tall"			"56"
-		"autoResize"	"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"SubButton"
-		{
-			"font"				"HudFontSmallestBold"
-			"border_default"	"AdvRoundedButtonDefault"
-			"border_armed"		"AdvRoundedButtonArmed"
-			"border_depressed"	"AdvRoundedButtonDepressed"	
-		}
-	}
-	
-	// right side (paints)
-	"weaponbutton8"
-	{
-		"ControlName"	"CTFAdvItemButton"
-		"fieldName"		"weaponbutton8"		
-		"xpos"			"c170"
-		"ypos"			"94"		
-		"zpos"			"-1"		
-		"wide"			"56"
-		"tall"			"56"
-		"autoResize"	"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"SubButton"
-		{
-			"font"				"HudFontSmallestBold"
-			"border_default"	"AdvRoundedButtonDefault"
-			"border_armed"		"AdvRoundedButtonArmed"
-			"border_depressed"	"AdvRoundedButtonDepressed"	
-		}
-	}
-	
-	"weaponbutton9"
-	{
-		"ControlName"	"CTFAdvItemButton"
-		"fieldName"		"weaponbutton9"		
-		"xpos"			"c170"
-		"ypos"			"160"
-		"zpos"			"-1"		
-		"wide"			"56"
-		"tall"			"56"
-		"autoResize"	"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"SubButton"
-		{
-			"font"				"HudFontSmallestBold"
-			"border_default"	"AdvRoundedButtonDefault"
-			"border_armed"		"AdvRoundedButtonArmed"
-			"border_depressed"	"AdvRoundedButtonDepressed"	
-		}
-	}
-	
-	"weaponbutton10"
-	{
-		"ControlName"	"CTFAdvItemButton"
-		"fieldName"		"weaponbutton10"		
-		"xpos"			"c170"
-		"ypos"			"226"
-		"zpos"			"-1"		
-		"wide"			"56"
-		"tall"			"56"
-		"autoResize"	"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"SubButton"
-		{
-			"font"				"HudFontSmallestBold"
-			"border_default"	"AdvRoundedButtonDefault"
-			"border_armed"		"AdvRoundedButtonArmed"
-			"border_depressed"	"AdvRoundedButtonDepressed"	
-		}
-	}
-	
-	"weaponbutton11"
-	{
-		"ControlName"	"CTFAdvItemButton"
-		"fieldName"		"weaponbutton11"		
-		"xpos"			"c170"
-		"ypos"			"292"
-		"zpos"			"-1"		
-		"wide"			"56"
 		"tall"			"56"
 		"autoResize"	"0"
 		"pinCorner"		"0"
