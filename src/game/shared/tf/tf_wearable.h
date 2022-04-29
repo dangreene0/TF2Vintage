@@ -46,14 +46,10 @@ public:
 	void			SetWeaponAssociatedWith( CBaseEntity *pWeapon )	{ m_hWeaponAssociatedWith = pWeapon; }
 	CBaseEntity*	GetWeaponAssociatedWith( void ) const			{ return m_hWeaponAssociatedWith.Get(); }
 
-	void 			ApplyPaint(uint nPaintRGB)						{ m_nPaintColor = nPaintRGB; }
-	bool 			HasPaint(void)									{ return m_nPaintColor != 0; }
-	uint32			GetPaint( void )								{ return m_nPaintColor;}
 private:
 	CNetworkVar( bool, m_bExtraWearable );
 	CNetworkVar( bool, m_bDisguiseWearable );
 	CNetworkHandle( CBaseEntity, m_hWeaponAssociatedWith );
-	CNetworkVar( uint32, m_nPaintColor );
 	short		m_nWorldModelIndex;
 };
 

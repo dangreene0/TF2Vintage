@@ -531,7 +531,6 @@ public:
 	void				ManagePlayerCosmetics( TFPlayerClassData_t *pData );
 	void				ManagePlayerEventCosmetic( TFPlayerClassData_t *pData );
 	void				ManageVIPMedal( TFPlayerClassData_t *pData );
-	void				ManagePlayerPaints( TFPlayerClassData_t *pData );
 	int					TranslateLegacyID(int iItemID = -1);
 
 	void				PostInventoryApplication( void );
