@@ -35,7 +35,6 @@
 #include "c_tf_playerresource.h"
 #include "c_tf_team.h"
 #include "prediction.h"
-#include "tf_inventory.h"
 
 #define CTFPlayerClass C_TFPlayerClass
 
@@ -143,9 +142,6 @@ ConVar tf2v_overflow_ammo( "tf2v_overflow_ammo", "0", FCVAR_NOTIFY | FCVAR_REPLI
 
 ConVar tf2v_allow_combattext( "tf2v_allow_combattext", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows players to use clientside combat text.", true, 0, true, 1);
 ConVar tf2v_allow_hitsounds( "tf2v_allow_hitsounds", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows players to use clientside hitsounds.", true, 0, true, 1);
-
-ConVar tf2v_force_year_cosmetics( "tf2v_force_year_cosmetics", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Limit cosmetics based on year." );
-ConVar tf2v_allowed_year_cosmetics( "tf2v_allowed_year_cosmetics", "2022", FCVAR_NOTIFY | FCVAR_REPLICATED, "Maximum year allowed for items." );
 
 #ifdef CLIENT_DLL
 ConVar tf2v_enable_burning_death( "tf2v_enable_burning_death", "0", FCVAR_REPLICATED, "Enables an animation that plays sometimes when dying to fire damage.", true, 0.0f, true, 1.0f );
@@ -7098,94 +7094,6 @@ void CTFPlayer::ModifyEmitSoundParams( EmitSound_t &params )
 bool CTFPlayer::IsInspecting() const
 {
 	return m_flInspectTime != 0.f && gpGlobals->curtime - m_flInspectTime > 0.2f;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CTFPlayerShared::ManagePlayerPaints( TFPlayerClassData_t *pData )
-{
-	for (int iSlot = TF_FIRST_PAINT_SLOT; iSlot <= TF_LAST_PAINT_SLOT; ++iSlot)
-	{
-
-		if (m_pOuter->GetEntityForLoadoutSlot(iSlot) != NULL)
-		{
-			// Nothing to do here.
-			continue;
-		}
-
-		// Give us an item from the inventory.
-		CEconItemView* pItem;
-#ifdef GAME_DLL
-		pItem = m_pOuter->GetLoadoutItem(m_pOuter->m_PlayerClass.GetClassIndex(), iSlot);
-
-		// Pass over default.
-		if (pItem == GetTFInventory()->GetItem(m_pOuter->m_PlayerClass.GetClassIndex(), iSlot, 0))
-			continue;
-#else
-		int iPreset = m_pOuter->GetInventoryPreset(m_pOuter->GetPlayerClass()->GetClassIndex(), iSlot);
-		// Pass over default.
-		if ( iPreset == 0)
-			continue;
-
-		pItem = GetTFInventory()->GetItem(m_pOuter->GetPlayerClass()->GetClassIndex(), iSlot, iPreset );
-#endif
-
-		if (pItem)
-		{
-			if (tf2v_force_year_cosmetics.GetBool())
-			{
-				// Unlike weapons and cosmetics, we can outright skip anachronistic paints.
-				CEconItemDefinition* pItemDef = pItem->GetStaticData();
-				if (tf2v_allowed_year_cosmetics.GetInt() <= 2007)
-				{
-					// Prevent the value from being below 2007.
-					if (pItemDef->year > 2007)
-						continue;
-				}
-				else
-				{
-					if (pItemDef->year > tf2v_allowed_year_cosmetics.GetInt())
-						continue;
-				}
-}
-
-			bool bBlueTeam = m_pOuter->GetTeamNumber() > 0 && m_pOuter->GetTeamNumber() == TF_TEAM_BLUE;
-			uint32 nPaintRGB = pItem->GetModifiedRGBValue(bBlueTeam);
-			if (nPaintRGB != 0)
-			{
-				int nLoadoutslotCosmetic = -1;
-				switch (iSlot) // We remap the slots from the paint slot to the cosmetic slot.
-				{
-				case TF_LOADOUT_SLOT_HAT_PAINT:
-					nLoadoutslotCosmetic = TF_LOADOUT_SLOT_HAT;
-					break;
-				case TF_LOADOUT_SLOT_MISC1_PAINT:
-					nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC1;
-					break;
-				case TF_LOADOUT_SLOT_MISC2_PAINT:
-					nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC2;
-					break;
-				case TF_LOADOUT_SLOT_MISC3_PAINT:
-					nLoadoutslotCosmetic = TF_LOADOUT_SLOT_MISC3;
-					break;
-				default:
-					break;
-				}
-				if (m_pOuter->GetWearableForLoadoutSlot(nLoadoutslotCosmetic))
-				{
-					// Check for a wearable.
-					CTFWearable* pWearable = assert_cast<CTFWearable*>(m_pOuter->GetWearableForLoadoutSlot(nLoadoutslotCosmetic));
-					if (pWearable)
-					{
-						// Apply the paintjob to the wearable.
-						pWearable->ApplyPaint(nPaintRGB);
-					}
-				}
-			}
-		}
-	}
-
 }
 
 #ifndef CLIENT_DLL

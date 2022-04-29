@@ -13,7 +13,6 @@
 #include "tf_shareddefs.h"
 #include "tf_weaponbase.h"
 #include "basegrenade_shared.h"
-#include "tf_playerclass_shared.h"
 #ifdef GAME_DLL
 #include "SpriteTrail.h"
 #else
@@ -492,8 +491,6 @@ public:
 	void	SetCrikeyMeter( float value ) {m_flCrikeyMeter = value;}
 	bool	HasFullCrikeyMeter(void)	{return m_flCrikeyMeter >= 100.0f;}
 	float	GetCrikeyMeter(void)		{return m_flCrikeyMeter;}
-	
-	void	ManagePlayerPaints( TFPlayerClassData_t *pData );
 private:
 
 	void OnAddStealthed( void );

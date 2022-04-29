@@ -1942,7 +1942,7 @@ public:
 		{
 			if (pWearable->HasPaint())
 			{
-				uint32 nPaintRGB = pWearable->GetPaint();
+				uint nPaintRGB = pWearable->GetPaint();
 				if ( nPaintRGB != 0 )
 				{
 					float flPaint[3] ={
@@ -2007,7 +2007,7 @@ public:
 
 		if( pItem )
 		{
-			uint32 nPaintRGB = pItem->GetModifiedRGBValue( bBlueTeam );
+			uint nPaintRGB = pItem->GetModifiedRGBValue( bBlueTeam );
 			if ( nPaintRGB != 0 )
 			{
 				float flPaint[3] ={
@@ -2056,7 +2056,7 @@ public:
 								pPaintItem = GetTFInventory()->GetItem(pPlayer->GetPlayerClass()->GetClassIndex(), nLoadoutslotPaint, iPreset);
 								if (pPaintItem)
 								{
-									uint32 nPaintRGB = pPaintItem->GetModifiedRGBValue(bBlueTeam);
+									uint nPaintRGB = pPaintItem->GetModifiedRGBValue(bBlueTeam);
 									if (nPaintRGB != 0)
 									{
 										float flPaint[3] = {

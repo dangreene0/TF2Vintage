@@ -18,10 +18,12 @@ BEGIN_NETWORK_TABLE( CTFWearable, DT_TFWearable )
 	SendPropBool( SENDINFO( m_bExtraWearable ) ),
 	SendPropBool( SENDINFO( m_bDisguiseWearable ) ),
 	SendPropEHandle( SENDINFO( m_hWeaponAssociatedWith ) ),
+	SendPropInt( SENDINFO( m_nPaintColor ), 8, SPROP_UNSIGNED ),
 #else
 	RecvPropBool( RECVINFO( m_bExtraWearable ) ),
 	RecvPropBool( RECVINFO( m_bDisguiseWearable ) ),
 	RecvPropEHandle( RECVINFO( m_hWeaponAssociatedWith ) ),
+	RecvPropInt( RECVINFO( m_nPaintColor ) ),
 #endif
 END_NETWORK_TABLE()
 

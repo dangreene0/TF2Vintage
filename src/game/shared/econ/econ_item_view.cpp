@@ -417,7 +417,7 @@ const char *CEconItemView::GetCustomSound( int iIndex, int iTeamNum /*= 0*/ ) co
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-uint32 CEconItemView::GetModifiedRGBValue( bool bAlternate )
+unsigned int CEconItemView::GetModifiedRGBValue( bool bAlternate )
 {
 	static CSchemaAttributeHandle pAttrDef_Paint( "set item tint rgb" );
 	static CSchemaAttributeHandle pAttrDef_Paint2( "set item tint rgb 2" );
