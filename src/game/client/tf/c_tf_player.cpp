@@ -2014,7 +2014,7 @@ public:
 								pPaintItem = GetTFInventory()->GetItem(pPlayer->GetPlayerClass()->GetClassIndex(), nLoadoutslotPaint, iPreset);
 								if (pPaintItem)
 								{
-									uint nPaintRGB = pPaintItem->GetModifiedRGBValue(bBlueTeam);
+									uint nPaintRGB = pItem->GetModifiedRGBValue(bBlueTeam);
 									if (nPaintRGB != 0)
 									{
 										float flPaint[3] = {
