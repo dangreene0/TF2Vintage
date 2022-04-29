@@ -389,38 +389,31 @@ const char *g_InventoryLoadoutPresets[] =
 
 const char *g_LoadoutSlots[] =
 {
-	"primary",	// TF_LOADOUT_SLOT_PRIMARY
-	"secondary", // TF_LOADOUT_SLOT_SECONDARY
-	"melee",	// TF_LOADOUT_SLOT_MELEE
-	"pda",		// TF_LOADOUT_SLOT_PDA1
-	"pda2",		// TF_LOADOUT_SLOT_PDA2
-	"building",	// TF_LOADOUT_SLOT_BUILDING
+	"primary",
+	"secondary",
+	"melee",
+	"pda",
+	"pda2",
+	"building",
 	
-	"utility",	// TF_LOADOUT_SLOT_UTILITY
-	"action",	// TF_LOADOUT_SLOT_ACTION
+	"utility",
+	"action",	
 	
-	// Slots that copy the inventory of another slot are marked in asterisks (*)
+	"head",
+	"misc",
+	"misc2",
+	"misc3",
+	"event",
+	"medal",
 	
-	"head",		// TF_LOADOUT_SLOT_HAT
-	"misc",		// TF_LOADOUT_SLOT_MISC1
-	"misc2",	// TF_LOADOUT_SLOT_MISC2*
-	"misc3",	// TF_LOADOUT_SLOT_MISC3*
-	"event",	// TF_LOADOUT_SLOT_EVENT
-	"medal",	// TF_LOADOUT_SLOT_MEDAL
-	
-	"taunt",	// TF_LOADOUT_SLOT_TAUNT1
-	"taunt2",	// TF_LOADOUT_SLOT_TAUNT2*
-	"taunt3",	// TF_LOADOUT_SLOT_TAUNT3*
-	"taunt4",	// TF_LOADOUT_SLOT_TAUNT4*
-	"taunt5",	// TF_LOADOUT_SLOT_TAUNT5*
-	"taunt6",	// TF_LOADOUT_SLOT_TAUNT6*
-	"taunt7",	// TF_LOADOUT_SLOT_TAUNT7*
-	"taunt8",	// TF_LOADOUT_SLOT_TAUNT8*
-	
-	"paint",	// TF_LOADOUT_SLOT_HAT_PAINT
-	"paint2",	// TF_LOADOUT_SLOT_MISC1_PAINT*
-	"paint3",	// TF_LOADOUT_SLOT_MISC2_PAINT*
-	"paint4",	// TF_LOADOUT_SLOT_MISC3_PAINT*
+	"taunt",
+	"taunt2",
+	"taunt3",
+	"taunt4",
+	"taunt5",
+	"taunt6",
+	"taunt7",
+	"taunt8"
 };
 
 const char *g_LoadoutTranslations[] ={

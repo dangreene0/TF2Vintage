@@ -87,7 +87,6 @@ public:
 
 	void LoadInventory( void );
 	void EditInventory( int iSlot, int iWeapon );
-	int  GetInventoryPreset(int iClass, int iSlot);
 
 	void FireBullet( const FireBulletsInfo_t &info, bool bDoEffects, int nDamageType, int nCustomDamageType = TF_DMG_CUSTOM_NONE );
 

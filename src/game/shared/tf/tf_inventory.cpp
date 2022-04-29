@@ -232,17 +232,6 @@ void CTFInventory::LoadInventory()
 						// Reset our slot back when we're done.
 						iSlot = TF_LOADOUT_SLOT_TAUNT1;
 					}
-					else if (iSlot == TF_LOADOUT_SLOT_HAT_PAINT) // We need to duplicate across all taunt slots.
-					{
-						for (int iPaintSlot = 1; iPaintSlot <= TF_PLAYER_PAINT_COUNT; ++iPaintSlot)
-						{
-							AddNewItem( pItemDef, iClass, iSlot );
-							// Increase our slot value.
-							iSlot += 1;
-						}
-						// Reset our slot back when we're done.
-						iSlot = TF_LOADOUT_SLOT_HAT_PAINT;
-					}
 				}
 			}
 		}
