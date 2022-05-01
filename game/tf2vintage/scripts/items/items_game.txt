@@ -9635,7 +9635,6 @@
 			"prefab"		"weapon_wrangler weapon_reskin"
 			"year"					"2015"
 			"item_name"		"#TF_invasion_wrangler"
-			"item_description"		"#TF_invasion_wrangler_Desc"
 			"item_logname"		"giger_counter"
 			"item_iconname"		"giger_counter"
 			"propername"		"1"
