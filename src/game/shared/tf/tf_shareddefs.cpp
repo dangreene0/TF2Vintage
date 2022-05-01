@@ -561,20 +561,6 @@ static pszWpnEntTranslationListEntry pszWpnEntTranslationList[] =
 	"tf_weapon_revolver",			// Spy
 	"tf_weapon_revolver_secondary",	// Engineer
 	},
-
-	{
-	"tf_wearable",					// Base weapon to translate
-	NULL,
-	"tf_wearable_scout", 			// Scout
-	"tf_wearable_scout", 			// Sniper
-	"tf_wearable_soldier", 			// Soldier
-	"tf_wearable_demoman", 			// Demoman
-	"tf_wearable_medic", 			// Medic
-	"tf_wearable_heavy", 			// Heavy
-	"tf_wearable_pyro", 			// Pyro
-	"tf_wearable_spy", 				// Spy
-	"tf_wearable_engineer", 		// Engineer
-	},
 	
 };
 
