@@ -905,7 +905,7 @@ void CTFStatsSummaryPanel::FireGameEvent( IGameEvent *event )
 
 					// set the map author name in the UI
 					const char *szMapAuthor = GetMapAuthor( pMapName );
-					if (szMapAuthor) {
+					if (szMapAuthor != nullptr) {
 						if (szMapAuthor[0] != '\0')
 						{
 							SetDialogVariable("mapauthor", szMapAuthor);
