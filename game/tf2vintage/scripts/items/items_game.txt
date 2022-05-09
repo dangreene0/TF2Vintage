@@ -4479,6 +4479,7 @@
 		{
 			"name"	"The Flare Gun"
 			"prefab"	"weapon_flaregun"
+			"year"			"2008"
 			"propername"	"1"
 			"item_quality" 			"vintage"
 			"attributes"
