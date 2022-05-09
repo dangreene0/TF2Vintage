@@ -62,6 +62,7 @@ ConVar obj_child_damage_factor( "obj_child_damage_factor","0.25", FCVAR_CHEAT | 
 ConVar tf_fastbuild("tf_fastbuild", "0", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
 ConVar tf_obj_ground_clearance( "tf_obj_ground_clearance", "32", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Object corners can be this high above the ground" );
 ConVar tf2v_building_upgrades( "tf2v_building_upgrades", "1", FCVAR_REPLICATED, "Toggles the ability to upgrade buildings other than the sentrygun" );
+ConVar tf2v_use_new_minibuildings( "tf2v_use_new_minibuildings", "0", FCVAR_REPLICATED, "Modifies the behavior of minisentries." );
 
 extern ConVar tf2v_use_new_wrench_mechanics;
 extern ConVar tf2v_use_new_jag;
@@ -876,6 +877,14 @@ void CBaseObject::DeterminePlaybackRate( void )
 	}
 }
 
+int CBaseObject::GetMiniBuildingStartingHealth( void )
+{
+	int iMinHealth = GetMiniBuildingBaseHealth();
+	if (tf2v_use_new_minibuildings.GetBool())
+		iMinHealth *= .5f;
+	return iMinHealth;
+}
+
 #define OBJ_UPGRADE_DURATION	1.5f
 
 //-----------------------------------------------------------------------------
@@ -1538,7 +1547,7 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 
 	if ( !IsRedeploying() )
 	{
-		SetHealth( OBJECT_CONSTRUCTION_STARTINGHEALTH );
+		SetHealth( GetStartingHealth() );
 	}
 	m_flPercentageConstructed = 0;
 
@@ -1599,7 +1608,7 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 void CBaseObject::BuildingThink( void )
 {
 	// Continue construction
-	Repair( (GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH) / m_flTotalConstructionTime * OBJECT_CONSTRUCTION_INTERVAL );
+	Repair( (GetMaxHealth() - GetStartingHealth()) / m_flTotalConstructionTime * OBJECT_CONSTRUCTION_INTERVAL );
 }
 
 //-----------------------------------------------------------------------------
@@ -2064,7 +2073,7 @@ bool CBaseObject::Repair( float flHealth )
 	if ( IsBuilding() )
 	{
 		// Reduce the construction time by the correct amount for the health passed in
-		float flConstructionTime = flHealth / ((GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH) / m_flTotalConstructionTime);
+		float flConstructionTime = flHealth / ((GetMaxHealth() - GetStartingHealth() ) / m_flTotalConstructionTime);
 		m_flConstructionTimeLeft = max( 0, m_flConstructionTimeLeft - flConstructionTime);
 		m_flConstructionTimeLeft = clamp( m_flConstructionTimeLeft, 0.0f, m_flTotalConstructionTime );
 		m_flPercentageConstructed = 1 - (m_flConstructionTimeLeft / m_flTotalConstructionTime);
@@ -2132,7 +2141,12 @@ float CBaseObject::GetConstructionMultiplier( void )
 
 	// Minis deploy faster.
 	if ( IsMiniBuilding() )
-		flMultiplier *= 1.7f;
+	{
+		if (!tf2v_use_new_minibuildings.GetBool())
+			flMultiplier *= 4.0f;
+		else
+			flMultiplier *= (10/3); // New minisentries deploy slower...
+	}
 
 	// Re-deploy twice as fast.
 	if ( IsRedeploying() )
@@ -2156,7 +2170,7 @@ float CBaseObject::GetConstructionMultiplier( void )
 		{
 			m_RepairerList.RemoveAt( iThis );
 		}
-		else
+		else if ( !IsMiniBuilding() || tf2v_use_new_minibuildings.GetBool() ) // ... but can be speed boosted.
 		{
 			if ( tf2v_use_new_wrench_mechanics.GetBool() ) 
 			{
@@ -2846,7 +2860,7 @@ bool CBaseObject::CheckUpgradeOnHit( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 bool CBaseObject::Command_Repair( CTFPlayer *pActivator )
 {
-	if ( GetHealth() < GetMaxHealth() )
+	if ( ( GetHealth() < GetMaxHealth() ) && ( !IsMiniBuilding() || !tf2v_use_new_minibuildings.GetBool() ) )
 	{
 		float flRepairRate = 1.f;
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flRepairRate, mult_repair_value );

@@ -106,3 +106,4 @@ tf2v_use_new_sodapopper_fill 0
 tf2v_use_manual_sodapopper 1
 tf2v_use_dispenser_touch 0
 tf2v_use_new_uber_taunt 1
+tf2v_use_new_minibuildings 1

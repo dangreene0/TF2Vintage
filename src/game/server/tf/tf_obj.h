@@ -30,8 +30,8 @@ struct animevent_t;
 
 // Construction
 #define OBJECT_CONSTRUCTION_INTERVAL			0.1
-#define OBJECT_CONSTRUCTION_STARTINGHEALTH		0.1
-
+#define OBJECT_CONSTRUCTION_STARTINGHEALTH		1.0
+#define TF_MINISENTRY_HEALTH		100
 
 extern ConVar object_verbose;
 extern ConVar obj_child_range_factor;
@@ -262,11 +262,14 @@ public:
 	virtual void	DropCarriedObject( CTFPlayer *pPlayer );
 
 	virtual int		GetBaseHealth( void ) { return 0; }
-	virtual int		GetMiniBuildingBaseHealth( void ) { return 100; }
+	virtual int		GetMiniBuildingBaseHealth( void ) { return TF_MINISENTRY_HEALTH; }
 
 	void	MakeMiniBuilding( void );
 	bool	IsMiniBuilding( void ) { return m_bMiniBuilding; }
 	bool	IsDisposableBuilding( void ) { return m_bDisposableBuilding; }
+	
+	virtual int GetStartingHealth( void ) { return IsMiniBuilding() ? GetMiniBuildingStartingHealth() : OBJECT_CONSTRUCTION_STARTINGHEALTH; }
+	virtual int GetMiniBuildingStartingHealth( void );
 
 public:		
 
