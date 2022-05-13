@@ -160,6 +160,8 @@ extern ConVar tf2v_new_flame_damage;
 extern ConVar tf2v_use_new_axtinguisher;
 extern ConVar tf2v_use_new_sodapopper_fill;
 
+extern ConVar tf_gamemode_medieval;
+
 // TF2V commands
 ConVar tf2v_randomizer( "tf2v_randomizer", "0", FCVAR_NOTIFY, "Makes players spawn with random loadout and class." );
 
@@ -1961,23 +1963,27 @@ void CTFPlayer::GiveDefaultItems()
 	}
 
 	// Regenerate Weapons
+	bool bCheckMedievalStatus = tf_gamemode_medieval.GetBool();
 	for ( int i = 0; i < MAX_ITEMS; i++ )
 	{
 		CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>( Weapon_GetSlot( i ) );
 		if ( pWeapon )
 		{
 			// Medieval
-			int iAllowedInMedieval = 0;
-			CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, iAllowedInMedieval, allowed_in_medieval_mode );
-			if ( TFGameRules()->IsInMedievalMode() && iAllowedInMedieval == 0 )
+			if ( bCheckMedievalStatus )
 			{
-				// Not allowed in medieval mode
-				if ( pWeapon == GetActiveWeapon() )
-					pWeapon->Holster();
+				int iAllowedInMedieval = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, iAllowedInMedieval, allowed_in_medieval_mode );
+				if ( iAllowedInMedieval == 0 )
+				{
+					// Not allowed in medieval mode
+					if ( pWeapon == GetActiveWeapon() )
+						pWeapon->Holster();
 
-				Weapon_Detach( pWeapon );
-				UTIL_Remove( pWeapon );
-				continue;
+					Weapon_Detach( pWeapon );
+					UTIL_Remove( pWeapon );
+					continue;
+				}
 			}
 
 			// Regenerate
