@@ -518,7 +518,7 @@ QAngle CTFWeaponBaseGun::GetSpreadAngles( void )
 	CALL_ATTRIB_HOOK_FLOAT( flSpreadAngle, projectile_spread_angle );
 	if ( flSpreadAngle )
 	{
-		float flRandomSpread = RandomFloat( -flSpreadAngle, flSpreadAngle )
+		float flRandomSpread = RandomFloat( -flSpreadAngle, flSpreadAngle );
 		angSpread.x += flRandomSpread;
 		angSpread.y += flRandomSpread;
 	}
