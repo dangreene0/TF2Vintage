@@ -403,9 +403,6 @@ CTFPlayerShared::CTFPlayerShared()
 	m_iWeaponBodygroup = 0;
 
 	m_flFirstPrimaryAttack = 0.0f;
-	
-	m_iDecapitationsParity = 0;
-	m_pOuter->UpdateDemomanEyeEffect(0);
 
 #ifdef CLIENT_DLL
 	m_iDisguiseWeaponModelIndex = -1;
@@ -414,6 +411,8 @@ CTFPlayerShared::CTFPlayerShared()
 	m_pCritEffect = NULL;
 	m_flShieldChargeEndTime = -1;
 	m_bShieldChargeStopped = false;
+	m_iDecapitationsParity = 0;
+	m_pOuter->UpdateDemomanEyeEffect(0);
 #else
 	V_memset( m_flChargeOffTime, 0, sizeof( m_flChargeOffTime ) );
 	V_memset( m_bChargeSounds, 0, sizeof( m_bChargeSounds ) );
