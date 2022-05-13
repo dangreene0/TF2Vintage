@@ -1608,7 +1608,7 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 void CBaseObject::BuildingThink( void )
 {
 	// Continue construction
-	Repair( (GetMaxHealth() - GetStartingHealth()) / m_flTotalConstructionTime * OBJECT_CONSTRUCTION_INTERVAL );
+	Repair( (GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH) / m_flTotalConstructionTime * OBJECT_CONSTRUCTION_INTERVAL );
 }
 
 //-----------------------------------------------------------------------------
@@ -2073,7 +2073,7 @@ bool CBaseObject::Repair( float flHealth )
 	if ( IsBuilding() )
 	{
 		// Reduce the construction time by the correct amount for the health passed in
-		float flConstructionTime = flHealth / ((GetMaxHealth() - GetStartingHealth() ) / m_flTotalConstructionTime);
+		float flConstructionTime = flHealth / ((GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH ) / m_flTotalConstructionTime);
 		m_flConstructionTimeLeft = max( 0, m_flConstructionTimeLeft - flConstructionTime);
 		m_flConstructionTimeLeft = clamp( m_flConstructionTimeLeft, 0.0f, m_flTotalConstructionTime );
 		m_flPercentageConstructed = 1 - (m_flConstructionTimeLeft / m_flTotalConstructionTime);
