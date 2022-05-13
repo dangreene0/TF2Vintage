@@ -21,7 +21,7 @@
 
 extern ConVar tf2v_allow_disguiseweapons;
 	
-ConVar tf2v_enable_disguise_text( "tf2v_enable_disguise_text", "1", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Enables the text notification in chatbox when you are diguised.", true, 0.0f, true, 1.0f );
+ConVar tf2v_enable_disguise_text( "tf2v_enable_disguise_text", "0", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Enables the text notification in chatbox when you are diguised.", true, 0.0f, true, 1.0f );
 	
 //-----------------------------------------------------------------------------
 // Purpose: 
