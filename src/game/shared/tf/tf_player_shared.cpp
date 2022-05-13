@@ -403,6 +403,9 @@ CTFPlayerShared::CTFPlayerShared()
 	m_iWeaponBodygroup = 0;
 
 	m_flFirstPrimaryAttack = 0.0f;
+	
+	m_iDecapitationsParity = 0;
+	m_pOuter->UpdateDemomanEyeEffect(0);
 
 #ifdef CLIENT_DLL
 	m_iDisguiseWeaponModelIndex = -1;
