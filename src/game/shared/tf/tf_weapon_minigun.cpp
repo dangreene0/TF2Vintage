@@ -619,7 +619,7 @@ float CTFMinigun::GetProjectileDamage( void )
 				flDamageMod = RemapValClamped( GetFiringTime(), 0.2, TF_MINIGUN_PENALTY_TIME, 0.5, 1 );			
 			break;
 			case 3:	// Rampup based on spinning time.
-			if ( GetWindingTime() < TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() )
+			if ( GetWindingTime() < ( TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() ) )
 				flDamageMod = RemapValClamped( GetWindingTime(), 0.2, (TF_MINIGUN_PENALTY_TIME + GetSpinUpLength()), 0.5, 1 );				
 			break;
 			default:
@@ -651,7 +651,7 @@ float CTFMinigun::GetWeaponSpread( void )
 			break;
 			case 2:
 			case 3:	// Rampup based on spinning time.
-			if ( GetWindingTime() < TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() )
+			if ( GetWindingTime() < ( TF_MINIGUN_PENALTY_TIME + GetSpinUpLength() ) )
 				flSpreadMod = RemapValClamped( GetWindingTime(), 0.2, (TF_MINIGUN_PENALTY_TIME + GetSpinUpLength()), 0.5, 1 );				
 			break;
 			default:
@@ -785,10 +785,10 @@ void CTFMinigun::UpdateBarrelMovement()
 {
 	if ( m_flBarrelCurrentVelocity != m_flBarrelTargetVelocity )
 	{
-		float flSpinupTime = GetSpinUpLength();
+		float flBarrelAcceleration = ( MAX_BARREL_SPIN_VELOCITY / GetSpinUpLength() ); // Originally 0.1f; This is now using Vf=Vi+at where Vi = 0 so a=Vf/t. Hooray physics!
 
 		// update barrel velocity to bring it up to speed or to rest
-		m_flBarrelCurrentVelocity = Approach( m_flBarrelTargetVelocity, m_flBarrelCurrentVelocity, 0.1 / flSpinupTime );
+		m_flBarrelCurrentVelocity = Approach( m_flBarrelTargetVelocity, m_flBarrelCurrentVelocity, flBarrelAcceleration );
 
 		if ( 0 == m_flBarrelCurrentVelocity )
 		{	
