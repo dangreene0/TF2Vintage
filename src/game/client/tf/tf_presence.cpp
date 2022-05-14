@@ -871,10 +871,10 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 	if ( engine->IsConnected() )
 	{
 		INetChannelInfo *ni = engine->GetNetChannelInfo();
-		if ( ni && ni->GetAddress() )
+		if ( ni && ni->GetAddress() && ni->GetName() )
 		{
 			char partyId[128];
-			sprintf( partyId, "ip %s", ni->GetAddress() ); // adding -party here because secrets cannot match the party id
+			sprintf( partyId, "Server: %s", ni->GetName() ); // adding -party here because secrets cannot match the party id
 			m_Activity.GetParty().SetId(partyId);
 			m_Activity.GetSecrets().SetJoin((ni->GetAddress()));
 			m_Activity.GetSecrets().SetSpectate((ni->GetAddress()));
