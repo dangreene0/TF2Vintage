@@ -785,7 +785,7 @@ void CTFMinigun::UpdateBarrelMovement()
 {
 	if ( m_flBarrelCurrentVelocity != m_flBarrelTargetVelocity )
 	{
-		float flBarrelAcceleration = ( MAX_BARREL_SPIN_VELOCITY / GetSpinUpLength() ); // Originally 0.1f; This is now using Vf=Vi+at where Vi = 0 so a=Vf/t. Hooray physics!
+		float flBarrelAcceleration = 0.1f;
 
 		// update barrel velocity to bring it up to speed or to rest
 		m_flBarrelCurrentVelocity = Approach( m_flBarrelTargetVelocity, m_flBarrelCurrentVelocity, flBarrelAcceleration );
