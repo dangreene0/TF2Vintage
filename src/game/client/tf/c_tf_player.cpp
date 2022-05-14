@@ -2511,6 +2511,7 @@ C_TFPlayer::C_TFPlayer() :
 	m_pSaveMeEffect = NULL;
 	m_pOverhealEffect = NULL;
 	m_pTypingEffect = NULL;
+	m_pDemoEyeEffect = NULL;
 
 	m_aGibs.Purge();
 
