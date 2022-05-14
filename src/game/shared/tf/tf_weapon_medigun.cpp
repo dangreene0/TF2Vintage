@@ -49,6 +49,7 @@ ConVar weapon_medigun_chargerelease_rate( "weapon_medigun_chargerelease_rate", "
 
 ConVar tf2v_setup_uber_rate("tf2v_setup_uber_rate", "1", FCVAR_REPLICATED|FCVAR_NOTIFY, "Affects how Uber is built during Setup.", true, 0, true, 2);
 ConVar tf2v_uber_juggle_penalty("tf2v_uber_juggle_penalty", "1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Adds Ubercharge Drain penalty when juggling multiple Uber targets.", true, 0, true, 1);
+ConVar tf2v_enable_healingdetach("tf2v_enable_healingdetach", "1", FCVAR_REPLICATED|FCVAR_NOTIFY, "Enables the sound when a medigun stops healing a targer.");
 
 extern ConVar tf2v_use_medic_speed_match;
 
@@ -1261,8 +1262,11 @@ void CWeaponMedigun::StopHealSound( bool bStopHealingSound, bool bStopNoTargetSo
 	{
 		StopSound( GetHealSound() );
 
-		CLocalPlayerFilter filter;
-		EmitSound( filter, entindex(), "WeaponMedigun.HealingDetach" );
+		if ( tf2v_enable_healingdetach.GetBool() )
+		{
+			CLocalPlayerFilter filter;
+			EmitSound( filter, entindex(), "WeaponMedigun.HealingDetach" );
+		}
 	}
 
 	if ( bStopNoTargetSound )
