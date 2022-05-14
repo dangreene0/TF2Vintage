@@ -12185,7 +12185,7 @@ void CTFPlayer::SpeakWeaponFire( int iCustomConcept )
 		m_iWeaponFireSpam++;
 	
 	m_flNextSpeakWeaponFire = gpGlobals->curtime + flDuration + 5 + ( m_iWeaponFireSpam * 2 );
-}.
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
