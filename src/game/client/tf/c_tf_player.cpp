@@ -6366,29 +6366,35 @@ void C_TFPlayer::UpdateOverhealEffect( bool bForceHide /*= false*/ )
 //-----------------------------------------------------------------------------
 void C_TFPlayer::UpdateDemomanEyeEffect( int iDecapCount )
 {
+	if ( m_pDemoEyeEffect == nullptr ) // Not initialized yet, come back later.
+		return;
+	
 	if ( m_pDemoEyeEffect )
 	{
 		ParticleProp()->StopEmission( m_pDemoEyeEffect );
 		m_pDemoEyeEffect = NULL;
 	}
 
-	iDecapCount = Min( iDecapCount, 4 );
-	switch ( iDecapCount )
+	if ( iDecapCount > 0 )
 	{
-		case 1:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_1", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 2:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_2", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 3:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_3", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 4:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_4", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		default:
-			break;
+		iDecapCount = Min( iDecapCount, 4 );
+		switch ( iDecapCount )
+		{
+			case 1:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_1", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 2:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_2", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 3:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_3", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 4:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_4", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			default:
+				break;
+		}
 	}
 }
 
