@@ -3581,7 +3581,6 @@
 		{
 			"prefab"	"weapon_sword"
 			"item_name"	"#TF_PersianPersuader"
-			"item_description"	"#TF_PersianPersuader_Desc"
 			"item_logname"	"persian_persuader"
 			"item_iconname"	"persian_persuader"
 			"propername"	"1"
