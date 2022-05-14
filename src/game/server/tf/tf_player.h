@@ -428,8 +428,9 @@ public:
 
 	virtual int			DrawDebugTextOverlays( void );
 
-	float	m_flNextVoiceCommandTime;
 	float	m_flNextSpeakWeaponFire;
+	int 	m_iWeaponFireSpam;
+	float	m_flNextVoiceCommandTime;
 	int 	m_iJIVoiceSpam;
 
 	virtual int			CalculateTeamBalanceScore( void );

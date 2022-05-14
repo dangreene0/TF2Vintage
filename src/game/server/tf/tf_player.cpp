@@ -1517,6 +1517,7 @@ void CTFPlayer::Spawn()
 
 	ClearExpression();
 	m_flNextSpeakWeaponFire = gpGlobals->curtime;
+	m_iWeaponFireSpam = 0;
 
 	m_bIsIdle = false;
 
@@ -12166,8 +12167,6 @@ void CTFPlayer::SpeakWeaponFire( int iCustomConcept )
 		iCustomConcept = MP_CONCEPT_FIREWEAPON;
 	}
 
-	m_flNextSpeakWeaponFire = gpGlobals->curtime + 5;
-
 	// Don't play a weapon fire scene if we already have one
 	if ( m_hWeaponFireSceneEnt )
 		return;
@@ -12177,8 +12176,16 @@ void CTFPlayer::SpeakWeaponFire( int iCustomConcept )
 		return;
 
 	float flDuration = InstancedScriptedScene( this, szScene, &m_hExpressionSceneEnt, 0.0, true, NULL, true );
-	m_flNextSpeakWeaponFire = gpGlobals->curtime + flDuration;
-}
+	
+	// Reset our counter if we haven't spoke in more than 10 seconds.
+	if ( ( gpGlobals->curtime - m_flNextSpeakWeaponFire ) > 10 )
+		m_iWeaponFireSpam = 0;
+	// If we spoken in the past ten seconds, increase our spam counter.
+	else if ( ( gpGlobals->curtime - m_flNextSpeakWeaponFire ) < 10 )
+		m_iWeaponFireSpam++;
+	
+	m_flNextSpeakWeaponFire = gpGlobals->curtime + flDuration + 5 + ( m_iWeaponFireSpam * 2 );
+}.
 
 //-----------------------------------------------------------------------------
 // Purpose: 
