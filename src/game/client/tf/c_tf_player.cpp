@@ -5561,6 +5561,7 @@ void C_TFPlayer::ClientPlayerRespawn( void )
 	CalcMinViewmodelOffset();
 
 	UpdateSpyMask();
+	UpdateDemomanEyeEffect(0);
 
 	// Reset rage
 	m_Shared.ResetRageSystem();
@@ -6367,16 +6368,17 @@ void C_TFPlayer::UpdateOverhealEffect( bool bForceHide /*= false*/ )
 //-----------------------------------------------------------------------------
 void C_TFPlayer::UpdateDemomanEyeEffect( int iDecapCount )
 {
-	if ( m_pDemoEyeEffect == nullptr ) // Not initialized yet, come back later.
-		return;
 	
 	if ( m_pDemoEyeEffect )
 	{
 		ParticleProp()->StopEmission( m_pDemoEyeEffect );
 		m_pDemoEyeEffect = NULL;
 	}
+	
+	if ( iDecapCount == 0 )
+		return;
 
-	if ( iDecapCount > 0 )
+	if ( IsAlive() && ( iDecapCount > 0 ) )
 	{
 		iDecapCount = Min( iDecapCount, 4 );
 		switch ( iDecapCount )

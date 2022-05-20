@@ -412,7 +412,6 @@ CTFPlayerShared::CTFPlayerShared()
 	m_flShieldChargeEndTime = -1;
 	m_bShieldChargeStopped = false;
 	m_iDecapitationsParity = 0;
-	m_pOuter->UpdateDemomanEyeEffect(0);
 #else
 	V_memset( m_flChargeOffTime, 0, sizeof( m_flChargeOffTime ) );
 	V_memset( m_bChargeSounds, 0, sizeof( m_bChargeSounds ) );
