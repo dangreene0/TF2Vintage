@@ -1,6 +1,6 @@
 Latest full compile, including game assets:
 
-[![tf2vintage](https://github.com/TF2V/TF2Vintage/actions/workflows/tf2vintage.yml/badge.svg?branch=3.6)](https://github.com/TF2V/TF2Vintage/actions/workflows/tf2vintage.yml)
+[![Release](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml)
 
 Binaries only:
 
