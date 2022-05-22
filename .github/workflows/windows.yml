@@ -1,12 +1,7 @@
 name: Windows
 
 on: 
-  push:
-    paths:
-      - 'src/**'
-  pull_request:
-   paths:
-      - 'src/**'
+  workflow_call:
 
 jobs:
   build:
@@ -32,12 +27,8 @@ jobs:
       - name: Build project
         run: cd src;devenv TF2vintage.sln /Build Release
 
-      - name: Pack
-        shell: bash
-        run: tar cJfv Windows.tar.xz game/tf2vintage/bin
-
       - name: Upload product
         uses: actions/upload-artifact@v2
         with:
-          name: TF2Vintage
-          path: Windows.tar.xz
+          name: tf2vintage-windows
+          path: game/tf2vintage/bin/

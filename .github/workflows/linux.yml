@@ -1,12 +1,7 @@
 name: Linux
 
 on: 
-  push:
-    paths:
-      - 'src/**'
-  pull_request:
-   paths:
-      - 'src/**'
+  workflow_call:
 
 env:
   STEAM_RUNTIME_PATH: /valve/steam-runtime
@@ -74,14 +69,9 @@ jobs:
 
       - name: Build project
         run: cd src && sudo make -f TF2vintage.mak
-      
-      - name: Pack
-        run: |
-          sudo tar cJfv Linux.tar.xz game/tf2vintage/bin
-          sudo bash .github/gh-cache.sh
 
       - name: Upload product
         uses: actions/upload-artifact@v2
         with:
-          name: TF2Vintage
-          path: Linux.tar.xz
+          name: tf2vintage-linux
+          path: game/tf2vintage/bin/
