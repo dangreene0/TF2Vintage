@@ -262,21 +262,19 @@ void FX_FireBullets( int iPlayer, const Vector &vecOrigin, const QAngle &vecAngl
 		// Determine if the first bullet should be perfectly accurate.
 		bool bPerfectAccuracy = false;
 
-		if ( pWeapon && iBullet == 0 )
+		if ( pWeapon && ( iBullet == 0 && nBulletsPerShot == 1 ) )
 		{
-			float flFireInterval = gpGlobals->curtime - pWeapon->GetLastFireTime();
-			if ( nBulletsPerShot == 1 )
-				bPerfectAccuracy = flFireInterval > 1.25f;
-			else
-				bPerfectAccuracy = flFireInterval > 0.25f;
-
 			// Ambassador
-			if ( bPerfectAccuracy && pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER )
+			if ( pWeapon->GetWeaponID() == TF_WEAPON_REVOLVER )
 			{
 				int iMode = 0;
 				CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, iMode, set_weapon_mode );
-				if ( iMode == 1)
-					nDamageType |= DMG_USE_HITLOCATIONS;
+				if ( iMode == 1 )
+				{
+					bPerfectAccuracy = ( gpGlobals->curtime - pWeapon->GetLastFireTime() ) >= 1.00f;
+					if ( bPerfectAccuracy )
+						nDamageType |= DMG_USE_HITLOCATIONS;
+				}
 			}
 		}
 
