@@ -12,7 +12,6 @@
 #if defined(CLIENT_DLL)
 #include "hud_macros.h"
 #endif
-#include <memory>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -291,10 +290,10 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 		msg->set_remote_steamid( remoteID.ConvertToUint64() );
 
 		const int nLength = msg->ByteSize();
-		std::unique_ptr<byte[]> array = std::make_unique<byte[]>( nLength );
-		msg->SerializeWithCachedSizesToArray( array.get() );
+		CUtlVectorConservative<byte> array( 0, nLength );
+		msg->SerializeWithCachedSizesToArray( array.Base() );
 
-		SendMessage( steamID, k_EServerHelloMsg, array.get(), nLength );
+		SendMessage( steamID, k_EServerHelloMsg, array.Base(), nLength );
 	}
 }
 
