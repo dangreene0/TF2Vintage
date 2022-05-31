@@ -5,6 +5,7 @@
 //=============================================================================
 #include "cbase.h"
 #include "tf_weapon_grenadelauncher.h"
+#include "tf_weapon_grenade_pipebomb.h"
 #include "tf_fx_shared.h"
 #include "tf_gamerules.h"
 #include "in_buttons.h"
@@ -311,7 +312,7 @@ void CTFGrenadeLauncher::ItemPostFrame( void )
 
 CBaseEntity *CTFGrenadeLauncher::FireProjectileInternal( CTFPlayer *pPlayer )
 {
-	CTFWeaponBaseGrenadeProj *pGrenade = (CTFWeaponBaseGrenadeProj *)FireProjectile( pPlayer );
+	CTFGrenadePipebombProjectile *pGrenade = (CTFGrenadePipebombProjectile *)FireProjectile( pPlayer );
 	if ( pGrenade )
 	{
 #ifdef GAME_DLL
@@ -328,8 +329,8 @@ CBaseEntity *CTFGrenadeLauncher::FireProjectileInternal( CTFPlayer *pPlayer )
 			}
 		}
 
-		/*if ( GetDetonateMode() == TF_GL_MODE_FIZZLE )
-			pGrenade->m_bFizzle = true;*/
+		if ( GetDetonateMode() == TF_GL_MODE_FIZZLE )
+			pGrenade->m_bFizzle = true;
 
 		float flDetonationPenalty = 1.0f;
 		CALL_ATTRIB_HOOK_FLOAT( flDetonationPenalty, grenade_detonation_damage_penalty );
@@ -338,6 +339,13 @@ CBaseEntity *CTFGrenadeLauncher::FireProjectileInternal( CTFPlayer *pPlayer )
 			// Setting the initial damage of a grenade lower will set its fused time damage lower
 			// on contact detonations reset the damage to max
 			pGrenade->SetDamage( pGrenade->GetDamage() * flDetonationPenalty );
+		}
+
+		if( GetDetonateMode() != TF_GL_MODE_REMOTE_DETONATE )
+		{
+			float flDetonateTime = TF_WEAPON_GRENADE_DETONATE_TIME;
+			CALL_ATTRIB_HOOK_FLOAT( flDetonateTime, fuse_mult );
+			pGrenade->SetDetonateTimerLength( flDetonateTime );
 		}
 #endif
 	}

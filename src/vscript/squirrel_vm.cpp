@@ -13,10 +13,10 @@
 #include "fmtstr.h"
 
 #include "vscript_init_nut.h"
+#include "squirrel_vm.h"
 #include "sq_vector.h"
 
 #include "sqvm.h"
-#include "squirrel_vm.h"
 #include "sqtable.h"
 #include "sqclosure.h"
 #include "sqfuncproto.h"
@@ -50,11 +50,6 @@ extern "C"
 	}
 
 	SQRESULT sqstd_register_iolib(HSQUIRRELVM)
-	{
-		return SQ_ERROR;
-	}
-
-	SQInteger sqstd_register_systemlib(HSQUIRRELVM)
 	{
 		return SQ_ERROR;
 	}
@@ -242,7 +237,7 @@ bool CSquirrelVM::Init( void )
 
 	m_ScriptClasses.Init( 256 );
 
-	Run( g_Script_init );
+	Run( g_Script_vscript_init );
 
 	// store a reference to the scope utilities from the init script
 	m_CreateScopeClosure = LookupObject( "VSquirrel_OnCreateScope" );
@@ -905,7 +900,7 @@ void CSquirrelVM::WriteState( CUtlBuffer *pBuffer )
 	pBuffer->PutInt( SAVE_VERSION );
 	pBuffer->PutInt64( m_nUniqueKeyQueries );
 
-	SquirrelStateWriter writer( GetVM(), pBuffer ); writer.BeginWrite();
+	WriteSquirrelState( GetVM(), pBuffer );
 }
 
 void CSquirrelVM::ReadState( CUtlBuffer *pBuffer )
@@ -921,7 +916,7 @@ void CSquirrelVM::ReadState( CUtlBuffer *pBuffer )
 	int64 serial = pBuffer->GetInt64();
 	m_nUniqueKeyQueries = Max( m_nUniqueKeyQueries, serial );
 
-	SquirrelStateReader reader( GetVM(), pBuffer ); reader.BeginRead();
+	ReadSquirrelState( GetVM(), pBuffer );
 }
 
 bool CSquirrelVM::ConnectDebugger()

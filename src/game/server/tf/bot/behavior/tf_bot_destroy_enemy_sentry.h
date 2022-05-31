@@ -4,8 +4,8 @@
 //
 // $NoKeywords: $
 //=============================================================================
-#ifndef TF_BOT_ATTACK_H
-#define TF_BOT_ATTACK_H
+#ifndef TF_BOT_DESTROY_ENEMY_SENTRY_H
+#define TF_BOT_DESTROY_ENEMY_SENTRY_H
 #ifdef _WIN32
 #pragma once
 #endif
@@ -13,6 +13,8 @@
 
 #include "NextBotBehavior.h"
 #include "NextBotUtil.h"
+
+class CObjectSentrygun;
 
 class CTFBotDestroyEnemySentry : public Action<CTFBot>
 {

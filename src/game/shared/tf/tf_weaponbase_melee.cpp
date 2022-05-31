@@ -357,10 +357,11 @@ bool CTFWeaponBaseMelee::DoSwingTraceInternal( trace_t &trace, bool bCleave, Mel
 			CTraceFilterIgnorePlayers filterPlayers( NULL, COLLISION_GROUP_NONE );
 			UTIL_TraceLine( vecSwingStart, vecSwingEnd, MASK_SOLID, &filterPlayers, &trace );
 			if ( trace.fraction >= 1.0 )
+			{
 				UTIL_TraceHull( vecSwingStart, vecSwingEnd, vecSwingMins * flBoundsMult, vecSwingMaxs * flBoundsMult, MASK_SOLID, &filterPlayers, &trace );
-
+			}
 			// Ensure valid target
-			if ( trace.m_pEnt && trace.m_pEnt->IsBaseObject() )
+			if ( trace.fraction < 1.0 && trace.m_pEnt && trace.m_pEnt->IsBaseObject() )
 			{
 				CBaseObject *pObject = static_cast<CBaseObject *>( trace.m_pEnt );
 				if ( pObject->GetTeamNumber() == pPlayer->GetTeamNumber() && pObject->HasSapper() )
@@ -493,12 +494,16 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity *pTarget, trace_t &trace )
 
 	float flDamage = GetMeleeDamage( pTarget, iDmgType, iCustomDamage );
 	
+	// Self hits only do half damage.
+	if (pPlayer == pTarget)
+		flDamage *= 0.5f;
+	
 	CTakeDamageInfo info( pPlayer, pPlayer, this, flDamage, iDmgType, iCustomDamage );
 
-	if ( pTarget == pPlayer )
-		info.SetDamageForce( vec3_origin );
-	else
+	if (flDamage > 0)
 		CalculateMeleeDamageForce( &info, vecForward, vecSwingEnd, 1.0f / flDamage * GetForceScale() );
+	else
+		info.SetDamageForce( vec3_origin );
 
 	pTarget->DispatchTraceAttack( info, vecForward, &trace ); 
 	ApplyMultiDamage();
@@ -666,7 +671,7 @@ bool CTFWeaponBaseMelee::CalcIsAttackCriticalHelper( void )
 	if ( flCritChance == 0.0f )
 		return false;
 
-	return ( RandomInt( 0, WEAPON_RANDOM_RANGE-1 ) <= flCritChance * WEAPON_RANDOM_RANGE );
+	return ( RandomInt( 0, WEAPON_RANDOM_RANGE-1 ) < flCritChance * WEAPON_RANDOM_RANGE );
 }
 
 #ifndef CLIENT_DLL

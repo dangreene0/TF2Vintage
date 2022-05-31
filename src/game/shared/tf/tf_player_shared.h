@@ -83,6 +83,17 @@ enum ERevengeCrits
 };
 
 //=============================================================================
+// For checkpointing upgrades Players have purchased in Mann Vs Machine
+class CUpgradeInfo
+{
+public:
+	int m_iPlayerClass;
+	item_def_index_t m_nItemDefIndex;
+	int m_iUpgrade;
+	int m_nCost;
+};
+
+//=============================================================================
 //
 // Shared player class.
 //
@@ -123,8 +134,8 @@ public:
 	void	SetCond( int nCond )				{ m_nPlayerCond = nCond; }
 	void	AddCond( int nCond, float flDuration = PERMANENT_CONDITION );
 	void	RemoveCond( int nCond );
-	bool	InCond( int nCond );
-	void	RemoveAllCond( CTFPlayer *pPlayer );
+	bool	InCond( int nCond ) const;
+	void	RemoveAllCond( CTFPlayer *pPlayer=NULL );
 	void	OnConditionAdded( int nCond );
 	void	OnConditionRemoved( int nCond );
 	void	ConditionThink( void );
@@ -220,7 +231,7 @@ public:
 
 #ifdef GAME_DLL
 	void	Heal( CBaseEntity *pHealer, float flAmount, float flOverhealBonus, float flOverhealDecayMult, bool bDispenserHeal = false, CTFPlayer *pScorer = NULL );
-	void	StopHealing( CTFPlayer *pPlayer );
+	void	StopHealing( CBaseEntity *pHealer );
 	void	SetBestOverhealDecayMult( float fValue )	{ m_flLowestOverhealDecayRate = fValue; }
 	float	GetBestOverhealDecayMult() const			{ return m_flLowestOverhealDecayRate; }
 	void	RecalculateChargeEffects( bool bInstantRemove = false );
@@ -306,7 +317,8 @@ public:
 	bool	IsFeignDeathReady( void )			{ return m_bFeignDeathReady; }
 
 	bool	IsFeigningDeath( void ) const		{ return m_bFeigningDeath; }
-
+	void	SetFeigningDeath( bool bSet )		{ m_bFeigningDeath = bSet; }
+	
 	bool	IsJumping( void )					{ return m_bJumping; }
 	void	SetJumping( bool bJumping );
 	bool	CanGoombaStomp( void );
@@ -642,6 +654,8 @@ public:
 
 	// Gas Player
 	EHANDLE m_hGasAttacker;
+
+	CNetworkVar( float, m_flFirstPrimaryAttack );
 private:
 	float		m_flTauntRemoveTime;
 	

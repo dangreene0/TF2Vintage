@@ -44,7 +44,10 @@ ConVar	tf2v_bunnyjump_max_speed_factor("tf2v_bunnyjump_max_speed_factor", "1.2",
 ConVar  tf2v_autojump("tf2v_autojump", "0", FCVAR_REPLICATED, "Automatically jump while holding the jump button down");
 ConVar  tf2v_duckjump("tf2v_duckjump", "0", FCVAR_REPLICATED, "Toggles jumping while ducked");
 ConVar  tf2v_groundspeed_cap("tf2v_groundspeed_cap", "1", FCVAR_REPLICATED, "Toggles the max speed cap imposed when a player is standing on the ground");
-ConVar  tf2v_use_triple_jump_sound( "tf2v_use_triple_jump_sound", "1", FCVAR_REPLICATED, "Play the post MYM banana slip multijump sound?" );
+
+#ifdef GAME_DLL
+ConVar  tf2v_use_triple_jump_sound( "tf2v_use_triple_jump_sound", "1", FCVAR_SERVER_CAN_EXECUTE, "Play the post MYM banana slip multijump sound?" );
+#endif
 
 ConVar  tf2v_disable_updraft( "tf2v_disable_updraft", "1", FCVAR_REPLICATED, "Enables updraft effects when using a parachute on fire." );
 
@@ -58,7 +61,8 @@ ConVar  tf2v_disable_updraft( "tf2v_disable_updraft", "1", FCVAR_REPLICATED, "En
 #define TF_MAX_AIR_DUCKS 2
 
 extern ConVar tf2v_use_new_atomizer;
-extern ConVar tf2v_use_new_sodapopper;
+extern ConVar tf2v_use_new_sodapopper_hype;
+extern ConVar tf2v_use_new_sodapopper_fill;
 
 class CTFGameMovement : public CGameMovement
 {
@@ -71,7 +75,7 @@ public:
 	virtual unsigned int PlayerSolidMask( bool brushOnly = false );
 	virtual void		ProcessMovement( CBasePlayer *pBasePlayer, CMoveData *pMove );
 	virtual bool		CanAccelerate();
-	virtual bool		 CheckJumpButton();
+	virtual bool		CheckJumpButton();
 	virtual bool		CheckWater( void );
 	virtual void		WaterMove( void );
 	virtual void		FullWalkMove();
@@ -372,7 +376,7 @@ void CTFGameMovement::AirDash( void )
 		{
 			// Make sure we're not in any form of airjump buff.
 			if ( ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE )   // Not in any soda popper hype...
-			   || ( m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper.GetBool() ) ) // Or in old variant soda popper hype...
+			   || ( m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper_hype.GetBool() ) ) // Or in old variant soda popper hype...
 			    && !m_pTFPlayer->m_Shared.InCond( TF_COND_HALLOWEEN_SPEED_BOOST ) ) // And not in Halloween Speed Boost.
 			{
 				CTakeDamageInfo info( m_pTFPlayer, m_pTFPlayer, vec3_origin, m_pTFPlayer->WorldSpaceCenter(), 10.0f, DMG_BULLET );
@@ -1642,7 +1646,7 @@ void CTFGameMovement::FullWalkMove()
 	// Make sure velocity is valid.
 	CheckVelocity();
 
-	if ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) )
+	if ( !m_pTFPlayer->m_Shared.InCond( TF_COND_SODAPOPPER_HYPE ) && !tf2v_use_new_sodapopper_fill.GetBool() )
 	{
 		CTFWeaponBase *pWeapon = m_pTFPlayer->GetActiveTFWeapon();
 		if ( pWeapon && pWeapon->IsWeapon( TF_WEAPON_SODA_POPPER ) )

@@ -7,13 +7,14 @@
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #endif
+#include "tier0/icommandline.h"
 
 #if defined(CLIENT_DLL)
 #include "hud_macros.h"
 #define UTIL_VarArgs  VarArgs
 #endif
 
-const char *g_TeamVisualSections[TF_TEAM_COUNT] =
+const char *g_TeamVisualSections[TF_TEAM_VISUALS_COUNT] =
 {
 	"visuals",			// TEAM_UNASSIGNED
 	"",					// TEAM_SPECTATOR
@@ -21,7 +22,7 @@ const char *g_TeamVisualSections[TF_TEAM_COUNT] =
 	"visuals_blu",		// TEAM_BLUE
 	"visuals_grn",		// TEAM_GREEN
 	"visuals_ylw",		// TEAM_YELLOW
-	//"visuals_mvm_boss"	// ???
+	"visuals_mvm_boss"	// ???
 };
 
 const char *g_WearableAnimTypeStrings[NUM_WEARABLEANIM_TYPES] =
@@ -154,7 +155,7 @@ CEconItemSchema *GetItemSchema()
 			(copyto)->name = from->GetString(#name)
 
 #define GET_STRING_DEFAULT(copyto, from, name, defaultstring) \
-		(copyto)->name = from->GetString(#name, #defaultstring)
+		(copyto)->name = from->GetString(#name, defaultstring)
 
 #define GET_BOOL(copyto, from, name) \
 		(copyto)->name = from->GetBool(#name, (copyto)->name)
@@ -286,9 +287,6 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		}
 	}
 
-	// All items are vintage quality
-	//this->item_quality = QUALITY_VINTAGE;
-
 	GET_STRING( this, pDefinition, item_logname );
 	GET_STRING( this, pDefinition, item_iconname );
 
@@ -325,10 +323,12 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 	GET_STRING( this, pDefinition, model_vision_filtered );
 	GET_STRING( this, pDefinition, model_world );
 	GET_STRING( this, pDefinition, extra_wearable );
+	GET_STRING( this, pDefinition, extra_wearable_vm );
 
 	GET_INT( this, pDefinition, attach_to_hands );
 	GET_INT( this, pDefinition, attach_to_hands_vm_only );
 	GET_BOOL( this, pDefinition, act_as_wearable );
+	GET_BOOL( this, pDefinition, act_as_weapon );
 	GET_INT( this, pDefinition, hide_bodygroups_deployed_only );
 
 	GET_BOOL( this, pDefinition, is_reskin );
@@ -352,6 +352,11 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 		}
 	}
 
+	// Initialize all visuals for next section.
+	for (int i = 0; i < TF_TEAM_VISUALS_COUNT; i++)
+	{
+		visual[i] = NULL;
+	}
 
 	FOR_EACH_SUBKEY( pDefinition, pSubData )
 	{
@@ -375,7 +380,7 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 					for ( int i = TF_FIRST_NORMAL_CLASS; i <= TF_LAST_NORMAL_CLASS; i++ )
 					{
 						// Add to the player model per class.
-						model_player_per_class[i] = UTIL_VarArgs( pClassData->GetString(), g_aRawPlayerClassNamesShort[i] );
+						model_player_per_class[i] = UTIL_VarArgs( pClassData->GetString(), g_aRawPlayerClassNamesShort[i], g_aRawPlayerClassNamesShort[i], g_aRawPlayerClassNamesShort[i] );
 					}
 				}
 				else
@@ -434,34 +439,24 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 				attributes.AddToTail( attribute );
 			}
 		}
-		else if ( !V_stricmp( pSubData->GetName(), "visuals_mvm_boss" ) )
-		{
-			// Deliberately skipping this.
-		}
-		else if ( !V_strnicmp( pSubData->GetName(), "visuals", 7 ) )
+		else if (!V_strnicmp(pSubData->GetName(), "visuals", 7))
 		{
 			// Figure out what team is this meant for.
-			int iVisuals = UTIL_StringFieldToInt( pSubData->GetName(), g_TeamVisualSections, TF_TEAM_COUNT );
-
-			if ( iVisuals != -1 )
+			int iVisuals = UTIL_StringFieldToInt(pSubData->GetName(), g_TeamVisualSections, TF_TEAM_VISUALS_COUNT);
+			if (iVisuals == TEAM_UNASSIGNED)
 			{
-				if ( iVisuals == TEAM_UNASSIGNED )
+				// Hacky: for standard visuals block, assign it to all teams at once.
+				for (int team = 0; team < TF_TEAM_VISUALS_COUNT; team++)
 				{
-					// Hacky: for standard visuals block, assign it to all teams at once.
-					for ( int i = 0; i < TF_TEAM_COUNT; i++ )
-					{
-						if ( i == TEAM_SPECTATOR )
-							continue;
+					if (team == TEAM_SPECTATOR)
+						continue;
 
-						visual[i] = NULL;
-						ParseVisuals( pSubData, i );
-					}
+					ParseVisuals(pSubData, team);
 				}
-				else
-				{
-					visual[ iVisuals ] = NULL;
-					ParseVisuals( pSubData, iVisuals );
-				}
+			}
+			else if (iVisuals != -1 && iVisuals != TEAM_SPECTATOR)
+			{
+				ParseVisuals(pSubData, iVisuals);
 			}
 		}
 	}
@@ -471,7 +466,12 @@ bool CEconItemDefinition::LoadFromKV( KeyValues *pDefinition )
 
 void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 {
-	PerTeamVisuals_t *pVisuals = new PerTeamVisuals_t;
+
+	PerTeamVisuals_t* pVisuals;
+	if (visual[iIndex]) // If we have data already in here, load the previous data before adding new stuff.
+		pVisuals = visual[iIndex];
+	else
+		pVisuals = new PerTeamVisuals_t; // Build ourselves a fresh visual file.
 
 	FOR_EACH_SUBKEY( pKVData, pVisualData )
 	{
@@ -627,9 +627,9 @@ bool CEconAttributeDefinition::LoadFromKV( KeyValues *pDefinition )
 {
 	definition = pDefinition;
 
-	name = pDefinition->GetString( "name", "( unnamed )" );
-	attribute_class = pDefinition->GetString( "attribute_class" );
-	description_string = pDefinition->GetString( "description_string" );
+	GET_STRING_DEFAULT( this, pDefinition, name, "( unnamed )" );
+	GET_STRING( this, pDefinition, attribute_class );
+	GET_STRING( this, pDefinition, description_string );
 
 	string_attribute = ( V_stricmp( pDefinition->GetString( "attribute_type" ), "string" ) == 0 );
 
@@ -831,31 +831,24 @@ CEconItemSchema::~CEconItemSchema()
 //-----------------------------------------------------------------------------
 bool CEconItemSchema::Init( void )
 {
-	if ( !m_bInited )
-	{
-		// Must register activities early so we can parse animation replacements.
-		ActivityList_Free();
-		ActivityList_RegisterSharedActivities();
+	Reset();
 
-		KeyValuesAD schema("KVDataFile");
-		if ( !schema->LoadFromFile( filesystem, ITEMS_GAME ) )
-			return false;
+	KeyValuesAD schema("KVDataFile");
+	if ( !schema->LoadFromFile( filesystem, ITEMS_GAME ) )
+		return false;
 
-		InitAttributeTypes();
+	InitAttributeTypes();
 
-		float flStartTime = engine->Time();
+	float flStartTime = engine->Time();
 
-		ParseSchema( schema );
+	ParseSchema( schema );
 
-		float flEndTime = engine->Time();
-		Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
+	float flEndTime = engine->Time();
+	Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
 
-	#ifdef CLIENT_DLL
-		HOOK_HUD_MESSAGE( g_EconItemSchema, ResetInventory )
-	#endif
-
-		m_bInited = true;
-	}
+#ifdef CLIENT_DLL
+	HOOK_HUD_MESSAGE( g_EconItemSchema, ResetInventory )
+#endif
 	
 	return true;
 }
@@ -991,7 +984,7 @@ void CEconItemSchema::Precache( void )
 			CBaseEntity::PrecacheModel( pItem->GetExtraWearableModel() );
 		
 		// Precache visuals.
-		for ( int i = TEAM_UNASSIGNED; i < TF_TEAM_COUNT; i++ )
+		for ( int i = TEAM_UNASSIGNED; i < TF_TEAM_VISUALS_COUNT; i++ )
 		{
 			if ( i == TEAM_SPECTATOR )
 				continue;
@@ -1035,13 +1028,27 @@ void CEconItemSchema::Precache( void )
 			if ( pVisuals->GetTracerFX() )
 			{
 				PrecacheParticleSystem( pVisuals->GetTracerFX() );
+				
+				//Since these get adjusted we need to do each one manually as a char.
+				char pTracerEffect[128];
+				char pTracerEffectCrit[128];
+				Q_snprintf( pTracerEffect, sizeof(pTracerEffect), "%s_red", pVisuals->GetTracerFX() );
+				Q_snprintf( pTracerEffectCrit, sizeof(pTracerEffectCrit), "%s_red_crit", pVisuals->GetTracerFX() );
+				PrecacheParticleSystem( pTracerEffect );
+				PrecacheParticleSystem( pTracerEffectCrit );
+
+				Q_snprintf( pTracerEffect, sizeof(pTracerEffect), "%s_blue", pVisuals->GetTracerFX() );
+				Q_snprintf( pTracerEffectCrit, sizeof(pTracerEffectCrit), "%s_blue_crit", pVisuals->GetTracerFX() );
+				PrecacheParticleSystem( pTracerEffect );
+				PrecacheParticleSystem( pTracerEffectCrit );
 			}
 
 		}
 
 		// Cache all attrbute names.
-		for ( static_attrib_t const &attrib : pItem->attributes )
+		FOR_EACH_VEC( pItem->attributes, i )
 		{
+			static_attrib_t const &attrib = pItem->attributes[i];
 			const CEconAttributeDefinition *pAttribute = attrib.GetStaticData();
 
 			// Special case for custom_projectile_model attribute.
@@ -1111,25 +1118,51 @@ void CEconItemSchema::ParseSchema( KeyValues *pKVData )
 		ParseItems( pUnlockItems );
 	}
 
+#if defined(CLIENT_DLL)
+	if ( !CommandLine()->CheckParm( "-hidecosmetics" ) )
+#endif
+	{
 	// Stock Cosmetics are for the typical cosmetics.
-	KeyValues *pCosmeticItems = pKVData->FindKey( "cosmeticitems" );
-	if ( pCosmeticItems )
-	{
-		ParseItems( pCosmeticItems );
+		KeyValues *pCosmeticItems = pKVData->FindKey( "cosmeticitems" );
+		if ( pCosmeticItems )
+		{
+			ParseItems( pCosmeticItems );
+		}
 	}
-
+	
+#if defined(CLIENT_DLL)
+	if ( !CommandLine()->CheckParm( "-hidereskins" ) )
+#endif
+	{
 	// Reskins is for reskin weapons.
-	KeyValues *pReskinItems = pKVData->FindKey( "reskinitems" );
-	if ( pReskinItems )
-	{
-		ParseItems( pReskinItems );
+		KeyValues *pReskinItems = pKVData->FindKey( "reskinitems" );
+		if ( pReskinItems )
+		{
+			ParseItems( pReskinItems );
+		}
 	}
+	
+	// Everything below should be largely static and not change much.
 
-	// Special is for special items, like medals and zombies.
+	// Special is for special top secret items.
 	KeyValues *pSpecialItems = pKVData->FindKey( "specialitems" );
 	if ( pSpecialItems )
 	{
 		ParseItems( pSpecialItems );
+	}
+	
+	// Medals is well, player medals.
+	KeyValues *pMedals = pKVData->FindKey( "medals" );
+	if ( pMedals )
+	{
+		ParseItems( pMedals );
+	}
+	
+	// Holiday is for content relating to events, like Halloween or Christmas.
+	KeyValues *pHoliday = pKVData->FindKey( "holiday" );
+	if ( pHoliday )
+	{
+		ParseItems( pHoliday );
 	}
 #endif
 }
@@ -1228,7 +1261,6 @@ void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 {
 #if defined( GAME_DLL )
 	CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
-	if ( !pPlayer || pPlayer->IsFakeClient() )
 		return;
 
 	CSteamID playerID{};

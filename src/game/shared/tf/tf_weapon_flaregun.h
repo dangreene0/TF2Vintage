@@ -82,7 +82,7 @@ public:
 	virtual const char *GetMuzzleFlashParticleEffect( void ) { return "drg_manmelter_muzzleflash"; }
 	
 	bool				HasChargeBar( void );
-	virtual const char *GetEffectLabelText( void ) { return "#TF_CRITS"; }
+	virtual const char* GetEffectLabelText( void ) { return "#TF_CRITS"; }
 	virtual void		StartCharge( void );
 	virtual void		StopCharge( void );
 	virtual void		ChargePostFrame( void );

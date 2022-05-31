@@ -443,6 +443,15 @@ void CTFSpectatorGUI::ShowPanel(bool bShow)
 	BaseClass::ShowPanel( bShow );
 }
 
+Color CTFSpectatorGUI::GetBlackBarColor( void ) 
+{
+	IScheme *pScheme = scheme()->GetIScheme( GetScheme() );
+	if ( pScheme == NULL )
+		return Color( 52, 48, 45, 200 );
+
+	return pScheme->GetColor( "TFColors.SpectatorBarBrown", Color( 52, 48, 45, 255 ) );
+}
+
 const char *CTFSpectatorGUI::GetResFilename(void)
 {
 	if ( TFGameRules() && TFGameRules()->IsInTournamentMode() )

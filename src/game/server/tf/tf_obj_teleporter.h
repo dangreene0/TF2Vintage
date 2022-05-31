@@ -87,6 +87,8 @@ public:
 
 	virtual void 	TeleportBread( CTFPlayer *pPlayer );
 
+	CUtlStringList m_TeleportWhere;
+
 protected:
 	CNetworkVar( int, m_iState );
 	CNetworkVar( float, m_flRechargeTime );

@@ -48,6 +48,7 @@ public:
 
 	void ToggleZoom( void );
 
+	virtual int GetWeaponProjectileType( void ) const { return m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_iProjectile; }
 	virtual CBaseEntity *FireProjectile( CTFPlayer *pPlayer );
 	virtual void		GetProjectileFireSetup( CTFPlayer *pPlayer, Vector vecOffset, Vector *vecSrc, QAngle *angForward, bool bHitTeammates = true, bool bUseHitboxes = false );
 	virtual QAngle		GetSpreadAngles( void );

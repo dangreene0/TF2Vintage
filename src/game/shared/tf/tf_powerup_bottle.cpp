@@ -103,7 +103,7 @@ int CTFPowerupBottle::GetWorldModelIndex( void )
 {
 	int nMode = 0;
 	CALL_ATTRIB_HOOK_INT( nMode, set_weapon_mode );
-	if ( nMode != 1 && ( GetNumCharges() > 0 ) )
+	if ( nMode == 1 && ( GetNumCharges() > 0 ) )
 	{
 		switch ( GetPowerupType() )
 		{
@@ -197,6 +197,9 @@ bool CTFPowerupBottle::AllowedToUse() const
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 const char* CTFPowerupBottle::GetEffectLabelText( void )
 {
 #ifndef GAME_DLL
@@ -227,6 +230,9 @@ const char* CTFPowerupBottle::GetEffectLabelText( void )
 	return "#TF_PVE_UsePowerup_CritBoost";
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 const char* CTFPowerupBottle::GetEffectIconName( void )
 {
 	switch ( GetPowerupType() )
@@ -271,9 +277,6 @@ void CTFPowerupBottle::SetNumCharges( int usNumCharges )
 		return;
 
 	CEconItemView *pItem = GetAttributeContainer()->GetItem();
-	if ( !pItem )
-		return;
-
 	pItem->GetAttributeList()->SetRuntimeAttributeValue( pAttrDef_PowerupCharges, usNumCharges );
 }
 
@@ -348,7 +351,7 @@ void CTFPowerupBottle::RemoveEffect()
 void CTFPowerupBottle::Reset( void )
 {
 	m_bActive = false;
-	m_usNumCharges = 0;
+	SetNumCharges( 0 );
 
 #ifdef GAME_DLL
 	class CAttributeIterator_ZeroRefundableCurrency : public IEconUntypedAttributeIterator
@@ -454,8 +457,9 @@ bool CTFPowerupBottle::Use()
 		}
 	#endif
 
-		m_usNumCharges--;
 		m_bActive = true;
+		SetNumCharges( m_usNumCharges - 1 );
+
 		ReapplyProvision();
 
 		SetContextThink( &CTFPowerupBottle::StatusThink, gpGlobals->curtime + flDuration, "PowerupBottleThink" );

@@ -30,8 +30,8 @@ struct animevent_t;
 
 // Construction
 #define OBJECT_CONSTRUCTION_INTERVAL			0.1
-#define OBJECT_CONSTRUCTION_STARTINGHEALTH		0.1
-
+#define OBJECT_CONSTRUCTION_STARTINGHEALTH		1.0
+#define TF_MINISENTRY_HEALTH		100
 
 extern ConVar object_verbose;
 extern ConVar obj_child_range_factor;
@@ -205,13 +205,15 @@ public:
 	virtual void	OnGoActive( void );
 	virtual void	OnGoInactive( void );
 
-	// Disabling
+	// EMP Disabling
 	bool			IsDisabled( void ) { return m_bDisabled; }
 	void			UpdateDisabledState( void );
 	void			SetDisabled( bool bDisabled );
 	virtual void	OnStartDisabled( void );
 	virtual void	OnEndDisabled( void );
-	void			OnEMP(void);
+	void			AddEMP(void);
+	void			EMPThink(void);
+	bool			HasEMP( void ) { return m_flEMPTime > 0; }
 
 	// Animation
 	virtual void	PlayStartupAnimation( void );
@@ -244,6 +246,8 @@ public:
 
 	// Upgrades
 	int				GetUpgradeLevel(void) { return m_iUpgradeLevel; }
+	int				GetDefaultUpgradeLevel( void ) const { return m_iDefaultUpgrade; }
+	void			SetDefaultUpgradeLevel( int nLevel ) { m_iDefaultUpgrade  = nLevel; }
 
 	// If the players hit us with a wrench, should we upgrade
 	virtual bool	CanBeUpgraded( CTFPlayer *pPlayer );
@@ -258,11 +262,14 @@ public:
 	virtual void	DropCarriedObject( CTFPlayer *pPlayer );
 
 	virtual int		GetBaseHealth( void ) { return 0; }
-	virtual int		GetMiniBuildingBaseHealth( void ) { return 100; }
+	virtual int		GetMiniBuildingBaseHealth( void ) { return TF_MINISENTRY_HEALTH; }
 
 	void	MakeMiniBuilding( void );
 	bool	IsMiniBuilding( void ) { return m_bMiniBuilding; }
 	bool	IsDisposableBuilding( void ) { return m_bDisposableBuilding; }
+	
+	virtual int GetStartingHealth( void ) { return IsMiniBuilding() ? GetMiniBuildingStartingHealth() : OBJECT_CONSTRUCTION_STARTINGHEALTH; }
+	virtual int GetMiniBuildingStartingHealth( void );
 
 public:		
 

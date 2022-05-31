@@ -24,6 +24,7 @@
 #include "steam/isteamfriends.h"
 #include "steam/steam_api.h"
 #include "tier0/icommandline.h"
+#include <inetchannelinfo.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -574,6 +575,8 @@ void CTFPresence::UploadStats()
 //-----------------------------------------------------------------------------
 static CTFDiscordPresence s_drp;
 
+#define DISCORD_COLOR Color( 114, 137, 218, 255 )
+
 
 discord::Activity CTFDiscordPresence::m_Activity{};
 discord::User CTFDiscordPresence::m_CurrentUser{};
@@ -601,7 +604,11 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 	{
 		Q_strncpy( m_szHostName, event->GetString( "hostname" ), DISCORD_FIELD_MAXLEN );
 		Q_strncpy( m_szServerInfo, event->GetString( "address" ), DISCORD_FIELD_MAXLEN );
+		
 	}
+
+	if ( g_pDiscord == NULL )
+		return;
 
 	if ( C_BasePlayer::GetLocalPlayer() == nullptr )
 		return;
@@ -686,6 +693,9 @@ bool CTFDiscordPresence::InitPresence( void )
 {
 	m_updateThrottle.Start( 30.0f );
 
+	if ( g_pDiscord == NULL )
+		return true;
+
 	g_pDiscord->SetLogHook(
 	#ifdef DEBUG
 		discord::LogLevel::Debug,
@@ -697,6 +707,10 @@ bool CTFDiscordPresence::InitPresence( void )
 
 	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
 	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
+	
+	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
+	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
+	
 
 	char command[512];
 	V_snprintf( command, sizeof( command ), "%s -game \"%s\" -novid -steam", CommandLine()->GetParm( 0 ), CommandLine()->ParmValue( "-game" ) );
@@ -733,7 +747,10 @@ void CTFDiscordPresence::OnReady()
 	if ( !cl_discord_presence_enabled.GetBool() )
 	{
 		if ( g_pDiscord )
+		{
 			delete g_pDiscord;
+			g_pDiscord = NULL;
+		}
 
 		if ( steamapicontext->SteamFriends() )
 			steamapicontext->SteamFriends()->ClearRichPresence();
@@ -743,8 +760,8 @@ void CTFDiscordPresence::OnReady()
 
 	g_pDiscord->UserManager().GetCurrentUser( &m_CurrentUser );
 
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] Ready!\n" );
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] User %s#%s - %lld\n", m_CurrentUser.GetUsername(), m_CurrentUser.GetDiscriminator(), m_CurrentUser.GetId() );
+	ConColorMsg( DISCORD_COLOR, "[DRP] Ready!\n" );
+	ConColorMsg( DISCORD_COLOR, "[DRP] User %s#%s - %lld\n", m_CurrentUser.GetUsername(), m_CurrentUser.GetDiscriminator(), m_CurrentUser.GetId() );
 
 	rpc->ResetPresence();
 }
@@ -754,7 +771,7 @@ void CTFDiscordPresence::OnReady()
 //-----------------------------------------------------------------------------
 void CTFDiscordPresence::OnJoinedGame( const char *joinSecret )
 {
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] Join Game: %s\n", joinSecret );
+	ConColorMsg( DISCORD_COLOR, "[DRP] Join Game: %s\n", joinSecret );
 	char szCommand[128];
 	Q_snprintf( szCommand, sizeof( szCommand ), "connect %s\n", joinSecret );
 	engine->ExecuteClientCmd( szCommand );
@@ -765,7 +782,10 @@ void CTFDiscordPresence::OnJoinedGame( const char *joinSecret )
 //-----------------------------------------------------------------------------
 void CTFDiscordPresence::OnSpectateGame( const char *spectateSecret )
 {
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] Spectate Game: %s\n", spectateSecret );
+	ConColorMsg( DISCORD_COLOR, "[DRP] Spectate Game: %s\n", spectateSecret );
+	char szCommand[128];
+	Q_snprintf( szCommand, sizeof( szCommand ), "connect %s:27020\n", spectateSecret ); // We append this with port 27020, for STV.
+	engine->ExecuteClientCmd( szCommand );
 }
 
 //-----------------------------------------------------------------------------
@@ -774,10 +794,9 @@ void CTFDiscordPresence::OnSpectateGame( const char *spectateSecret )
 void CTFDiscordPresence::OnJoinRequested( discord::User const &joinRequester )
 {
 	// TODO: Popup dialog
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] Join Request: %s#%s\n", joinRequester.GetUsername(), joinRequester.GetDiscriminator() );
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[Rich Presence] Join Request Accepted\n" );
-	
-	g_pDiscord->ActivityManager().SendRequestReply( joinRequester.GetId(), discord::ActivityJoinRequestReply::Yes, [ ] ( discord::Result result ) {} );
+	ConColorMsg( DISCORD_COLOR, "[DRP] Join Request: %s#%s\n", joinRequester.GetUsername(), joinRequester.GetDiscriminator() );
+	ConColorMsg(DISCORD_COLOR, "[DRP] Join Request Accepted\n" );
+	//Discord_Respond( joinRequester.GetId(), DISCORD_REPLY_YES );
 }
 
 //-----------------------------------------------------------------------------
@@ -792,7 +811,7 @@ void CTFDiscordPresence::OnLogMessage( discord::LogLevel logLevel, char const *p
 			Warning( "[DRP] %s\n", pszMessage );
 			break;
 		default:
-			ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] %s\n", pszMessage );
+			ConColorMsg( DISCORD_COLOR, "[DRP] %s\n", pszMessage );
 			break;
 	}
 }
@@ -803,7 +822,7 @@ void CTFDiscordPresence::OnLogMessage( discord::LogLevel logLevel, char const *p
 void CTFDiscordPresence::OnActivityUpdate( discord::Result result )
 {
 #ifdef DEBUG
-	ConColorMsg( Color( 114, 137, 218, 255 ), "[DRP] Activity update: %s\n", ( ( result == discord::Result::Ok ) ? "Succeeded" : "Failed" ) );
+	ConColorMsg( DISCORD_COLOR, "[DRP] Activity update: %s\n", ( ( result == discord::Result::Ok ) ? "Succeeded" : "Failed" ) );
 #endif
 }
 
@@ -844,6 +863,20 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 	m_Activity.SetState( szGameState );
 	m_Activity.GetAssets().SetSmallImage( "tf2v_drp_logo" );
 	m_Activity.GetTimestamps().SetStart( m_iCreationTimestamp );
+		
+	// From DMC:R
+	if ( engine->IsConnected() )
+	{
+		INetChannelInfo *ni = engine->GetNetChannelInfo();
+		if ( ni && ni->GetAddress() && ni->GetName() )
+		{
+			char partyId[128];
+			sprintf( partyId, "Server: %s", ni->GetName() ); // adding -party here because secrets cannot match the party id
+			m_Activity.GetParty().SetId(partyId);
+			m_Activity.GetSecrets().SetJoin((ni->GetAddress()));
+			m_Activity.GetSecrets().SetSpectate((ni->GetAddress()));
+		}
+	}
 
 	if ( steamapicontext->SteamFriends() )
 	{
@@ -854,7 +887,10 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 		steamapicontext->SteamFriends()->SetRichPresence( "steam_display", GetLevelName() );
 	}
 
-	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	if( g_pDiscord )
+	{
+		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -871,6 +907,7 @@ void CTFDiscordPresence::LevelShutdownPreEntity( void )
 void CTFDiscordPresence::ResetPresence( void )
 {
 	Q_memset( &m_Activity, 0, sizeof( discord::Activity ) );
+	Q_memset( &m_Activity, 0, sizeof( discord::Lobby ) );
 
 	if ( steamapicontext->SteamFriends() )
 	{
@@ -884,7 +921,11 @@ void CTFDiscordPresence::ResetPresence( void )
 	m_Activity.SetDetails( "Main Menu" );
 	m_Activity.GetAssets().SetLargeImage( "tf2v_drp_logo" );
 	m_Activity.GetTimestamps().SetStart( m_iCreationTimestamp );
-	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+
+	if( g_pDiscord )
+	{
+		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	}
 }
 
 //-----------------------------------------------------------------------------

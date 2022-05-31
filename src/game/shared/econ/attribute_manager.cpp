@@ -13,6 +13,8 @@
 #define ATTRIB_REAPPLY_PARITY_BITS 6
 #define ATTRIB_REAPPLY_PARITY_MASK ( ( 1 << ATTRIB_REAPPLY_PARITY_BITS ) - 1 )
 
+typedef CUtlVector< CHandle<CBaseEntity> > ProviderVector;
+
 BEGIN_DATADESC_NO_BASE( CAttributeManager )
 	DEFINE_FIELD( m_iReapplyProvisionParity, FIELD_INTEGER ),
 	DEFINE_FIELD( m_hOuter, FIELD_EHANDLE ),
@@ -93,7 +95,7 @@ public:
 		return true;
 	}
 
-	operator float() { return m_flOut; }
+	operator float() const { return m_flOut; }
 
 private:
 	EHANDLE m_hOwner;
@@ -126,7 +128,7 @@ public:
 		return false;
 	}
 
-	operator string_t &() { return m_pOut; }
+	operator string_t const &() const { return m_pOut; }
 
 private:
 	EHANDLE m_hOwner;
@@ -204,6 +206,8 @@ void CAttributeManager::AddProvider( CBaseEntity *pEntity )
 
 	m_AttributeProviders.AddToTail( pEntity );
 	pAttributes->GetAttributeManager()->AddReceiver( m_hOuter.Get() );
+
+	ClearCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -216,6 +220,8 @@ void CAttributeManager::RemoveProvider( CBaseEntity *pEntity )
 
 	m_AttributeProviders.FindAndFastRemove( pEntity );
 	pAttributes->GetAttributeManager()->RemoveReceiver( m_hOuter.Get() );
+
+	ClearCache();
 }
 
 //-----------------------------------------------------------------------------
@@ -249,11 +255,11 @@ void CAttributeManager::ProvideTo( CBaseEntity *pEntity )
 	if ( pAttribInterface )
 	{
 		pAttribInterface->GetAttributeManager()->AddProvider( m_hOuter.Get() );
+
 	#ifndef CLIENT_DLL
 		m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-	#endif
-
 		NetworkStateChanged();
+	#endif
 	}
 }
 
@@ -272,11 +278,11 @@ void CAttributeManager::StopProvidingTo( CBaseEntity *pEntity )
 	if ( pAttribInterface )
 	{
 		pAttribInterface->GetAttributeManager()->RemoveProvider( m_hOuter.Get() );
+
 	#ifndef CLIENT_DLL
 		m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-	#endif
-
 		NetworkStateChanged();
+	#endif
 	}
 }
 
@@ -338,9 +344,8 @@ void CAttributeManager::ClearCache( void )
 
 #ifndef CLIENT_DLL
 	m_iReapplyProvisionParity = ( m_iReapplyProvisionParity + 1 ) & ATTRIB_REAPPLY_PARITY_MASK;
-#endif
-
 	NetworkStateChanged();
+#endif
 }
 
 //-----------------------------------------------------------------------------

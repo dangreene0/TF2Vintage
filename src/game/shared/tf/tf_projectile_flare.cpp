@@ -47,7 +47,7 @@ extern ConVar tf_rocket_show_radius;
 extern ConVar tf2v_minicrits_on_deflect;
 
 ConVar tf2v_use_new_flare_radius( "tf2v_use_new_flare_radius", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Uses modern flare explosion sizes (110Hu)instead of older ones (92Hu) for exploding flares." );
-
+ConVar tf2v_use_new_flare( "tf2v_use_new_flare", "3", FCVAR_NOTIFY | FCVAR_REPLICATED, "Changes the behavior of flares on the Flare Gun.", true, 0, true, 4 );
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -88,6 +88,7 @@ void CTFProjectile_Flare::Precache()
 	PrecacheTeamParticles( "pyrovision_flaregun_trail_crit_%s", true );
 	PrecacheTeamParticles( "pyrovision_scorchshot_trail_%s", true );
 	PrecacheTeamParticles( "pyrovision_scorchshot_trail_crit_%s", true );
+	PrecacheParticleSystem( "drg_manmelter_projectile" );
 
 	PrecacheScriptSound( "TFPlayer.FlareImpact" );
 
@@ -226,6 +227,8 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	int nWeaponMode = TF_FLARE_MODE_NORMAL;
 	Vector vecOrigin = GetAbsOrigin();
 	CTFPlayer *pTFVictim = ToTFPlayer( pOther );
+	int nDamageType = GetDamageType();
+	int nDamage = GetDamage();
 
 	CTFFlareGun *pFlareGun = dynamic_cast<CTFFlareGun *>( m_hLauncher.Get() );
 	if ( pFlareGun )
@@ -238,7 +241,7 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 			{
 				SetCollisionGroup( COLLISION_GROUP_DEBRIS );
 
-				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), GetDamageType()|DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
+				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, nDamage, DMG_PREVENT_PHYSICS_FORCE, m_bTauntShot ? TF_DMG_CUSTOM_FLARE_PELLET : 0 );
 				pTFVictim->TakeDamage( info );
 
 				if ( pAttacker && pTFVictim->GetTeamNumber() != pAttacker->GetTeamNumber() )
@@ -301,17 +304,49 @@ void CTFProjectile_Flare::Explode( trace_t *pTrace, CBaseEntity *pOther )
 	if ( m_hEnemy == NULL )
 		m_hEnemy = pOther;
 
-	if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )
+	// Set up our era specific flare settings.
+	if ( nWeaponMode == TF_FLARE_MODE_NORMAL )
 	{
-		if ( nWeaponMode == TF_FLARE_MODE_NORMAL )
-			SetCritical( true );
+		int nEraFlare = tf2v_use_new_flare.GetInt();
+		if (nEraFlare == 0) // Original flare did 20 damage, compared to 30.
+			nDamage = 20;
+
+		if ( pTFVictim && pTFVictim->m_Shared.InCond( TF_COND_BURNING ) )	
+		{
+			switch (nEraFlare)
+			{
+			case 0:
+			case 1:
+				// Don't do anything else.
+				break;
+			case 2:
+				// Minicrit hit a burning player.
+				nDamageType |= DMG_MINICRITICAL;
+				break;
+			case 3:
+				// Crit hit a burning player from mid to long range, and minicrit for shorter shots. (Mininum 800Hu)
+				// We're calculating this using the hangtime of the projectile and the time it would take to go 800Hu.
+				if ( gpGlobals->curtime >= ( m_flCreateTime + ( 800 / GetProjectileSpeed() ) ) )
+					nDamageType |= DMG_CRITICAL;
+				else
+					nDamageType |= DMG_MINICRITICAL;
+				break;
+			case 4:
+			default:
+				// Critical hit a burning player.
+				nDamageType |= DMG_CRITICAL;
+				SetCritical( true );
+				break;	
+			}
+		}
+		
 	}
 
 	// Invisible.
 	AddSolidFlags( FSOLID_NOT_SOLID );
 	m_takedamage = DAMAGE_NO;
-
-	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), GetDamageType(), TF_DMG_CUSTOM_BURNING_FLARE );
+				
+	CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, nDamage, nDamageType, TF_DMG_CUSTOM_BURNING_FLARE );
 	pOther->TakeDamage( info );
 
 	if ( bWaitToImpact )
@@ -560,6 +595,10 @@ void CTFProjectile_Flare::CreateTrails( void )
 	{
 		const char *pszFormat = m_bCritical ? "scorchshot_trail_crit_%s" : "scorchshot_trail_%s";
 		pszEffectName = ConstructTeamParticle( pszFormat, GetTeamNumber(), false );
+	}
+	else if (pLauncher && pLauncher->IsEnergyWeapon()) // Manmelter
+	{
+		pszEffectName = "drg_manmelter_projectile";
 	}
 	else // Standard flare
 	{

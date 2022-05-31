@@ -16,6 +16,14 @@
 #include "tf_zombie.h"
 #include "entity_bossresource.h"
 #include "vscript_shared.h"
+#include "bannedwords.h"
+#include "tf_logic_robot_destruction.h"
+#include "tf_mann_vs_machine_stats.h"
+#include "tf_upgrades_shared.h"
+#include "tf_powerup_bottle.h"
+#include "tf_wearable_demoshield.h"
+#include "tf_weaponbase_melee.h"
+#include "tf_weapon_flamethrower.h"
 #ifdef CLIENT_DLL
 	#include <game/client/iviewport.h>
 	#include "c_tf_player.h"
@@ -61,6 +69,7 @@
 	#include "player_vs_environment/merasmus.h"
 	#include "player_vs_environment/ghost.h"
 	#include "map_entities/tf_bot_roster.h"
+	#include "player_vs_environment/tf_mann_vs_machine_logic.h"
 #endif
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -169,6 +178,7 @@ extern ConVar mp_tournament;
 
 ConVar tf_caplinear( "tf_caplinear", "1", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "If set to 1, teams must capture control points linearly." );
 ConVar tf_stalematechangeclasstime( "tf_stalematechangeclasstime", "20", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY, "Amount of time that players are allowed to change class in stalemates." );
+ConVar tf_spells_enabled( "tf_spells_enabled", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable to Allow Halloween Spells to be dropped and used by players" );
 ConVar tf_birthday( "tf_birthday", "0", FCVAR_NOTIFY | FCVAR_REPLICATED );
 ConVar tf_forced_holiday( "tf_forced_holiday", "0", FCVAR_REPLICATED, "Forced holiday, \n   Birthday = 1\n   Halloween = 2\n" //  Christmas = 3\n   Valentines = 4\n   MeetThePyro = 5\n   FullMoon=6
 					  #if defined( GAME_DLL )
@@ -190,7 +200,15 @@ ConVar tf_medieval( "tf_medieval", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Enable
 					, MedievalModeChanged
 				#endif 
 );
-ConVar tf_medieval_autorp( "tf_medieval_autorp", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable Medieval Mode auto-roleplaying." );
+ConVar tf_halloween( "tf_halloween", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, ""
+				 #if defined( CLIENT_DLL )
+					 , HalloweenChanged
+				 #endif
+                   );
+ConVar tf_christmas( "tf_christmas", "0", FCVAR_NOTIFY | FCVAR_REPLICATED );
+ConVar tf_fullmoon( "tf_fullmoon", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "");
+//ConVar tf_forced_holiday( "tf_forced_holiday", "0", FCVAR_NOTIFY | FCVAR_REPLICATED ); Live TF2 uses this instead but for now lets just use separate ConVars
+ConVar tf_medieval_autorp( "tf_medieval_autorp", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable Medieval Mode auto-roleplaying.", true, 0, true, 1 );
 ConVar tf_flag_caps_per_round( "tf_flag_caps_per_round", "3", FCVAR_REPLICATED, "Number of flag captures per round on CTF maps. Set to 0 to disable.", true, 0, true, 9
 						   #if defined( GAME_DLL )
 							   , ValidateCapturesPerRound
@@ -199,6 +217,19 @@ ConVar tf_flag_caps_per_round( "tf_flag_caps_per_round", "3", FCVAR_REPLICATED, 
 #ifdef CLIENT_DLL
 ConVar tf_particles_disable_weather( "tf_particles_disable_weather", "0", FCVAR_ARCHIVE, "Disable particles related to weather effects." );
 #endif
+
+// Tournament mode
+ConVar mp_tournament_redteamname( "mp_tournament_redteamname", "RED", FCVAR_REPLICATED | FCVAR_HIDDEN );
+ConVar mp_tournament_blueteamname( "mp_tournament_blueteamname", "BLU", FCVAR_REPLICATED | FCVAR_HIDDEN );
+ConVar mp_tournament_stopwatch( "mp_tournament_stopwatch", "1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Use Stopwatch mode while using Tournament mode (mp_tournament)"
+							#ifdef GAME_DLL
+								, StopwatchChanged 
+							#endif
+);
+ConVar mp_tournament_readymode( "mp_tournament_readymode", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Enable per-player ready status for tournament mode." );
+ConVar mp_tournament_readymode_min( "mp_tournament_readymode_min", "2", FCVAR_REPLICATED | FCVAR_NOTIFY, "Minimum number of players required on the server before players can toggle ready status." );
+ConVar mp_tournament_readymode_team_size( "mp_tournament_readymode_team_size", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Minimum number of players required to be ready per-team before the game can begin." );
+ConVar mp_tournament_readymode_countdown( "mp_tournament_readymode_countdown", "10", FCVAR_REPLICATED | FCVAR_NOTIFY, "The number of seconds before a match begins when both teams are ready." );
 
 ConVar tf_tournament_classlimit_scout( "tf_tournament_classlimit_scout", "-1", FCVAR_REPLICATED, "Tournament mode per-team class limit for Scouts.\n" );
 ConVar tf_tournament_classlimit_sniper( "tf_tournament_classlimit_sniper", "-1", FCVAR_REPLICATED, "Tournament mode per-team class limit for Snipers.\n" );
@@ -213,10 +244,18 @@ ConVar tf_tournament_classchange_allowed( "tf_tournament_classchange_allowed", "
 ConVar tf_tournament_classchange_ready_allowed( "tf_tournament_classchange_ready_allowed", "1", FCVAR_REPLICATED, "Allow players to change class after they are READY?.\n" );
 ConVar tf_classlimit( "tf_classlimit", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Limit on how many players can be any class (i.e. tf_class_limit 2 would limit 2 players per class).\n" );
 
+ConVar tf_mvm_min_players_to_start( "tf_mvm_min_players_to_start", "3", FCVAR_REPLICATED | FCVAR_NOTIFY, "Minimum number of players connected to start a countdown timer" );
+ConVar tf_mvm_respec_enabled( "tf_mvm_respec_enabled", "1", FCVAR_CHEAT | FCVAR_REPLICATED, "Allow players to refund credits spent on player and item upgrades." );
+ConVar tf_mvm_respec_limit( "tf_mvm_respec_limit", "0", FCVAR_CHEAT | FCVAR_REPLICATED, "The total number of respecs a player can earn.  Default: 0 (no limit).", true, 0.f, true, 100.f );
+ConVar tf_mvm_respec_credit_goal( "tf_mvm_respec_credit_goal", "2000", FCVAR_CHEAT | FCVAR_REPLICATED, "When tf_mvm_respec_limit is non-zero, the total amount of money the team must collect to earn a respec credit." );
+ConVar tf_mvm_buybacks_method( "tf_mvm_buybacks_method", "0", FCVAR_REPLICATED | FCVAR_HIDDEN, "When set to 0, use the traditional, currency-based system.  When set to 1, use finite, charge-based system.", true, 0.0, true, 1.0 );
+ConVar tf_mvm_buybacks_per_wave( "tf_mvm_buybacks_per_wave", "3", FCVAR_REPLICATED | FCVAR_HIDDEN, "The fixed number of buybacks players can use per-wave." );
+
 // tf2v specific cvars.
 ConVar tf2v_falldamage_disablespread( "tf2v_falldamage_disablespread", "0", FCVAR_REPLICATED | FCVAR_NOTIFY, "Toggles random 20% fall damage spread." );
 ConVar tf2v_allow_thirdperson( "tf2v_allow_thirdperson", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allow players to switch to third person mode." );
 ConVar tf2v_classlimit( "tf2v_classlimit", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enable classlimits, even when tournament mode is disabled." );
+
 ConVar tf2v_critchance( "tf2v_critchance", "2.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Percent chance for regular critical hits.");
 ConVar tf2v_critchance_rapid( "tf2v_critchance_rapid", "2.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Percent chance for rapid fire critical hits.");
 ConVar tf2v_critchance_melee( "tf2v_critchance_melee", "2.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Percent chance of melee critical hits.");
@@ -232,6 +271,12 @@ ConVar tf2v_console_grenadelauncher_magazine("tf2v_console_grenadelauncher_magaz
 
 ConVar tf2v_remove_loser_disguise("tf2v_remove_loser_disguise", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Forces spies on a losing team to undisguise.", true, 0, true, 1 );
 
+extern ConVar tf2v_use_new_blackbox;
+
+#ifdef CLIENT_DLL
+ConVar tf2v_censor_swears( "tf2v_censor_swears", "0", FCVAR_GAMEDLL, "Automatically censor bad words.", true, 0, true, 1 );
+#endif
+
 #ifdef GAME_DLL
 ConVar hide_server( "hide_server", "0", FCVAR_GAMEDLL, "Whether the server should be hidden from the master server" );
 
@@ -239,11 +284,6 @@ ConVar hide_server( "hide_server", "0", FCVAR_GAMEDLL, "Whether the server shoul
 ConVar mp_waitingforplayers_time( "mp_waitingforplayers_time", "30", FCVAR_GAMEDLL | FCVAR_DEVELOPMENTONLY, "WaitingForPlayers time length in seconds" );
 
 ConVar mp_humans_must_join_team( "mp_humans_must_join_team", "any", FCVAR_GAMEDLL | FCVAR_REPLICATED, "Restricts human players to a single team {any, blue, red, spectator}" );
-
-ConVar tf_arena_force_class( "tf_arena_force_class", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Force random classes in arena." );
-ConVar tf_arena_first_blood( "tf_arena_first_blood", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Toggles first blood criticals" );
-ConVar tf_arena_first_blood_length( "tf_arena_first_blood_length", "5.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Duration of first blood criticals" );
-ConVar tf_arena_override_cap_enable_time( "tf_arena_override_cap_enable_time", "-1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Overrides the time (in seconds) it takes for the capture point to become enable, -1 uses the level designer specified time." );
 
 ConVar tf_gamemode_arena( "tf_gamemode_arena", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
 ConVar tf_gamemode_cp( "tf_gamemode_cp", "0", FCVAR_NOTIFY | FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );
@@ -293,6 +333,11 @@ CON_COMMAND_F( tf_halloween_force_mob_spawn, "For testing.", FCVAR_DEVELOPMENTON
 	isZombieMobForceSpawning = true;
 }
 #endif
+
+ConVar tf_arena_force_class( "tf_arena_force_class", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Force random classes in arena." );
+ConVar tf_arena_first_blood( "tf_arena_first_blood", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Toggles first blood criticals" );
+ConVar tf_arena_first_blood_length( "tf_arena_first_blood_length", "5.0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Duration of first blood criticals" );
+ConVar tf_arena_override_cap_enable_time( "tf_arena_override_cap_enable_time", "-1", FCVAR_REPLICATED | FCVAR_NOTIFY, "Overrides the time (in seconds) it takes for the capture point to become enabled, -1 uses the level designer specified time." );
 
 static bool BIsCvarIndicatingHolidayIsActive( int iCvarValue, /*EHoliday*/ int eHoliday )
 {
@@ -347,6 +392,55 @@ bool TF_IsHolidayActive( /*EHoliday*/ int eHoliday )
 
 	return UTIL_IsHolidayActive( eHoliday );
 }
+
+#ifdef GAME_DLL
+CUtlString s_strNextMvMPopFile;
+CON_COMMAND_F( tf_mvm_popfile, "Change to a target popfile for MvM", FCVAR_GAMEDLL )
+{
+	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+		return;
+
+	if ( args.ArgC() <= 1 )
+	{
+		if ( TFGameRules() && g_pPopulationManager )
+		{
+			const char *pszFile = g_pPopulationManager->GetPopulationFilename();
+			if ( pszFile && pszFile[0] )
+			{
+				Msg( "Current popfile is: %s\n", pszFile );
+				return;
+			}
+		}
+
+		Msg( "Missing Popfile name\n" );
+		return;
+	}
+
+	if ( !TFGameRules() || !g_pPopulationManager )
+	{
+		Warning( "Cannot set population file before map load.\n" );
+		return;
+	}
+
+	if ( !g_pFullFileSystem )
+	{
+		Msg( "No File System to find Popfile to load\n" );
+		return;
+	}
+
+	CUtlString fullPath;
+	const char *pszShortName = args.Arg( 1 );
+	if ( g_pPopulationManager->FindPopulationFileByShortName( pszShortName, &fullPath ) )
+	{
+		g_pPopulationManager->SetPopulationFilename( fullPath );
+		g_pPopulationManager->ResetMap();
+		return;
+	}
+
+	// Give them a message to make it clear what file we were looking for
+	Warning( "Could not find a population file matching: %s.\n", pszShortName );
+}
+#endif
 
 struct StatueInfo_t
 {
@@ -459,6 +553,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	RecvPropInt( RECVINFO( m_nMapHolidayType ) ),
 	RecvPropEHandle( RECVINFO( m_itHandle ) ),
 	RecvPropInt( RECVINFO( m_halloweenScenario ) ),
+	RecvPropInt( RECVINFO( m_nHalloweenEffect ) ),
+	RecvPropFloat( RECVINFO( m_flHalloweenEffectStartTime ) ),
+	RecvPropFloat( RECVINFO( m_flHalloweenEffectDuration ) ),
+	RecvPropBool( RECVINFO( m_bHelltowerPlayersInHell ) ),
 	RecvPropString( RECVINFO( m_pszCustomUpgradesFile ) ),
 	RecvPropBool( RECVINFO( m_bMannVsMachineAlarmStatus ) ),
 	RecvPropBool( RECVINFO( m_bHaveMinPlayersToEnableReady ) ),
@@ -488,6 +586,10 @@ BEGIN_NETWORK_TABLE_NOBASE( CTFGameRules, DT_TFGameRules )
 	SendPropInt( SENDINFO( m_nMapHolidayType ), 3, SPROP_UNSIGNED ),
 	SendPropEHandle( SENDINFO( m_itHandle ) ),
 	SendPropInt( SENDINFO( m_halloweenScenario ) ),
+	SendPropInt( SENDINFO( m_nHalloweenEffect ) ),
+	SendPropFloat( SENDINFO( m_flHalloweenEffectStartTime ) ),
+	SendPropFloat( SENDINFO( m_flHalloweenEffectDuration ) ),
+	SendPropBool( SENDINFO( m_bHelltowerPlayersInHell ) ),
 	SendPropString( SENDINFO( m_pszCustomUpgradesFile ) ),
 	SendPropBool( SENDINFO( m_bMannVsMachineAlarmStatus ) ),
 	SendPropBool( SENDINFO( m_bHaveMinPlayersToEnableReady ) ),
@@ -1160,6 +1262,13 @@ CTFGameRules::CTFGameRules()
 	char szCommand[32];
 	Q_snprintf( szCommand, sizeof( szCommand ), "exec %s.cfg\n", STRING( gpGlobals->mapname ) );
 	engine->ServerCommand( szCommand );
+	
+	
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
 
 #else // GAME_DLL
 
@@ -1308,6 +1417,8 @@ static const char *s_PreserveEnts[] =
 	"entity_suacer",
 	"info_ladder",
 	"prop_vehicle_jeep",
+	"tf_halloween_gift_pickup",
+	"tf_logic_competitive",
 	"", // END Marker
 };
 
@@ -1338,6 +1449,7 @@ void CTFGameRules::Activate()
 	m_bPlayingMedieval.Set( false );
 	m_bPlayingHybrid_CTF_CP.Set( false );
 	m_bPlayingSpecialDeliveryMode.Set( false );
+	m_nCurrencyAccumulator = 0;
 	m_bPlayingMannVsMachine.Set( false );
 	m_bMannVsMachineAlarmStatus.Set( false );
 	m_bPlayingRobotDestructionMode.Set( false );
@@ -1380,9 +1492,9 @@ void CTFGameRules::Activate()
 		engine->ServerCommand( "exec config_arena.cfg \n" );
 	}
 
-	/*if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
 	{
-		m_bPlayingRobotDestructionMode.Set( true );
+		m_bPlayingRobotDestructionMode = true;
 		if ( CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetType() == CTFRobotDestructionLogic::TYPE_ROBOT_DESTRUCTION )
 		{
 			tf_gamemode_rd.SetValue( 1 );
@@ -1394,13 +1506,13 @@ void CTFGameRules::Activate()
 			m_nGameType.Set( TF_GAMETYPE_PD );
 		}
 	}
-	else if ( dynamic_cast<CMannVsMachineLogic *>( gEntList.FindEntityByClassname( NULL, "tf_logic_mann_vs_machine" ) ) )
+	/*else if ( dynamic_cast<CMannVsMachineLogic *>( gEntList.FindEntityByClassname( NULL, "tf_logic_mann_vs_machine" ) ) )
 	{
 		m_nGameType.Set( TF_GAMETYPE_MVM );
 		tf_gamemode_mvm.SetValue( 1 );
 		m_bPlayingMannVsMachine = true;
-	} 
-	else*/ if ( !Q_strncmp( STRING( gpGlobals->mapname ), "sd_", 3 )  )
+	}*/
+	else if ( !Q_strncmp( STRING( gpGlobals->mapname ), "sd_", 3 )  )
 	{
 		tf_gamemode_sd.SetValue( 1 );
 		m_bPlayingSpecialDeliveryMode = true;
@@ -1480,6 +1592,11 @@ void CTFGameRules::Activate()
 	{
 		tf_gamemode_misc.SetValue( 1 );
 	}
+
+	/*if ( IsPVEModeActive() && g_pPopulationManager == NULL )
+	{
+		CreateEntityByName( "info_populator" );
+	}*/
 }
 
 void CTFGameRules::OnNavMeshLoad( void )
@@ -1770,12 +1887,32 @@ bool CTFGameRules::ShouldCreateEntity( const char *pszClassName )
 
 void CTFGameRules::CleanUpMap( void )
 {
+#ifdef GAME_DLL
+	for ( int i = 1; i <= gpGlobals->maxClients; i++ )
+	{
+		CTFPlayer *pTFPlayer = ToTFPlayer( UTIL_PlayerByIndex( i ) );
+		if ( !pTFPlayer )
+			continue;
+
+		pTFPlayer->m_Shared.RemoveAllCond();
+	}
+#endif
+
 	BaseClass::CleanUpMap();
 
 	if ( HLTVDirector() )
 	{
 		HLTVDirector()->BuildCameraList();
 	}
+
+#ifdef GAME_DLL
+	// Clean up balls.
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -1969,6 +2106,11 @@ void CTFGameRules::SetupOnRoundRunning( void )
 		pPlayer->TeamFortress_SetSpeed();
 		pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_ROUND_START );
 	}
+	
+	// Start the announcement for Special Delivery
+	if ( IsInSpecialDeliveryMode() )
+		BroadcastSound( 255, "Announcer.SD_RoundStart" );
+	
 }
 
 //-----------------------------------------------------------------------------
@@ -2121,7 +2263,7 @@ private:
 
 ConVar tf_fixedup_damage_radius( "tf_fixedup_damage_radius", "1", FCVAR_DEVELOPMENTONLY );
 
-bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
+int CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 {
 	const int MASK_RADIUS_DAMAGE = MASK_SHOT&( ~CONTENTS_HITBOX );
 	trace_t		tr;
@@ -2222,7 +2364,7 @@ bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 	}
 
 	if ( flAdjustedDamage <= 0 )
-		return false;
+		return 0;
 
 	// the explosion can 'see' this entity, so hurt them!
 	if ( tr.startsolid )
@@ -2275,7 +2417,7 @@ bool CTFRadiusDamageInfo::ApplyToEntity( CBaseEntity *pEntity )
 	// Now hit all triggers along the way that respond to damage... 
 	pEntity->TraceAttackToTriggers( adjustedInfo, m_vecSrc, tr.endpos, dir );
 
-	return true;
+	return adjustedInfo.GetDamage();
 }
 
 //-----------------------------------------------------------------------------
@@ -2376,6 +2518,7 @@ void CTFGameRules::RadiusDamage( CTFRadiusDamageInfo &radiusInfo )
 	CTakeDamageInfo *info = (CTakeDamageInfo *)radiusInfo.info;
 	CBaseEntity *pAttacker = info->GetAttacker();
 	int iPlayersDamaged = 0;
+	int iTotalPlayerDamage = 0;
 
 	CBaseEntity *pEntity = NULL;
 	for ( CEntitySphereQuery sphere( radiusInfo.m_vecSrc, radiusInfo.m_flRadius ); ( pEntity = sphere.GetCurrentEntity() ) != NULL; sphere.NextEntity() )
@@ -2404,16 +2547,52 @@ void CTFGameRules::RadiusDamage( CTFRadiusDamageInfo &radiusInfo )
 		if ( vecDir.LengthSqr() > Square(radiusInfo.m_flRadius) )
 			continue;
 
-		if ( radiusInfo.ApplyToEntity( pEntity ) )
+		int iCurrentPlayerDamage = radiusInfo.ApplyToEntity( pEntity );
+		if ( iCurrentPlayerDamage > 0 )
 		{
 			if ( pEntity->IsPlayer() && !pEntity->InSameTeam( pAttacker ) )
 			{
 				iPlayersDamaged++;
+				iTotalPlayerDamage += iCurrentPlayerDamage;
 			}
 		}
 	}
 
 	info->SetDamagedOtherPlayers( iPlayersDamaged );
+	
+	//Check if we get any health from radius damage from damaging people.
+	float flAddHealth = 0;
+	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( info->GetWeapon(), flAddHealth, add_health_on_radius_damage );
+	if (tf2v_use_new_blackbox.GetBool())
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( info->GetWeapon(), flAddHealth, add_health_on_radius_damage_bb2 );
+	if (flAddHealth > 0 && iTotalPlayerDamage)
+	{
+		CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>(info->GetWeapon());
+		CBaseEntity *pOwner = info->GetAttacker();
+		if (pWeapon && pOwner)
+		{
+			// Compare the total damage we did to our stock damage, and adjust our health bonus based on that ratio. 
+			flAddHealth *= Clamp(iTotalPlayerDamage / (float)pWeapon->GetTFWpnData().GetWeaponData(TF_WEAPON_PRIMARY_MODE).m_nDamage, 0.0f, 1.0f);
+			// Same as add_onhit_addhealth from here.
+			if (flAddHealth)
+			{
+				int iHealthRestored = pOwner->TakeHealth(flAddHealth, DMG_GENERIC);
+
+				if (iHealthRestored)
+				{
+					IGameEvent *event = gameeventmanager->CreateEvent("player_healonhit");
+
+					if (event)
+					{
+						event->SetInt("amount", iHealthRestored);
+						event->SetInt("entindex", pOwner->entindex());
+
+						gameeventmanager->FireEvent(event);
+					}
+				}
+			}
+		}
+	}
 
 	// For attacker, radius and damage need to be consistent so custom weapons don't screw up rocket jumping.
 	if ( radiusInfo.m_flSelfDamageRadius != 0.0f )
@@ -2532,6 +2711,11 @@ CTFGameRules::~CTFGameRules()
 	// automatically be deleted from there, instead.
 	TFTeamMgr()->Shutdown();
 	ShutdownCustomResponseRulesDicts();
+
+	if ( IsMannVsMachineMode() )
+	{
+		mp_tournament.SetValue( 0 );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2544,6 +2728,32 @@ bool CTFGameRules::ClientCommand( CBaseEntity *pEdict, const CCommand &args )
 	CTFPlayer *pPlayer = ToTFPlayer( pEdict );
 
 	const char *pcmd = args[0];
+
+	if ( IsInTournamentMode() && IsInPreMatch() )
+	{
+		if ( FStrEq( pcmd, "tournament_player_readystate" ) )
+		{
+			if ( State_Get() != GR_STATE_BETWEEN_RNDS )
+				return true;
+
+			// MM check here..
+
+			if ( !PlayerReadyStatus_HaveMinPlayersToEnable() )
+				return true;
+
+			if ( args.ArgC() >= 2 )
+			{
+				bool bState = atoi( args[1] ) == 1;
+				PlayerReadyStatus_UpdatePlayerState( pPlayer, bState );
+
+				if ( bState )
+					pPlayer->PlayReadySound();
+			}
+
+			return true;
+		}
+	}
+
 	if ( FStrEq( pcmd, "objcmd" ) )
 	{
 		if ( args.ArgC() < 3 )
@@ -2661,6 +2871,54 @@ bool CTFGameRules::ClientCommand( CBaseEntity *pEdict, const CCommand &args )
 	return BaseClass::ClientCommand( pEdict, args );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::ClientCommandKeyValues( edict_t *pEntity, KeyValues *pKeyValues )
+{
+	CTFPlayer *pTFPlayer = ToTFPlayer( CBaseEntity::Instance( pEntity ) );
+
+	if ( !pTFPlayer )
+		return;
+
+	char const *pcmd = pKeyValues->GetName();
+	if ( FStrEq( pcmd, "+inspect_server" ) )
+	{
+		pTFPlayer->InspectButtonPressed();
+	}
+	else if ( FStrEq( pcmd, "-inspect_server" ) )
+	{
+		pTFPlayer->InspectButtonReleased();
+	}
+	else if ( FStrEq( pcmd, "MVM_Upgrade" ) )
+	{
+		if ( IsMannVsMachineMode() )
+		{
+		}
+	}
+	else if ( FStrEq( pcmd, "MvM_UpgradesBegin" ) )
+	{
+		//pTFPlayer->BeginPurchasableUpgrades();
+	}
+	else if ( FStrEq( pcmd, "MvM_UpgradesDone" ) )
+	{
+		//pTFPlayer->EndPurchasableUpgrades();
+
+		if ( IsMannVsMachineMode() && pKeyValues->GetInt( "num_upgrades", 0 ) > 0 )
+		{
+			pTFPlayer->SpeakConceptIfAllowed( MP_CONCEPT_MVM_UPGRADE_COMPLETE );
+		}
+	}
+	else if ( FStrEq( pcmd, "MVM_Revive_Response" ) )
+	{
+		
+	}
+	else if ( FStrEq( pcmd, "MVM_Respec" ) )
+	{
+
+	}
+}
+
 // Add the ability to ignore the world trace
 void CTFGameRules::Think()
 {
@@ -2738,8 +2996,8 @@ void CTFGameRules::BeginHaunting( int nDesiredCount, float flMinLifetime, float 
 		return;
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	auto IsPlayerNearby = [&]( Vector const &vecSpot ) -> bool {
 		FOR_EACH_VEC( players, i )
@@ -2755,7 +3013,7 @@ void CTFGameRules::BeginHaunting( int nDesiredCount, float flMinLifetime, float 
 	FOR_EACH_VEC( TheNavAreas, i )
 	{
 		CTFNavArea *area = assert_cast<CTFNavArea *>( TheNavAreas[i] );
-		if ( area->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM ) )
+		if ( area->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
 		{
 			// keep out of spawn rooms
 			continue;
@@ -2860,8 +3118,8 @@ void CTFGameRules::SpawnHalloweenBoss( void )
 				return;
 
 			CUtlVector<CTFPlayer *> players;
-			CollectPlayers( &players, TF_TEAM_RED, true );
-			CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+			CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+			CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 			int nNumHumans = 0;
 			for ( int i=0; i<players.Count(); ++i )
@@ -2985,8 +3243,8 @@ void CTFGameRules::SpawnZombieMob( void )
 	}
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	int nHumans = 0;
 	FOR_EACH_VEC( players, i )
@@ -3148,18 +3406,6 @@ bool CTFGameRules::CheckFragLimit( void )
 	}
 
 	return false;
-}
-
-bool CTFGameRules::IsInPreMatch() const
-{
-	// TFTODO    return (cb_prematch_time > gpGlobals->time)
-	return false;
-}
-
-float CTFGameRules::GetPreMatchEndTime() const
-{
-	//TFTODO: implement this.
-	return gpGlobals->curtime;
 }
 
 void CTFGameRules::GoToIntermission( void )
@@ -4352,7 +4598,8 @@ void CTFGameRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &inf
 
 	int iDeathFlags = pTFPlayerVictim->GetDeathFlags();
 
-	if ( ( IsInArenaMode() && ( !IsInVSHMode() || !IsInDRMode() ) ) && tf_arena_first_blood.GetBool() && !m_bFirstBlood && pScorer && pScorer != pTFPlayerVictim )
+	if ( ( !FStrEq( szName, "humiliation_fish" ) && !FStrEq( szName, "humiliation_arm" ) && !FStrEq( szName, "humiliation_slap" ) ) &&
+		 ( IsInArenaMode() && ( !IsInVSHMode() || !IsInDRMode() ) ) && tf_arena_first_blood.GetBool() && !m_bFirstBlood && pScorer && pScorer != pTFPlayerVictim )
 	{
 		m_bFirstBlood = true;
 		float flElapsedTime = gpGlobals->curtime - m_flStalemateStartTime;
@@ -4421,8 +4668,8 @@ void CTFGameRules::DeathNotice( CBasePlayer *pVictim, const CTakeDamageInfo &inf
 			CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
 			if ( pItemDef )
 			{
-				if ( pItemDef->GetItemIcon() )
-					killer_weapon_name = pItemDef->GetItemIcon();
+				if ( pItemDef->GetIconName() )
+					killer_weapon_name = pItemDef->GetIconName();
 
 				if ( pItemDef->GetLogName() )
 					killer_weapon_log_name = pItemDef->GetLogName();
@@ -4489,12 +4736,51 @@ void CTFGameRules::ClientDisconnected( edict_t *pClient )
 {
 	// clean up anything they left behind
 	CTFPlayer *pPlayer = ToTFPlayer( GetContainingEntity( pClient ) );
-	const char *pszPlayerName;
+	const char *pszPlayerName = NULL;
 
 	if ( pPlayer )
 	{
 		pPlayer->TeamFortress_ClientDisconnected();
 		pszPlayerName = pPlayer->GetPlayerName();
+
+		if ( UsePlayerReadyStatusMode() )
+		{
+			if ( !pPlayer->IsBot() && State_Get() != GR_STATE_RND_RUNNING )
+			{
+				if ( !IsTeamReady( pPlayer->GetTeamNumber() ) )
+				{
+					if ( IsPlayerReady( pPlayer->entindex() ) )
+					{
+						PlayerReadyStatus_UpdatePlayerState( pPlayer, false );
+					}
+					else
+					{
+						bool bAllReady = false;
+
+						CUtlVector<CBasePlayer *> players;
+						CollectHumanPlayers( &players, pPlayer->GetTeamNumber() );
+						FOR_EACH_VEC( players, i )
+						{
+							if ( players[i] == pPlayer )
+								continue;
+
+							if ( !IsPlayerReady( players[i]->entindex() ) )
+							{
+								bAllReady = false;
+								break;
+							}
+						}
+
+						if ( bAllReady )
+							PlayerReadyStatus_ResetState();
+					}
+				}
+				else if( GetRoundRestartTime() > 0 || mp_restartgame.GetInt() > 0 )
+				{
+					PlayerReadyStatus_ResetState();
+				}
+			}
+		}
 
 		// If they're queued up take them out
 		RemovePlayerFromQueue( pPlayer );
@@ -4517,7 +4803,7 @@ void CTFGameRules::ClientDisconnected( edict_t *pClient )
 	BaseClass::ClientDisconnected( pClient );
 
 	// Do this last so that the player isn't registered on the team anymore
-	Arena_ClientDisconnect( pPlayer->GetPlayerName() );
+	Arena_ClientDisconnect( pszPlayerName );
 }
 
 
@@ -4793,6 +5079,461 @@ void CTFGameRules::StopCompetitiveMatch( int eMatchResult )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+int CTFGameRules::GetUpgradeTier( int iUpgradeIdx ) const
+{
+	Assert( g_MannVsMachineUpgrades.GetUpgradeVector().IsValidIndex( iUpgradeIdx ) );
+	return g_MannVsMachineUpgrades.GetUpgradeVector()[ iUpgradeIdx ].nTier;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFGameRules::IsUpgradeTierEnabled( CTFPlayer *pPlayer, int iItemSlot, int iUpgradeIdx )
+{
+	Assert( g_MannVsMachineUpgrades.GetUpgradeVector().IsValidIndex( iUpgradeIdx ) );
+	int nTier = GetUpgradeTier( iUpgradeIdx );
+	if ( nTier == 0 )
+		return false;
+
+	FOR_EACH_VEC( g_MannVsMachineUpgrades.GetUpgradeVector(), i )
+	{
+		CMannVsMachineUpgrades &upgrade = g_MannVsMachineUpgrades.GetUpgradeVector()[i];
+		if ( upgrade.nTier != nTier )
+			continue;
+
+		if ( upgrade.nUIGroup != g_MannVsMachineUpgrades.GetUpgradeVector()[iUpgradeIdx].nUIGroup )
+			continue;
+
+		CEconAttributeDefinition *pAttrDef = GetItemSchema()->GetAttributeDefinitionByName( upgrade.szAttribute );
+		if ( pAttrDef == NULL )
+			continue;
+
+		if ( !CanUpgradeWithAttrib( pPlayer, iItemSlot, pAttrDef->index, &upgrade ) )
+			continue;
+
+		float flValue = 0;
+		if ( upgrade.nUIGroup == UIGROUP_UPGRADE_ITEM )
+		{
+			CEconItemView *pItem = pPlayer->GetLoadoutItem( pPlayer->GetPlayerClass()->GetClassIndex(), iItemSlot );
+			if ( pItem ) FindAttribute<uint32>( pItem->GetAttributeList(), pAttrDef, &flValue );
+		}
+		else if ( upgrade.nUIGroup == UIGROUP_UPGRADE_PLAYER )
+		{
+			FindAttribute<uint32>( pPlayer->GetAttributeList(), pAttrDef, &flValue );
+		}
+
+		if ( flValue > 0 )
+			return false;
+	}
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::GetCostForUpgrade( CMannVsMachineUpgrades *pUpgrade, int iItemSlot, int iPlayerClass, CTFPlayer *pPlayer )
+{
+	if ( pUpgrade == NULL )
+		return 0;
+
+	int nCost = pUpgrade->nCost;
+
+	CEconAttributeDefinition *pAttrDef = GetItemSchema()->GetAttributeDefinitionByName( pUpgrade->szAttribute );
+	if ( pAttrDef )
+	{
+		if ( iItemSlot == TF_LOADOUT_SLOT_ACTION )
+		{
+			if ( pPlayer )
+			{
+				int nCanteenSpecialist = 0;
+				CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer, nCanteenSpecialist, canteen_specialist );
+				if ( nCanteenSpecialist != 0 )
+				{
+					nCost = Max( 5, nCost - 10 * nCanteenSpecialist );
+				}
+			}
+		}
+		else
+		{
+			switch ( pAttrDef->index )
+			{
+				case 4: // clip size bonus
+				case 6: // fire rate bonus
+				case 78: // maxammo secondary increased
+				case 180: // heal on kill
+				case 266: // projectile penetration
+				case 335: // clip size bonus upgrade
+				case 397: // projectile penetration heavy
+				{
+					// Primary upgrades for Engineer are cheaper
+					if ( iItemSlot == TF_LOADOUT_SLOT_PRIMARY && iPlayerClass == TF_CLASS_ENGINEER )
+						nCost /= 2;
+
+					// Secondary upgrades for Demoman are more expensive
+					if ( iItemSlot == TF_LOADOUT_SLOT_SECONDARY && iPlayerClass != TF_CLASS_DEMOMAN )
+						nCost /= 2;
+
+					// Melee upgrades for Spy and Engineer are more expensive
+					if ( iItemSlot == TF_LOADOUT_SLOT_MELEE && iPlayerClass != TF_CLASS_SPY && iPlayerClass != TF_CLASS_ENGINEER )
+						nCost /= 2;
+
+					break;
+				}
+			}
+		}
+	}
+
+	return nCost;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFGameRules::CanUpgradeWithAttrib( CTFPlayer *pPlayer, int iItemSlot, attrib_def_index_t iAttrIndex, CMannVsMachineUpgrades *pUpgrade )
+{
+	if ( pPlayer == NULL || pUpgrade == NULL )
+		return false;
+
+	if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_PLAYER )
+	{
+		if ( iAttrIndex == 133 ) // metal regen
+			return pPlayer->IsPlayerClass( TF_CLASS_ENGINEER );
+
+		// Always allowed
+		return true;
+	}
+
+	CEconEntity *pEntity = pPlayer->GetEntityForLoadoutSlot( iItemSlot );
+	if ( pEntity == NULL )
+		return false;
+
+	CEconItemView *pItem = pEntity->GetItem();
+	if ( pItem == NULL )
+		return false;
+
+	if ( dynamic_cast<CTFPowerupBottle *>( pEntity ) )
+	{
+		if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_POWERUP )
+		{
+			switch ( iAttrIndex )
+			{
+				case 327: // building instant upgrade
+					return pPlayer->IsPlayerClass( TF_CLASS_ENGINEER );
+				case 480: // radius stealth
+					return pPlayer->IsPlayerClass( TF_CLASS_SPY );
+			}
+
+			// Always allowed
+			return true;
+		}
+
+		return false;
+	}
+	// Can only upgrade powerup bottles here
+	else if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_POWERUP )
+	{
+		return false;
+	}
+
+	CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *> ( pEntity );
+	int iWeaponID = ( pWeapon ) ? pWeapon->GetWeaponID() : TF_WEAPON_NONE;
+
+	bool bIsShield = dynamic_cast<CTFWearableDemoShield *>( pEntity ) != NULL;
+
+	switch ( iAttrIndex )
+	{
+		case 2:		// damage bonus
+		{
+			if ( pUpgrade->nQuality == MVM_UPGRADE_QUALITY_LOW )
+			{
+				if ( pPlayer->IsPlayerClass( TF_CLASS_DEMOMAN ) && !bIsShield )
+					return iItemSlot == TF_LOADOUT_SLOT_PRIMARY || iItemSlot == TF_LOADOUT_SLOT_SECONDARY;
+
+				return false;
+			}
+
+			bool bShieldEquipped = false;
+			if ( pPlayer->IsPlayerClass( TF_CLASS_DEMOMAN ) )
+			{
+				for ( int i = 0; i < pPlayer->GetNumWearables(); ++i )
+				{
+					CTFWearableDemoShield *pShield = dynamic_cast<CTFWearableDemoShield *>( pPlayer->GetWearable( i ) );
+					if ( pShield )
+					{
+						bShieldEquipped = true;
+					}
+				}
+			}
+
+			// Show damage bonus on Demoknights melee
+			if ( iWeaponID == TF_WEAPON_SWORD && bShieldEquipped )
+				return true;
+
+			if ( iItemSlot == TF_LOADOUT_SLOT_PRIMARY )
+			{
+				// Show damage bonus on Scout's primary
+				if ( pPlayer->IsPlayerClass( TF_CLASS_SCOUT ) )
+					return true;
+
+				// Show damage bonus on Sniper's primary
+				if ( pPlayer->IsPlayerClass( TF_CLASS_SNIPER ) )
+					return true;
+
+				// Show damage bonus on Soldier's primary
+				if ( pPlayer->IsPlayerClass( TF_CLASS_SOLDIER ) )
+					return true;
+
+				// Show damage bonus on Pyro's primary
+				if ( pPlayer->IsPlayerClass( TF_CLASS_PYRO ) )
+					return true;
+			}
+
+			break;
+		}
+		case 6:		// fire rate bonus
+		{
+			if ( pUpgrade->nQuality == MVM_UPGRADE_QUALITY_LOW )
+				return iWeaponID == TF_WEAPON_MINIGUN;
+			else if ( ( iWeaponID == TF_WEAPON_GRENADELAUNCHER || iWeaponID == TF_WEAPON_GRENADELAUNCHER_LEGACY ) && pWeapon && pWeapon->AutoFiresFullClipAllAtOnce() )
+				return false;
+
+			if ( dynamic_cast<CTFWeaponBaseMelee *>( pEntity ) != NULL )
+				return false;
+
+			if ( iWeaponID == TF_WEAPON_NONE )
+				return false;
+
+			if ( iWeaponID == TF_WEAPON_FLAMETHROWER || iWeaponID == TF_WEAPON_COMPOUND_BOW || WeaponID_IsSniperRifle( iWeaponID ) || iWeaponID == TF_WEAPON_MINIGUN )
+				return false;
+
+			// Non-combat items
+			if ( iWeaponID == TF_WEAPON_LASER_POINTER || iWeaponID == TF_WEAPON_MEDIGUN || iWeaponID == TF_WEAPON_BUFF_ITEM ||
+				 iWeaponID == TF_WEAPON_BUILDER || iWeaponID == TF_WEAPON_PDA_ENGINEER_BUILD || iWeaponID == TF_WEAPON_INVIS ||
+				 iWeaponID == TF_WEAPON_SPELLBOOK )
+				return false;
+
+			if ( pWeapon && pWeapon->HasEffectBar() )
+				return false;
+
+			return true;
+		}
+		case 10:	// ubercharge rate bonus
+		case 314:	// uber duration bonus
+		case 481:	// canteen specialist
+		case 482:	// overheal expert
+		case 483:	// medic machinery beam
+		case 493:	// healing mastery
+		{
+			return ( iWeaponID == TF_WEAPON_MEDIGUN );
+		}
+		case 31:	// critboost on kill
+		{
+			CTFWeaponBaseMelee *pMelee = dynamic_cast<CTFWeaponBaseMelee *> ( pEntity );
+			return ( pMelee && ( pPlayer->IsPlayerClass( TF_CLASS_DEMOMAN ) || pPlayer->IsPlayerClass( TF_CLASS_SPY ) ) );
+		}
+		case 71:	// weapon burn dmg increased
+		case 73:	// weapon burn time increased
+		{
+			return ( iWeaponID == TF_WEAPON_FLAMETHROWER || iWeaponID == TF_WEAPON_FLAREGUN );
+		}
+		case 76:	// maxammo primary increased
+		{
+			return ( pWeapon && pWeapon->GetPrimaryAmmoType() == TF_AMMO_PRIMARY && !pWeapon->IsEnergyWeapon() );
+		}
+		case 78:	// maxammo secondary increased
+		{
+			return ( pWeapon && pWeapon->GetPrimaryAmmoType() == TF_AMMO_SECONDARY && !pWeapon->IsEnergyWeapon() );
+		}
+		case 90:	// SRifle Charge rate increased
+		{
+			return WeaponID_IsSniperRifle( iWeaponID );
+		}
+		case 103:	// Projectile speed increased
+		{
+			CTFWeaponBaseGun *pGun = dynamic_cast<CTFWeaponBaseGun *>( pEntity );
+			if ( pGun )
+			{
+				return ( pGun->GetWeaponProjectileType() == TF_PROJECTILE_PIPEBOMB );
+			}
+
+			return false;
+		}
+		case 149:	// bleed duration
+		case 523:	// arrow mastery
+		{
+			return ( iWeaponID == TF_WEAPON_COMPOUND_BOW );
+		}
+		case 218:	// mark for death
+		{
+			return ( iWeaponID == TF_WEAPON_BAT_WOOD );
+		}
+		case 249:	// charge recharge rate increased
+		case 252:   // damage force reduction
+		{
+			return bIsShield;
+		}
+		case 255:	// airblast pushback scale
+		{
+			if ( iWeaponID != TF_WEAPON_FLAMETHROWER )
+				return false;
+
+			CTFFlameThrower *pFlamethrower = assert_cast<CTFFlameThrower *>( pWeapon );
+			return pFlamethrower->CanAirBlastPushPlayers();
+		}
+		case 266:	// projectile penetration
+		{
+			CTFWeaponBaseGun *pGun = dynamic_cast<CTFWeaponBaseGun *>( pEntity );
+			if ( pGun )
+			{
+				// Non-combat items
+				if ( iWeaponID == TF_WEAPON_LASER_POINTER || iWeaponID == TF_WEAPON_MEDIGUN || iWeaponID == TF_WEAPON_BUFF_ITEM ||
+					 iWeaponID == TF_WEAPON_BUILDER || iWeaponID == TF_WEAPON_PDA_ENGINEER_BUILD || iWeaponID == TF_WEAPON_INVIS ||
+					 iWeaponID == TF_WEAPON_SPELLBOOK )
+					return false;
+
+				if ( pPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) && iItemSlot == TF_LOADOUT_SLOT_PRIMARY )
+					return false;
+
+				int iProjectile = pGun->GetWeaponProjectileType();
+				return ( iProjectile == TF_PROJECTILE_BULLET || iProjectile == TF_PROJECTILE_ARROW || 
+						 iProjectile == TF_PROJECTILE_HEALING_BOLT || iProjectile == TF_PROJECTILE_FESTIVE_ARROW || 
+						 iProjectile == TF_PROJECTILE_FESTIVE_HEALING_BOLT );
+			}
+
+			return false;
+		}
+		case 80:	// maxammo metal increased
+		case 276:	// bidirectional teleport
+		case 286:	// engy building health bonus
+		case 343:	// engy sentry fire rate increased
+		case 345:	// engy dispenser radius increased
+		case 351:	// engy disposable sentries
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_ENGINEER ) && iWeaponID == TF_WEAPON_PDA_ENGINEER_BUILD );
+		}
+		case 278:	// effect bar recharge rate increased
+		{
+			return ( pWeapon && pWeapon->HasEffectBar() && iWeaponID != TF_WEAPON_BUILDER && iWeaponID != TF_WEAPON_SPELLBOOK );
+		}
+		case 319:	// increase buff duration
+		{
+			return ( iWeaponID == TF_WEAPON_BUFF_ITEM );
+		}
+		case 279:	// maxammo grenades1 increased
+		{
+			return ( iWeaponID == TF_WEAPON_BAT_WOOD || iWeaponID == TF_WEAPON_BAT_GIFTWRAP );
+		}
+		case 313:	// applies snare effect
+		{
+			return ( iWeaponID == TF_WEAPON_JAR || iWeaponID == TF_WEAPON_JAR_MILK );
+		}
+		case 320:	// robo sapper
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_SPY ) && iWeaponID == TF_WEAPON_BUILDER );
+		}
+		case 323:	// attack projectiles
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) && iItemSlot == TF_LOADOUT_SLOT_PRIMARY );
+		}
+		case 335:	// clip size bonus upgrade
+		{
+			if ( !pWeapon || pWeapon->IsBlastImpactWeapon() )
+				return false;
+
+			if ( !pWeapon->UsesClipsForAmmo1() || pWeapon->GetMaxClip1() <= 0 )
+				return false;
+
+			if ( iWeaponID == TF_WEAPON_FLAREGUN_REVENGE || iWeaponID == TF_WEAPON_SPELLBOOK )
+				return false;
+
+			return true;
+		}
+		case 375:	// generate rage on damage
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) && iItemSlot == TF_LOADOUT_SLOT_PRIMARY );
+		}
+		case 395:	// explosive sniper shot
+		{
+			if ( !pPlayer->IsPlayerClass( TF_CLASS_SNIPER ) || iItemSlot != TF_LOADOUT_SLOT_PRIMARY )
+				return false;
+
+			CTFWeaponBaseGun *pGun = dynamic_cast<CTFWeaponBaseGun *>( pWeapon );
+			return ( pGun && pGun->GetWeaponProjectileType() == TF_PROJECTILE_BULLET );
+		}
+		case 396:	// melee attack rate bonus
+		{
+			if ( dynamic_cast<CTFWeaponBaseMelee *>( pWeapon ) == NULL )
+				return false;
+
+			if ( pWeapon && pWeapon->HasEffectBar() && iWeaponID == TF_WEAPON_BAT_WOOD )
+				return false;
+
+			return iWeaponID != TF_WEAPON_BUFF_ITEM; // ???
+		}
+		case 397:	// projectile penetration heavy
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) && iItemSlot == TF_LOADOUT_SLOT_PRIMARY );
+		}
+		case 399:	// armor piercing
+		{
+			return ( pPlayer->IsPlayerClass( TF_CLASS_SPY ) && iWeaponID == TF_WEAPON_KNIFE );
+		}
+		case 440:	// clip size upgrade atomic
+		{
+			return ( pWeapon && pWeapon->IsBlastImpactWeapon() );
+		}
+		case 484:	// mad milk syringes
+		{
+			return ( iWeaponID == TF_WEAPON_SYRINGEGUN_MEDIC );
+		}
+		case 488:	// rocket specialist
+		{
+			CTFWeaponBaseGun *pGun = dynamic_cast<CTFWeaponBaseGun *>( pWeapon );
+			if ( pGun )
+			{
+				return ( pGun->GetWeaponProjectileType() == TF_PROJECTILE_ROCKET || pGun->GetWeaponProjectileType() == TF_PROJECTILE_ENERGY_BALL );
+			}
+
+			return false;
+		}
+		case 499:	// generate rage on heal (shield)
+		case 554:	// revive
+		case 555:	// medigun specialist
+		{
+			return ( iWeaponID == TF_WEAPON_MEDIGUN );
+		}
+	}
+
+	if ( pUpgrade->nUIGroup == UIGROUP_UPGRADE_ITEM )
+	{
+		CTFWeaponBaseGun *pGun = dynamic_cast<CTFWeaponBaseGun *>( pWeapon );
+		if ( pGun )
+		{
+			if ( pGun->HasEffectBar() )
+				return false;
+
+			if ( iWeaponID == TF_WEAPON_NONE || iWeaponID == TF_WEAPON_LASER_POINTER || iWeaponID == TF_WEAPON_MEDIGUN ||
+				 iWeaponID == TF_WEAPON_BUFF_ITEM || iWeaponID == TF_WEAPON_BUILDER || iWeaponID == TF_WEAPON_PDA_ENGINEER_BUILD ||
+				 iWeaponID == TF_WEAPON_INVIS || iWeaponID == TF_WEAPON_SPELLBOOK )
+				return false;
+
+			return true;
+		}
+
+		CTFWeaponBaseMelee *pMelee = dynamic_cast<CTFWeaponBaseMelee *>( pEntity );
+		if ( pMelee )
+		{
+			return ( iWeaponID != TF_WEAPON_BUFF_ITEM ); // ???
+		}
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 bool CTFGameRules::UsePlayerReadyStatusMode( void )
 {
 	if ( IsMannVsMachineMode() )
@@ -4805,6 +5546,116 @@ bool CTFGameRules::UsePlayerReadyStatusMode( void )
 		return true;
 
 	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_ArePlayersOnTeamReady( int iTeam )
+{
+	// Bots need to be set to ready automatically
+	if ( IsMannVsMachineMode() && iTeam == TF_TEAM_MVM_BOTS )
+		return true;
+
+	// TODO: Alternative to GC
+	// CMatchInfo *pMatch = GTFGCClientSystem()->dword3B8;
+
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+		if ( !pPlayer || pPlayer->GetTeamNumber() != iTeam )
+			continue;
+
+		// If at least 1 person is ready, we're good to go
+		if ( m_bPlayerReady[i] )
+			return true;
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PlayerReadyStatus_ResetState( void )
+{
+	ResetPlayerAndTeamReadyState();
+	SetTeamReadyState( false, TF_TEAM_RED );
+	SetTeamReadyState( false, TF_TEAM_BLUE );
+
+	m_flRestartRoundTime = -1.0f;
+	m_bAwaitingReadyRestart = true;
+
+	mp_restartgame.SetValue( 0 );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_ShouldStartCountdown( void )
+{
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PlayerReadyStatus_UpdatePlayerState( CTFPlayer *pPlayer, bool bState )
+{
+	if ( !UsePlayerReadyStatusMode() )
+		return;
+
+	if ( !pPlayer || pPlayer->GetTeamNumber() <= TEAM_SPECTATOR )
+		return;
+
+	if ( State_Get() == GR_STATE_BETWEEN_RNDS || !PlayerReadyStatus_HaveMinPlayersToEnable() )
+		return;
+
+	if ( GetRoundRestartTime() > 0 && GetRoundRestartTime() <= gpGlobals->curtime + 10.0 )
+		return;
+
+	if ( bState != IsPlayerReady( pPlayer->entindex() ) )
+	{
+		SetPlayerReadyState( pPlayer->entindex(), bState );
+
+		if ( bState == false )
+		{
+			m_bTeamReady.Set( pPlayer->GetTeamNumber(), false );
+		}
+		else 
+		{
+			if ( IsMannVsMachineMode() || IsCompetitiveMode() )
+			{
+				if ( m_bPlayerReadyBefore[ pPlayer->entindex() ] || GetRoundRestartTime() <= gpGlobals->curtime + 60.0 )
+				{
+					if ( GetRoundRestartTime() < 0 && PlayerReadyStatus_ShouldStartCountdown() )
+					{
+						m_flRestartRoundTime = gpGlobals->curtime + 150.0;
+						m_bAwaitingReadyRestart = false;
+
+						IGameEvent *event = gameeventmanager->CreateEvent( "teamplay_round_restart_seconds" );
+						if ( event )
+						{
+							event->SetInt( "seconds", 150 );
+							gameeventmanager->FireEvent( event );
+						}
+					}
+				}
+				else
+				{
+					if ( GetRoundRestartTime() < gpGlobals->curtime + 90.0 )
+						m_flRestartRoundTime -= m_flRestartRoundTime - gpGlobals->curtime - 60.0;
+					else
+						m_flRestartRoundTime -= 30.0;
+				}
+			}
+
+			// MM stuff..
+			// if( !GTFGCClientSystem()->dword3B8 && !IsMannVsMachineMode() )
+
+			m_bPlayerReadyBefore[ pPlayer->entindex() ] = true;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -5519,6 +6370,15 @@ void CTFGameRules::RemovePlayerFromQueue( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 void CTFGameRules::RoundRespawn( void )
 {
+#ifdef GAME_DLL
+	// Clean up balls.
+	m_bActiveBeachBall = false;
+	for ( int i = 0; i < TF_TEAM_COUNT; i++ )
+	{
+		m_bActiveSoccerBall[i] = false;
+	}
+#endif
+
 	// remove any buildings, grenades, rockets, etc. the player put into the world
 	for ( int i = 1; i <= MAX_PLAYERS; i++ )
 	{
@@ -5824,6 +6684,41 @@ bool CTFGameRules::ShouldScorePerRound( void )
 }
 
 #endif  // GAME_DLL
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CTFGameRules::PlayerReadyStatus_HaveMinPlayersToEnable( void )
+{
+	// MM check here..
+
+#ifdef GAME_DLL
+	int nNumPlayers = 0;
+
+	CUtlVector<CBasePlayer *> players;
+	CollectHumanPlayers( &players );
+	FOR_EACH_VEC( players, i )
+	{
+		if ( players[i]->IsReplay() || players[i]->IsHLTV() )
+			continue;
+
+		nNumPlayers++;
+	}
+
+	int nMinPlayers = 1;
+	// More MM stuff...
+	/*if ( )
+	else */
+	if ( IsMannVsMachineMode() && ( engine->IsDedicatedServer() || ( !engine->IsDedicatedServer() && nNumPlayers > 1 ) ) )
+		nMinPlayers = tf_mvm_min_players_to_start.GetInt();
+	else if ( UsePlayerReadyStatusMode() && engine->IsDedicatedServer() )
+		nMinPlayers = mp_tournament_readymode_min.GetInt();
+
+	m_bHaveMinPlayersToEnableReady = ( nNumPlayers >= nMinPlayers );
+#endif
+
+	return m_bHaveMinPlayersToEnableReady;
+}
 
 void CTFGameRules::LevelShutdownPostEntity( void )
 {
@@ -6962,7 +7857,7 @@ void CTFGameRules::PlayerSpawn( CBasePlayer *pPlayer )
 void CTFGameRules::PushAllPlayersAway( Vector const &vecPos, float flRange, float flForce, int iTeamNum, CUtlVector<CTFPlayer *> *outVector )
 {
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, iTeamNum, true );
+	CollectPlayers( &players, iTeamNum, COLLECT_ONLY_LIVING_PLAYERS );
 
 	FOR_EACH_VEC( players, i )
 	{
@@ -7008,17 +7903,403 @@ int CTFGameRules::CountActivePlayers( void )
 
 	return BaseClass::CountActivePlayers();
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::CalculateCurrencyAmount_CustomPack( int nAmount )
+{
+	int nMinDrop = 1;
+	if ( TFObjectiveResource()->GetMannVsMachineWaveEnemyCount() == 1 )
+	{
+		nMinDrop = m_nCurrencyAccumulator + nAmount;
+		m_nCurrencyAccumulator = 0;
+		return nMinDrop;
+	}
+
+	if ( nAmount >= nMinDrop )
+		return nAmount;
+
+	m_nCurrencyAccumulator += nAmount;
+	if ( m_nCurrencyAccumulator >= nMinDrop )
+	{
+		m_nCurrencyAccumulator -= nMinDrop;
+		return nMinDrop;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::CalculateCurrencyAmount_ByType( CurrencyRewards_t nType )
+{
+	switch ( nType )
+	{
+		/*case 0:
+			return 40;
+		case 1:
+			return 40;
+		case 2:
+			return 20;
+		case 3:
+			return 1;
+		case 4:
+			return 100;
+		case 5:
+			return 10;*/
+		case CURRENCY_PACK_SMALL:
+			return 5;
+		case CURRENCY_PACK_MEDIUM:
+			return 10;
+		case CURRENCY_PACK_LARGE:
+			return 25;
+		/*case 10:
+			return 5;*/
+		case CURRENCY_WAVE_COLLECTION_BONUS:
+			return 100;
+		default:
+			Assert( 0 );
+			return 0;
+	};
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::DistributeCurrencyAmount( int nAmount, CTFPlayer *pTFPlayer /* = NULL */, bool bShared /* = true */, bool b1 /*= false */, bool bBonus /*= false */ )
+{
+	if ( bShared )
+	{
+		CUtlVector<CTFPlayer *> players;
+		if ( IsMannVsMachineMode() )
+		{
+			CollectPlayers( &players, TF_TEAM_MVM_PLAYERS );
+		}
+
+		FOR_EACH_VEC( players, i )
+		{
+			if ( players[i] )
+			{
+				players[i]->AddCurrency( nAmount );
+			}
+		}
+	}
+	else if ( pTFPlayer )
+	{
+		pTFPlayer->AddCurrency( nAmount );
+	}
+
+	if ( IsMannVsMachineMode() && g_pPopulationManager )
+	{
+		g_pPopulationManager->OnCurrencyCollected( nAmount, b1, bBonus );
+	}
+
+	return nAmount;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::SetNextMvMPopfile( const char *next )
+{
+	s_strNextMvMPopFile = next;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+const char *CTFGameRules::GetNextMvMPopfile()
+{
+	return s_strNextMvMPopFile.Get();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CTFGameRules::GetTeamAssignmentOverride( CTFPlayer *pTFPlayer, int iDesiredTeam, bool )
+{
+	int iTeam = iDesiredTeam;
+	if ( IsMannVsMachineMode() )
+	{
+		if ( !pTFPlayer->IsBot() && iTeam != TEAM_SPECTATOR )
+		{
+			// Some MM logic goes here
+
+			int nDefenders = 0;
+			for ( int i=1; i <= gpGlobals->maxClients; ++i )
+			{
+				CBasePlayer *pPlayer = UTIL_PlayerByIndex( i );
+				if ( pPlayer == NULL )
+					continue;
+
+				if ( pPlayer->GetTeamNumber() != TF_TEAM_MVM_PLAYERS )
+					continue;
+
+				nDefenders++;
+			}
+
+			int nSlotsLeft = k_nMvMPlayerTeamSize - nDefenders;
+			if ( nSlotsLeft >= 1 )
+			{
+				Log( "MVM assigned %s to defending team (%d more slots remaining after us)\n", pTFPlayer->GetPlayerName(), nSlotsLeft-1 );
+
+				int nCurrency = MannVsMachineStats_GetAcquiredCredits() + g_pPopulationManager->GetStartingCurrency();
+				int nCurrencySpent = g_pPopulationManager->GetPlayerCurrencySpent( pTFPlayer );
+				pTFPlayer->SetCurrency( nCurrency - nCurrencySpent );
+
+				iTeam = TF_TEAM_MVM_PLAYERS;
+			}
+			else
+			{
+				Log( "MVM assigned %s to spectator, all slots for defending team are in use, or reserved for lobby members\n", pTFPlayer->GetPlayerName() );
+				iTeam = TEAM_SPECTATOR;
+			}
+		}
+	}
+	else
+	{
+		// Some MM stuff
+	}
+
+	return iTeam;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_Start( void )
+{
+	SetSetup( true );
+
+	if ( IsMannVsMachineMode() )
+	{
+		mp_tournament.SetValue( true );
+
+		RestartTournament();
+		SetInStopWatch( false );
+		SetTeamReadyState( true, TF_TEAM_MVM_BOTS );
+
+		char szName[16];
+		Q_strncpy( szName, "ROBOTS", MAX_TEAMNAME_STRING + 1 );
+		mp_tournament_blueteamname.SetValue( szName );
+
+		Q_strncpy( szName, "MANNCO", MAX_TEAMNAME_STRING + 1 );
+		mp_tournament_redteamname.SetValue( szName );
+
+	}
+
+	FOR_EACH_VEC( IBaseObjectAutoList::AutoList(), i )
+	{
+		CBaseObject *pObj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
+		if ( pObj->IsDisposableBuilding() || pObj->GetTeamNumber() == TF_TEAM_MVM_BOTS )
+		{
+			pObj->DetonateObject();
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_End( void )
+{
+	SetInWaitingForPlayers( false );
+	SetSetup( false );
+
+	if ( IsMannVsMachineMode() )
+	{
+		SetInStopWatch( false );
+		mp_tournament_stopwatch.SetValue( false );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::BetweenRounds_Think( void )
+{
+	if ( UsePlayerReadyStatusMode() )
+	{
+		if ( ( PlayerReadyStatus_ShouldStartCountdown() ||
+			  ( m_flRestartRoundTime > 0 && (int)( m_flRestartRoundTime - gpGlobals->curtime ) ) == mp_tournament_readymode_countdown.GetInt() ) )
+		{
+			if ( m_flRestartRoundTime < 0 || m_flRestartRoundTime >= gpGlobals->curtime + mp_tournament_readymode_countdown.GetFloat() + 0.1 )
+			{
+				m_flRestartRoundTime.Set( IsMannVsMachineMode() ? 10.0 : mp_tournament_readymode_countdown.GetFloat() );
+
+				ShouldResetScores( true, true );
+				ShouldResetRoundsPlayed( true );
+			}
+		}
+
+		if ( PlayerReadyStatus_HaveMinPlayersToEnable() )
+		{
+			CheckReadyRestart();
+		}
+	}
+
+	CheckRespawnWaves();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PreRound_Start( void )
+{
+	BaseClass::PreRound_Start();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFGameRules::PreRound_End( void )
+{
+	/*if ( IsHalloweenScenario( HALLOWEEN_SCENARIO_HIGHTOWER ) && !IsInWaitingForPlayers() )
+	{
+		if ( RandomFloat( 0.0, 1.0 ) < 0.15 )
+		{
+			PlayHelltowerAnnouncerVO( HELLTOWER_VO_RED_ROUNDSTART_RARE, HELLTOWER_VO_BLUE_ROUNDSTART_RARE );
+		}
+		else
+		{
+			PlayHelltowerAnnouncerVO( HELLTOWER_VO_RED_ROUNDSTART, HELLTOWER_VO_BLUE_ROUNDSTART );
+		}
+	}*/
+
+	BaseClass::PreRound_End();
+}
 #endif
 
 float CTFGameRules::GetRespawnWaveMaxLength( int iTeam, bool bScaleWithNumPlayers /* = true */ )
 {
-	return BaseClass::GetRespawnWaveMaxLength( iTeam, bScaleWithNumPlayers );
+	if ( IsMannVsMachineMode() )
+		bScaleWithNumPlayers = false;
+
+	float flTime = BaseClass::GetRespawnWaveMaxLength( iTeam, bScaleWithNumPlayers );
+	if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() )
+	{
+		flTime *= ( 1.0f - CTFRobotDestructionLogic::GetRobotDestructionLogic()->GetRespawnScaleForTeam( iTeam ) );
+	}
+
+	return flTime;
 }
 
 bool CTFGameRules::ShouldBalanceTeams( void )
 {
+	if ( IsPVEModeActive() || m_bPlayingMannVsMachine )
+		return false;
+
+	// don't balance the teams while players are in hell
+	if ( m_bHelltowerPlayersInHell )
+		return false;
+
 	return BaseClass::ShouldBalanceTeams();
 }
+
+
+ConVar tf_birthday_ball_chance( "tf_birthday_ball_chance", "100", FCVAR_REPLICATED, "Percent chance of a birthday beach ball spawning at each round start" );
+#ifdef GAME_DLL
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CTFGameRules::CheckBallSpawns( CTFPlayer *pPlayer )
+{
+	// Birthday Beach Ball.
+	if (IsBirthday() && !m_bActiveBeachBall)
+	{
+		if ( pPlayer->GetTeamNumber() == TF_TEAM_BLUE && RandomInt( 0, 100 ) < tf_birthday_ball_chance.GetInt() )
+		{
+			// Grab the player's coordinates.
+			Vector vecOrigin = pPlayer->GetAbsOrigin();
+
+			// Copy of the bread spawn code, without the self-destruct.
+			CPhysicsProp* pBeachBall = static_cast<CPhysicsProp*>(CBaseAnimating::CreateNoSpawn("prop_physics_override", vecOrigin, pPlayer->GetAbsAngles(), pPlayer));
+			if (pBeachBall)
+			{
+				Vector vecRight, vecUp;
+				AngleVectors(pPlayer->GetAbsAngles(), NULL, &vecRight, &vecUp);
+
+				Vector vecImpulse(0.0f, 0.0f, 0.0f);
+				vecImpulse += vecUp * random->RandomFloat(-0.25, 0.25);
+				vecImpulse += vecRight * random->RandomFloat(-0.25, 0.25);
+				VectorNormalize(vecImpulse);
+				vecImpulse *= random->RandomFloat(-100, 100);
+				vecImpulse += pPlayer->GetAbsVelocity();
+
+				if (pBeachBall->VPhysicsGetObject())
+				{
+					AngularImpulse angImpulse(RandomFloat(-100, 100), RandomFloat(-100, 100), RandomFloat(-100, 100));
+					pBeachBall->VPhysicsGetObject()->SetVelocityInstantaneous(&vecImpulse, &angImpulse);
+				}
+
+				pBeachBall->SetAbsVelocity(vecImpulse + Vector(0.0f, 0.0f, 200.0f));
+
+				// Give the bread some health.
+				pBeachBall->SetCollisionGroup(COLLISION_GROUP_PUSHAWAY);
+				pBeachBall->AddFlag(FL_GRENADE);
+				pBeachBall->m_takedamage = DAMAGE_YES;
+				pBeachBall->SetHealth(5000);
+				pBeachBall->KeyValue("model", "models/props_gameplay/ball001.mdl");
+				pBeachBall->m_nSkin = 1;
+				DispatchSpawn(pBeachBall);
+				pBeachBall->Activate();
+				m_bActiveBeachBall = true;
+			}
+		}
+	}
+
+	// Soccer Balls.
+	if ( !m_bActiveSoccerBall[ pPlayer->GetTeamNumber() ] )
+	{
+		int nSpawnSoccerBall = 0;
+		CALL_ATTRIB_HOOK_INT_ON_OTHER( pPlayer, nSpawnSoccerBall, spawn_with_physics_toy );
+		if ( nSpawnSoccerBall )
+		{
+			// Grab the player's coordinates.
+			Vector vecOrigin = pPlayer->GetAbsOrigin();
+
+			// Copy of the bread spawn code, without the self-destruct.
+			CPhysicsProp* pSoccerBall = static_cast<CPhysicsProp*>(CBaseAnimating::CreateNoSpawn("prop_physics_override", vecOrigin, pPlayer->GetAbsAngles(), pPlayer));
+			if (pSoccerBall)
+			{
+				Vector vecRight, vecUp;
+				AngleVectors(pPlayer->GetAbsAngles(), NULL, &vecRight, &vecUp);
+
+				Vector vecImpulse(0.0f, 0.0f, 0.0f);
+				vecImpulse += vecUp * random->RandomFloat(-0.25, 0.25);
+				vecImpulse += vecRight * random->RandomFloat(-0.25, 0.25);
+				VectorNormalize(vecImpulse);
+				vecImpulse *= random->RandomFloat(-100, 100);
+				vecImpulse += pPlayer->GetAbsVelocity();
+
+				if (pSoccerBall->VPhysicsGetObject())
+				{
+					AngularImpulse angImpulse(RandomFloat(-100, 100), RandomFloat(-100, 100), RandomFloat(-100, 100));
+					pSoccerBall->VPhysicsGetObject()->SetVelocityInstantaneous(&vecImpulse, &angImpulse);
+				}
+
+				pSoccerBall->SetAbsVelocity(vecImpulse + Vector(0.0f, 0.0f, 200.0f));
+
+				// Give the bread some health.
+				pSoccerBall->SetCollisionGroup(COLLISION_GROUP_PUSHAWAY);
+				pSoccerBall->AddFlag(FL_GRENADE);
+				pSoccerBall->m_takedamage = DAMAGE_YES;
+				pSoccerBall->SetHealth(5000);
+				pSoccerBall->KeyValue("model", "models/player/items/scout/soccer_ball.mdl");
+				pSoccerBall->m_nSkin = pPlayer->GetTeamNumber()-2;
+				DispatchSpawn(pSoccerBall);
+				pSoccerBall->Activate();
+				m_bActiveSoccerBall[pPlayer->GetTeamNumber()] = true;	
+			}
+		}
+	}
+}
+#endif
 
 #ifdef CLIENT_DLL
 //-----------------------------------------------------------------------------
@@ -7445,18 +8726,6 @@ const char *CTFGameRules::GetVideoFileForMap( bool bWithExtension /*= true*/ )
 //-----------------------------------------------------------------------------
 void CTFGameRules::ModifySentChat( char *pBuf, int iBufSize )
 {
-	// Medieval mode only
-	if ( IsInMedievalMode() && tf_medieval_autorp.GetBool() )
-	{
-		if ( !AutoRP() )
-		{
-			Warning( "AutoRP initialization failed!" );
-			return;
-		}
-
-		AutoRP()->ApplyRPTo( pBuf, iBufSize );
-	}
-
 	int i = 0;
 	while ( pBuf[i] )
 	{
@@ -7466,6 +8735,21 @@ void CTFGameRules::ModifySentChat( char *pBuf, int iBufSize )
 		}
 		i++;
 	}
+	
+	// Medieval mode only
+	if ( IsInMedievalMode() && tf_medieval_autorp.GetBool() )
+	{
+		if (AutoRP())
+			AutoRP()->ApplyRPTo( pBuf, iBufSize );
+		else
+		{
+			Warning( "AutoRP initialization failed!" );
+			return;
+		}
+	}
+	
+	if ( tf2v_censor_swears.GetBool() )
+		g_BannedWords.CensorBannedWordsInplace( pBuf );
 
 }
 

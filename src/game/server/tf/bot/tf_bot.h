@@ -23,6 +23,7 @@ class CTeamControlPoint;
 class CCaptureFlag;
 class CCaptureZone;
 class CTFBotSquad;
+class CSoundPatch;
 
 class CClosestTFPlayer
 {
@@ -107,6 +108,8 @@ public:
 	bool			IsContinuousFireWeapon( CTFWeaponBase *weapon = nullptr ) const;
 	bool			IsBarrageAndReloadWeapon( CTFWeaponBase *weapon = nullptr ) const;
 
+	void			AddItem( char const *pszItemName );
+
 	float			GetMaxAttackRange( void ) const;
 	float			GetDesiredAttackRange( void ) const;
 
@@ -142,6 +145,8 @@ public:
 
 	CCaptureZone*	GetFlagCaptureZone( void );
 	CCaptureFlag*	GetFlagToFetch( void );
+	void			SetFlagTarget( CCaptureFlag *pFlag );
+	CCaptureFlag*	GetFlagTarget( void ) const;
 
 	float			TransientlyConsistentRandomValue( float duration, int seed ) const;
 
@@ -152,6 +157,11 @@ public:
 
 	void			SelectReachableObjects( CUtlVector<EHANDLE> const& append, CUtlVector<EHANDLE> *outVector, INextBotFilter const& func, CNavArea *pStartArea, float flMaxRange );
 	CTFPlayer *		SelectRandomReachableEnemy( void );
+
+	void			StartIdleSound( void );
+	void			StopIdleSound( void );
+
+	void			ModifyMaxHealth( int nNewhealth, bool bSetHealth = true, bool bScaleModel = true );
 
 	bool			CanChangeClass( void );
 	const char*		GetNextSpawnClassname( void );
@@ -173,6 +183,8 @@ public:
 	bool			IsSquadmate( CTFPlayer *player ) const;
 	void			JoinSquad( CTFBotSquad *squad );
 	void			LeaveSquad();
+	void			SetSquadFormationError( float flError ) { m_flFormationError = flError; }
+	void			SetIsInFormation( bool bSet ) { m_bIsInFormation = bSet; }
 
 	struct DelayedNoticeInfo
 	{
@@ -209,7 +221,7 @@ public:
 			int nCurTime = (int)floor( gpGlobals->curtime );
 			int nMinTime = nCurTime - tf_bot_suspect_spy_touch_interval.GetInt();
 
-			for ( int i=m_times.Count()-1; i >= 0; --i )
+			FOR_EACH_VEC_BACK(m_times, i)
 			{
 				if ( m_times[i] <= nMinTime )
 					m_times.Remove( i );
@@ -218,23 +230,18 @@ public:
 			m_times.AddToHead( nCurTime );
 
 			CUtlVector<bool> checks;
+			checks.AddMultipleToTail( tf_bot_suspect_spy_touch_interval.GetInt() );
 
-			checks.SetCount( tf_bot_suspect_spy_touch_interval.GetInt() );
-			for ( int i=0; i < checks.Count(); ++i )
-				checks[i] = false;
-
-			for ( int i=0; i<m_times.Count(); ++i )
+			FOR_EACH_VEC(m_times, i)
 			{
 				int idx = nCurTime - m_times[i];
 				if ( checks.IsValidIndex( idx ) )
 					checks[idx] = true;
 			}
 
-			for ( int i=0; i<checks.Count(); ++i )
-			{
-				if ( !checks[i] )
-					return false;
-			}
+			int nIndex = checks.Find( false );
+			if ( nIndex != checks.InvalidIndex() )
+				return false;
 
 			return true;
 		}
@@ -267,14 +274,9 @@ public:
 	ObjectHandle	GetTargetSentry( void ) const;
 	Vector const&	GetLastKnownSentryLocation( void ) const;
 
-	friend class CTFBotSquad;
-	CTFBotSquad *m_pSquad;
-	float m_flFormationError;
-	bool m_bIsInFormation;
-
 	CTFNavArea *m_HomeArea;
 
-	enum DifficultyType
+	enum class DifficultyType
 	{
 		EASY   = 0,
 		NORMAL = 1,
@@ -283,8 +285,11 @@ public:
 		MAX
 	}
 	m_iSkill;
+	DifficultyType	GetDifficulty( void ) const;
+	void			SetDifficulty( DifficultyType difficulty );
+	bool			IsDifficulty( DifficultyType skill ) const;
 
-	enum class AttributeType : int
+	enum class AttributeType
 	{
 		NONE                    = 0,
 
@@ -294,13 +299,13 @@ public:
 		SUPPRESSFIRE            = (1 << 3),
 		DISABLEDODGE            = (1 << 4),
 		BECOMESPECTATORONDEATH  = (1 << 5),
-		// 6?
+		QUOTAMANAGED			= (1 << 6),
 		RETAINBUILDINGS         = (1 << 7),
 		SPAWNWITHFULLCHARGE     = (1 << 8),
 		ALWAYSCRIT              = (1 << 9),
 		IGNOREENEMIES           = (1 << 10),
 		HOLDFIREUNTILFULLRELOAD = (1 << 11),
-		// 12?
+		PRIORITIZEDEFENSE		= (1 << 12),
 		ALWAYSFIREWEAPON        = (1 << 13),
 		TELEPORTTOHINT          = (1 << 14),
 		MINIBOSS                = (1 << 15),
@@ -315,7 +320,115 @@ public:
 		BLASTIMMUNE             = (1 << 24),
 		FIREIMMUNE              = (1 << 25),
 	}
-	m_nBotAttrs;
+	m_nBotAttributes;
+	void			SetAttribute( AttributeType attribute );
+	bool			HasAttribute( AttributeType attribute ) const;
+	void			ClearAttribute( AttributeType attribute );
+	void			ClearAllAttributes( void );
+
+	enum class WeaponRestrictionType
+	{
+		UNRESTRICTED	= 0,
+
+		MELEEONLY		= ( 1 << 0 ),
+		PRIMARYONLY		= ( 1 << 1 ),
+		SECONDARYONLY	= ( 1 << 2 )
+	}
+	m_nWeaponRestrictions;
+	void			SetWeaponRestriction( WeaponRestrictionType restrictionFlags );
+	bool			HasWeaponRestriction( WeaponRestrictionType restrictionFlags ) const;
+	bool			IsWeaponRestricted( CTFWeaponBase *weapon ) const;
+	void			ClearWeaponRestrictions( void );
+
+	enum class MissionType
+	{
+		NONE = 0,
+		SEEK_AND_DESTROY,
+		DESTROY_SENTRIES,
+		SNIPER,
+		SPY,
+		ENGINEER,
+		REPROGRAMMED
+	}
+	m_eMission;
+	void			SetMission( MissionType mission, bool bResetBehavior = true );
+	void			SetPrevMission( MissionType mission );
+	MissionType		GetMission( void ) const;
+	MissionType		GetPrevMission( void ) const;
+	bool			HasMission( MissionType mission ) const;
+	bool			IsOnAnyMission( void ) const;
+	void			SetMissionTarget( CBaseEntity *target );
+	CBaseEntity		*GetMissionTarget( void ) const;
+	void			SetMissionString( CUtlString string );
+	CUtlString		*GetMissionString( void );
+
+	bool			IsMiniBoss( void ) const;
+	void			SetIsMiniBoss( bool bSet );
+
+	bool			ShouldUseBossHealthBar( void ) const;
+	void			SetUseBossHealthBar( bool bSet );
+
+	void			SetAutoJumpIntervals( float flMin, float flMax );
+
+	void			SetBehaviorFlag( unsigned int flags );
+	void			ClearBehaviorFlag( unsigned int flags );
+	bool			IsBehaviorFlagSet( unsigned int flags ) const;
+
+	void			ClearTags( void );
+	void			AddTag( char const *tag );
+	void			RemoveTag( char const *tag );
+	bool			HasTag( char const *tag );
+
+	struct EventChangeAttributes_t
+	{
+		struct item_attributes_t
+		{
+			CUtlString m_strItemName;
+			CCopyableUtlVector<static_attrib_t> m_Attrs;
+		};
+
+
+		EventChangeAttributes_t( const char *name = "default" )
+		{
+			this->Reset( name );
+		}
+
+		void Reset( const char *name = "default" )
+		{
+			this->m_strName = name;
+
+			this->m_iSkill          = DifficultyType::EASY;
+			this->m_nWeaponRestrict = WeaponRestrictionType::UNRESTRICTED;
+			this->m_nMission		= MissionType::NONE;
+			this->m_prevMission		= MissionType::NONE;
+			this->m_nBotAttrs       = AttributeType::NONE;
+			this->m_flVisionRange   = -1.0f;
+
+			this->m_ItemNames.RemoveAll();
+			this->m_ItemAttrs.RemoveAll();
+			this->m_CharAttrs.RemoveAll();
+			this->m_Tags.RemoveAll();
+		}
+
+		CUtlString m_strName;
+		DifficultyType m_iSkill;
+		WeaponRestrictionType m_nWeaponRestrict;
+		MissionType m_nMission;
+		MissionType m_prevMission;
+		AttributeType m_nBotAttrs;
+		float m_flVisionRange;
+		CUtlStringList m_ItemNames;
+		CUtlVector<item_attributes_t> m_ItemAttrs;
+		CUtlVector<static_attrib_t> m_CharAttrs;
+		CUtlStringList m_Tags;
+	};
+	void ClearEventChangeAttributes();
+	void AddEventChangeAttributes( const EventChangeAttributes_t *newEvent );
+	const EventChangeAttributes_t *GetEventChangeAttributes( const char *pszEventName ) const;
+	void OnEventChangeAttributes( const CTFBot::EventChangeAttributes_t *pEvent );
+
+	float m_flModelScaleOverride;
+	CUtlStringList m_TeleportWhere;
 	
 
 private:
@@ -332,13 +445,33 @@ private:
 	IBody *m_body;
 	IVision *m_vision;
 
+	friend class CTFBotSquad;
+	CTFBotSquad *m_pSquad;
+	float m_flFormationError;
+	bool m_bIsInFormation;
+
+	unsigned int m_behaviorFlags;
+	CUtlVector< CFmtStr > m_tags;
+	bool m_bIsMiniBoss;
+	bool m_bUseHealthBar;
+
+	float m_flAutoJumpMin;
+	float m_flAutoJumpMax;
+	CountdownTimer m_autoJumpTimer;
+
+	MissionType m_prevMission;
+	CHandle< CBaseEntity > m_hMissionTarget;
+	CUtlString m_szMission;
+
 	CHandle<CBaseObject> m_hTargetSentry;
 	Vector m_vecLastNoticedSentry;
 
 	CHandle<CTeamControlPoint> m_hMyControlPoint;
 	CountdownTimer m_myCPValidDuration;
 	CountdownTimer m_cpChangedTimer;
+
 	CHandle<CCaptureZone> m_hMyCaptureZone;
+	CHandle<CCaptureFlag> m_hMyCaptureFlag;
 
 	CountdownTimer m_useWeaponAbilityTimer;
 
@@ -355,6 +488,10 @@ private:
 	CBaseEntity *m_sniperGoalEnt;
 	Vector m_sniperGoal;
 	CountdownTimer m_sniperSpotTimer;
+
+	CSoundPatch *m_pIdleSound;
+
+	CUtlVector<const EventChangeAttributes_t *> m_EventChangeAttributes;
 };
 
 class CTFBotPathCost : public IPathCost
@@ -372,6 +509,147 @@ private:
 	float m_flMaxJumpHeight;
 	float m_flDeathDropHeight;
 };
+
+DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::AttributeType )
+DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::WeaponRestrictionType )
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::DifficultyType CTFBot::GetDifficulty( void ) const
+{
+	return m_iSkill;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetDifficulty( CTFBot::DifficultyType difficulty )
+{
+	m_iSkill = difficulty;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsDifficulty( CTFBot::DifficultyType skill ) const
+{
+	return m_iSkill == skill;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags )
+{
+	m_nWeaponRestrictions |= restrictionFlags;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags ) const
+{
+	return (m_nWeaponRestrictions & restrictionFlags) != (CTFBot::WeaponRestrictionType)0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearWeaponRestrictions( void )
+{
+	m_nWeaponRestrictions = CTFBot::WeaponRestrictionType::UNRESTRICTED;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetAttribute( CTFBot::AttributeType attribute )
+{
+	m_nBotAttributes |= attribute;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearAttribute( CTFBot::AttributeType attribute )
+{
+	m_nBotAttributes &= ~attribute;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
+{
+	return (m_nBotAttributes & attribute) != (CTFBot::AttributeType)0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearAllAttributes()
+{
+	m_nBotAttributes = CTFBot::AttributeType::NONE;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearTags( void )
+{
+	m_tags.RemoveAll();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::AddTag( const char *tag )
+{
+	if ( !HasTag( tag ) )
+	{
+		m_tags.AddToTail( CFmtStr( "%s", tag ) );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::RemoveTag( const char *tag )
+{
+	for ( int i=0; i < m_tags.Count(); ++i )
+	{
+		if ( FStrEq( tag, m_tags[i] ) )
+		{
+			m_tags.Remove( i );
+			return;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasTag( const char *tag )
+{
+	for ( int i=0; i < m_tags.Count(); ++i )
+	{
+		if ( FStrEq( tag, m_tags[i] ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CCaptureFlag *CTFBot::GetFlagTarget( void ) const
+{
+	return m_hMyCaptureFlag;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -464,7 +742,147 @@ inline bool CTFBot::HasPointRecentlyChanged( void ) const
 	return m_cpChangedTimer.HasStarted() && !m_cpChangedTimer.IsElapsed();
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetMissionString( CUtlString string )
+{
+	m_szMission = string;
+}
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CUtlString *CTFBot::GetMissionString( void )
+{
+	return &m_szMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetMissionTarget( CBaseEntity *target )
+{
+	m_hMissionTarget = target;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CBaseEntity *CTFBot::GetMissionTarget( void ) const
+{
+	return m_hMissionTarget;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::MissionType CTFBot::GetMission( void ) const
+{
+	return m_eMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetPrevMission( MissionType mission )
+{
+	m_prevMission = mission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline CTFBot::MissionType CTFBot::GetPrevMission( void ) const
+{
+	return m_prevMission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::HasMission( MissionType mission ) const
+{
+	return m_eMission == mission;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsOnAnyMission( void ) const
+{
+	return m_eMission != MissionType::NONE;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsMiniBoss( void ) const
+{
+	return m_bIsMiniBoss;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetIsMiniBoss( bool bSet )
+{
+	m_bIsMiniBoss = bSet;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::ShouldUseBossHealthBar( void ) const
+{
+	return m_bUseHealthBar;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetUseBossHealthBar( bool bSet )
+{
+	m_bUseHealthBar = bSet;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetAutoJumpIntervals( float flMin, float flMax )
+{
+	m_flAutoJumpMin = flMin;
+	m_flAutoJumpMax = flMax;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::SetBehaviorFlag( unsigned int flags )
+{
+	m_behaviorFlags |= flags;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline void CTFBot::ClearBehaviorFlag( unsigned int flags )
+{
+	m_behaviorFlags &= ~flags;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+inline bool CTFBot::IsBehaviorFlagSet( unsigned int flags ) const
+{
+	return ( m_behaviorFlags & flags ) ? true : false;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 inline CTFBot *ToTFBot( CBaseEntity *ent )
 {
 	CTFPlayer *player = ToTFPlayer( ent );
@@ -504,16 +922,5 @@ private:
 };
 
 extern CTFBotItemSchema &TFBotItemSchema( void );
-
-
-DEFINE_ENUM_BITWISE_OPERATORS( CTFBot::AttributeType )
-inline bool operator!( CTFBot::AttributeType const &rhs )
-{
-	return (int const &)rhs == 0;
-}
-inline bool operator!=( CTFBot::AttributeType const &rhs, int const &lhs )
-{
-	return (int const &)rhs != lhs;
-}
 
 #endif

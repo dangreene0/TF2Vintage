@@ -193,7 +193,7 @@ bool CMerasmusAttack::IsPotentiallyChaseable( CMerasmus *me, CTFPlayer *pVictim 
 		return false;
 
 	CTFNavArea *pArea = static_cast<CTFNavArea *>( pVictim->GetLastKnownArea() );
-	if ( !pArea || pArea->HasTFAttributes( RED_SPAWN_ROOM|BLUE_SPAWN_ROOM ) )
+	if ( !pArea || pArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM|TF_NAV_BLUE_SPAWN_ROOM ) )
 		return false;
 
 	if ( pVictim->m_Shared.IsInvulnerable() )
@@ -218,8 +218,8 @@ void CMerasmusAttack::SelectVictim( CMerasmus *me )
 	if ( !IsPotentiallyChaseable( me, m_hTarget ) || m_chooseVictimTimer.IsElapsed() )
 	{
 		CUtlVector<CTFPlayer *> victims;
-		CollectPlayers( &victims, TF_TEAM_RED, true );
-		CollectPlayers( &victims, TF_TEAM_BLUE, true, true );
+		CollectPlayers( &victims, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+		CollectPlayers( &victims, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 		float flMinDist = FLT_MAX;
 		CTFPlayer *pClosest = nullptr;

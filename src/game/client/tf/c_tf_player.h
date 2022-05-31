@@ -66,6 +66,8 @@ public:
 
 	virtual Vector GetObserverCamOrigin( void );
 	virtual int DrawModel( int flags );
+	virtual bool ShouldDraw( void ) OVERRIDE;
+	virtual const Vector &GetRenderOrigin( void ) OVERRIDE;
 
 	virtual bool CreateMove( float flInputSampleTime, CUserCmd *pCmd );
 
@@ -225,7 +227,7 @@ public:
 	void			SetItem( C_TFItem *pItem );
 	C_TFItem *GetItem( void );
 	bool			IsAllowedToPickUpFlag( void );
-	bool			HasTheFlag( void );
+	bool			HasTheFlag( int const *pFlagExceptions = NULL, int nNumExceptions = 0 );
 	float			GetCritMult( void ) { return m_Shared.GetCritMult(); }
 
 	virtual void	ItemPostFrame( void );
@@ -309,6 +311,11 @@ public:
 	void DestroyBombinomiconHint( void );
 	void UpdateHalloweenBombHead( void );
 
+	float m_flInspectTime;
+	bool IsInspecting() const;
+
+	int GetCurrency( void ) { return m_nCurrency; }
+
 protected:
 
 	void ResetFlexWeights( CStudioHdr *pStudioHdr );
@@ -384,6 +391,8 @@ private:
 	CNewParticleEffect *m_pTypingEffect;
 
 	bool m_bUpdateObjectHudState;
+
+	bool m_bOldCustomModelVisible;
 
 public:
 
@@ -468,6 +477,10 @@ public:
 
 	// Overheal particle fix for spies
 	int				m_iOldOverhealTeamNum;
+
+	// MvM Currency
+	int				m_nCurrency;
+	int				m_nOldCurrency;
 
 private:
 

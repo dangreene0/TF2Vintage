@@ -185,4 +185,33 @@ discord::AchievementManager& Core::AchievementManager()
     return achievementManager_;
 }
 
+#include <tier0/memdbgoff.h>
+#include <tier0/memalloc.h>
+
+void *Core::operator new( size_t nSize )
+{
+    MEM_ALLOC_CREDIT();
+    void *pObject = MemAlloc_Alloc( nSize );
+    memset( pObject, 0, sizeof( Core ) );
+    return pObject;
+}
+
+void *Core::operator new( size_t nSize, int nBlockUse, const char *pFileName, int nLine )
+{
+    MEM_ALLOC_CREDIT();
+    void *pObject = MemAlloc_Alloc( nSize, pFileName, nLine );
+    memset( pObject, 0, sizeof( Core ) );
+    return pObject;
+}
+
+void Core::operator delete( void *pPtr )
+{
+    MemAlloc_Free( pPtr );
+}
+
+void Core::operator delete( void *pPtr, int nBlockUse, const char *pFileName, int nLine )
+{
+    MemAlloc_Free( pPtr, pFileName, nLine );
+}
+
 } // namespace discord

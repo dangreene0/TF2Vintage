@@ -377,7 +377,7 @@ public:
 		hidden = false;
 		effect_type = -1;
 		stored_as_integer = false;
-		iAttrClass = NULL_STRING;
+		iszAttrClass = NULL_STRING;
 	}
 	~CEconAttributeDefinition()
 	{
@@ -399,16 +399,15 @@ public:
 	}
 	char const *GetDescription( void ) const
 	{
-		Assert( description_string && description_string[0] );
 		return description_string;
 	}
 
 	string_t GetCachedClass( void ) const
 	{
-		if ( !iAttrClass && attribute_class )
-			iAttrClass = AllocPooledString( attribute_class );
+		if ( !iszAttrClass && attribute_class )
+			iszAttrClass = AllocPooledString( attribute_class );
 
-		return iAttrClass;
+		return iszAttrClass;
 	}
 
 	bool LoadFromKV( KeyValues *pKV );
@@ -418,7 +417,7 @@ private:
 	char const *attribute_class;
 	char const *description_string;
 
-	mutable string_t iAttrClass;
+	mutable string_t iszAttrClass;
 
 	KeyValues *definition;
 
@@ -444,7 +443,7 @@ public:
 
 		for ( int i = 0; i < TF_CLASS_COUNT_ALL; i++ )
 			item_slot_per_class[i] = -1;
-		for ( int team = 0; team < TF_TEAM_COUNT; team++ )
+		for ( int team = 0; team < TF_TEAM_VISUALS_COUNT; team++ )
 			visual[team] = NULL;
 
 		show_in_armory = true;
@@ -454,7 +453,7 @@ public:
 		CLEAR_STR( item_description );
 		item_slot = -1;
 		anim_slot = -1;
-		item_quality = QUALITY_VINTAGE;
+		item_quality = QUALITY_NORMAL;
 		baseitem = false;
 		propername = false;
 		CLEAR_STR( item_logname );
@@ -472,6 +471,7 @@ public:
 		attach_to_hands = 1;
 		attach_to_hands_vm_only = 0;
 		CLEAR_STR( extra_wearable );
+		CLEAR_STR( extra_wearable_vm );
 		act_as_wearable = false;
 		hide_bodygroups_deployed_only = 0;
 		is_reskin = false;
@@ -489,6 +489,7 @@ public:
 	PerTeamVisuals_t *GetVisuals( int iTeamNum = TEAM_UNASSIGNED );
 	char const *GetPerClassModel( int iClass = TF_CLASS_UNDEFINED );
 	int GetLoadoutSlot( int iClass = TF_CLASS_UNDEFINED );
+	int GetAttachToHands(void) const { return attach_to_hands; }
 	const wchar_t *GenerateLocalizedFullItemName( void );
 	const wchar_t *GenerateLocalizedItemNameNoQuality( void );
 	void IterateAttributes( IEconAttributeIterator *iter ) const;
@@ -528,6 +529,13 @@ public:
 
 		return NULL;
 	}
+	char const *GetExtraWearableViewModel( void ) const
+	{
+		if ( extra_wearable_vm && extra_wearable_vm[0] != '\0' )
+			return extra_wearable_vm;
+
+		return NULL;
+	}
 	char const *GetLocalizationName( void ) const
 	{
 		Assert( item_name && *item_name );
@@ -547,7 +555,7 @@ public:
 
 		return NULL;
 	}
-	char const *GetItemIcon( void ) const
+	char const *GetIconName( void ) const
 	{
 		if ( item_iconname && item_iconname[0] != '\0' )
 			return item_iconname;
@@ -596,6 +604,7 @@ private:
 	char const *model_world;
 	char const *model_player_per_class[ TF_CLASS_COUNT_ALL ];
 	char const *extra_wearable;
+	char const *extra_wearable_vm;
 	char const *item_class;
 	char const *item_type_name;
 	char const *item_name;
@@ -612,7 +621,7 @@ private:
 public:
 	item_def_index_t index;
 	CUtlVector<static_attrib_t> attributes;
-	PerTeamVisuals_t *visual[ TF_TEAM_COUNT ];
+	PerTeamVisuals_t *visual[ TF_TEAM_VISUALS_COUNT ];
 	int used_by_classes;
 	int item_slot_per_class[ TF_CLASS_COUNT_ALL ];
 	bool show_in_armory;
@@ -629,6 +638,7 @@ public:
 	int  attach_to_hands;
 	int  attach_to_hands_vm_only;
 	bool act_as_wearable;
+	bool act_as_weapon;
 	CUtlDict< bool, unsigned short > capabilities;
 	CUtlDict< bool, unsigned short > tags;
 	int  hide_bodygroups_deployed_only;

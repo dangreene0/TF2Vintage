@@ -245,7 +245,7 @@ void CTFBotEngineerMoveToBuild::CollectBuildAreas( CTFBot *actor )
 
 			if ( TFGameRules()->GetGameType() == TF_GAMETYPE_CP )
 			{
-				if ( pOther->HasTFAttributes( CONTROL_POINT ) )
+				if ( pOther->HasTFAttributes( TF_NAV_CONTROL_POINT ) )
 					continue;
 
 				if ( ( vecCenter.z - 150.0f ) > pOther->GetCenter().z )

@@ -6,9 +6,9 @@
 #endif
 
 #include "gamestringpool.h"
+#include "tier0/vprof.h"
 #include "econ_item_interface.h"
 
-typedef CUtlVector< CHandle<CBaseEntity> > ProviderVector;
 
 // Client specific.
 #ifdef CLIENT_DLL
@@ -86,18 +86,19 @@ public:
 	template <typename T>
 	static T AttribHookValue( T inValue, const char* text, const CBaseEntity *pEntity, CUtlVector<EHANDLE> *pOutList = NULL )
 	{
+		if ( pEntity == nullptr )
+			return inValue;
+
 		IHasAttributes *pAttribInteface = GetAttribInterface( pEntity );
 		AssertMsg( pAttribInteface, "What are you doing trying to get an attribute of something that doesn't have an interface?" );
-		if ( pAttribInteface )
-		{
-			string_t strAttributeClass = AllocPooledString_StaticConstantStringPointer( text );
-			
-			T outValue;
-			TypedAttribHookValue( outValue, inValue, strAttributeClass, pEntity, pAttribInteface, pOutList );
-			return outValue;
-		}
+		if ( pAttribInteface == nullptr )
+			return inValue;
 
-		return inValue;
+		string_t strAttributeClass = AllocPooledString_StaticConstantStringPointer( text );
+			
+		T outValue;
+		TypedAttribHookValue( outValue, inValue, strAttributeClass, pEntity, pAttribInteface, pOutList );
+		return outValue;
 	}
 
 #ifdef CLIENT_DLL

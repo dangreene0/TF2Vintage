@@ -128,7 +128,7 @@ ActionResult<CTFBot> CTFBotDestroyEnemySentry::Update( CTFBot *me, float dt )
 		m_bUbered = false;
 	}
 
-	if ( !( me->m_nBotAttrs & CTFBot::AttributeType::IGNOREENEMIES ) )
+	if ( me->HasAttribute( CTFBot::AttributeType::IGNOREENEMIES ) )
 	{
 		const CKnownEntity *threat = me->GetVisionInterface()->GetPrimaryKnownThreat();
 		if ( threat && threat->IsVisibleInFOVNow() )
@@ -483,8 +483,8 @@ const char *CTFBotUberAttackEnemySentry::GetName() const
 
 ActionResult<CTFBot> CTFBotUberAttackEnemySentry::OnStart( CTFBot *me, Action<CTFBot> *priorAction )
 {
-	m_bSavedIgnoreEnemies = !!( me->m_nBotAttrs & CTFBot::AttributeType::IGNOREENEMIES );
-	me->m_nBotAttrs |= CTFBot::AttributeType::IGNOREENEMIES;
+	m_bSavedIgnoreEnemies = me->HasAttribute( CTFBot::AttributeType::IGNOREENEMIES );
+	me->SetAttribute( CTFBot::AttributeType::IGNOREENEMIES );
 
 	return BaseClass::Continue();
 }
@@ -570,7 +570,7 @@ void CTFBotUberAttackEnemySentry::OnEnd( CTFBot *me, Action<CTFBot> *newAction )
 {
 	if ( !m_bSavedIgnoreEnemies )
 	{
-		me->m_nBotAttrs &= ~CTFBot::AttributeType::IGNOREENEMIES;
+		me->ClearAttribute( CTFBot::AttributeType::IGNOREENEMIES );
 	}
 }
 

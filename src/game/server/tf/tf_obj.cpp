@@ -62,6 +62,7 @@ ConVar obj_child_damage_factor( "obj_child_damage_factor","0.25", FCVAR_CHEAT | 
 ConVar tf_fastbuild("tf_fastbuild", "0", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY );
 ConVar tf_obj_ground_clearance( "tf_obj_ground_clearance", "32", FCVAR_CHEAT | FCVAR_DEVELOPMENTONLY, "Object corners can be this high above the ground" );
 ConVar tf2v_building_upgrades( "tf2v_building_upgrades", "1", FCVAR_REPLICATED, "Toggles the ability to upgrade buildings other than the sentrygun" );
+ConVar tf2v_use_new_minibuildings( "tf2v_use_new_minibuildings", "0", FCVAR_REPLICATED, "Modifies the behavior of minisentries." );
 
 extern ConVar tf2v_use_new_wrench_mechanics;
 extern ConVar tf2v_use_new_jag;
@@ -622,8 +623,12 @@ void CBaseObject::SpawnControlPanels()
 void CBaseObject::InitializeMapPlacedObject( void )
 {
 	m_bWasMapPlaced = true;
+	if ( m_hBuiltOnEntity.Get() )
+		return;
 
-	if ( ( GetObjectFlags() & OF_IS_CART_OBJECT ) == 0 )
+	SetBuilder( NULL );
+
+	if ( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
 		SpawnControlPanels();
 
 	// Spawn with full health.
@@ -705,6 +710,13 @@ void CBaseObject::BaseObjectThink( void )
 		return;
 	}
 
+	// Don't allow anything if it's being EMP'd.
+	if ( HasEMP() )
+	{
+		EMPThink();
+		return;
+	}
+	
 	// If we're building, keep going
 	if ( IsBuilding() )
 	{
@@ -714,21 +726,6 @@ void CBaseObject::BaseObjectThink( void )
 	else if ( IsUpgrading() )
 	{
 		UpgradeThink();
-		return;
-	}
-	
-	// Don't allow anything if it's being EMP'd.
-	if (m_flEMPTime > 0)
-	{
-		bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
-		if (bEMPDisabled && !m_bDisabled)
-			SetDisabled( true );
-		if (!bEMPDisabled)
-		{
-			if (m_bDisabled)
-				SetDisabled( true );
-			m_flEMPTime = 0;
-		}
 		return;
 	}
 	
@@ -874,7 +871,18 @@ void CBaseObject::DeterminePlaybackRate( void )
 		SetPlaybackRate( 1.0 );
 	}
 
-	StudioFrameAdvance();
+	if ( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
+	{
+		StudioFrameAdvance();
+	}
+}
+
+int CBaseObject::GetMiniBuildingStartingHealth( void )
+{
+	int iMinHealth = GetMiniBuildingBaseHealth();
+	if (tf2v_use_new_minibuildings.GetBool())
+		iMinHealth *= .5f;
+	return iMinHealth;
 }
 
 #define OBJ_UPGRADE_DURATION	1.5f
@@ -1539,7 +1547,7 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 
 	if ( !IsRedeploying() )
 	{
-		SetHealth( OBJECT_CONSTRUCTION_STARTINGHEALTH );
+		SetHealth( GetStartingHealth() );
 	}
 	m_flPercentageConstructed = 0;
 
@@ -1552,7 +1560,8 @@ bool CBaseObject::StartBuilding( CBaseEntity *pBuilder )
 	// been attached to (could be a vehicle which supplies a different
 	// place for the control panel)
 	// NOTE: We must also spawn it before FinishedBuilding can be called
-	SpawnControlPanels();
+	if( ( m_fObjectFlags & OF_DOESNT_HAVE_A_MODEL ) == 0 )
+		SpawnControlPanels();
 
 	// Tell the object we've been built on that we exist
 	if ( IsBuiltOnAttachment() )
@@ -1927,6 +1936,12 @@ int CBaseObject::OnTakeDamage( const CTakeDamageInfo &info )
 
 	float flDamage = info.GetDamage();
 	
+	// If we've been hit with an EMP attack, EMP our building.
+	if ( info.GetDamageCustom() == TF_DMG_CUSTOM_PLASMA_CHARGED )
+	{
+		AddEMP();
+	}
+	
 	// Check weapon attributes if damages change when we hit a building.
 	CBaseEntity *pWeapon = info.GetWeapon();
 	if ( pWeapon )
@@ -2058,7 +2073,7 @@ bool CBaseObject::Repair( float flHealth )
 	if ( IsBuilding() )
 	{
 		// Reduce the construction time by the correct amount for the health passed in
-		float flConstructionTime = flHealth / ((GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH) / m_flTotalConstructionTime);
+		float flConstructionTime = flHealth / ((GetMaxHealth() - OBJECT_CONSTRUCTION_STARTINGHEALTH ) / m_flTotalConstructionTime);
 		m_flConstructionTimeLeft = max( 0, m_flConstructionTimeLeft - flConstructionTime);
 		m_flConstructionTimeLeft = clamp( m_flConstructionTimeLeft, 0.0f, m_flTotalConstructionTime );
 		m_flPercentageConstructed = 1 - (m_flConstructionTimeLeft / m_flTotalConstructionTime);
@@ -2126,7 +2141,12 @@ float CBaseObject::GetConstructionMultiplier( void )
 
 	// Minis deploy faster.
 	if ( IsMiniBuilding() )
-		flMultiplier *= 1.7f;
+	{
+		if (!tf2v_use_new_minibuildings.GetBool())
+			flMultiplier *= 4.0f;
+		else
+			flMultiplier *= (10/3); // New minisentries deploy slower...
+	}
 
 	// Re-deploy twice as fast.
 	if ( IsRedeploying() )
@@ -2150,7 +2170,7 @@ float CBaseObject::GetConstructionMultiplier( void )
 		{
 			m_RepairerList.RemoveAt( iThis );
 		}
-		else
+		else if ( !IsMiniBuilding() || tf2v_use_new_minibuildings.GetBool() ) // ... but can be speed boosted.
 		{
 			if ( tf2v_use_new_wrench_mechanics.GetBool() ) 
 			{
@@ -2387,8 +2407,8 @@ void CBaseObject::Killed( const CTakeDamageInfo &info )
 				CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
 				if ( pItemDef )
 				{
-					if ( pItemDef->GetItemIcon() )
-						killer_weapon_name = pItemDef->GetItemIcon();
+					if ( pItemDef->GetIconName() )
+						killer_weapon_name = pItemDef->GetIconName();
 
 					if ( pItemDef->GetLogName() )
 						killer_weapon_log_name = pItemDef->GetLogName();
@@ -2436,32 +2456,36 @@ void CBaseObject::Killed( const CTakeDamageInfo &info )
 	{
 		CTFAmmoPack *pAmmoPack = CTFAmmoPack::Create(GetAbsOrigin(), GetAbsAngles(), this, "models/weapons/w_models/w_toolbox.mdl");
 
-		// Change the toolbox color to match the team.
-		switch (GetTeamNumber())
-		{
-		case TF_TEAM_RED:
-			pAmmoPack->m_nSkin = 0;
-			break;
-		case TF_TEAM_BLUE:
-			pAmmoPack->m_nSkin = 1;
-			break;
-		case TF_TEAM_GREEN:
-			pAmmoPack->m_nSkin = 2;
-			break;
-		case TF_TEAM_YELLOW:
-			pAmmoPack->m_nSkin = 3;
-			break;
-		}
-
 		if (pAmmoPack)
 		{
+
+			// Change the toolbox color to match the team.
+			switch (GetTeamNumber())
+			{
+			case TF_TEAM_RED:
+				pAmmoPack->m_nSkin = 0;
+				break;
+			case TF_TEAM_BLUE:
+				pAmmoPack->m_nSkin = 1;
+				break;
+			case TF_TEAM_GREEN:
+				pAmmoPack->m_nSkin = 2;
+				break;
+			case TF_TEAM_YELLOW:
+				pAmmoPack->m_nSkin = 3;
+				break;
+			}
+
 			pAmmoPack->SetBodygroup(1, 1);
+			const CObjectInfo* pObjectInfo = GetObjectInfo(ObjectType());
+			pAmmoPack->GiveAmmo(pObjectInfo->m_iMetalToDropInGibs, TF_AMMO_METAL);
 		}
 
 		CObjectSapper *pSapper = dynamic_cast<CObjectSapper *>(FirstMoveChild());
 		if ( pSapper )
 		{
 			pSapper->Explode();
+			UTIL_Remove(pSapper);
 		}
 	}
 	else 	// Do an explosion.
@@ -2594,11 +2618,21 @@ bool CBaseObject::ShowVGUIScreen( int panelIndex, bool bShow )
 //-----------------------------------------------------------------------------
 // Purpose: Overrides disabling for four seconds.
 //-----------------------------------------------------------------------------
-void CBaseObject::OnEMP( void )
+void CBaseObject::AddEMP( void )
 {
 	m_flEMPTime = gpGlobals->curtime + TF_EMP_TIME;
-	if (!m_bDisabled)
-		SetDisabled( true );
+	
+	UpdateDisabledState();	
+}
+
+void CBaseObject::EMPThink( void )
+{
+	bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
+	if (!bEMPDisabled)
+	{
+		m_flEMPTime = 0;
+		UpdateDisabledState();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -2826,33 +2860,24 @@ bool CBaseObject::CheckUpgradeOnHit( CTFPlayer *pPlayer )
 //-----------------------------------------------------------------------------
 bool CBaseObject::Command_Repair( CTFPlayer *pActivator )
 {
-	if ( GetHealth() < GetMaxHealth() )
+	if ( ( GetHealth() < GetMaxHealth() ) && ( !IsMiniBuilding() || !tf2v_use_new_minibuildings.GetBool() ) )
 	{
-		float flRepairRate = 1;
+		float flRepairRate = 1.f;
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flRepairRate, mult_repair_value );
 		
 		if ( tf2v_use_new_jag.GetInt() > 0 )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pActivator, flRepairRate, mult_repair_value_jag);
 		
-		int	iAmountToHeal = min( (int)(flRepairRate * 100) , GetMaxHealth() - GetHealth() );
+		int	iAmountToHeal = Min( (int)(flRepairRate * 100.f), GetMaxHealth() - GetHealth() );
 
 		// repair the building
-		int iRepairCost;
-		int iRepairRateCost;
+		int iRepairRateCost = tf2v_use_new_wrench_mechanics.GetBool() ? 3 : 5;
+
 		float flModRepairCost = 1.0f;
-		if ( tf2v_use_new_wrench_mechanics.GetBool() )
-		{
-			// 3HP per metal (new repair cost)
-			iRepairRateCost = 3;
-		}
-		else
-		{
-			// 5HP per metal (old repair cost)
-			iRepairRateCost = 5;
-		}
 		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pActivator, flModRepairCost, building_cost_reduction );
 		iRepairRateCost *= ( 1 / flModRepairCost );
-		iRepairCost = ceil( (float)( iAmountToHeal ) * (1 / iRepairRateCost ) );	
+
+		int iRepairCost = ceil( (float)( iAmountToHeal ) / iRepairRateCost );	
 	
 		TRACE_OBJECT( UTIL_VarArgs( "%0.2f CObjectDispenser::Command_Repair ( %d / %d ) - cost = %d\n", gpGlobals->curtime, 
 			GetHealth(),
@@ -3181,17 +3206,7 @@ void CBaseObject::RotateBuildAngles( void )
 //-----------------------------------------------------------------------------
 void CBaseObject::UpdateDisabledState( void )
 {
-	// EMP overrides sapper placement.
-	if (m_flEMPTime > 0)
-	{
-		bool bEMPDisabled = m_flEMPTime > gpGlobals->curtime;
-		SetDisabled(bEMPDisabled || HasSapper());
-		if (!bEMPDisabled)
-			m_flEMPTime = 0;
-		return;
-	}
-	
-	SetDisabled( HasSapper() );
+	SetDisabled( HasSapper() || HasEMP() );
 }
 
 //-----------------------------------------------------------------------------

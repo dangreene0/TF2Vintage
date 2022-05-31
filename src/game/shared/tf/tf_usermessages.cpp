@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2003, Valve LLC, All rights reserved. ============
+//========= Copyright ï¿½ 1996-2003, Valve LLC, All rights reserved. ============
 //
 // Purpose: 
 //
@@ -80,6 +80,7 @@ void RegisterUserMessages()
 	usermessages->Register("VoteSetup", -1);
 
 	usermessages->Register("PlayerBonusPoints", 3);
+	usermessages->Register("RDTeamPointsChanged", 4);
 
 	usermessages->Register("SpawnFlyingBird", -1);
 	usermessages->Register("PlayerGodRayEffect", -1);
@@ -90,6 +91,21 @@ void RegisterUserMessages()
 	usermessages->Register("ResetInventory", 0);
 
 	usermessages->Register("NetworkMessage", -1);
+	
+	usermessages->Register("MVMStatsReset", -1);
+	usermessages->Register("MVMPlayerEvent", -1);
+	usermessages->Register("MVMResetPlayerStats", -1);
+	usermessages->Register("MVMWaveFailed", 0);
+	usermessages->Register("MVMAnnouncement", 2);
+	usermessages->Register("MVMPlayerUpgradedEvent", 9);
+	usermessages->Register("MVMVictory", 2);
+	usermessages->Register("MVMWaveChange", 15);
+	usermessages->Register("MVMLocalPlayerUpgradesClear", 1);
+	usermessages->Register("MVMLocalPlayerUpgradesValue", 6);
+	usermessages->Register("MVMResetPlayerWaveSpendingStats", 1);
+	usermessages->Register("MVMLocalPlayerWaveSpendingValue", 12);
+	usermessages->Register("MVMResetPlayerUpgradeSpending", -1);
+	usermessages->Register("MVMServerKickTimeUpdate", 1);
 #ifndef _X360
 	// NVNT register haptic user messages
 	RegisterHapticMessages();

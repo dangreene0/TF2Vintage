@@ -117,11 +117,21 @@ bool CTFLoadoutPanel::Init()
 	m_pItemPanel = NULL;
 	g_TFWeaponScriptParser.InitParser( "scripts/tf_weapon_*.txt", true, false );
 
+	char chEmptyLoc[32];
+	wchar_t* wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
+	g_pVGuiLocalize->ConvertUnicodeToANSI( wcLoc, chEmptyLoc, sizeof( chEmptyLoc ) );
+
 	for ( int i = 0; i < INVENTORY_ROWNUM; i++ )
 	{
 		char szWeaponButton[64];
 		Q_snprintf ( szWeaponButton, sizeof ( szWeaponButton ), "weaponbutton%i", i );
-		m_pWeaponIcons.AddToTail ( new CTFAdvItemButton ( this, szWeaponButton, "DUK" ) );
+		m_pWeaponIcons.AddToTail ( new CTFAdvItemButton ( this, szWeaponButton, chEmptyLoc) );
+	}
+
+	// TODO - don't use varargs?
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		m_pPresetButtons[i] = new CTFAdvButton( this, VarArgs( "preset_%d", i ), VarArgs( "TF_ItemPresetName%d", i ) );
 	}
 
 	for ( int iClassIndex = 0; iClassIndex < TF_CLASS_COUNT_ALL; iClassIndex++ )
@@ -138,7 +148,7 @@ void CTFLoadoutPanel::ApplySchemeSettings( vgui::IScheme *pScheme )
 	BaseClass::ApplySchemeSettings( pScheme );
 
 	LoadControlSettings( "resource/UI/main_menu/LoadoutPanel.res" );
-	m_pItemPanel = dynamic_cast<CTFItemPanel*>( GetMenuPanel( ITEMSELCTION_MENU ) );
+	m_pItemPanel = dynamic_cast<CTFItemPanel*>( GetMenuPanel( ITEMSELECTION_MENU ) );
 }
 
 void CTFLoadoutPanel::PerformLayout()
@@ -161,9 +171,17 @@ void CTFLoadoutPanel::SetCurrentClass(int iClass)
 	{
 		m_pItemPanel->SetEnabled(false);
 		g_bShowItemMenu = false;
-		MAINMENU_ROOT->HidePanel(ITEMSELCTION_MENU);
+		MAINMENU_ROOT->HidePanel( ITEMSELECTION_MENU );
 	}
 
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		if( i == GetTFInventory()->GetCurrentLoadoutSlot( iClass ))
+			m_pPresetButtons[i]->SetSelected( true );
+		else
+			m_pPresetButtons[i]->SetSelected( false );
+	}
+	
 	m_iCurrentClass = iClass;
 	m_iCurrentSlot = g_aClassLoadoutSlots[iClass][0];
 	DefaultLayout();
@@ -218,10 +236,9 @@ void CTFLoadoutPanel::OnCommand ( const char* command )
 	{
 		if ( g_bShowItemMenu )
 		{
-			CTFItemPanel *ItemPanel = dynamic_cast< CTFItemPanel* >(GetMenuPanel ( ITEMSELCTION_MENU ));
-			ItemPanel->SetEnabled ( false );
+			m_pItemPanel->SetEnabled ( false );
 			g_bShowItemMenu = false;
-			MAINMENU_ROOT->HidePanel ( ITEMSELCTION_MENU );
+			MAINMENU_ROOT->HidePanel( ITEMSELECTION_MENU );
 			const char *sChar = strchr ( command, ' ' );
 			if ( sChar )
 			{
@@ -236,13 +253,12 @@ void CTFLoadoutPanel::OnCommand ( const char* command )
 		}
 		else
 		{
-			CTFItemPanel *ItemPanel = dynamic_cast< CTFItemPanel* >(GetMenuPanel ( ITEMSELCTION_MENU ));
-			ItemPanel->SetEnabled ( true );
+			m_pItemPanel->SetEnabled ( true );
 			const char *sChar = strchr ( command, ' ' );
 			int iSlot = atoi ( sChar + 1 );
-			ItemPanel->SetCurrentClassAndSlot ( m_iCurrentClass, iSlot );
+			m_pItemPanel->SetCurrentClassAndSlot ( m_iCurrentClass, iSlot );
 			g_bShowItemMenu = true;
-			MAINMENU_ROOT->ShowPanel ( ITEMSELCTION_MENU );
+			MAINMENU_ROOT->ShowPanel( ITEMSELECTION_MENU );
 		}
 		return;
 	}
@@ -285,7 +301,6 @@ int CTFLoadoutPanel::GetAnimSlot( CEconItemDefinition *pItemDef, int iClass )
 		const char *pszClassname = TranslateWeaponEntForClass( pItemDef->GetClassName(), iClass );
 		_WeaponData *pWeaponInfo = g_TFWeaponScriptParser.GetTFWeaponInfo( pszClassname );
 		Assert( pWeaponInfo );
-
 		iSlot = pWeaponInfo->m_iWeaponType;
 	}
 
@@ -582,14 +597,27 @@ void CTFLoadoutPanel::DefaultLayout()
 				}
 			}
 
+			CTFAdvItemButton *m_pWeaponButton = m_pWeaponIcons[iRow];
 			CEconItemDefinition *pItemData = pItem ? pItem->GetStaticData() : NULL;
 			if (pItemData)
 			{
-				CTFAdvItemButton *m_pWeaponButton = m_pWeaponIcons[iRow];
 				m_pWeaponButton->SetItemDefinition( pItemData );
 				m_pWeaponButton->GetButton()->SetSelected( (iColumn == iWeaponPreset) );
+				m_pWeaponButton->SetVisible( true );
+			}
+			else
+			{
+				m_pWeaponButton->SetVisible( false );
 			}
 		}
+	}
+
+	for ( int i = 0; i < TF_MAX_PRESETS; i++ )
+	{
+		if ( i == GetTFInventory()->GetCurrentLoadoutSlot( iClassIndex ) )
+			m_pPresetButtons[i]->SetSelected( true );
+		else
+			m_pPresetButtons[i]->SetSelected( false );
 	}
 };
 

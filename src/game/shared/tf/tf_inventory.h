@@ -23,7 +23,7 @@
 #define INVENTORY_WEAPONS		62
 #define INVENTORY_WEAPONS_COUNT	63
 #define INVENTORY_COLNUM		1
-#define INVENTORY_ROWNUM		7
+#define INVENTORY_ROWNUM		8
 #define INVENTORY_VECTOR_NUM	INVENTORY_COLNUM * INVENTORY_ROWNUM
 
 //Item Selection Def's
@@ -44,6 +44,7 @@ public:
 	virtual char const *Name() { return "CTFInventory"; }
 
 	virtual bool Init( void );
+	void PostInit( void ) OVERRIDE;
 	virtual void LevelInitPreEntity( void );
 
 	virtual void ClientConnected( edict_t *pClient );
@@ -51,6 +52,7 @@ public:
 
 	int GetNumPresets( int iClass, int iSlot );
 	int GetWeapon( int iClass, int iSlot );
+	void AddNewItem( CEconItemDefinition *pItemDef, int iClass, int iSlot );
 	CEconItemView *GetItem( int iClass, int iSlot, int iNum );
 	bool CheckValidSlot( int iClass, int iSlot, bool bHudCheck = false );
 	bool CheckValidWeapon( int iClass, int iSlot, int iWeapon, bool bHudCheck = false );
@@ -70,9 +72,9 @@ private:
 	static const int Weapons[TF_CLASS_COUNT_ALL][TF_PLAYER_WEAPON_COUNT];
 	CUtlVector<CEconItemView *> m_Items[TF_CLASS_COUNT_ALL][TF_LOADOUT_SLOT_COUNT];
 
-#if defined( CLIENT_DLL )
-	virtual bool CheckSpecialItemAccess( void );
 	void LoadInventory();
+#if defined( CLIENT_DLL )
+	bool CheckSpecialItemAccess( void );
 	void ResetInventory();
 	void SaveInventory();
 	KeyValues* m_pInventory;

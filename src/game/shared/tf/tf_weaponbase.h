@@ -35,6 +35,7 @@
 	#define CTFWeaponBase C_TFWeaponBase
 	#define CTFWeaponBaseGrenadeProj C_TFWeaponBaseGrenadeProj
 	#define CTFViewModel C_TFViewModel
+	#define CTFWearable C_TFWearable
 	#include "tf_fx_muzzleflash.h"
 	#include "c_tf_viewmodeladdon.h"
 #endif
@@ -46,43 +47,8 @@ CTFWeaponInfo *GetTFWeaponInfoForItem( int iItemID, int iClass );
 
 class CTFPlayer;
 class CBaseObject;
+class CTFWearable;
 class CTFWeaponBaseGrenadeProj;
-
-class CTraceFilterIgnoreFriendlyCombatItems : public CTraceFilterSimple
-{
-	DECLARE_CLASS_GAMEROOT( CTraceFilterIgnoreFriendlyCombatItems, CTraceFilterSimple );
-public:
-	CTraceFilterIgnoreFriendlyCombatItems( IHandleEntity const *ignore, int collissionGroup, int teamNumber )
-		: CTraceFilterSimple( ignore, collissionGroup )
-	{
-		m_iTeamNumber = teamNumber;
-		m_bSkipBaseTrace = false;
-	}
-
-	virtual bool ShouldHitEntity( IHandleEntity *pHandleEntity, int contentsMask )
-	{
-		CBaseEntity *pEntity = EntityFromEntityHandle( pHandleEntity );
-		if ( pEntity == nullptr )
-			return false;
-
-		if ( !pEntity->IsCombatItem() )
-			return BaseClass::ShouldHitEntity( pHandleEntity, contentsMask );
-
-		if ( pEntity->GetTeamNumber() == m_iTeamNumber )
-			return false;
-
-		if( !m_bSkipBaseTrace )
-			return BaseClass::ShouldHitEntity( pHandleEntity, contentsMask );
-
-		return true;
-	}
-
-	void AlwaysHitItems( void ) { m_bSkipBaseTrace = true; }
-
-private:
-	int m_iTeamNumber;
-	bool m_bSkipBaseTrace;
-};
 
 // Given an ammo type (like from a weapon's GetPrimaryAmmoType()), this compares it
 // against the ammo name you specify.
@@ -146,9 +112,12 @@ public:
 abstract_class ITFItemMeterUser
 {
 public:
-	virtual float GetEffectBarProgress( void ) = 0;
-	virtual const char *GetEffectLabelText( void ) = 0;
-	virtual const char *GetEffectIconName( void ) = 0;
+	virtual float		GetEffectBarProgress( void ) = 0;
+	virtual int			GetEffectCount( void ) = 0;
+	virtual const char* GetEffectLabelText( void ) = 0;
+	virtual const char* GetEffectIconName( void ) = 0;
+	virtual bool		EffectMeterShouldFlash( void ) = 0;
+	virtual bool		EffectMeterShouldBeep( void ) = 0;
 };
 
 //=============================================================================
@@ -163,6 +132,16 @@ class CTFWeaponBase : public CBaseCombatWeapon
 #if !defined ( CLIENT_DLL )
 	DECLARE_DATADESC();
 #endif
+
+	enum EInspectStage
+	{
+		INSPECT_NONE = -1,
+		INSPECT_START,
+		INSPECT_IDLE,
+		INSPECT_END,
+
+		INSPECT_STAGE_COUNT
+	};
 
 	// Setup.
 	CTFWeaponBase();
@@ -189,6 +168,8 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	// World model.
 	virtual const char *GetWorldModel( void ) const;
 
+	virtual bool SendWeaponAnim( int iActivity );
+
 	virtual bool HideWhenStunned( void ) const { return true; }
 
 #ifdef CLIENT_DLL
@@ -205,6 +186,8 @@ class CTFWeaponBase : public CBaseCombatWeapon
 
 	// Stunball
 	virtual const char *GetStunballViewmodel( void ) { return NULL_STRING; }
+
+	virtual bool AttachmentModelsShouldBeVisible( void ) const OVERRIDE { return (m_iState == WEAPON_IS_ACTIVE) && !IsBeingRepurposedForTaunt(); }
 #endif
 
 	virtual void Drop( const Vector &vecVelocity );
@@ -257,8 +240,14 @@ class CTFWeaponBase : public CBaseCombatWeapon
 
 	// Accessor for bodygroup switching
 	virtual void SwitchBodyGroups( void ) {}
-
 	virtual void UpdatePlayerBodygroups( int bOnOff );
+
+#if defined( GAME_DLL )
+	virtual void UpdateExtraWearables( void );
+	virtual void ExtraWearableEquipped( CTFWearable *pExtraWearableItem );
+	virtual void ExtraWearableViewModelEquipped( CTFWearable *pExtraWearableItem );
+#endif
+	virtual void RemoveExtraWearables( void );
 
 	// Sound.
 	bool PlayEmptySound();
@@ -338,10 +327,11 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	void				StartEffectBarRegen( void );
 	void				EffectBarRegenFinished( void );
 	void				CheckEffectBarRegen( void );
+	bool				HasEffectBar( void ) { return InternalGetEffectBarRechargeTime() > 0; }
 	virtual float		GetEffectBarProgress( void );
 	virtual void		SetEffectBarProgress( float flEffectBarRegenTime ) { m_flEffectBarRegenTime = flEffectBarRegenTime; }
-	virtual const char *GetEffectLabelText( void ) { return ""; }
-	virtual const char *GetEffectIconName( void ) { return ""; }
+	virtual const char* GetEffectLabelText( void ) { return ""; }
+	virtual const char* GetEffectIconName( void ) { return ""; }
 	void				ReduceEffectBarRegenTime( float flTime ) { m_flEffectBarRegenTime -= flTime; }
 	virtual bool		EffectMeterShouldFlash( void ) { return false; }
 
@@ -351,14 +341,18 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	virtual bool		PickedUpBall( CTFPlayer *pPlayer ) { return false; }
 
 	const char*			GetExtraWearableModel( void ) const;
+	const char*			GetExtraWearableViewModel( void ) const;
 
 	virtual float		GetSpeedMod( void ) const { return 1.0f; }
 
-	bool				IsHonorBound( void );
-	bool 				IsPenetrating( void );
-	virtual bool		CanOverload( void );
-	bool				IsSilentKiller( void );
-	virtual bool		CanDecapitate( void );
+	bool				IsHonorBound( void ) const;
+	bool 				IsPenetrating( void ) const;
+	virtual bool		CanOverload( void ) const;
+	bool				IsSilentKiller( void ) const;
+	virtual bool		CanDecapitate( void ) const;
+
+	void				SetIsBeingRepurposedForTaunt( bool bCanOverride ) { m_bBeingRepurposedForTaunt = bCanOverride; }
+	bool				IsBeingRepurposedForTaunt() const { return m_bBeingRepurposedForTaunt; }
 
 	// Energy Weapons
 	virtual bool		IsEnergyWeapon(void) const;
@@ -375,6 +369,12 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	virtual float		Energy_GetRechargeCost( void ) const { return 4.f; }
 	virtual Vector		GetEnergyWeaponColor( bool bUseAlternateColorPalette );
 	virtual float		GetEnergyPercentage( void ) const { return Energy_GetEnergy() / Energy_GetMaxEnergy(); }
+
+	// Inspecting
+	virtual bool		CanInspect() const;
+	void				HandleInspect();
+	EInspectStage		GetInspectStage() const { return m_nInspectStage; }
+	float				GetInspectAnimTime() const { return m_flInspectAnimTime; }
 	
 // Server specific.
 #if !defined( CLIENT_DLL )
@@ -406,6 +406,7 @@ class CTFWeaponBase : public CBaseCombatWeapon
 	virtual void	ProcessMuzzleFlashEvent( void );
 	virtual int		InternalDrawModel( int flags );
 	virtual bool	ShouldDraw( void );
+	virtual void	UpdateVisibility( void ) OVERRIDE;
 
 	virtual bool	ShouldPredict();
 	virtual void	OnDataChanged( DataUpdateType_t type );
@@ -436,6 +437,7 @@ protected:
 #ifdef CLIENT_DLL
 	virtual void CreateMuzzleFlashEffects( C_BaseEntity *pAttachEnt, int nIndex );
 	virtual void DispatchMuzzleFlash( char const *effectName, C_BaseEntity *pAttachEnt );
+	virtual void UpdateExtraWearablesVisibility( void );
 #endif // CLIENT_DLL
 
 	// Reloads.
@@ -475,6 +477,8 @@ protected:
 
 	int				m_iRefundedAmmo;
 
+	CNetworkVar( bool, m_bBeingRepurposedForTaunt );
+
 #ifdef CLIENT_DLL
 	bool m_bOldResetParity;
 
@@ -487,6 +491,15 @@ protected:
 
 private:
 	CTFWeaponBase( const CTFWeaponBase & );
+
+	Activity GetInspectActivity( EInspectStage eStage );
+	bool IsInspectActivity( int iActivity );
+	CNetworkVar( float, m_flInspectAnimTime );
+	CNetworkVar( EInspectStage, m_nInspectStage );
+	bool m_bInspecting;
+
+	CNetworkHandle( CTFWearable, m_hExtraWearable );
+	CNetworkHandle( CTFWearable, m_hExtraWearableViewModel );
 
 	CUtlVector< int > m_iHiddenBodygroups;
 };

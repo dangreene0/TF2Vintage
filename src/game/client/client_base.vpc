@@ -18,15 +18,23 @@ $include "$SRCDIR\vpc_scripts\protobuf_builder.vpc"
 $Include "$SRCDIR\vpc_scripts\source_replay.vpc"	[$TF]
 $Include "$SRCDIR\game\protobuf_include.vpc"
 
+$CustomBuildStep "nut"
+{
+	$CommandLine	"$SRCDIR\devtools\bin\perl.exe $SRCDIR\devtools\bin\texttoarray.pl $(InputPath) g_Script_$(InputName)> $(InputName)_nut.h" [$WINDOWS]
+	$CommandLine	"perl $SRCDIR\devtools\bin\texttoarray.pl $(InputPath) g_Script_$(InputName)> $(InputName)_nut.h" [$POSIX]
+	$Description	"$(InputFileName) produces $(InputName)_nut.h"
+	$Outputs		"$(InputName)_nut.h"
+}
+
 $Configuration	"Debug"
 {
 	$General
 	{
-		$OutputDirectory			".\Debug_$GAMENAME"			[$WIN32]
-		$IntermediateDirectory		".\Debug_$GAMENAME"			[$WIN32]
+		$OutputDirectory		".\Debug_$GAMENAME"			[$WIN32]
+		$IntermediateDirectory	".\Debug_$GAMENAME"			[$WIN32]
 
-		$OutputDirectory			".\Debug_$GAMENAME_360"		[$X360]
-		$IntermediateDirectory		".\Debug_$GAMENAME_360"		[$X360]
+		$OutputDirectory		".\Debug_$GAMENAME_360"		[$X360]
+		$IntermediateDirectory	".\Debug_$GAMENAME_360"		[$X360]
 	}
 }
 
@@ -34,11 +42,11 @@ $Configuration	"Release"
 {
 	$General
 	{
-		$OutputDirectory			".\Release_$GAMENAME"		[$WIN32]
-		$IntermediateDirectory		".\Release_$GAMENAME"		[$WIN32]
+		$OutputDirectory		".\Release_$GAMENAME"		[$WIN32]
+		$IntermediateDirectory	".\Release_$GAMENAME"		[$WIN32]
 
-		$OutputDirectory			".\Release_$GAMENAME_360"	[$X360]
-		$IntermediateDirectory		".\Release_$GAMENAME_360"	[$X360]
+		$OutputDirectory		".\Release_$GAMENAME_360"	[$X360]
+		$IntermediateDirectory	".\Release_$GAMENAME_360"	[$X360]
 	}
 }
 
@@ -71,7 +79,7 @@ $Configuration
 		$AdditionalDependencies			"$BASE wsock32.lib Ws2_32.lib" [$BUILD_REPLAY]
 	}
 
-	$PostBuildEvent
+	$PostBuildEvent [!$ANALYZE && $WIN32]
 	{
 		$CommandLine		"$BASE" "copy $QUOTE$SRCDIR\thirdparty\discord_game_sdk\lib\x86\discord_game_sdk.dll$QUOTE $OUTBINDIR\discord_game_sdk.dll" "\n" \
 							"if ERRORLEVEL 1 goto BuildEventFailed" "\n"
@@ -507,6 +515,10 @@ $Project
 		$File	"$SRCDIR\game\shared\mp_shareddefs.cpp"
 		$File	"$SRCDIR\game\client\c_vote_controller.h"
 		$File	"$SRCDIR\game\client\c_vote_controller.cpp"
+		$File	"c_lights.cpp"
+		$File	"worldlight.cpp"
+		$File	"worldlight.h"
+		$File	"vis_tester.cpp"
 		//Haptics
 		$File	"$SRCDIR\public\haptics\haptic_msgs.cpp"	[!$X360]
 		$File	"$SRCDIR\public\haptics\haptic_utils.cpp"	[$WIN32&&!$X360]

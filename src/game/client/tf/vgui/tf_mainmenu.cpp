@@ -81,7 +81,7 @@ CTFMainMenu::CTFMainMenu( VPANEL parent ) : vgui::EditablePanel( NULL, "MainMenu
 	AddMenuPanel( new CTFPauseMenuPanel( this, "CTFPauseMenuPanel" ), PAUSE_MENU );
 	AddMenuPanel( new CTFBackgroundPanel( this, "CTFBackgroundPanel" ), BACKGROUND_MENU );
 	AddMenuPanel( new CTFLoadoutPanel( this, "CTFLoadoutPanel" ), LOADOUT_MENU );
-	AddMenuPanel(new CTFItemPanel(dynamic_cast<CTFLoadoutPanel*>(GetMenuPanel(LOADOUT_MENU)), "CTFLoadoutPanel"), ITEMSELCTION_MENU);
+	AddMenuPanel( new CTFItemPanel( GetMenuPanel( LOADOUT_MENU ), "CTFLoadoutPanel"), ITEMSELECTION_MENU );
 	AddMenuPanel( new CTFShadeBackgroundPanel( this, "CTFShadeBackgroundPanel" ), SHADEBACKGROUND_MENU );
 	AddMenuPanel( new CTFQuitDialogPanel( this, "CTFQuitDialogPanel" ), QUIT_MENU );
 	AddMenuPanel( new CTFOptionsDialog( this, "CTFOptionsDialog" ), OPTIONSDIALOG_MENU );
@@ -94,7 +94,7 @@ CTFMainMenu::CTFMainMenu( VPANEL parent ) : vgui::EditablePanel( NULL, "MainMenu
 	ShowPanel( BACKGROUND_MENU );
 	HidePanel( SHADEBACKGROUND_MENU );
 	HidePanel( LOADOUT_MENU );
-	HidePanel(ITEMSELCTION_MENU);
+	HidePanel( ITEMSELECTION_MENU );
 	HidePanel( QUIT_MENU );
 	HidePanel( OPTIONSDIALOG_MENU );
 	HidePanel( STATSUMMARY_MENU );

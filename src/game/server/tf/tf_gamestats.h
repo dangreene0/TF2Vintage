@@ -14,6 +14,7 @@
 #include "GameEventListener.h"
 
 class CTFPlayer;
+class CBaseObject;
 
 //=============================================================================
 //
@@ -76,6 +77,7 @@ public:
 	void Event_MaxSentryKills( CTFPlayer *pAttacker, int iMaxKills );
 	void Event_GameEnd(void);
 	void Event_PlayerAwardBonusPoints(CTFPlayer *pPlayer, CBaseEntity *pAwarder, int iAmount);
+	void Event_PlayerCollectedCurrency( CBasePlayer *pPlayer, int nAmount );
 
 	virtual void FrameUpdatePostEntityThink();
 

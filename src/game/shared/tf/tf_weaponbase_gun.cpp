@@ -432,7 +432,8 @@ void CTFWeaponBaseGun::GetProjectileFireSetup( CTFPlayer *pPlayer, Vector vecOff
 	}
 
 	Vector vecForward, vecRight, vecUp;
-	AngleVectors( GetSpreadAngles(), &vecForward, &vecRight, &vecUp );
+	QAngle angSpread = GetSpreadAngles();
+	AngleVectors( angSpread, &vecForward, &vecRight, &vecUp );
 
 	Vector vecShootPos = pPlayer->Weapon_ShootPosition();
 
@@ -517,8 +518,9 @@ QAngle CTFWeaponBaseGun::GetSpreadAngles( void )
 	CALL_ATTRIB_HOOK_FLOAT( flSpreadAngle, projectile_spread_angle );
 	if ( flSpreadAngle )
 	{
-		angSpread.x += RandomFloat( -flSpreadAngle, flSpreadAngle );
-		angSpread.y += RandomFloat( -flSpreadAngle, flSpreadAngle );
+		float flRandomSpread = RandomFloat( -flSpreadAngle, flSpreadAngle );
+		angSpread.x += flRandomSpread;
+		angSpread.y += flRandomSpread;
 	}
 
 	return angSpread;
@@ -610,15 +612,6 @@ CBaseEntity *CTFWeaponBaseGun::FireEnergyRing( CTFPlayer *pPlayer )
 	}
 	GetProjectileFireSetup( pPlayer, vecOffset, &vecSrc, &angForward, false );
 
-	// Add attribute spread.
-	float flSpread = 0;
-	CALL_ATTRIB_HOOK_FLOAT( flSpread, projectile_spread_angle );
-	if ( flSpread != 0)
-	{
-		angForward.x += RandomFloat(-flSpread, flSpread);
-		angForward.y += RandomFloat(-flSpread, flSpread);
-	}
-
 	CTFProjectile_EnergyRing *pBeam = CTFProjectile_EnergyRing::Create(this, vecSrc, angForward, pPlayer, pPlayer);
 	if ( pBeam )
 	{
@@ -705,8 +698,9 @@ CBaseEntity *CTFWeaponBaseGun::FireNail( CTFPlayer *pPlayer, int iSpecificNail )
 	PlayWeaponShootSound();
 
 	Vector vecSrc;
+	Vector vecOffset(16.0f,6.0f,-8.0f);
 	QAngle angForward;
-	GetProjectileFireSetup( pPlayer, Vector(16,6,-8), &vecSrc, &angForward );
+	GetProjectileFireSetup( pPlayer, vecOffset, &vecSrc, &angForward );
 
 	// Add some extra spread to our nails.
 	const float flSpread = 1.5 + GetProjectileSpread();

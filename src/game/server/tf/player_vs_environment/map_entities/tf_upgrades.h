@@ -42,7 +42,9 @@ public:
 	void			ApplyUpgradeAttributeBlock( UpgradeAttribBlock_t *pUpgradeBlock, int nUpgradeCount, CTFPlayer *pPlayer, bool bDowngrade );
 	attrib_def_index_t ApplyUpgradeToItem( CTFPlayer *pPlayer, CEconItemView *pItem, int iUpgrade, int nCost, bool bDowngrade = false, bool bIsFresh = false );
 	char const*		GetUpgradeAttributeName( int iUpgrade ) const;
+	void			GrantOrRemoveAllUpgrades( CTFPlayer *pPlayer, bool bRemove = false, bool bRefund = true );
 	void			NotifyItemOnUpgrade( CTFPlayer *pPlayer, attrib_def_index_t nAttrDefIndex, bool bDowngrade = false );
+	void			PlayerPurchasingUpgrade( CTFPlayer *pPlayer, int iItemSlot, int iUpgrade, bool bDowngrade, bool bFree = false, bool bRespec = false );
 	void			ReportUpgrade ( CTFPlayer *pPlayer, int iItemDef, int iAttributeDef, int nQuality, int nCost, bool bDowngrade, bool bIsFresh, bool bIsBottle = false );
 	void			RestoreItemAttributeToBaseValue( CEconAttributeDefinition *pAttrib, CEconItemView *pItem );
 	void			RestorePlayerAttributeToBaseValue( CEconAttributeDefinition *pAttrib, CTFPlayer *pPlayer );

@@ -91,7 +91,7 @@ ActionResult<CTFBot> CTFBotMainAction::Update( CTFBot *me, float dt )
 			else
 			{
 				// If we are skilled enough, we are aware of what classes they don't have
-				if ( me->m_iSkill > CTFBot::NORMAL )
+				if ( me->GetDifficulty() > CTFBot::DifficultyType::NORMAL )
 					me->DisguiseAsEnemy();
 				else
 					me->m_Shared.Disguise( GetEnemyTeam( me ), RandomInt( 1, 9 ) );
@@ -177,7 +177,7 @@ EventDesiredResult<CTFBot> CTFBotMainAction::OnInjured( CTFBot *me, const CTakeD
 			me->DelayedThreatNotice( info.GetInflictor(), 0.5 );
 
 			CUtlVector<CTFPlayer *> teammates;
-			CollectPlayers( &teammates, me->GetTeamNumber(), true );
+			CollectPlayers( &teammates, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 
 			float flChanceMod = 1.0f / ( tf_bot_notice_backstab_max_chance.GetFloat() - tf_bot_notice_backstab_min_chance.GetFloat() );
 
@@ -309,7 +309,7 @@ Vector CTFBotMainAction::SelectTargetPoint( const INextBot *me, const CBaseComba
 	if ( !pWeapon )
 		return them->WorldSpaceCenter();
 
-	if ( actor->m_iSkill != CTFBot::EASY )
+	if ( !actor->IsDifficulty( CTFBot::DifficultyType::EASY ) )
 	{
 		// Try to aim for their feet for best damage
 		if ( pWeapon->GetWeaponID() == TF_WEAPON_ROCKETLAUNCHER )
@@ -356,7 +356,7 @@ Vector CTFBotMainAction::SelectTargetPoint( const INextBot *me, const CBaseComba
 
 			if ( flDistance <= 150.0f )
 				vecTarget = them->EyePosition();
-			else if ( actor->m_iSkill == CTFBot::NORMAL )
+			else if ( actor->IsDifficulty( CTFBot::DifficultyType::NORMAL ) )
 				vecTarget = them->WorldSpaceCenter();
 			else
 				vecTarget = them->EyePosition();
@@ -410,20 +410,20 @@ Vector CTFBotMainAction::SelectTargetPoint( const INextBot *me, const CBaseComba
 		FastSinCos( m_flSniperAimErrorAngle, &flErrorSin, &flErrorCos );
 
 		Vector vecTarget = vec3_origin;
-		switch ( actor->m_iSkill )
+		switch ( actor->GetDifficulty() )
 		{
-			case CTFBot::NORMAL:
+			case CTFBot::DifficultyType::NORMAL:
 			{
 				vecTarget = ( them->EyePosition() + them->EyePosition() + them->WorldSpaceCenter() ) / 3;
 				break;
 			}
-			case CTFBot::EASY:
+			case CTFBot::DifficultyType::EASY:
 			{
 				vecTarget = them->WorldSpaceCenter();
 				break;
 			}
-			case CTFBot::HARD:
-			case CTFBot::EXPERT:
+			case CTFBot::DifficultyType::HARD:
+			case CTFBot::DifficultyType::EXPERT:
 			{
 				vecTarget = them->EyePosition();
 				break;
@@ -448,10 +448,10 @@ const CKnownEntity *CTFBotMainAction::SelectMoreDangerousThreat( const INextBot 
 	CTFBot *actor = static_cast<CTFBot *>( me->GetEntity() );
 
 	const CKnownEntity *result = SelectMoreDangerousThreatInternal( me, them, threat1, threat2 );
-	if ( actor->m_iSkill == CTFBot::EASY )
+	if ( actor->IsDifficulty( CTFBot::DifficultyType::EASY ) )
 		return result;
 
-	if ( actor->TransientlyConsistentRandomValue( 10.0f, 0 ) >= 0.5f || actor->m_iSkill >= CTFBot::HARD )
+	if ( actor->TransientlyConsistentRandomValue( 10.0f, 0 ) >= 0.5f || actor->GetDifficulty() >= CTFBot::DifficultyType::HARD )
 		return GetHealerOfThreat( result );
 
 	return result;
@@ -460,10 +460,10 @@ const CKnownEntity *CTFBotMainAction::SelectMoreDangerousThreat( const INextBot 
 
 void CTFBotMainAction::Dodge( CTFBot *actor )
 {
-	if ( actor->m_iSkill == CTFBot::EASY )
+	if ( actor->IsDifficulty( CTFBot::DifficultyType::EASY ) )
 		return;
 
-	if ( ( actor->m_nBotAttrs & CTFBot::AttributeType::DISABLEDODGE ) != 0 )
+	if ( actor->HasAttribute( CTFBot::AttributeType::DISABLEDODGE ) )
 		return;
 
 	if ( actor->m_Shared.IsInvulnerable() ||
@@ -534,7 +534,7 @@ void CTFBotMainAction::FireWeaponAtEnemy( CTFBot *actor )
 	if ( !actor->IsAlive() )
 		return;
 
-	if ( ( actor->m_nBotAttrs & (CTFBot::AttributeType::SUPPRESSFIRE|CTFBot::AttributeType::IGNOREENEMIES) ) != 0 )
+	if ( actor->HasAttribute( CTFBot::AttributeType::SUPPRESSFIRE|CTFBot::AttributeType::IGNOREENEMIES ) )
 		return;
 
 	if ( !tf_bot_fire_weapon_allowed.GetBool() )
@@ -758,10 +758,10 @@ bool CTFBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *who, const
 			return ( vecToActor.Dot( vecThreatFwd ) > 0.0f );
 		}
 
-		if ( actor->m_iSkill > CTFBot::NORMAL && pPlayer->IsPlayerClass( TF_CLASS_MEDIC ) )
+		if ( actor->GetDifficulty() > CTFBot::DifficultyType::NORMAL && pPlayer->IsPlayerClass( TF_CLASS_MEDIC ) )
 			return true;
 
-		if ( actor->m_iSkill > CTFBot::NORMAL && pPlayer->IsPlayerClass( TF_CLASS_ENGINEER ) )
+		if ( actor->GetDifficulty() > CTFBot::DifficultyType::NORMAL && pPlayer->IsPlayerClass( TF_CLASS_ENGINEER ) )
 			return true;
 	}
 	else

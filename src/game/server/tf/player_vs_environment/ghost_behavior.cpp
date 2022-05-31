@@ -45,8 +45,8 @@ ActionResult<CGhost> CGhostBehavior::Update( CGhost *me, float interval )
 		m_scareTimer.Start( 1.0f );
 
 		CUtlVector<CTFPlayer *> victims;
-		CollectPlayers( &victims, TF_TEAM_RED, true );
-		CollectPlayers( &victims, TF_TEAM_BLUE, true, true );
+		CollectPlayers( &victims, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+		CollectPlayers( &victims, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 		FOR_EACH_VEC( victims, i )
 		{

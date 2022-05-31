@@ -24,9 +24,14 @@
 #include "tf_hud_freezepanel.h"
 #include "tf_mainmenu.h"
 
+#include "tier0/icommandline.h"
+
 using namespace vgui;
 
 DECLARE_HUDELEMENT( CTFHudBetaStamp );
+
+extern ConVar developer;
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -71,7 +76,14 @@ void CTFHudBetaStamp::OnThink()
 //-----------------------------------------------------------------------------
 bool CTFHudBetaStamp::ShouldDraw( void )
 {
+#ifdef _DEBUG
+	return true;
+#else
+	if ( developer.GetInt() == 1 || CommandLine()->FindParm( "-dev" ) )
+		return true;
+
 	return false;
+#endif // _DEBUG
 }
 
 

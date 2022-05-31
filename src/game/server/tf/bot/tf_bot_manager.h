@@ -14,6 +14,9 @@
 
 #include "NextBotManager.h"
 
+
+#define BOT_NAMES_FILE	"scripts/tf_bot_names.txt"
+
 class CTFBotManager : public NextBotManager
 {
 public:
@@ -50,10 +53,5 @@ private:
 };
 
 extern CTFBotManager &TheTFBots( void );
-
-const char *DifficultyToName( int iSkillLevel );
-int NameToDifficulty( const char *pszSkillName );
-
-void CreateBotName( int iTeamNum, int iClassIdx, int iSkillLevel, char *out, int outlen );
 
 #endif

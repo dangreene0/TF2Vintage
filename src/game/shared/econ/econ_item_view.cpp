@@ -183,7 +183,7 @@ void CEconItemView::SetItemDefIndex( int iItemID )
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
-int CEconItemView::GetItemDefIndex( void ) const
+item_def_index_t CEconItemView::GetItemDefIndex( void ) const
 {
 	return m_iItemDefinitionIndex;
 }
@@ -447,7 +447,7 @@ unsigned int CEconItemView::GetModifiedRGBValue( bool bAlternate )
 //-----------------------------------------------------------------------------
 int CEconItemView::GetSkin( int iTeamNum, bool bViewmodel ) const
 {
-	if (iTeamNum <= TF_TEAM_COUNT)
+	if (iTeamNum < TF_TEAM_VISUALS_COUNT)
 	{
 		//if !GetStaticData->GetVisuals( iTeamNum )->style.IsEmpty()
 		PerTeamVisuals_t *pVisuals = GetStaticData()->GetVisuals( iTeamNum );

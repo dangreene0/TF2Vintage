@@ -82,7 +82,7 @@ float MerasmusModifyDamage( CTakeDamageInfo const& info )
 void BombHeadForTeam( int iTeam, float flDuration )
 {
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, iTeam, true );
+	CollectPlayers( &players, iTeam, COLLECT_ONLY_LIVING_PLAYERS );
 
 	FOR_EACH_VEC( players, i )
 	{
@@ -96,8 +96,8 @@ void BombHeadForTeam( int iTeam, float flDuration )
 void RemoveAllBombHeadFromPlayers( void )
 {
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	FOR_EACH_VEC( players, i )
 	{
@@ -135,7 +135,7 @@ void CollectTargets( CBaseCombatCharacter *pActor, float fRadius, int iTeam, int
 	pOut->RemoveAll();
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, iTeam, true );
+	CollectPlayers( &players, iTeam, COLLECT_ONLY_LIVING_PLAYERS );
 
 	CUtlVector<CTFPlayer *> validPlayers;
 	FOR_EACH_VEC( players, i )
@@ -627,8 +627,8 @@ void CMerasmus::OnRevealed( bool bFound )
 	// Teleport in facing the closest player
 
 	CUtlVector<CTFPlayer *> players;
-	CollectPlayers( &players, TF_TEAM_RED, true );
-	CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+	CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 	CTFPlayer *pClosest = NULL;
 	float flMinDistance = FLT_MAX;

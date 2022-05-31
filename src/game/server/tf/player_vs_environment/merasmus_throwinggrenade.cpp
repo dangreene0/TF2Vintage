@@ -30,8 +30,8 @@ ActionResult<CMerasmus> CMerasmusThrowingGrenade::OnStart( CMerasmus *me, Action
 	if ( !me->IsLineOfSightClear( m_hVictim ) )
 	{
 		CUtlVector<CTFPlayer *> players;
-		CollectPlayers( &players, TF_TEAM_RED, true );
-		CollectPlayers( &players, TF_TEAM_BLUE, true, true );
+		CollectPlayers( &players, TF_TEAM_RED, COLLECT_ONLY_LIVING_PLAYERS );
+		CollectPlayers( &players, TF_TEAM_BLUE, COLLECT_ONLY_LIVING_PLAYERS, APPEND_PLAYERS );
 
 		CUtlVector<CTFPlayer *> validPlayers;
 		FOR_EACH_VEC( players, i )

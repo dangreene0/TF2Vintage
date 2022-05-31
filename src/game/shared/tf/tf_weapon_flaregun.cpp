@@ -218,11 +218,14 @@ void CTFFlareGun_Revenge::PrimaryAttack( void )
 
 	BaseClass::PrimaryAttack();
 
-	// Lower the reveng crit count
+	// Lower the revenge crit count
 	CTFPlayer *pOwner = ToTFPlayer( GetPlayerOwner() );
 	if ( pOwner )
 	{
 		pOwner->m_Shared.DeductAirblastCrit();
+		// If we don't have any remaining crits left, remove our boost.
+		if (pOwner->m_Shared.InCond(TF_COND_CRITBOOSTED_ACTIVEWEAPON) && (!pOwner->m_Shared.HasAirblastCrits() || !CanGetAirblastCrits()))
+			pOwner->m_Shared.RemoveCond( TF_COND_CRITBOOSTED_ACTIVEWEAPON );
 	}
 }
 
@@ -375,14 +378,8 @@ void CTFFlareGun_Revenge::ChargePostFrame( void )
 					// Make sure the team isn't burning themselves to earn crits
 					if ( pBurner && !pBurner->InSameTeam( pOwner ) )
 					{
-						if( CanGetAirblastCrits() )
-						{
+						if ( CanGetAirblastCrits() )
 							pOwner->m_Shared.StoreAirblastCrit();
-
-
-							if ( !pOwner->m_Shared.InCond( TF_COND_CRITBOOSTED_ACTIVEWEAPON ) )
-								pOwner->m_Shared.AddCond( TF_COND_CRITBOOSTED_ACTIVEWEAPON );
-						}
 
 						int nRestoreHealthOnExtinguish = 0;
 						CALL_ATTRIB_HOOK_INT( nRestoreHealthOnExtinguish, extinguish_restores_health );
@@ -401,6 +398,8 @@ void CTFFlareGun_Revenge::ChargePostFrame( void )
 							}
 						}
 					}
+					if (pOwner->m_Shared.HasAirblastCrits() && !pOwner->m_Shared.InCond(TF_COND_CRITBOOSTED_ACTIVEWEAPON))
+					 pOwner->m_Shared.AddCond( TF_COND_CRITBOOSTED_ACTIVEWEAPON );
 				#endif
 				}
 			}
@@ -539,7 +538,7 @@ bool CTFFlareGun_Revenge::HasChargeBar( void )
 bool CTFFlareGun_Revenge::CanGetAirblastCrits( void ) const
 {
 	int nAirblastRevenge = 0;
-	CALL_ATTRIB_HOOK_INT( nAirblastRevenge, sentry_killed_revenge );
+	CALL_ATTRIB_HOOK_INT( nAirblastRevenge, extinguish_revenge );
 	return nAirblastRevenge == 1;
 }
 

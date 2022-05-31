@@ -24,7 +24,9 @@ public:
 
 	uint64 GetReadControlPointMask( void ) const OVERRIDE
 	{
-		return ( 1ULL << m_nStartCP ) | ( 1ULL << m_nEndCP );
+		uint64 nMask = 0;
+
+		return nMask;
 	}
 
 	bool IsScrubSafe( void ) OVERRIDE
@@ -74,7 +76,9 @@ public:
 
 	uint64 GetReadControlPointMask( void ) const OVERRIDE
 	{
-		return ( 1ULL << m_nStartCP ) | ( 1ULL << m_nEndCP );
+		uint64 nMask = 0;
+
+		return nMask;
 	}
 
 	bool IsScrubSafe( void ) OVERRIDE
@@ -129,7 +133,9 @@ public:
 
 	uint64 GetReadControlPointMask( void ) const OVERRIDE
 	{
-		return ( 1ULL << m_nStartCP ) | ( 1ULL << m_nEndCP );
+		uint nMask = 0;
+
+		return nMask;
 	}
 
 	bool IsScrubSafe( void ) OVERRIDE
@@ -198,7 +204,7 @@ public:
 
 	void InitParams( CParticleSystemDefinition *pDef, CDmxElement *pElement ) OVERRIDE
 	{
-		m_nInputCP = clamp( m_nInputCP, 0, 64 );
+		m_nInputCP = clamp( m_nInputCP, 0, MAX_PARTICLE_CONTROL_POINTS );
 	}
 
 	void Operate( CParticleCollection *pParticles, float flStrength,  void *pContext ) const OVERRIDE;
@@ -285,46 +291,53 @@ class C_OP_MovementFollowCP : public CParticleOperatorInstance
 public:
 	DECLARE_PARTICLE_OPERATOR( C_OP_MovementFollowCP );
 
-	uint32 GetReadInitialAttributes( void ) const OVERRIDE
-	{
-		return ( 1 << m_nFieldOutput );
-	}
 	uint32 GetWrittenAttributes( void ) const OVERRIDE
 	{
-		return ( 1 << m_nFieldOutput ) | PARTICLE_ATTRIBUTE_PREV_XYZ_MASK;
+		uint nAttributes = PARTICLE_ATTRIBUTE_PREV_XYZ_MASK | PARTICLE_ATTRIBUTE_XYZ_MASK;
+		if ( m_flLerpSpeed > 0 )
+			nAttributes |= PARTICLE_ATTRIBUTE_RADIUS_MASK;
+		if ( m_bUpdateParticleLife )
+			nAttributes |= PARTICLE_ATTRIBUTE_LIFE_DURATION_MASK;
+
+		return nAttributes;
 	}
 
 	uint32 GetReadAttributes( void ) const OVERRIDE
 	{
-		return PARTICLE_ATTRIBUTE_XYZ_MASK;
+		uint nAttributes = PARTICLE_ATTRIBUTE_PREV_XYZ_MASK | PARTICLE_ATTRIBUTE_XYZ_MASK | 0x200000;
+		if ( m_flLerpSpeed > 0 )
+			nAttributes |= PARTICLE_ATTRIBUTE_RADIUS_MASK;
+		if ( m_bUpdateParticleLife )
+			nAttributes |= PARTICLE_ATTRIBUTE_LIFE_DURATION_MASK;
+
+		return nAttributes;
 	}
 
 	uint64 GetReadControlPointMask( void ) const OVERRIDE
 	{
-		return ( 1ULL << m_nInputCP ) | ( 1ULL << m_nOutputCP );
+		uint nMask = 0;
+		
+
+		return nMask;
 	}
 
 	void Operate( CParticleCollection *pParticles, float flStrength, void *pContext ) const OVERRIDE;
 
-	int m_nInputCP;
-	int m_nOutputCP;
-	int m_nFieldOutput;
-	float m_flInputMin;
-	float m_flInputMax;
-	float m_flOutputMin;
-	float m_flOutputMax;
+	int m_nStartCP;
+	int m_nMaximumEndCP;
+	float m_flCatchUpSpeed;
+	float m_flLerpSpeed;
+	bool m_bUpdateParticleLife;
 };
 
 DEFINE_PARTICLE_OPERATOR( C_OP_MovementFollowCP, "Movement Follow CP", OPERATOR_GENERIC );
 
 BEGIN_PARTICLE_OPERATOR_UNPACK( C_OP_MovementFollowCP )
-	DMXELEMENT_UNPACK_FIELD( "input control point", "0", int, m_nInputCP )
-	DMXELEMENT_UNPACK_FIELD( "input minimum", "0", float, m_flInputMin )
-	DMXELEMENT_UNPACK_FIELD( "input maximum", "1", float, m_flInputMax )
-	DMXELEMENT_UNPACK_FIELD( "output control point", "-1", int, m_nOutputCP )
-	DMXELEMENT_UNPACK_FIELD( "Output field 0-2 X/Y/Z", "0", int, m_nFieldOutput )
-	DMXELEMENT_UNPACK_FIELD( "output minimum", "0", float, m_flOutputMin )
-	DMXELEMENT_UNPACK_FIELD( "output maximum", "1", float, m_flOutputMax )
+	DMXELEMENT_UNPACK_FIELD( "starting control point", "0", int, m_nStartCP )
+	DMXELEMENT_UNPACK_FIELD( "maximum end control point", "10", int, m_nMaximumEndCP )
+	DMXELEMENT_UNPACK_FIELD( "catch up speed", "0", float, m_flCatchUpSpeed )
+	DMXELEMENT_UNPACK_FIELD( "lerp to CP radius speed", "0", float, m_flLerpSpeed )
+	DMXELEMENT_UNPACK_FIELD( "update particle lifetime", "0", bool, m_bUpdateParticleLife )
 END_PARTICLE_OPERATOR_UNPACK( C_OP_MovementFollowCP );
 
 void C_OP_MovementFollowCP::Operate( CParticleCollection *pParticles, float flStrength, void *pContext ) const
@@ -333,11 +346,71 @@ void C_OP_MovementFollowCP::Operate( CParticleCollection *pParticles, float flSt
 }
 
 
+class C_OP_LockToSavedSequentialPath : public CParticleOperatorInstance
+{
+public:
+	DECLARE_PARTICLE_OPERATOR( C_OP_LockToSavedSequentialPath );
+
+	uint32 GetWrittenAttributes( void ) const OVERRIDE
+	{
+		return PARTICLE_ATTRIBUTE_HITBOX_RELATIVE_XYZ_MASK | PARTICLE_ATTRIBUTE_HITBOX_INDEX_MASK | PARTICLE_ATTRIBUTE_CREATION_TIME_MASK;
+	}
+
+	uint32 GetReadAttributes( void ) const OVERRIDE
+	{
+		return PARTICLE_ATTRIBUTE_XYZ_MASK | PARTICLE_ATTRIBUTE_PREV_XYZ_MASK;
+	}
+
+	uint64 GetReadControlPointMask( void ) const OVERRIDE
+	{
+		uint64 nStartMask = ( 1ULL << m_PathParams.m_nStartControlPointNumber ) - 1;
+		uint64 nEndMask = ( 1ULL << ( m_PathParams.m_nEndControlPointNumber + 1 ) ) - 1;
+
+		return nEndMask & ( ~nStartMask );
+	}
+
+	void InitParams( CParticleSystemDefinition *pDef, CDmxElement *pElement ) OVERRIDE
+	{
+		m_PathParams.ClampControlPointIndices();
+	}
+
+	void InitializeContextData( CParticleCollection *pParticle, void *pContext ) const OVERRIDE
+	{
+
+	}
+
+	size_t GetRequiredContextBytes( void ) const OVERRIDE
+	{
+		return 40;
+	}
+
+	void Operate( CParticleCollection *pParticles, float flStrength, void *pContext ) const OVERRIDE;
+
+	bool m_bUseSequentialCPPairs;
+	CPathParameters m_PathParams;
+};
+
+DEFINE_PARTICLE_OPERATOR( C_OP_LockToSavedSequentialPath, "Movement Lock to Saved Position Along Path", OPERATOR_GENERIC );
+
+BEGIN_PARTICLE_OPERATOR_UNPACK( C_OP_LockToSavedSequentialPath )
+	DMXELEMENT_UNPACK_FIELD( "bulge", "0", float, m_PathParams.m_flBulge )
+	DMXELEMENT_UNPACK_FIELD( "start control point number", "0", int, m_PathParams.m_nStartControlPointNumber )
+	DMXELEMENT_UNPACK_FIELD( "end control point number", "1", int, m_PathParams.m_nEndControlPointNumber )
+	DMXELEMENT_UNPACK_FIELD( "bulge control 0=random 1=orientation of start pnt 2=orientation of end point", "0", int, m_PathParams.m_nBulgeControl )
+	DMXELEMENT_UNPACK_FIELD( "mid point position", "0.5", float, m_PathParams.m_flMidPoint )
+	DMXELEMENT_UNPACK_FIELD( "Use sequential CP pairs between start and end point", "0", bool, m_bUseSequentialCPPairs )
+END_PARTICLE_OPERATOR_UNPACK( C_OP_LockToSavedSequentialPath );
+
+void C_OP_LockToSavedSequentialPath::Operate( CParticleCollection *pParticles, float flStrength, void *pContext ) const
+{
+}
+
 
 void AddCustomParticleOps( void )
 {
 	REGISTER_PARTICLE_OPERATOR( FUNCTION_OPERATOR, C_OP_DistanceToCPToVector );
 	REGISTER_PARTICLE_OPERATOR( FUNCTION_OPERATOR, C_OP_MovementFollowCP );
+	REGISTER_PARTICLE_OPERATOR( FUNCTION_OPERATOR, C_OP_LockToSavedSequentialPath );
 	REGISTER_PARTICLE_OPERATOR( FUNCTION_INITIALIZER, C_INIT_AssignTargetCP );
 	REGISTER_PARTICLE_OPERATOR( FUNCTION_INITIALIZER, C_INIT_ControlPointLifetime );
 	REGISTER_PARTICLE_OPERATOR( FUNCTION_INITIALIZER, C_INIT_GenericCylinder );

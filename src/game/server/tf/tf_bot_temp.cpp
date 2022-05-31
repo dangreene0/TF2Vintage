@@ -660,17 +660,20 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, const char *itemName )
 		return;
 
 	CEconItemDefinition *pItem = GetItemSchema()->GetItemDefinitionByName( itemName );
-	CEconItemView itemView( pItem->index );
-
+	if ( !pItem )
+	{
+		Msg( "Failed to create an item named %s\n", itemName );
+		return;
+	}
+	
 	char const *pszEntName = pItem->GetClassName();
 	CEconEntity *pEcon = dynamic_cast<CEconEntity *>( CreateEntityByName( pszEntName ) );
-	if ( pEcon && pItem )
-	{
-		pEcon->SetItem( itemView );
-	}
 
-	if ( pEcon && pItem )
+	if ( pEcon )
 	{
+		CEconItemView itemView( pItem->index );
+		pEcon->SetItem( itemView );
+
 		// If it's a weapon, remove the current one, and give us this one.
 		CBaseCombatWeapon *pExisting = pBot->Weapon_OwnsThisType( pItem->GetClassName() );
 		if ( pExisting )
@@ -686,11 +689,7 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, const char *itemName )
 	}
 	else
 	{
-		extern ConVar tf_bot_use_items;
-		if ( !tf_bot_use_items.GetInt() )
-		{
-			Msg( "Failed to create an item named %s\n", itemName );
-		}
+		Msg( "Failed to create an item named %s\n", itemName );
 	}
 }
 
@@ -728,6 +727,12 @@ void BotGenerateAndWearItem( CTFPlayer *pBot, CEconItemView *pItem )
 //------------------------------------------------------------------------------
 void cc_bot_equip( const CCommand &args )
 {
+	extern ConVar tf_bot_use_items;
+	if ( !tf_bot_use_items.GetInt() )
+	{
+		return;
+	}
+
 	CUtlVector<CTFPlayer *> bots;
 	if ( args.ArgC() < 3 )
 	{

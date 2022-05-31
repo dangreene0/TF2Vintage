@@ -38,6 +38,13 @@ public:
     discord::VoiceManager& VoiceManager();
     discord::AchievementManager& AchievementManager();
 
+protected:
+    void *operator new( size_t nSize );
+    void *operator new( size_t nSize, int nBlockUse, const char *pFileName, int nLine );
+public:
+    void operator delete( void *pPtr );
+    void operator delete( void *pPtr, int nBlockUse, const char *pFileName, int nLine );
+
 private:
     Core() = default;
     Core(Core const& rhs) = delete;

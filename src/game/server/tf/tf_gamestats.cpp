@@ -199,6 +199,12 @@ void CTFGameStats::ResetRoundStats()
 	{		
 		m_aPlayerStats[i].statsCurrentRound.Reset();
 	}
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "stats_resetround" );
+	if ( event )
+	{
+		gameeventmanager->FireEvent( event );
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -610,7 +616,7 @@ void CTFGameStats::Event_PlayerDamage( CBasePlayer *pBasePlayer, const CTakeDama
 	IncrementStat( pAttacker, TFSTAT_DAMAGE, iDamageTaken );
 
 	TF_Gamestats_LevelStats_t::PlayerDamageLump_t damage;
-	Vector killerOrg;
+	Vector killerOrg( 0 );
 
 	// set the location where the target was hit
 	const Vector &org = pTarget->GetAbsOrigin();
@@ -971,6 +977,20 @@ void CTFGameStats::Event_PlayerAwardBonusPoints(CTFPlayer *pPlayer, CBaseEntity 
 			WRITE_BYTE( pPlayer->entindex() );
 			WRITE_BYTE( pAwarder->entindex() );
 		MessageEnd();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Records players touching currency packs
+//-----------------------------------------------------------------------------
+void CTFGameStats::Event_PlayerCollectedCurrency( CBasePlayer *pPlayer, int nAmount )
+{
+	Assert( pPlayer );
+
+	CTFPlayer *pTFPlayer = ToTFPlayer( pPlayer );
+	if ( pTFPlayer )
+	{
+		IncrementStat( pTFPlayer, TFSTAT_CURRENCY_COLLECTED, nAmount );
 	}
 }
 

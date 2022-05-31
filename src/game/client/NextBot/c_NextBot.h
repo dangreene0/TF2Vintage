@@ -15,6 +15,9 @@ public:
 
 	C_NextBotCombatCharacter();
 
+	// HACK: Override to allow clientside interpolation
+	virtual bool IsNPC( void ) OVERRIDE { return true; }
+
 	virtual bool IsNextBot( void ) OVERRIDE { return true; }
 
 	virtual void Spawn( void ) OVERRIDE;

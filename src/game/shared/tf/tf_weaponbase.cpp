@@ -48,7 +48,6 @@ extern ConVar tf2v_critchance;
 extern ConVar tf2v_critchance_rapid;
 extern ConVar tf2v_crit_duration_rapid;
 extern ConVar tf2v_use_shortstop_slowdown;
-extern ConVar tf2v_use_new_beggars;
 extern ConVar tf2v_use_new_axtinguisher;
 
 #ifdef CLIENT_DLL
@@ -57,9 +56,12 @@ extern ConVar tf2v_muzzlelight;
 #endif
 
 ConVar tf_weapon_criticals( "tf_weapon_criticals", "1", FCVAR_NOTIFY | FCVAR_REPLICATED, "Whether or not random crits are enabled." );
+ConVar tf_weapon_always_allow_inspect( "tf_weapon_always_allow_inspect", "1", FCVAR_REPLICATED | FCVAR_ARCHIVE, "Allow the inspect animation on any weapon" );
 ConVar tf2v_allcrit( "tf2v_allcrit", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables or disables always on criticals." );
 ConVar tf2v_use_new_weapon_swap_speed( "tf2v_use_new_weapon_swap_speed", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Enables faster weapon switching." );
+ConVar tf2v_use_new_blackbox( "tf2v_use_new_blackbox", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Trades the +15HP per hit for +20HP per attack." );
 ConVar tf_dev_marked_for_death_lifetime( "tf_dev_marked_for_death_lifetime", "1", FCVAR_DEVELOPMENTONLY | FCVAR_REPLICATED );
+ConVar tf2v_use_faster_reload( "tf2v_use_faster_reload", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Speeds up end of reloads by 1/5 of a second.");
 
 //=============================================================================
 //
@@ -151,8 +153,14 @@ BEGIN_NETWORK_TABLE( CTFWeaponBase, DT_TFWeaponBase )
 	RecvPropTime( RECVINFO( m_flLastFireTime ) ),
 	RecvPropTime( RECVINFO( m_flEffectBarRegenTime ) ),
 	RecvPropFloat( RECVINFO( m_flEnergy ) ),
+	RecvPropEHandle( RECVINFO( m_hExtraWearable ) ),
+	RecvPropEHandle( RECVINFO( m_hExtraWearableViewModel ) ),
+	RecvPropBool( RECVINFO( m_bBeingRepurposedForTaunt ) ),
 
 	RecvPropInt( RECVINFO( m_nSequence ), 0, RecvProxy_WeaponSequence ),
+
+	RecvPropFloat( RECVINFO( m_flInspectAnimTime ) ),
+	RecvPropInt( RECVINFO( m_nInspectStage ) ),
 // Server specific.
 #else
 	SendPropBool( SENDINFO( m_bLowered ) ),
@@ -162,9 +170,15 @@ BEGIN_NETWORK_TABLE( CTFWeaponBase, DT_TFWeaponBase )
 	SendPropTime( SENDINFO( m_flLastFireTime ) ),
 	SendPropTime( SENDINFO( m_flEffectBarRegenTime ) ),
 	SendPropFloat( SENDINFO( m_flEnergy ) ),
+	SendPropEHandle( SENDINFO( m_hExtraWearable ) ),
+	SendPropEHandle( SENDINFO( m_hExtraWearableViewModel ) ),
+	SendPropBool( SENDINFO( m_bBeingRepurposedForTaunt ) ),
 
 	SendPropExclude( "DT_BaseAnimating", "m_nSequence" ),
 	SendPropInt( SENDINFO( m_nSequence ), ANIMATION_SEQUENCE_BITS, SPROP_UNSIGNED ),
+
+	SendPropFloat( SENDINFO( m_flInspectAnimTime ) ),
+	SendPropInt( SENDINFO( m_nInspectStage ), -1, SPROP_VARINT ),
 #endif
 END_NETWORK_TABLE()
 
@@ -178,6 +192,7 @@ BEGIN_PREDICTION_DATA( CTFWeaponBase )
 	DEFINE_PRED_FIELD( m_bCurrentAttackIsCrit, FIELD_BOOLEAN, 0 ),
 	DEFINE_PRED_FIELD( m_flEnergy, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flEffectBarRegenTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_bBeingRepurposedForTaunt, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 #endif
 END_PREDICTION_DATA()
 
@@ -667,10 +682,53 @@ const char *CTFWeaponBase::GetWorldModel( void ) const
 	// Use model from item schema if we have an item ID.
 	if ( HasItemDefinition() )
 	{
-		return GetItem()->GetWorldDisplayModel();
+		int iClass = TF_CLASS_UNDEFINED;
+		CTFPlayer *pPlayer = GetTFPlayerOwner();
+		if ( pPlayer )
+		{
+			iClass = pPlayer->GetPlayerClass()->GetClassIndex();
+		}
+
+		return GetItem()->GetWorldDisplayModel( iClass );
 	}
 
 	return BaseClass::GetWorldModel();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CTFWeaponBase::SendWeaponAnim( int iActivity )
+{
+	CTFPlayer *pPlayer = GetTFPlayerOwner();
+	if ( !pPlayer )
+		return BaseClass::SendWeaponAnim( iActivity );
+
+	if ( m_nInspectStage != INSPECT_NONE )
+	{
+		if ( iActivity == GetActivity() )
+			return true;
+
+		// ignore idle anim while inspect anim is still playing
+		if ( iActivity == ACT_VM_IDLE )	
+		{
+			return true;
+		}
+
+		// allow other activity to override the inspect
+		if ( !IsInspectActivity( iActivity ) )
+		{
+			m_flInspectAnimTime = -1.0f;
+			m_nInspectStage = INSPECT_NONE;
+			return BaseClass::SendWeaponAnim( iActivity );
+		}
+
+		// let the idle loop while the inspect key is pressed
+		if ( pPlayer->IsInspecting() && m_nInspectStage == INSPECT_IDLE )
+			return true;
+	}
+
+	return BaseClass::SendWeaponAnim( iActivity );
 }
 
 //-----------------------------------------------------------------------------
@@ -690,6 +748,9 @@ void CTFWeaponBase::Drop( const Vector &vecVelocity )
 #endif
 
 	BaseClass::Drop( vecVelocity );
+
+	ReapplyProvision();
+	RemoveExtraWearables();
 }
 
 //-----------------------------------------------------------------------------
@@ -740,6 +801,9 @@ bool CTFWeaponBase::Holster( CBaseCombatWeapon *pSwitchingTo )
 	}
 
 	AbortReload();
+
+	m_nInspectStage = INSPECT_NONE;
+	m_flInspectAnimTime = -1.0f;
 
 	return BaseClass::Holster( pSwitchingTo );
 }
@@ -800,8 +864,8 @@ bool CTFWeaponBase::Deploy( void )
 
 		if (tf2v_use_new_axtinguisher.GetInt() == 2)
 			CALL_ATTRIB_HOOK_FLOAT( flDeployTime, mult_single_wep_deploy_time_axtinguisher_2 );
-		else if (tf2v_use_new_axtinguisher.GetInt() == 3)
-			CALL_ATTRIB_HOOK_FLOAT( flDeployTime, mult_single_wep_deploy_time_axtinguisher_3 );
+		else if (tf2v_use_new_axtinguisher.GetInt() == 3 && pPlayer->GetLastWeapon() )
+			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer->GetLastWeapon(), flDeployTime, mult_single_wep_deploy_time_axtinguisher_3 );
 
 		if ( pPlayer->GetLastWeapon() )
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer->GetLastWeapon(), flDeployTime, mult_switch_from_wep_deploy_time );
@@ -880,6 +944,118 @@ void CTFWeaponBase::UpdatePlayerBodygroups( int bOnOff )
 	{
 		// Don't call for inactive weapons that hide bodygroups when deployed
 		BaseClass::UpdatePlayerBodygroups( bOnOff );
+	}
+}
+
+#if defined GAME_DLL
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFWeaponBase::UpdateExtraWearables( void )
+{
+	CBaseCombatCharacter *pOwner = GetOwner();
+	if ( pOwner && ( m_hExtraWearable.Get() || m_hExtraWearableViewModel.Get() ) )
+	{
+		const int nTeam = pOwner->GetTeamNumber();
+		if ( m_hExtraWearable.Get() && m_hExtraWearable->GetTeamNumber() == nTeam )
+		{
+			if ( m_hExtraWearableViewModel.Get() && m_hExtraWearableViewModel->GetTeamNumber() == nTeam )
+				return;
+		}
+	}
+
+	RemoveExtraWearables();
+	bool bViewModel = false;
+
+	if ( GetExtraWearableViewModel() )
+	{
+		CTFWearable *pWearable = (CTFWearable *)CreateEntityByName( "tf_wearable_vm" );
+		if( pWearable != nullptr )
+		{
+			if ( modelinfo->GetModelIndex( GetExtraWearableViewModel() ) == -1 )
+				PrecacheModel( GetExtraWearableViewModel() );
+
+			pWearable->SetItem( *GetItem() );
+			pWearable->SetExtraWearable( true );
+			pWearable->AddSpawnFlags( SF_NORESPAWN );
+
+			DispatchSpawn( pWearable );
+			pWearable->GiveTo( pOwner );
+
+			pWearable->SetWeaponAssociatedWith( this );
+
+			ExtraWearableViewModelEquipped( pWearable );
+
+			bViewModel = true;
+		}
+	}
+
+	if ( GetExtraWearableModel() )
+	{
+		CTFWearable *pWearable = (CTFWearable *)CreateEntityByName( "tf_wearable" );
+		if( pWearable != nullptr )
+		{
+			if ( modelinfo->GetModelIndex( GetExtraWearableModel() ) == -1 )
+				PrecacheModel( GetExtraWearableModel() );
+
+			pWearable->SetItem( *GetItem() );
+			pWearable->SetExtraWearable( true );
+			pWearable->AddSpawnFlags( SF_NORESPAWN );
+
+			DispatchSpawn( pWearable );
+			pWearable->GiveTo( pOwner );
+
+			if( bViewModel )
+				pWearable->SetWeaponAssociatedWith( this );
+
+			ExtraWearableEquipped( pWearable );
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFWeaponBase::ExtraWearableEquipped( CTFWearable *pExtraWearable )
+{
+	Assert( pExtraWearable );
+	m_hExtraWearable.Set( pExtraWearable );
+
+	CBasePlayer *pPlayerOwner = GetPlayerOwner();
+	if ( pPlayerOwner )
+	{
+		pExtraWearable->Equip( pPlayerOwner );
+	}
+}
+
+void CTFWeaponBase::ExtraWearableViewModelEquipped( CTFWearable *pExtraWearable )
+{
+	Assert( pExtraWearable );
+	m_hExtraWearableViewModel.Set( pExtraWearable );
+
+	CBasePlayer *pPlayerOwner = GetPlayerOwner();
+	if ( pPlayerOwner )
+	{
+		pExtraWearable->Equip( pPlayerOwner );
+	}
+}
+#endif
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFWeaponBase::RemoveExtraWearables( void )
+{
+	if ( m_hExtraWearable.Get() )
+	{
+		m_hExtraWearable->RemoveFrom( GetOwnerEntity() );
+		m_hExtraWearable = NULL;
+	}
+
+	if ( m_hExtraWearableViewModel.Get() )
+	{
+		m_hExtraWearableViewModel->RemoveFrom( GetOwnerEntity() );
+		m_hExtraWearableViewModel = NULL;
 	}
 }
 
@@ -984,7 +1160,7 @@ void CTFWeaponBase::OnActiveStateChanged( int iOldState )
 //-----------------------------------------------------------------------------
 void CTFWeaponBase::UpdateOnRemove( void )
 {
-	//RemoveExtraWearables();
+	RemoveExtraWearables();
 
 	BaseClass::UpdateOnRemove();
 }
@@ -1131,7 +1307,7 @@ bool CTFWeaponBase::CalcIsAttackCriticalHelper()
 
 		// see if we should start firing crit shots
 		int iRandom = RandomInt( 0, WEAPON_RANDOM_RANGE-1 );
-		if ( iRandom <= flStartCritChance * WEAPON_RANDOM_RANGE )
+		if ( iRandom < flStartCritChance * WEAPON_RANDOM_RANGE )
 		{
 			m_flCritTime = gpGlobals->curtime + tf2v_crit_duration_rapid.GetFloat();
 			return true;
@@ -1501,7 +1677,10 @@ bool CTFWeaponBase::DefaultReload( int iClipSize1, int iClipSize2, int iActivity
 	// First, see if we have a reload animation
 	if ( SendWeaponAnim( iActivity ) )
 	{
-		flReloadTime = SequenceDuration();
+		if (tf2v_use_faster_reload.GetBool()) // Modern reload systems speed the "end" of the reload slightly faster than the animation.
+			flReloadTime = SequenceDuration() - 0.2;
+		else	// We reload at the speed of the animation.
+			flReloadTime = SequenceDuration();
 	}
 	else
 	{
@@ -1737,6 +1916,13 @@ void CTFWeaponBase::ItemPostFrame( void )
 		return;
 	}
 
+#ifdef GAME_DLL
+	if ( WeaponState() == WEAPON_IS_ACTIVE )
+	{
+		HandleInspect();
+	}
+#endif // GAME_DLL
+
 	// debounce InAttack flags
 	if ( m_bInAttack && !( pOwner->m_nButtons & IN_ATTACK ) )
 	{
@@ -1901,7 +2087,7 @@ bool CTFWeaponBase::ReloadOrSwitchWeapons( void )
 		// Weapon is useable. Reload if empty and weapon has waited as long as it has to after firing
 		// Also auto-reload if owner has auto-reload enabled.
 		if ( UsesClipsForAmmo1() && !AutoFiresFullClip() && 
-			(m_iClip1 == 0 || ( pOwner && pOwner->ShouldAutoReload() && m_iClip1 < GetMaxClip1() && CanAutoReload() ) ) && 
+			(m_iClip1 == 0 || ( pOwner && pOwner->ShouldAutoReload() && ( m_iClip1 < GetMaxClip1() || ( IsEnergyWeapon() && !Energy_FullyCharged() ) ) && CanAutoReload() ) ) && 
 			( GetWeaponFlags() & ITEM_FLAG_NOAUTORELOAD ) == false && 
 			m_flNextPrimaryAttack < gpGlobals->curtime && 
 			m_flNextSecondaryAttack < gpGlobals->curtime )
@@ -2101,29 +2287,23 @@ const char *CTFWeaponBase::GetTracerType( void )
 		PerTeamVisuals_t *pVisuals = pItemDef->GetVisuals( TEAM_UNASSIGNED );
 		if( pVisuals && pVisuals->GetTracerFX() )
 		{
-			Q_snprintf( m_szTracerName, MAX_TRACER_NAME, "%s", pVisuals->GetTracerFX() );
-		}
-	
-		if (GetOwner()->GetTeamNumber())
-		{
-			// If we have team specific, check those too.	
-			pVisuals = pItemDef->GetVisuals( GetOwner()->GetTeamNumber() );
-			if ( pVisuals && pVisuals->GetTracerFX() )
+			if (GetOwner()->GetTeamNumber())
 			{
-				// Make these for the right team.
 				switch (GetOwner()->GetTeamNumber())
 				{
-					case TF_TEAM_RED:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
-						break;
-					case TF_TEAM_BLUE:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "blue");
-						break;
-					default:
-						Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
-						break;
+				case TF_TEAM_RED:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
+					break;
+				case TF_TEAM_BLUE:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "blue");
+					break;
+				default:
+					Q_snprintf(m_szTracerName, MAX_TRACER_NAME, "%s_%s", pVisuals->GetTracerFX(), "red");
+					break;
 				}
 			}
+			else
+				Q_snprintf( m_szTracerName, MAX_TRACER_NAME, "%s", pVisuals->GetTracerFX() );
 		}
 	}
 	
@@ -2277,7 +2457,23 @@ const char *CTFWeaponBase::GetExtraWearableModel( void ) const
 		return pStatic->GetExtraWearableModel();
 	}
 
-	return "\0";
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+const char *CTFWeaponBase::GetExtraWearableViewModel( void ) const
+{
+	CEconItemDefinition *pStatic = GetItem()->GetStaticData();
+
+	if ( pStatic )
+	{
+		// We have an extra wearable
+		return pStatic->GetExtraWearableViewModel();
+	}
+
+	return NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -2305,7 +2501,7 @@ bool CTFWeaponBase::AutoFiresFullClipAllAtOnce( void ) const
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::IsHonorBound( void )
+bool CTFWeaponBase::IsHonorBound( void ) const
 {
 	int nHonorBound = 0;
 	CALL_ATTRIB_HOOK_INT( nHonorBound, honorbound );
@@ -2315,7 +2511,7 @@ bool CTFWeaponBase::IsHonorBound( void )
 //-----------------------------------------------------------------------------
 // Purpose: Return if we should not show death notices to enemy
 // ----------------------------------------------------------------------------
-bool CTFWeaponBase::IsSilentKiller( void )
+bool CTFWeaponBase::IsSilentKiller( void ) const
 {
 	int nSilentKiller = 0;
 	CALL_ATTRIB_HOOK_INT( nSilentKiller, set_silent_killer );
@@ -2325,7 +2521,7 @@ bool CTFWeaponBase::IsSilentKiller( void )
 //-----------------------------------------------------------------------------
 // Purpose: Used for calculating penetrating shots.
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::IsPenetrating(void)
+bool CTFWeaponBase::IsPenetrating( void ) const
 {
 	if (GetCustomDamageType() == TF_DMG_CUSTOM_PENETRATE_ALL_PLAYERS)
 		return true;
@@ -2343,7 +2539,7 @@ bool CTFWeaponBase::IsPenetrating(void)
 //-----------------------------------------------------------------------------
 // Purpose: Used to calculate if a weapon causes decapitations.
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::CanDecapitate( void )
+bool CTFWeaponBase::CanDecapitate( void ) const
 {			 
 	int nDecapitateType = 0;
 	CALL_ATTRIB_HOOK_INT( nDecapitateType, decapitate_type );
@@ -2353,7 +2549,7 @@ bool CTFWeaponBase::CanDecapitate( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-bool CTFWeaponBase::CanOverload( void )
+bool CTFWeaponBase::CanOverload( void ) const
 {			 
 	int nCanOverload = 0;
 	CALL_ATTRIB_HOOK_INT( nCanOverload, can_overload );
@@ -2466,6 +2662,122 @@ Vector CTFWeaponBase::GetEnergyWeaponColor( bool bUseAlternateColorPalette )
 void CTFWeaponBase::WeaponRegenerate( void )
 {
 	m_flEnergy = Energy_GetMaxEnergy();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CTFWeaponBase::CanInspect() const
+{
+	if ( tf_weapon_always_allow_inspect.GetBool() )
+		return true;
+
+	float flInspect = 0.f;
+	CALL_ATTRIB_HOOK_FLOAT( flInspect, weapon_allow_inspect );
+	return flInspect != 0.f;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+Activity CTFWeaponBase::GetInspectActivity( EInspectStage eStage )
+{
+	static Activity s_inspectActivities[TF_PLAYER_WEAPON_COUNT][INSPECT_STAGE_COUNT] =
+	{
+		{
+			ACT_PRIMARY_VM_INSPECT_START,
+			ACT_PRIMARY_VM_INSPECT_IDLE,
+			ACT_PRIMARY_VM_INSPECT_END
+		},
+		{
+			ACT_SECONDARY_VM_INSPECT_START,
+			ACT_SECONDARY_VM_INSPECT_IDLE,
+			ACT_SECONDARY_VM_INSPECT_END
+		},
+		{
+			ACT_MELEE_VM_INSPECT_START,
+			ACT_MELEE_VM_INSPECT_IDLE,
+			ACT_MELEE_VM_INSPECT_END
+		},
+	};
+
+	CTFPlayer *pOwner = GetTFPlayerOwner();
+	if ( pOwner )
+	{
+		int nClassIndex = pOwner->GetPlayerClass()->GetClassIndex();
+		int nLoadoutSlot = GetItem()->GetStaticData()->GetLoadoutSlot( nClassIndex );
+		if ( nLoadoutSlot < TF_LOADOUT_SLOT_PRIMARY || nLoadoutSlot > TF_LOADOUT_SLOT_MELEE )
+			nLoadoutSlot = TF_LOADOUT_SLOT_PRIMARY;
+
+		return s_inspectActivities[ nLoadoutSlot ][ eStage ];
+	}
+
+	return s_inspectActivities[ TF_LOADOUT_SLOT_PRIMARY ][ eStage ];
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CTFWeaponBase::IsInspectActivity( int iActivity )
+{
+	return iActivity == GetInspectActivity( INSPECT_START ) || iActivity == GetInspectActivity( INSPECT_IDLE ) || iActivity == GetInspectActivity( INSPECT_END );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CTFWeaponBase::HandleInspect()
+{
+	CTFPlayer *pPlayer = GetTFPlayerOwner();
+	if ( !pPlayer )
+		return;
+
+	if ( CanInspect() )
+	{
+		if ( !m_bInspecting && pPlayer->IsInspecting() )
+		{
+
+			Activity iActivity = GetInspectActivity( INSPECT_START );
+			if ( SendWeaponAnim( iActivity ) )
+			{
+				m_flInspectAnimTime = gpGlobals->curtime + SequenceDuration();
+				m_nInspectStage = INSPECT_START;
+			}
+		}
+		else if ( !pPlayer->IsInspecting() && m_nInspectStage == INSPECT_IDLE )
+		{
+			Activity iActivity = GetInspectActivity( INSPECT_END );
+			if ( SendWeaponAnim( iActivity ) )
+			{
+				m_flInspectAnimTime = gpGlobals->curtime + SequenceDuration();
+				m_nInspectStage = INSPECT_END;
+			}
+		}
+		else if ( m_nInspectStage != INSPECT_NONE )
+		{
+			if ( m_flInspectAnimTime < gpGlobals->curtime )
+			{
+				if ( m_nInspectStage == INSPECT_START )
+				{
+					EInspectStage eStage = pPlayer->IsInspecting() ? INSPECT_IDLE : INSPECT_END;
+					Activity iActivity = GetInspectActivity( eStage );
+					if ( SendWeaponAnim( iActivity ) )
+					{
+						m_flInspectAnimTime = gpGlobals->curtime + SequenceDuration();
+						m_nInspectStage = eStage;
+					}
+				}
+				else if ( m_nInspectStage == INSPECT_END )
+				{
+					m_flInspectAnimTime = -1.0f;
+					m_nInspectStage = INSPECT_NONE;
+					SendWeaponAnim( ACT_VM_IDLE );
+				}
+			}
+		}
+	}
+
+	m_bInspecting = pPlayer->IsInspecting();
 }
 
 
@@ -2706,6 +3018,8 @@ void CTFWeaponBase::ApplyOnHitAttributes( CBaseEntity *pVictim, CTFPlayer *pAtta
 
 	float flAddHealth = 0.0f;
 	CALL_ATTRIB_HOOK_FLOAT( flAddHealth, add_onhit_addhealth );
+	if (!tf2v_use_new_blackbox.GetBool())
+		CALL_ATTRIB_HOOK_FLOAT( flAddHealth, add_onhit_addhealth_bb1 );	
 	if ( flAddHealth )
 	{
 		int iHealthRestored = pOwner->TakeHealth( flAddHealth, DMG_GENERIC );
@@ -2940,6 +3254,34 @@ void CTFWeaponBase::ProcessMuzzleFlashEvent( void )
 		SetModelIndex( nWorldModelIndex );
 		CreateMuzzleFlashEffects( this, 1 );
 		SetModelIndex( nModelIndex );
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+// ----------------------------------------------------------------------------
+void CTFWeaponBase::UpdateVisibility( void )
+{
+	BaseClass::UpdateVisibility();
+
+	UpdateExtraWearablesVisibility();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+// ----------------------------------------------------------------------------
+void CTFWeaponBase::UpdateExtraWearablesVisibility()
+{
+	if ( m_hExtraWearable.Get() )
+	{
+		m_hExtraWearable->ValidateModelIndex();
+		m_hExtraWearable->UpdateVisibility();
+		m_hExtraWearable->CreateShadow();
+	}
+
+	if ( m_hExtraWearableViewModel.Get() )
+	{
+		m_hExtraWearableViewModel->UpdateVisibility();
 	}
 }
 

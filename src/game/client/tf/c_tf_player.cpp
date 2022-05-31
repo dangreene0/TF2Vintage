@@ -93,7 +93,7 @@ ConVar cl_autorezoom( "cl_autorezoom", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "Whe
 
 ConVar cl_autoreload( "cl_autoreload", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "When set to 1, clip-using weapons will automatically be reloaded whenever they're not being fired." );
 
-ConVar cl_forced_vision_filter( "cl_forced_vision_filter", "0", FCVAR_DONTRECORD, "1=Pyrovision, 2=Halloween" );
+ConVar cl_forced_vision_filter( "cl_forced_vision_filter", "0", FCVAR_DONTRECORD, "1=Pyrovision, 2=Halloween, 4=Rome" );
 
 ConVar cl_fp_ragdoll( "cl_fp_ragdoll", "1", FCVAR_ARCHIVE, "Allow first person ragdolls" );
 ConVar cl_fp_ragdoll_auto( "cl_fp_ragdoll_auto", "1", FCVAR_ARCHIVE, "Autoswitch to ragdoll thirdperson-view when necessary" );
@@ -160,6 +160,20 @@ const char *g_pszHeadGibs[] = {
 	"models/player/gibs/engineergib006.mdl",
 };
 
+const char *g_pszBotHeadGibs[] =
+{
+	"",
+	"models/bots/gibs/scoutbot_gib_head.mdl",
+	"models/bots/gibs/sniperbot_gib_head.mdl",
+	"models/bots/gibs/soldierbot_gib_head.mdl",
+	"models/bots/gibs/demobot_gib_head.mdl",
+	"models/bots/gibs/medicbot_gib_head.mdl",
+	"models/bots/gibs/heavybot_gib_head.mdl",
+	"models/bots/gibs/pyrobot_gib_head.mdl",
+	"models/bots/gibs/spybot_gib_head.mdl",
+	"models/bots/gibs/engineerbot_gib_head.mdl",
+};
+
 #define TF_PLAYER_HEAD_LABEL_RED 0
 #define TF_PLAYER_HEAD_LABEL_BLUE 1
 #define TF_PLAYER_HEAD_LABEL_GREEN 2
@@ -167,10 +181,10 @@ const char *g_pszHeadGibs[] = {
 
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheInvuln )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_blue.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_red.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_green.vmt" )
-CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_yellow.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_blue.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_red.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_green.vmt" )
+	CLIENTEFFECT_MATERIAL( "models/effects/invulnfx_yellow.vmt" )
 CLIENTEFFECT_REGISTER_END()
 
 // -------------------------------------------------------------------------------- //
@@ -1077,7 +1091,7 @@ void C_TFRagdoll::OnDataChanged( DataUpdateType_t type )
 		if ( bCreateRagdoll )
 		{
 			// Delete our mask if we're disguised.
-			if (pPlayer && pPlayer->m_Shared.InCond(TF_COND_DISGUISED))
+			if ( pPlayer && pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
 			{			
 				pPlayer->UpdateSpyMask();
 			}
@@ -2115,6 +2129,66 @@ public:
 EXPOSE_INTERFACE( CProxyWeaponSkin, IMaterialProxy, "WeaponSkin" IMATERIAL_PROXY_INTERFACE_VERSION );
 
 //-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakIllum material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackIllum : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackIllum, IMaterialProxy, "StatTrakIllum" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+//-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakDigit material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackDigit : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+	virtual bool HelperOnBindGetStatTrakScore( void *pC_BaseEntity, int *piScore )
+	{
+		return false;
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackDigit, IMaterialProxy, "StatTrakDigit" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+ConVar tf_stattrak_icon_offset_x( "tf_stattrak_icon_offset_x", "0", FCVAR_DEVELOPMENTONLY );
+ConVar tf_stattrak_icon_offset_y( "tf_stattrak_icon_offset_y", "0", FCVAR_DEVELOPMENTONLY );
+//-----------------------------------------------------------------------------
+// Purpose: Stub class for the StatTrakIcon material proxy used by live TF2
+//-----------------------------------------------------------------------------
+class CProxyStatTrackIcon : public CResultProxy
+{
+public:
+	virtual bool Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+	{
+		return true;
+	}
+	void OnBind( void *pC_BaseEntity )
+	{
+
+	}
+};
+
+EXPOSE_INTERFACE( CProxyStatTrackIcon, IMaterialProxy, "StatTrakIcon" IMATERIAL_PROXY_INTERFACE_VERSION );
+
+//-----------------------------------------------------------------------------
 // Purpose: Universal proxy from live tf2 used for spy invisiblity material
 //			Its' purpose is to replace weapon_invis, vm_invis and spy_invis
 //-----------------------------------------------------------------------------
@@ -2357,6 +2431,8 @@ BEGIN_RECV_TABLE_NOBASE( C_TFPlayer, DT_TFLocalPlayerExclusive )
 		"player_object_array" ),
 
 	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
+
+	RecvPropInt( RECVINFO( m_nCurrency ) ),
 END_RECV_TABLE()
 
 // all players except the local player
@@ -2391,6 +2467,7 @@ IMPLEMENT_CLIENTCLASS_DT( C_TFPlayer, DT_TFPlayer, CTFPlayer )
 	RecvPropBool( RECVINFO( m_bTyping ) ),
 	RecvPropInt( RECVINFO( m_iSpawnCounter ) ),
 	RecvPropFloat( RECVINFO( m_flLastDamageTime ) ),
+	RecvPropFloat( RECVINFO( m_flInspectTime ) ),
 END_RECV_TABLE()
 
 
@@ -2434,6 +2511,7 @@ C_TFPlayer::C_TFPlayer() :
 	m_pSaveMeEffect = NULL;
 	m_pOverhealEffect = NULL;
 	m_pTypingEffect = NULL;
+	m_pDemoEyeEffect = NULL;
 
 	m_aGibs.Purge();
 
@@ -2476,6 +2554,7 @@ C_TFPlayer::~C_TFPlayer()
 {
 	ShowNemesisIcon( false );
 	m_PlayerAnimState->Release();
+	m_pAttributes = NULL;
 }
 
 void C_TFPlayer::FireGameEvent( IGameEvent *event )
@@ -2689,6 +2768,8 @@ void C_TFPlayer::OnPreDataChanged( DataUpdateType_t updateType )
 	m_iOldSpawnCounter = m_iSpawnCounter;
 	m_bOldSaveMeParity = m_bSaveMeParity;
 	m_nOldWaterLevel = GetWaterLevel();
+	m_nOldCurrency = m_nCurrency;
+	m_bOldCustomModelVisible = m_PlayerClass.CustomModelIsVisibleToSelf();
 
 	m_iOldTeam = GetTeamNumber();
 	C_TFPlayerClass *pClass = GetPlayerClass();
@@ -2916,6 +2997,30 @@ void C_TFPlayer::OnDataChanged( DataUpdateType_t updateType )
 			m_iPreviousMetal = iCurrentMetal;
 		}
 
+		if ( m_iHealth > m_iOldHealth )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "localplayer_healed" );
+			if ( event )
+			{
+				event->SetInt( "amount", m_iHealth - m_iOldHealth );
+				gameeventmanager->FireEventClientSide( event );
+			}
+		}
+
+		if ( m_nOldCurrency != m_nCurrency )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "player_currency_changed" );
+			if ( event )
+			{
+				event->SetInt( "currency", m_nCurrency );
+				gameeventmanager->FireEventClientSide( event );
+			}
+		}
+
+		if ( m_bOldCustomModelVisible != m_PlayerClass.CustomModelIsVisibleToSelf() )
+		{
+			UpdateVisibility();
+		}
 	}
 
 	// Some time in this network transmit we changed the size of the object array.
@@ -3211,7 +3316,10 @@ void C_TFPlayer::UpdateSpyMask(void)
 
 				if ( !pMask->InitializeAsClientEntity( "models/player/items/spy/spyMask.mdl", RENDER_GROUP_OPAQUE_ENTITY ) )
 				{
+					pMask->AddEffects(EF_NODRAW);
+					pMask->SetMoveType(MOVETYPE_NONE);
 					pMask->Release();
+					m_hSpyMask = NULL;
 					return;
 				}
 
@@ -3224,6 +3332,8 @@ void C_TFPlayer::UpdateSpyMask(void)
 		}
 		else if ( pMask )
 		{
+			pMask->AddEffects(EF_NODRAW);
+			pMask->SetMoveType(MOVETYPE_NONE);
 			pMask->Release();
 			m_hSpyMask = NULL;
 		}
@@ -3246,25 +3356,35 @@ void C_TFPlayer::UpdateSpyMask(void)
 //-----------------------------------------------------------------------------
 void C_TFPlayer::UpdatePartyHat( void )
 {
-	if ( TFGameRules() && TFGameRules()->IsBirthday() && !IsLocalPlayer() && IsAlive() &&
+	if ( TFGameRules() && TFGameRules()->IsBirthday() )
+	{
+		if ( !IsLocalPlayer() && IsAlive() &&
 		GetTeamNumber() >= FIRST_GAME_TEAM && !IsPlayerClass( TF_CLASS_UNDEFINED ) )
+		{
+			if ( m_hPartyHat )
+			{
+				m_hPartyHat->Release();
+			}
+
+			m_hPartyHat = C_PlayerAttachedModel::Create( BDAY_HAT_MODEL, this, LookupAttachment( "partyhat" ), vec3_origin, PAM_PERMANENT, 0 );
+
+			// C_PlayerAttachedModel::Create can return NULL!
+			if ( m_hPartyHat )
+			{
+				int iVisibleTeam = GetTeamNumber();
+				if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )
+				{
+					iVisibleTeam = m_Shared.GetDisguiseTeam();
+				}
+				m_hPartyHat->m_nSkin = iVisibleTeam - 2;
+			}
+		}
+	}
+	else
 	{
 		if ( m_hPartyHat )
 		{
 			m_hPartyHat->Release();
-		}
-
-		m_hPartyHat = C_PlayerAttachedModel::Create( BDAY_HAT_MODEL, this, LookupAttachment( "partyhat" ), vec3_origin, PAM_PERMANENT, 0 );
-
-		// C_PlayerAttachedModel::Create can return NULL!
-		if ( m_hPartyHat )
-		{
-			int iVisibleTeam = GetTeamNumber();
-			if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )
-			{
-				iVisibleTeam = m_Shared.GetDisguiseTeam();
-			}
-			m_hPartyHat->m_nSkin = iVisibleTeam - 2;
 		}
 	}
 }
@@ -4537,6 +4657,43 @@ int C_TFPlayer::DrawModel( int flags )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
+bool C_TFPlayer::ShouldDraw()
+{
+	if ( IsLocalPlayer() )
+	{
+		if ( m_PlayerClass.HasCustomModel() && !m_PlayerClass.CustomModelIsVisibleToSelf() )
+			return false;
+	}
+
+	if ( this == C_TFPlayer::GetLocalTFPlayer() )
+	{
+		if ( this->m_Shared.InCond( TF_COND_ZOOMED ) )
+		{
+			return false;
+		}
+	}
+
+	return BaseClass::ShouldDraw();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+const Vector &C_TFPlayer::GetRenderOrigin( void )
+{
+	static Vector vecCustomModelOffset;
+	if ( GetPlayerClass()->HasCustomModel() )
+	{
+		vecCustomModelOffset = BaseClass::GetRenderOrigin() + GetPlayerClass()->GetCustomModelOffset();
+		return vecCustomModelOffset;
+	}
+
+	return BaseClass::GetRenderOrigin();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void C_TFPlayer::ProcessMuzzleFlashEvent()
 {
 	C_BasePlayer *pLocalPlayer = C_BasePlayer::GetLocalPlayer();
@@ -4854,7 +5011,9 @@ void C_TFPlayer::InitPlayerGibs( void )
 {
 	// Clear out the gib list and create a new one.
 	m_aGibs.Purge();
-	BuildGibList( m_aGibs, GetModelIndex(), 1.0f, COLLISION_GROUP_NONE );
+
+	int nModelIndex = GetPlayerClass()->HasCustomModel() ? modelinfo->GetModelIndex( GetPlayerClass()->GetModelName() ) : GetModelIndex();
+	BuildGibList( m_aGibs, nModelIndex, 1.0f, COLLISION_GROUP_NONE );
 
 	if ( ( TFGameRules() && TFGameRules()->IsBirthday() ) || UTIL_IsLowViolence() )
 	{
@@ -4908,9 +5067,10 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 			if ( pTFWearable->GetDropType() != DROPTYPE_DROP )
 				continue;
 
-			/*if ( bDisguised && !pTFWearable->m_bDisguiseWearable ||
-				 !bDisguised && pTFWearable->m_bDisguiseWearable )
-				continue;*/
+			if ( bDisguised && !pTFWearable->IsDisguiseWearable() )
+				continue;
+			if ( !bDisguised && pTFWearable->IsDisguiseWearable() )
+				continue;
 
 			if ( pTFWearable->IsDynamicModelLoading() && pTFWearable->GetModelPtr() == nullptr )
 				continue;
@@ -4986,20 +5146,34 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 		// Break up the player.
 		m_hSpawnedGibs.Purge();
 
+		int nModelIndex = GetPlayerClass()->HasCustomModel() ? modelinfo->GetModelIndex( GetPlayerClass()->GetModelName() ) : GetModelIndex();
+
 		if ( bHeadGib )
 		{
 			if ( !UTIL_IsLowViolence() )
 			{
 				CUtlVector<breakmodel_t> list;
 				const int iClassIdx = GetPlayerClass()->GetClassIndex();
-				FOR_EACH_VEC( m_aGibs, i )
+				if ( GetPlayerClass()->HasCustomModel() )
 				{
-					breakmodel_t const &breakModel = m_aGibs[i];
-					if ( !V_stricmp( breakModel.modelName, g_pszHeadGibs[ iClassIdx ] ) )
-						list.AddToHead( breakModel );
+					FOR_EACH_VEC( m_aGibs, i )
+					{
+						breakmodel_t const &breakModel = m_aGibs[i];
+						if ( !V_stricmp( breakModel.modelName, g_pszBotHeadGibs[iClassIdx] ) )
+							list.AddToHead( breakModel );
+					}
+				}
+				else
+				{
+					FOR_EACH_VEC( m_aGibs, i )
+					{
+						breakmodel_t const &breakModel = m_aGibs[i];
+						if ( !V_stricmp( breakModel.modelName, g_pszHeadGibs[iClassIdx] ) )
+							list.AddToHead( breakModel );
+					}
 				}
 
-				m_hFirstGib = CreateGibsFromList( list, GetModelIndex(), NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
+				m_hFirstGib = CreateGibsFromList( list, nModelIndex, NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
 				if ( m_hFirstGib )
 				{
 					Vector velocity, impulse;
@@ -5028,7 +5202,7 @@ void C_TFPlayer::CreatePlayerGibs( const Vector &vecOrigin, const Vector &vecVel
 				}
 			}
 
-			m_hFirstGib = CreateGibsFromList( m_aGibs, GetModelIndex(), NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
+			m_hFirstGib = CreateGibsFromList( m_aGibs, nModelIndex, NULL, breakParams, this, -1, false, true, &m_hSpawnedGibs, bBurning );
 		}
 	}
 
@@ -5071,13 +5245,10 @@ void C_TFPlayer::DropHat( breakablepropparams_t const &breakParams, Vector const
 		CEconWearable* pItem = m_hMyWearables[i];
 		if ( pItem && pItem->GetItem()->GetStaticData() )
 		{
-			if ( pItem->GetDropType() > 0 )
+			if ( pItem->GetDropType() > DROPTYPE_NONE )
 			{
 				breakmodel_t breakModel;
-				if (pItem->m_bExtraWearable)
-					V_strcpy_safe(breakModel.modelName, pItem->GetItem()->GetStaticData()->GetExtraWearableModel() );
-				else
-					V_strcpy_safe(breakModel.modelName, pItem->GetItem()->GetStaticData()->GetPlayerModel() );
+				V_strcpy_safe( breakModel.modelName, STRING( pItem->GetModelName() ) );
 
 				breakModel.health = 1;
 				breakModel.fadeTime = RandomFloat( 5, 10 );
@@ -5388,6 +5559,9 @@ void C_TFPlayer::ClientPlayerRespawn( void )
 
 	// Update min. viewmodel
 	CalcMinViewmodelOffset();
+
+	UpdateSpyMask();
+	UpdateDemomanEyeEffect(0);
 
 	// Reset rage
 	m_Shared.ResetRageSystem();
@@ -6194,29 +6368,36 @@ void C_TFPlayer::UpdateOverhealEffect( bool bForceHide /*= false*/ )
 //-----------------------------------------------------------------------------
 void C_TFPlayer::UpdateDemomanEyeEffect( int iDecapCount )
 {
+	
 	if ( m_pDemoEyeEffect )
 	{
 		ParticleProp()->StopEmission( m_pDemoEyeEffect );
 		m_pDemoEyeEffect = NULL;
 	}
+	
+	if ( iDecapCount == 0 )
+		return;
 
-	iDecapCount = Min( iDecapCount, 4 );
-	switch ( iDecapCount )
+	if ( IsAlive() && ( iDecapCount > 0 ) )
 	{
-		case 1:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_1", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 2:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_2", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 3:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_3", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		case 4:
-			m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_4", PATTACH_POINT_FOLLOW, "eyeglow_L" );
-			break;
-		default:
-			break;
+		iDecapCount = Min( iDecapCount, 4 );
+		switch ( iDecapCount )
+		{
+			case 1:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_1", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 2:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_2", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 3:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_3", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			case 4:
+				m_pDemoEyeEffect = ParticleProp()->Create( "eye_powerup_green_lvl_4", PATTACH_POINT_FOLLOW, "eyeglow_L" );
+				break;
+			default:
+				break;
+		}
 	}
 }
 
@@ -6308,7 +6489,7 @@ const char *pszTF2VHideousEasterEgg[] =
 	"https://wiki.teamfortress.com/wiki/Western_Wear",
 };
 
-static void cc_tf2v_hideous()
+static void cc_tf2v_hideous(void)
 {
 	if ( steamapicontext && steamapicontext->SteamFriends() )
 	{
@@ -6316,3 +6497,4 @@ static void cc_tf2v_hideous()
 	}
 }
 static ConCommand hideous( "hideous", cc_tf2v_hideous, "", FCVAR_NONE );
+

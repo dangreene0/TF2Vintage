@@ -505,7 +505,7 @@ void CTFBaseRocket::FlyThink( void )
 	{
 		// Find the closest visible enemy player.
 		CUtlVector<CTFPlayer *> vecPlayers;
-		int count = CollectPlayers( &vecPlayers, TEAM_ANY, true );
+		int count = CollectPlayers( &vecPlayers, TEAM_ANY, COLLECT_ONLY_LIVING_PLAYERS );
 		CTFPlayer *pClosest = NULL;
 		float flClosest = FLT_MAX;
 		for (int i = 0; i < count; i++)

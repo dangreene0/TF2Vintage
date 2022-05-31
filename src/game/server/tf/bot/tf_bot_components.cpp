@@ -21,13 +21,13 @@ float CTFBotBody::GetHeadAimTrackingInterval( void ) const
 {
 	CTFBot *me = static_cast<CTFBot *>( GetBot() );
 
-	switch( me->m_iSkill )
+	switch( me->GetDifficulty() )
 	{
-		case CTFBot::NORMAL:
+		case CTFBot::DifficultyType::NORMAL:
 			return 0.30f;
-		case CTFBot::HARD:
+		case CTFBot::DifficultyType::HARD:
 			return 0.10f;
-		case CTFBot::EXPERT:
+		case CTFBot::DifficultyType::EXPERT:
 			return 0.05f;
 
 		default:
@@ -124,14 +124,14 @@ bool CTFBotLocomotion::IsAreaTraversable( const CNavArea *baseArea ) const
 		{
 			case TF_TEAM_RED:
 			{
-				if ( tfArea->HasTFAttributes( BLUE_SPAWN_ROOM ) )
+				if ( tfArea->HasTFAttributes( TF_NAV_BLUE_SPAWN_ROOM ) )
 					return false;
 
 				break;
 			}
 			case TF_TEAM_BLUE:
 			{
-				if ( tfArea->HasTFAttributes( RED_SPAWN_ROOM ) )
+				if ( tfArea->HasTFAttributes( TF_NAV_RED_SPAWN_ROOM ) )
 					return false;
 
 				break;
@@ -212,7 +212,7 @@ void CTFBotVision::Update( void )
 		return;
 
 	CUtlVector<CTFPlayer *> enemies;
-	CollectPlayers( &enemies, GetEnemyTeam( me ), true );
+	CollectPlayers( &enemies, GetEnemyTeam( me ), COLLECT_ONLY_LIVING_PLAYERS );
 
 	FOR_EACH_VEC( enemies, i )
 	{
@@ -384,13 +384,13 @@ float CTFBotVision::GetMinRecognizeTime( void ) const
 {
 	CTFBot *me = static_cast<CTFBot *>( GetBot() );
 
-	switch ( me->m_iSkill )
+	switch ( me->GetDifficulty() )
 	{
-		case CTFBot::NORMAL:
+		case CTFBot::DifficultyType::NORMAL:
 			return 0.50f;
-		case CTFBot::HARD:
+		case CTFBot::DifficultyType::HARD:
 			return 0.30f;
-		case CTFBot::EXPERT:
+		case CTFBot::DifficultyType::EXPERT:
 			return 0.15f;
 
 		default:
