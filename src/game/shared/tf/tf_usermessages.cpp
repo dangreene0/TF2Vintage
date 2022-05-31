@@ -88,6 +88,8 @@ void RegisterUserMessages()
 	usermessages->Register("PlayerLoadoutUpdated", -1);
 
 	usermessages->Register("ResetInventory", 0);
+
+	usermessages->Register("NetworkMessage", -1);
 #ifndef _X360
 	// NVNT register haptic user messages
 	RegisterHapticMessages();

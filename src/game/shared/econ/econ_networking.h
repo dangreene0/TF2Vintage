@@ -44,6 +44,7 @@ public:
 	virtual void ConnectToServer( long nIP, short nPort, CSteamID const &serverID ) = 0;
 #endif
 	virtual bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, void *pubData, uint32 cubData ) = 0;
+	virtual void RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData ) = 0;
 };
 
 extern IEconNetworking *g_pNetworking;

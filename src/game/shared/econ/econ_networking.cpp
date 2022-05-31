@@ -4,11 +4,14 @@
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
+#include "tier1/utlqueue.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api.h"
 #endif
-
+#if defined(CLIENT_DLL)
+#include "hud_macros.h"
+#endif
 #include <memory>
 
 // memdbgon must be the last include file in a .cpp file!!!
@@ -81,6 +84,7 @@ public:
 #endif
 
 	bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, void *pubData, uint32 cubData ) OVERRIDE;
+	void RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData ) OVERRIDE;
 
 	virtual void Update( float frametime );
 
@@ -96,6 +100,7 @@ public:
 #endif
 
 	bool AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
+	void MsgFunc_NetworkMessage( bf_read &msg );
 
 private:
 	ISteamNetworking *SteamNetworking( void ) const
@@ -130,6 +135,8 @@ private:
 	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
 	bool									m_bSteamConnection;
 	bool									m_bIsLoopback;
+
+	CUtlQueue< CSmartPtr<CNetPacket> >		m_QueuedMessages;
 };
 
 //-----------------------------------------------------------------------------
@@ -164,6 +171,10 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 	Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
 }
 
+
+#ifdef CLIENT_DLL
+DECLARE_MESSAGE( g_Networking, NetworkMessage );
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -205,6 +216,8 @@ bool CEconNetworking::Init( void )
 	}
 
 	m_bIsLoopback = m_hListenSocket == NULL;
+#else
+	HOOK_HUD_MESSAGE( g_Networking, NetworkMessage );
 #endif
 
 	return true;
@@ -399,6 +412,19 @@ void CEconNetworking::ConnectToServer( long nIP, short nPort, CSteamID const &se
 //-----------------------------------------------------------------------------
 void CEconNetworking::ProcessDataFromServer( void )
 {
+	if ( m_bIsLoopback || !m_bSteamConnection )
+	{
+		if ( !m_QueuedMessages.IsEmpty() )
+		{
+			CSmartPtr<CNetPacket> pPacket;
+			m_QueuedMessages.RemoveAtHead( pPacket );
+
+			HandleNetPacket( pPacket );
+		}
+
+		return;
+	}
+
 	if ( !m_hServerSocket && !net_steamcnx_usep2p.GetBool() )
 		return;
 
@@ -425,10 +451,9 @@ void CEconNetworking::ProcessDataFromServer( void )
 					continue;
 				}
 
-				CNetPacket *pPacket = new CNetPacket;
+				CSmartPtr<CNetPacket> pPacket( new CNetPacket );
 				pPacket->InitFromMemory( pData, cubMsgSize );
 				HandleNetPacket( pPacket );
-				pPacket->Release();
 			}
 			free( pData );
 		}
@@ -449,10 +474,9 @@ void CEconNetworking::ProcessDataFromServer( void )
 					continue;
 				}
 
-				CNetPacket *pPacket = new CNetPacket;
+				CSmartPtr<CNetPacket> pPacket( new CNetPacket );
 				pPacket->InitFromMemory( pData, cubMsgSize );
 				HandleNetPacket( pPacket );
-				pPacket->Release();
 			}
 
 			free( pData );
@@ -466,6 +490,19 @@ void CEconNetworking::ProcessDataFromServer( void )
 //-----------------------------------------------------------------------------
 void CEconNetworking::ProcessDataFromClients( void )
 {
+	if ( m_bIsLoopback || !m_bSteamConnection )
+	{
+		if ( !m_QueuedMessages.IsEmpty() )
+		{
+			CSmartPtr<CNetPacket> pPacket;
+			m_QueuedMessages.RemoveAtHead( pPacket );
+
+			HandleNetPacket( pPacket );
+		}
+
+		return;
+	}
+
 	if ( !m_hListenSocket && !net_steamcnx_usep2p.GetBool() )
 		return;
 
@@ -545,6 +582,22 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 
 	if ( m_bIsLoopback || !m_bSteamConnection )
 	{
+	#ifdef GAME_DLL
+		// TODO: This is receiving a null pointer because of the call from ClientConnected
+		CSingleUserReliableRecipientFilter filter( UTIL_PlayerBySteamID( targetID ) );
+		UserMessageBegin( filter, "NetworkMessage" );
+			WRITE_WORD( eMsg );
+			WRITE_UBITLONG( cubData, sizeof( uint32 ) * 8 );
+			WRITE_BITS( pubData, cubData * 8 );
+		MessageEnd();
+	#else
+		KeyValues *pData = new KeyValues( "NetworkMessage" );
+		pData->SetInt( "MsgType", eMsg );
+		pData->SetInt( "Length", cubData );
+		pData->SetPtr( "Data", pubData );
+
+		engine->ServerCmdKeyValues( pData );
+	#endif
 		return true;
 	}
 	else
@@ -569,6 +622,19 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 		
 		return bSuccess;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData )
+{
+	CNetPacket *pPacket = new CNetPacket();
+	pPacket->Init( cubData, eMsg );
+
+	Q_memcpy( pPacket->MutableData(), pubData, cubData );
+
+	m_QueuedMessages.Insert( pPacket );
 }
 
 #ifndef NO_STEAM
@@ -727,6 +793,22 @@ bool CEconNetworking::AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandl
 
 	m_MessageTypes.Insert( eMsg, pHandler );
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CEconNetworking::MsgFunc_NetworkMessage( bf_read &msg )
+{
+	MsgType_t eMsg = (MsgType_t)msg.ReadWord();
+	uint32 cubMsgSize = msg.ReadUBitLong( sizeof( uint32 ) * 8 );
+	
+	CNetPacket *pPacket = new CNetPacket();
+	pPacket->Init( cubMsgSize, eMsg );
+
+	msg.ReadBits( pPacket->MutableData(), cubMsgSize * 8 );
+
+	m_QueuedMessages.Insert( pPacket );
 }
 
 
