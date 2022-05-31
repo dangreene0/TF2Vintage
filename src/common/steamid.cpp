@@ -11,6 +11,10 @@
 
 #include "steamid.h"
 
+#ifndef UINT64_MAX
+#define UINT64_MAX ((uint64)-1)
+#endif
+
 static const char *DecimalToUint64( const char *pchStr, uint64 unLimit,
                                     uint64 *punVal )
 {
@@ -66,7 +70,9 @@ void CSteamID::SetFromString( const char *pchSteamID, EUniverse eDefaultUniverse
 	uint nInstance = 1;
 	EUniverse eUniverse = eDefaultUniverse;
 	EAccountType eAccountType = k_EAccountTypeIndividual;
-    const char *pchSteamIDString = pchSteamID;
+#ifdef DBGFLAG_ASSERT
+	const char *pchSteamIDString = pchSteamID;
+#endif
     CSteamID StrictID;
 
     StrictID.SetFromStringStrict( pchSteamID, eDefaultUniverse );
