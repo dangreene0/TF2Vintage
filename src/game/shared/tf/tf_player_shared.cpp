@@ -5551,9 +5551,22 @@ void CTFPlayer::FireBullet(const FireBulletsInfo_t &info, bool bDoEffects, int n
 	Vector vecStart = info.m_vecSrc;
 	Vector vecEnd = vecStart + info.m_vecDirShooting * info.m_flDistance;
 	trace_t trace;
-	UTIL_TraceLine(vecStart, vecEnd, (MASK_SOLID | CONTENTS_HITBOX), this, COLLISION_GROUP_NONE, &trace);
+
+	if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+	{
+		CTraceFilterIgnoreFriendlyCombatItems filter( this, COLLISION_GROUP_NONE, GetTeamNumber() );
+		UTIL_TraceLine( vecStart, vecEnd, ( MASK_SOLID | CONTENTS_HITBOX ), &filter, &trace );
+	}
+	else
+	{
+		UTIL_TraceLine( vecStart, vecEnd, ( MASK_SOLID | CONTENTS_HITBOX ), this, COLLISION_GROUP_NONE, &trace );
+	}
 	
-	
+	{
+		// Account for hitboxes extending outside player bounds
+		CTraceFilterIgnoreFriendlyCombatItems filter( this, COLLISION_GROUP_NONE, GetTeamNumber() );
+        UTIL_ClipTraceToPlayers(vecStart, vecEnd, MASK_SOLID, &filter, &trace);
+	}
 
 #ifdef GAME_DLL
 	if (tf_debug_bullets.GetBool())
