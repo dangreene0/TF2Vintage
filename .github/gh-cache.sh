@@ -19,6 +19,7 @@ if [ $# -eq 1 ]; then
     fi
 fi
 
+cd ..
 if [ $RESTORE -eq 1 ]; then
     mv -f src/ccache/*$dll_ext src/ccache/*$dbg_ext game/tf2vintage/bin
     mv -f src/ccache/*$lib_ext $lib_dir
