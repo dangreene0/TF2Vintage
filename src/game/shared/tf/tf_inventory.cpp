@@ -13,7 +13,10 @@
 #include "econ_item_system.h"
 #include "utlbuffer.h"
 #ifdef CLIENT_DLL
+#include "hud_macros.h"
 #include "tier0/icommandline.h"
+#include "tf_mainmenu.h"
+#include "panels/tf_mainmenupanel.h"
 #include "steam/isteamutils.h"
 #include "steam/isteamuserstats.h"
 #include "steam/isteamutils.h"
@@ -21,13 +24,17 @@
 #include "steam/isteamremotestorage.h"
 #endif
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 static CTFInventory g_TFInventory;
-
 CTFInventory *GetTFInventory()
 {
 	return &g_TFInventory;
 }
 
+#ifdef CLIENT_DLL
+DECLARE_MESSAGE( g_TFInventory, ResetInventory )
+#endif
 CTFInventory::CTFInventory()
 {
 #ifdef CLIENT_DLL
@@ -53,6 +60,10 @@ CTFInventory::~CTFInventory()
 
 bool CTFInventory::Init( void )
 {
+#ifdef CLIENT_DLL
+	HOOK_HUD_MESSAGE( g_TFInventory, ResetInventory )
+#endif
+
 	return true;
 }
 
@@ -74,6 +85,28 @@ void CTFInventory::PostInit( void )
 void CTFInventory::LevelInitPreEntity( void )
 {
 	GetItemSchema()->Precache();
+}
+
+void CTFInventory::ClientConnected( edict_t *pClient )
+{
+#if defined( GAME_DLL )
+	if( engine->IsDedicatedServer() )
+	{
+		if ( !pClient || pClient->IsFree() )
+			return;
+		// Anoyingly, they are not networked at this point and not a player
+		CSteamID const *playerID = engine->GetClientSteamID( pClient );
+		if( playerID == NULL )
+			return;
+
+		
+	}
+#endif
+}
+
+void CTFInventory::ClientDisconnected( edict_t *pClient )
+{
+	// Reset is handled by CEconItemSchema
 }
 
 int CTFInventory::GetNumPresets(int iClass, int iSlot)
@@ -368,7 +401,12 @@ void CTFInventory::ChangeLoadoutSlot(int iClass, int iLoadoutSlot)
 	SaveInventory();
 }
 
-#endif // CLIENT_DLL
+
+void CTFInventory::MsgFunc_ResetInventory( bf_read &msg )
+{
+	MAINMENU_ROOT->GetMenuPanel( LOADOUT_MENU )->DefaultLayout();
+}
+#endif
 
 // Legacy array, used when we're forced to use old method of giving out weapons.
 const int CTFInventory::Weapons[TF_CLASS_COUNT_ALL][TF_PLAYER_WEAPON_COUNT] =

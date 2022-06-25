@@ -15,6 +15,10 @@
 #include "hl2orange.spa.h"
 #include "basediscordpresence.h"
 
+#ifndef POSIX
+#include "basediscordpresence.h"
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: TF implementation for setting user contexts and properties.
 //-----------------------------------------------------------------------------

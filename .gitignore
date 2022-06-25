@@ -48,6 +48,9 @@ vscript.so.dbg
 vscript.dylib
 vscript.dylib.dSYM/
 
+# generated protobuf sources
+generated_proto*/
+
 # library files
 src/lib/public/mathlib.lib
 src/lib/public/mathlib.pdb

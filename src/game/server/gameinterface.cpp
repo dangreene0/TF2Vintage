@@ -125,6 +125,7 @@ extern ConVar tf_mm_servermode;
 
 #ifdef USES_ECON_ITEMS
 #include "econ_item_system.h"
+#include "econ_networking.h"
 #include "tf_inventory.h"
 #endif // USES_ECON_ITEMS
 
@@ -1098,6 +1099,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	TheNavMesh = NavMeshFactory();
 #endif
 
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Init();
+#endif
+
 	// init the gamestatsupload connection
 	gamestatsuploader->InitConnection();
 #endif
@@ -1147,6 +1152,10 @@ void CServerGameDLL::DLLShutdown( void )
 		delete TheNavMesh;
 		TheNavMesh = NULL;
 	}
+#endif
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Shutdown();
 #endif
 	// reset (shutdown) the gamestatsupload connection
 	gamestatsuploader->InitConnection();
@@ -1584,6 +1593,10 @@ void CServerGameDLL::GameFrame( bool simulating )
 #ifndef _XBOX
 #ifdef USE_NAV_MESH
 	TheNavMesh->Update();
+#endif
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Update( oldframetime );
 #endif
 
 #ifdef NEXT_BOT

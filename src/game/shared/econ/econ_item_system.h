@@ -53,6 +53,9 @@ public:
 	CEconAttributeDefinition *GetAttributeDefinitionByClass( const char* name );
 	ISchemaAttributeType *GetAttributeType( const char *type ) const;
 
+#if defined( CLIENT_DLL )
+	void MsgFunc_ResetInventory( bf_read &msg );
+#endif
 
 	KeyValues *GetSchemaKeyValues( void ) const { return m_pSchema; }
 	uint GetResetCount( void ) const { return m_unSchemaResetCount; }

@@ -16,7 +16,6 @@
 #include "prediction.h"
 #include "clientsideeffects.h"
 #include "particlemgr.h"
-#include "steam/steam_api.h"
 #include "initializer.h"
 #include "smoke_fog_overlay.h"
 #include "view.h"
@@ -106,6 +105,9 @@
 #endif
 #include "vgui/ILocalize.h"
 #include "vgui/IVGui.h"
+#ifndef NO_STEAM
+#include "steam/steam_api.h"
+#endif
 #include "ixboxsystem.h"
 #include "ipresence.h"
 #include "engine/imatchmaking.h"
@@ -134,6 +136,10 @@
 #include "client_virtualreality.h"
 #include "mumble.h"
 #include "bannedwords.h"
+
+#ifdef USES_ECON_ITEMS
+#include "econ_networking.h"
+#endif
 
 // NVNT includes
 #include "hud_macros.h"
@@ -947,6 +953,11 @@ static void MountAdditionalContent()
 	int appid = abs( pAdditionaContentId->GetInt() );
 	if ( appid )
 	{
+		if ( !steamapicontext->SteamApps() )
+		{
+			Warning( "Unable to mount extra content, unkown error\n" );
+			return;
+		}
 		if ( !steamapicontext->SteamApps()->BIsAppInstalled( appid ) )
 		{
 			Warning( "Unable to mount extra content with AppId: %i\nApp not installed.\n", appid );
@@ -1423,6 +1434,10 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 	if ( !IGameSystem::InitAllSystems() )
 		return false;
 
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Init();
+#endif
+
 	g_pClientMode->Enable();
 
 	if ( !view )
@@ -1594,6 +1609,10 @@ void CHLClient::Shutdown( void )
 	UncacheAllMaterials();
 
 	IGameSystem::ShutdownAllSystems();
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Shutdown();
+#endif
 	
 	gHUD.Shutdown();
 	VGui_Shutdown();
@@ -1663,6 +1682,10 @@ void CHLClient::HudUpdate( bool bActive )
 	CRTime::UpdateRealTime();
 
 	GetClientVoiceMgr()->Frame( frametime );
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Update( frametime );
+#endif
 
 	gHUD.UpdateHud( bActive );
 

@@ -1,11 +1,16 @@
 #include "cbase.h"
 #include "filesystem.h"
+#include "econ_networking.h"
 #include "econ_item_system.h"
 #include "script_parser.h"
 #include "activitylist.h"
+#ifndef NO_STEAM
+#include "steam/steamtypes.h"
+#endif
 #include "tier0/icommandline.h"
 
 #if defined(CLIENT_DLL)
+#include "hud_macros.h"
 #define UTIL_VarArgs  VarArgs
 #endif
 
@@ -574,7 +579,7 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 				GET_INT( style, pStyleData, skin_red );
 				GET_INT( style, pStyleData, skin_blu );
 
-				for ( KeyValues *pStyleModelData = pStyleData->GetFirstSubKey(); pStyleModelData != NULL; pStyleModelData = pStyleModelData->GetNextKey() )
+				FOR_EACH_SUBKEY( pStyleData, pStyleModelData )
 				{
 					if ( !V_stricmp( pStyleModelData->GetName(), "model_player_per_class" ) )
 					{
@@ -788,6 +793,10 @@ public:
 	}
 };
 
+#ifdef CLIENT_DLL
+DECLARE_MESSAGE( g_EconItemSchema, ResetInventory )
+#endif
+
 //-----------------------------------------------------------------------------
 // Purpose: constructor
 //-----------------------------------------------------------------------------
@@ -837,6 +846,10 @@ bool CEconItemSchema::Init( void )
 	float flEndTime = engine->Time();
 	Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
 
+#ifdef CLIENT_DLL
+	HOOK_HUD_MESSAGE( g_EconItemSchema, ResetInventory )
+#endif
+	
 	return true;
 }
 
@@ -1232,10 +1245,32 @@ void CEconItemSchema::ParseAttributes( KeyValues *pKVData )
 
 void CEconItemSchema::ClientConnected( edict_t *pClient )
 {
+#if defined( GAME_DLL )
+	if ( !pClient || pClient->IsFree() )
+		return;
+
+	CSteamID const *playerID = engine->GetClientSteamID( pClient );
+	if ( playerID == NULL )
+		return;
+
+	g_pNetworking->OnClientConnected( *playerID );
+#endif
 }
 
 void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 {
+#if defined( GAME_DLL )
+	CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
+		return;
+
+	CSteamID playerID{};
+	pPlayer->GetSteamID( &playerID );
+	g_pNetworking->OnClientDisconnected( playerID );
+
+	CSingleUserRecipientFilter filter( pPlayer );
+	UserMessageBegin( filter, "ResetInventory" );
+	MessageEnd();
+#endif
 }
 
 CEconItemDefinition *CEconItemSchema::GetItemDefinition( int id )
@@ -1302,4 +1337,25 @@ ISchemaAttributeType *CEconItemSchema::GetAttributeType( const char *name ) cons
 	return NULL;
 }
 
+#if defined( CLIENT_DLL )
+void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
+{
+	Reset();
 
+	KeyValuesAD schema( "KVData" );
+	if ( schema->LoadFromFile( g_pFullFileSystem, ITEMS_GAME ) )
+	{
+		ParseSchema( schema );
+	}
+}
+#endif
+
+
+//		if ( !GetItemSchema()->LoadFromBuffer( sContext.m_buffer ) )
+//		{
+//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+//			ConColorMsg( COLOR_RED, "Unable to load Econ Item Schema from server, loading local file.\n" );
+//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+//
+//			GetItemSchema()->LoadFromFile();
+//		}
