@@ -113,6 +113,7 @@ enum
 #define PANEL_MAPINFO			"mapinfo"
 #define PANEL_ROUNDINFO			"roundinfo"
 #define PANEL_ARENATEAMSELECT 	"arenateamselect"
+#define PANEL_PVE_WIN			"pvewinpanel"
 
 #define PANEL_FOURTEAMSCOREBOARD "fourteamscoreboard"
 #define PANEL_FOURTEAMSELECT	"fourteamselect"
