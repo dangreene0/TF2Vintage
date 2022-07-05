@@ -358,6 +358,7 @@ ClientModeTFNormal::ClientModeTFNormal()
 	m_pGameUI = NULL;
 	m_pFreezePanel = NULL;
 	m_pInspectPanel = NULL;
+	m_pMenuUpgradePanel = NULL;
 	MessageHooks();
 
 #if defined( _X360 )
