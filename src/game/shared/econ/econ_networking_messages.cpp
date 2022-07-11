@@ -83,10 +83,10 @@ public:
 		reply->set_remote_steamid( playerID.ConvertToUint64() );
 
 		const int nLength = reply->ByteSize();
-		CUtlVectorConservative<byte> array( 0, nLength );
-		reply->SerializeWithCachedSizesToArray( array.Base() );
+		CArrayAutoPtr<byte> array( new byte[nLength]() );
+		reply->SerializeWithCachedSizesToArray( array.Get() );
 
-		g_pNetworking->SendMessage( serverID, k_EClientHelloMsg, array.Base(), nLength );
+		g_pNetworking->SendMessage( serverID, k_EClientHelloMsg, array.Get(), nLength );
 	#endif
 
 		return true;

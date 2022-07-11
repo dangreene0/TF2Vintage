@@ -290,10 +290,10 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 		msg->set_remote_steamid( remoteID.ConvertToUint64() );
 
 		const int nLength = msg->ByteSize();
-		CUtlVectorConservative<byte> array( 0, nLength );
-		msg->SerializeWithCachedSizesToArray( array.Base() );
+		CArrayAutoPtr<byte> array( new byte[ nLength ]() );
+		msg->SerializeWithCachedSizesToArray( array.Get() );
 
-		SendMessage( steamID, k_EServerHelloMsg, array.Base(), nLength );
+		SendMessage( steamID, k_EServerHelloMsg, array.Get(), nLength );
 	}
 }
 
