@@ -12296,12 +12296,16 @@ void CTFPlayer::PlayStunSound( CTFPlayer *pStunner, int nStunFlags/*, int nCurre
 	pExpresser->AllowMultipleScenes();
 
 	CRecipientFilter filter;
-	CSingleUserRecipientFilter filterAttacker( pStunner );
 	filter.AddRecipientsByPAS( GetAbsOrigin() );
 	filter.RemoveRecipient( pStunner );
 
 	EmitSound( filter, this->entindex(), pszStunSound );
-	EmitSound( filterAttacker, pStunner->entindex(), pszStunSound );
+
+	if ( pStunner )
+	{
+		CSingleUserRecipientFilter filterAttacker( pStunner );
+		EmitSound( filterAttacker, pStunner->entindex(), pszStunSound );
+	}
 
 	pExpresser->DisallowMultipleScenes();
 
