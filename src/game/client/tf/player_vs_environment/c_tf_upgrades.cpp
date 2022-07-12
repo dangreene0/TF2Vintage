@@ -1,3 +1,9 @@
+//========= Copyright © Valve LLC, All rights reserved. =======================
+//
+// Purpose:		
+//
+// $NoKeywords: $
+//=============================================================================
 #include "cbase.h"
 #include "c_tf_player.h"
 #include "c_tf_upgrades.h"

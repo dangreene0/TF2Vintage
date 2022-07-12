@@ -445,7 +445,9 @@ void CTFOptionsKeyboardPanel::FillInCurrentBindings( void )
 		bJoystick = var.GetBool();
 	}
 
-	for ( int i = 0; i < BUTTON_CODE_LAST; i++ )
+	// HACK: GetBindingForButtonCode doesn't return NULL for missing codes
+	int nButtonCodes = BUTTON_CODE_LAST - (STEAMCONTROLLER_LAST - STEAMCONTROLLER_FIRST);
+	for ( int i = 0; i < nButtonCodes; i++ )
 	{
 		// Look up binding
 		const char *binding = gameuifuncs->GetBindingForButtonCode( (ButtonCode_t)i );
