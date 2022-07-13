@@ -75,3 +75,6 @@ jobs:
         with:
           name: tf2vintage-linux
           path: game/tf2vintage/bin/
+      
+      - name: Move to cache
+        run: sudo bash .github/gh-cache.sh
