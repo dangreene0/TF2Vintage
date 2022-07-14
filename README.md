@@ -1,14 +1,4 @@
-Latest full compile, including game assets:
-
-[![Release](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml)
-
-Binaries only:
-
-[![Linux](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/linux.yml)
-
-[![Windows](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/windows.yml)
-
-Want to compile your own binaries instead? This project uses the C++ Visual Studio 2015 - Windows XP (v140_xp) platform toolset.
+[![Build](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml/badge.svg)](https://github.com/TF2V/TF2Vintage/actions/workflows/release.yml)
 
 -------------------------------------------------------------------------------------------
 Team Fortress 2 Vintage
