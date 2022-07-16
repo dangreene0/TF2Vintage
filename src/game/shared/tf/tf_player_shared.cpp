@@ -2054,7 +2054,11 @@ void CTFPlayerShared::OnAddStunned(void)
 {
 	if ( IsControlStunned() || IsLoser() )
 	{
-		RemoveCond( TF_COND_SHIELD_CHARGE );
+		if ( InCond( TF_COND_SHIELD_CHARGE ) )
+		{
+			SetShieldChargeMeter( 0 );
+			RemoveCond( TF_COND_SHIELD_CHARGE );
+		}
 
 		CTFWeaponBase *pWeapon = m_pOuter->GetActiveTFWeapon();
 		if ( pWeapon )
