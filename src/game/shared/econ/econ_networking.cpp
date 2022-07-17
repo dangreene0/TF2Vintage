@@ -432,7 +432,7 @@ void CEconNetworking::ProcessDataFromServer( void )
 		return;
 	}
 
-	if ( !m_hServerSocket && !net_steamcnx_usep2p.GetBool() )
+	if ( m_hServerSocket == 0 )
 		return;
 
 	if ( !SteamNetworking() )
