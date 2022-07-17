@@ -55,6 +55,8 @@
 #include "weapon_selection.h"
 #include "tf_mann_vs_machine_stats.h"
 #include "tf_modalstack.h"
+#include "inetchannel.h"
+#include "econ_networking_messages.h"
 
 #if defined( _X360 )
 #include "tf_clientscoreboard.h"
@@ -424,6 +426,7 @@ void ClientModeTFNormal::Init()
 	BaseClass::Init();
 
 	ListenForGameEvent( "server_spawn" );
+	ListenForGameEvent( "client_connected" );
 
 	MannVsMachineStats_Init();
 	ListenForGameEvent( "localplayer_changeclass" );
@@ -775,6 +778,14 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 			engine->ExecuteClientCmd( szCmd );
 		}
 	}
+	else if ( FStrEq( "client_connected", eventname ) )
+	{
+		INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetNetChannelInfo() );
+		if ( pNetChan )
+		{
+			pNetChan->RegisterMessage( new CEconNetMsg() );
+		}
+	}
 
 	BaseClass::FireGameEvent( event );
 }
@@ -889,6 +900,9 @@ int ClientModeTFNormal::HandleSpectatorKeyInput( int down, ButtonCode_t keynum, 
 	return BaseClass::HandleSpectatorKeyInput( down, keynum, pszCurrentBinding );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void ClientModeTFNormal::OnDemoRecordStart( char const *pDemoBaseName )
 {
 	BaseClass::OnDemoRecordStart( pDemoBaseName );
