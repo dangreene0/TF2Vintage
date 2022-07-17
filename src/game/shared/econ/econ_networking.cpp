@@ -357,6 +357,14 @@ void CEconNetworking::CloseConnection( CSteamSocket *pSocket )
 	}
 
 	m_hServerSocket = 0;
+	FOR_EACH_VEC( m_vecSockets, i )
+	{
+		if ( m_vecSockets[i].GetSteamID() == pSocket->GetSteamID() )
+		{
+			m_vecSockets.FastRemove( i );
+			break;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
