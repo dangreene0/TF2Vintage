@@ -6467,17 +6467,41 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 	}
 
-	int nAimingNoFlinch = 0;
-	CALL_ATTRIB_HOOK_INT( nAimingNoFlinch, aiming_no_flinch );
+
+	if ( bitsDamage != DMG_GENERIC )
+	{
+		bool bFlinch = true;
+		if ( IsPlayerClass( TF_CLASS_SNIPER ) && m_Shared.InCond( TF_COND_AIMING ) )
+		{
+			CTFWeaponBase *pMyWeapon = GetActiveTFWeapon();
+			if ( pMyWeapon && WeaponID_IsSniperRifle( pMyWeapon->GetWeaponID() ) )
+			{
+				CTFSniperRifle *pRifle = static_cast<CTFSniperRifle *>( pMyWeapon );
+				if ( pRifle->IsFullyCharged() )
+				{
+					int iAimingNoFlinch = 0;
+					CALL_ATTRIB_HOOK_INT( iAimingNoFlinch, aiming_no_flinch );
+					if ( iAimingNoFlinch > 0 )
+					{
+						bFlinch = false;
+					}
+				}
+			}
+		}
+
+		if ( bFlinch )
+		{
+			m_Local.m_vecPunchAngle.SetX( -2 );
+
+			PlayFlinch( info );
+		}
+	}
 
 	// Display any effect associate with this damage type
 	DamageEffect( info.GetDamage(), bitsDamage );
 
 	m_bitsDamageType |= bitsDamage; // Save this so we can report it to the client
 	m_bitsHUDDamage = -1;  // make sure the damage bits get resent
-
-	if( nAimingNoFlinch == 0 || !m_Shared.InCond( TF_COND_AIMING ) )
-		m_Local.m_vecPunchAngle.SetX( -2 );
 
 	// Do special explosion damage effect
 	if ( bitsDamage & DMG_BLAST )
@@ -6486,8 +6510,6 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	}
 
 	PainSound( info );
-
-	PlayFlinch( info );
 
 	// Detect drops below 25% health and restart expression, so that characters look worried.
 	int iHealthBoundary = ( GetMaxHealth() * 0.25 );
