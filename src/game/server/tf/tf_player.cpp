@@ -772,10 +772,21 @@ void CTFPlayer::RegenThink( void )
 		// Heal faster if we haven't been in combat for a while
 		float flTimeSinceDamage = gpGlobals->curtime - GetLastDamageTime();
 		float flScale;
-		if (tf2v_use_new_medic_regen.GetBool())
-			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
+		if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+		{
+			flScale = 1.0f;
+		}
+		else if ( flTimeSinceDamage < 5.0f )
+		{
+			flScale = 0.25f;
+		}
 		else
-			flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
+		{
+			if ( tf2v_use_new_medic_regen.GetBool() )
+				flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 3.0, 6.0 );
+			else
+				flScale = RemapValClamped( flTimeSinceDamage, 5, 10, 1.0, 3.0 );
+		}
 
 		m_flAccumulatedHealthRegen += TF_REGEN_AMOUNT * flScale;
 	}
@@ -809,37 +820,31 @@ void CTFPlayer::RegenThink( void )
 	m_flAccumulatedHealthRegen += iHealthRegenLegacy;
 
 	int nHealthChange = 0; 
-	if ( m_flAccumulatedHealthRegen > 0 )
+	if ( m_flAccumulatedHealthRegen >= 1.0 )
 	{
-		nHealthChange = floor( m_flAccumulatedHealthRegen );
-		int nHealthRestored = 0;
-		if (nHealthChange >= 1)
-			nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC );
-		if ( nHealthRestored > 0 )
+		if ( GetHealth() < GetMaxHealth() )
 		{
-			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
-			if ( event )
+			nHealthChange = floor( m_flAccumulatedHealthRegen );
+			int nHealthRestored = TakeHealth( nHealthChange, DMG_GENERIC|DMG_SLASH );
+			if ( nHealthRestored > 0 )
 			{
-				event->SetInt( "priority", 1 );	// HLTV event priority
-				event->SetInt( "patient", GetUserID() );
-				event->SetInt( "healer", GetUserID() );
-				event->SetInt( "amount", nHealthRestored );
+				IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
+				if ( event )
+				{
+					event->SetInt( "priority", 1 );	// HLTV event priority
+					event->SetInt( "patient", GetUserID() );
+					event->SetInt( "healer", GetUserID() );
+					event->SetInt( "amount", nHealthRestored );
 
-				gameeventmanager->FireEvent( event );
+					gameeventmanager->FireEvent( event );
+				}
 			}
 		}
 	}
-	else if ( m_flAccumulatedHealthRegen < 0 )
+	else if ( m_flAccumulatedHealthRegen < -1.0 )
 	{
 		nHealthChange = ceil( m_flAccumulatedHealthRegen );
-		if (nHealthChange <= -1)
-		{
-			// TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
-			// STUPID HACK: Manually reassign the health down so we don't grunt on health drains, and make it never able to kill ourselves.
-			if ( GetHealth() > 1 )
-				SetHealth( Max( ( GetHealth() - nHealthChange ), 1 ) );
-		}
-		
+		TakeDamage( CTakeDamageInfo( this, this, vec3_origin, WorldSpaceCenter(), nHealthChange * -1, DMG_GENERIC ) );
 	}
 
 	if ( GetHealth() < GetMaxHealth() && nHealthChange != 0 && !IsPlayerClass( TF_CLASS_MEDIC ) )
