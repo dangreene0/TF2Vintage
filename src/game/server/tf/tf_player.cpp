@@ -5423,6 +5423,14 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		}
 	}
 
+	if ( TFGameRules()->IsMannVsMachineMode() && GetTeamNumber() == TF_TEAM_MVM_PLAYERS )
+	{
+		if ( GetGroundEntity() == NULL )
+		{
+			info.SetDamageForce( vec3_origin );
+		}
+	}
+
 	// Save damage force for ragdolls.
 	m_vecTotalBulletForce = info.GetDamageForce();
 	m_vecTotalBulletForce.x = clamp( m_vecTotalBulletForce.x, -15000.0f, 15000.0f );
@@ -6432,7 +6440,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 		CSingleUserRecipientFilter user( this );
 		UserMessageBegin( user, "Damage" );
-			WRITE_BYTE( clamp( (int)info.GetDamage(), 0, 255 ) );
+			WRITE_BYTE( clamp( (int)info.GetDamage(), 0, 32000 ) );
 			WRITE_VEC3COORD( vecDamageOrigin );
 		MessageEnd();
 	}
@@ -9704,8 +9712,8 @@ void CTFPlayer::PainSound( const CTakeDamageInfo &info )
 	
 	// Hide pain sounds from silent weapons.
 	CTFWeaponBase *pTFInflictor = dynamic_cast<CTFWeaponBase *>( info.GetWeapon() );
-		if ( pTFInflictor && ( pTFInflictor->IsSilentKiller() ) )
-			return;
+	if ( pTFInflictor && pTFInflictor->IsSilentKiller() )
+		return;
 
 	// This used to be handled elsewhere, but we can let servers decide to use the old
 	// TF2 pain sounds or the new TF2 pain sounds by doing it here instead.
@@ -9730,6 +9738,9 @@ void CTFPlayer::PainSound( const CTakeDamageInfo &info )
 			}
 		}
 	}
+
+	if ( info.GetDamageType() == DMG_GENERIC || info.GetDamageType() == DMG_PREVENT_PHYSICS_FORCE )
+		return;
 
 	if ( info.GetDamageType() & DMG_DROWN )
 	{
