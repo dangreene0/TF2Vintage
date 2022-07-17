@@ -5076,6 +5076,14 @@ int CTFPlayer::TakeHealth( float flHealth, int bitsDamageType )
 {
 	int iResult = 0;
 
+	CTFWeaponBase *pWeapon = GetActiveTFWeapon();
+	if ( pWeapon )
+	{
+		float flHealingBonus = 1.f;
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pWeapon, flHealingBonus, mult_healing_received );
+		flHealth *= flHealingBonus;
+	}
+
 	// If the bit's set, add over the max health
 	if ( bitsDamageType & DMG_IGNORE_MAXHEALTH )
 	{
