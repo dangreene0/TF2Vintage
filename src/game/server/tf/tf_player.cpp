@@ -6319,17 +6319,16 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			{
 				SpeakConceptIfAllowed(MP_CONCEPT_HURT, "damagecritical:1");
 			}
+		}
 
+		// Burn sounds are handled in ConditionThink()
+		if ( !( bitsDamage & DMG_BURN ) )
+		{
+			SpeakConceptIfAllowed( MP_CONCEPT_HURT );
 		}
 		
 		info.SetDamage( flDamage );
 		
-	}
-	
-	// Burn sounds are handled in ConditionThink()
-	if ( !( bitsDamage & DMG_BURN ) )
-	{
-		SpeakConceptIfAllowed( MP_CONCEPT_HURT );
 	}
 	
 	if ( m_debugOverlays & OVERLAY_BUDDHA_MODE )
@@ -6473,6 +6472,15 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		bool bFlinch = true;
 		if ( IsPlayerClass( TF_CLASS_SNIPER ) && m_Shared.InCond( TF_COND_AIMING ) )
 		{
+			if ( pTFAttacker && pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_MINIGUN )
+			{
+				float flDistSqr = ( pTFAttacker->GetAbsOrigin() - GetAbsOrigin() ).LengthSqr();
+				if ( flDistSqr > 750 * 750 )
+				{
+					bFlinch = false;
+				}
+			}
+
 			CTFWeaponBase *pMyWeapon = GetActiveTFWeapon();
 			if ( pMyWeapon && WeaponID_IsSniperRifle( pMyWeapon->GetWeaponID() ) )
 			{
@@ -6481,7 +6489,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				{
 					int iAimingNoFlinch = 0;
 					CALL_ATTRIB_HOOK_INT( iAimingNoFlinch, aiming_no_flinch );
-					if ( iAimingNoFlinch > 0 )
+					if ( iAimingNoFlinch != 0 )
 					{
 						bFlinch = false;
 					}
