@@ -2917,6 +2917,10 @@ void CTFGameRules::ClientCommandKeyValues( edict_t *pEntity, KeyValues *pKeyValu
 	{
 
 	}
+	else
+	{
+		BaseClass::ClientCommandKeyValues( pEntity, pKeyValues );
+	}
 }
 
 // Add the ability to ignore the world trace
