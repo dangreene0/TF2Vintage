@@ -411,7 +411,7 @@ void CEconNetworking::ConnectToServer( long nIP, short nPort, CSteamID const &se
 	OpenConnection( serverID, m_hServerSocket );
 
 	INetChannelInfo *pNetChan = engine->GetNetChannelInfo();
-	m_bIsLoopback = pNetChan->IsLoopback();
+	m_bIsLoopback = pNetChan ? pNetChan->IsLoopback() : false;
 }
 
 //-----------------------------------------------------------------------------
