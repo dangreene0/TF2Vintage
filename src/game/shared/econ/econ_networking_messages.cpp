@@ -1,6 +1,5 @@
 #include "cbase.h"
 #include "filesystem.h"
-#include "fmtstr.h"
 #include "vstdlib/coroutine.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
@@ -208,5 +207,7 @@ INetChannel *CEconNetMsg::GetNetChannel( void ) const
 
 const char *CEconNetMsg::ToString( void ) const
 {
-	return CFmtStr( "%s: type %d", GetName(), m_pPacket->Hdr().m_eMsgType );
+	static char szString[96];
+	V_sprintf_safe( szString, "%s: type %d", GetName(), m_pPacket->Hdr().m_eMsgType );
+	return szString;
 }
