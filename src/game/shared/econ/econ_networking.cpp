@@ -5,6 +5,7 @@
 #include "econ_networking_messages.h"
 #include "tier1/smartptr.h"
 #include "tier1/utlqueue.h"
+#include "inetchannel.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api.h"
@@ -23,6 +24,8 @@ static ConVar net_steamcnx_usep2p( "net_steamcnx_usep2p", "1", FCVAR_DEVELOPMENT
 
 #define STEAM_CNX_COLOR				Color(255,255,100,255)
 #define STEAM_CNX_PROTO_VERSION		2
+
+static CEconNetMsg *s_pNetMsg = new CEconNetMsg();
 
 
 class CSteamSocket
@@ -215,8 +218,6 @@ bool CEconNetworking::Init( void )
 	}
 
 	m_bIsLoopback = m_hListenSocket == NULL;
-#else
-	HOOK_HUD_MESSAGE( g_Networking, NetworkMessage );
 #endif
 
 	return true;
@@ -267,14 +268,23 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 	CSteamSocket *pSocket = OpenConnection( steamID, socket );
 	if ( pSocket )
 	{
-		if ( !SteamGameServer() )
+		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 		{
-			CloseConnection( pSocket );
-			return;
+			CSteamID const *pPlayerID = engine->GetClientSteamID( INDEXENT( i ) );
+			if ( pPlayerID && *pPlayerID == steamID )
+			{
+				INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetPlayerNetInfo( i ) );
+				if ( pNetChan )
+				{
+					// This is safe to do multiple times
+					pNetChan->RegisterMessage( new CEconNetMsg() );
+					break;
+				}
+			}
 		}
 
 		CProtobufMsg<CServerHelloMsg> msg;
-		CSteamID remoteID = SteamGameServer()->GetSteamID();
+		CSteamID const *remoteID = engine->GetGameServerSteamID();
 
 		uint unVersion = 0;
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
@@ -287,7 +297,7 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 		filesystem->Close( fh );
 
 		msg->set_version( unVersion );
-		msg->set_remote_steamid( remoteID.ConvertToUint64() );
+		msg->set_remote_steamid( remoteID->ConvertToUint64() );
 
 		const int nLength = msg->ByteSize();
 		CArrayAutoPtr<byte> array( new byte[ nLength ]() );
@@ -590,13 +600,19 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 	if ( m_bIsLoopback || !m_bSteamConnection )
 	{
 	#ifdef GAME_DLL
-		// TODO: This is receiving a null pointer because of the call from ClientConnected
-		CSingleUserReliableRecipientFilter filter( UTIL_PlayerBySteamID( targetID ) );
-		UserMessageBegin( filter, "NetworkMessage" );
-			WRITE_WORD( eMsg );
-			WRITE_UBITLONG( cubData, sizeof( uint32 ) * 8 );
-			WRITE_BITS( pubData, cubData * 8 );
-		MessageEnd();
+		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+		{
+			CSteamID const *pPlayerID = engine->GetClientSteamID( INDEXENT( i ) );
+			if ( pPlayerID && *pPlayerID == targetID )
+			{
+				INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetPlayerNetInfo( i ) );
+				if ( pNetChan )
+				{
+					CEconNetMsg msg( pPacket );
+					return pNetChan->SendNetMsg( msg, true );
+				}
+			}
+		}
 	#else
 		KeyValues *pData = new KeyValues( "NetworkMessage" );
 		pData->SetInt( "MsgType", eMsg );

@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "filesystem.h"
+#include "fmtstr.h"
 #include "vstdlib/coroutine.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
@@ -133,3 +134,79 @@ public:
 	}
 };
 REG_ECON_MSG_HANDLER( CClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
+
+
+
+void CEconNetMsg::SetNetChannel( INetChannel *netchan )
+{
+	m_pNetChan = netchan;
+}
+
+void CEconNetMsg::SetReliable( bool state )
+{
+	m_bReliable = state;
+}
+
+bool CEconNetMsg::Process( void )
+{
+	if ( m_eMsgType == k_EInvalidMsg )
+		return false;
+
+	if ( m_pPacket->Hdr().m_eMsgType != m_eMsgType )
+		return false;
+
+	g_pNetworking->RecvMessage( CSteamID(), m_eMsgType, m_pPacket->Data(), m_pPacket->Size() );
+	return true;
+}
+
+bool CEconNetMsg::ReadFromBuffer( bf_read &buffer )
+{
+	m_eMsgType = buffer.ReadShort();
+	uint32 nSize = buffer.ReadLong();
+
+	CArrayAutoPtr<byte> array( new byte[nSize]() );
+	buffer.ReadBytes( array.Get(), nSize );
+
+	m_pPacket->InitFromMemory( array.Get(), nSize );
+
+	return !buffer.IsOverflowed();
+}
+
+bool CEconNetMsg::WriteToBuffer( bf_write &buffer )
+{
+	buffer.WriteUBitLong( GetType(), 6 );
+	buffer.WriteShort( m_eMsgType );
+	buffer.WriteLong( m_pPacket->Size() );
+	buffer.WriteBytes( m_pPacket->Data(), m_pPacket->Size() );
+	return !buffer.IsOverflowed();
+}
+
+bool CEconNetMsg::IsReliable( void ) const
+{
+	return m_bReliable;
+}
+
+int CEconNetMsg::GetType( void ) const
+{
+	return svc_EconMsg;
+}
+
+int CEconNetMsg::GetGroup( void ) const
+{
+	return k_nServerPort;
+}
+
+const char *CEconNetMsg::GetName( void ) const
+{
+	return "svc_EconMsg";
+}
+
+INetChannel *CEconNetMsg::GetNetChannel( void ) const
+{
+	return m_pNetChan;
+}
+
+const char *CEconNetMsg::ToString( void ) const
+{
+	return CFmtStr( "%s: type %d", GetName(), m_pPacket->Hdr().m_eMsgType );
+}

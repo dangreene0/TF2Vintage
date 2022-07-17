@@ -23,6 +23,9 @@ typedef uint32 MsgType_t;
 #define ECON_SERVER_PORT 27050
 #define SERVER_TIMEOUT	20
 
+#define svc_EconMsg	35	// Horrible magic number, but 32 appears to be the last real message
+						// 36 is the maximum index as it's encoded in just 6 bits
+
 /* Peer To Peer connection definitions */
 const int k_nInvalidPort = INetChannelInfo::TOTAL;
 const int k_nClientPort = INetChannelInfo::TOTAL + 1; // Client <-> Client port

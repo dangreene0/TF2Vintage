@@ -7,6 +7,7 @@
 
 #include "tier1/mempool.h"
 #include "tier1/smartptr.h"
+#include "inetmessage.h"
 
 // Currently only using protobuf
 enum EProtocolType
@@ -51,6 +52,7 @@ protected:
 	}
 
 	friend class CEconNetworking;
+	friend class CEconNetMsg;
 	void Init( uint32 size, MsgType_t eMsg );
 	void InitFromMemory( void const *pMemory, uint32 size );
 
@@ -78,6 +80,33 @@ private:
 		return nRefCounts;
 	}
 	volatile uint m_cRefCount;
+};
+
+
+class CEconNetMsg : public INetMessage
+{
+public:
+	CEconNetMsg( CSmartPtr<CNetPacket> const &pPacket ) : m_pPacket( pPacket ), m_eMsgType( pPacket->Hdr().m_eMsgType ) {}
+	CEconNetMsg( void ) : m_pPacket( new CNetPacket() ), m_eMsgType( 0 ) {}
+
+	// Inherited via INetMessage
+	virtual void SetNetChannel( INetChannel *netchan ) OVERRIDE;
+	virtual void SetReliable( bool state ) OVERRIDE;
+	virtual bool Process( void ) OVERRIDE;
+	virtual bool ReadFromBuffer( bf_read &buffer ) OVERRIDE;
+	virtual bool WriteToBuffer( bf_write &buffer ) OVERRIDE;
+	virtual bool IsReliable( void ) const OVERRIDE;
+	virtual int GetType( void ) const OVERRIDE;
+	virtual int GetGroup( void ) const OVERRIDE;
+	virtual const char *GetName( void ) const OVERRIDE;
+	virtual INetChannel *GetNetChannel( void ) const OVERRIDE;
+	virtual const char *ToString( void ) const OVERRIDE;
+
+private:
+	bool m_bReliable;
+	INetChannel *m_pNetChan;
+	MsgType_t m_eMsgType;
+	CSmartPtr<CNetPacket> m_pPacket;
 };
 
 //-----------------------------------------------------------------------------
