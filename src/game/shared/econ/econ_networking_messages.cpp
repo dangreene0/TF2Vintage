@@ -173,7 +173,7 @@ bool CEconNetMsg::ReadFromBuffer( bf_read &buffer )
 
 bool CEconNetMsg::WriteToBuffer( bf_write &buffer )
 {
-	buffer.WriteUBitLong( GetType(), 6 );
+	buffer.WriteUBitLong( GetType(), 6 ); // More magic numbers, all other types are encoded in 6 bits
 	buffer.WriteShort( m_eMsgType );
 	buffer.WriteLong( m_pPacket->Size() );
 	buffer.WriteBytes( m_pPacket->Data(), m_pPacket->Size() );
