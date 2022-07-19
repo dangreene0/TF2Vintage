@@ -238,11 +238,11 @@ void CTeamControlPoint::Precache( void )
 			PrecacheMaterial( STRING( m_TeamData[i].iszIcon ) );
 			m_TeamData[i].iIcon = GetMaterialIndex( STRING( m_TeamData[i].iszIcon ) );
 			Assert( m_TeamData[i].iIcon != 0 );
-		}
 
-		if ( !m_TeamData[i].iIcon )
-		{
-			Warning( "Invalid hud icon material for team %d in control point '%s' ( point index %d )\n", i, GetDebugName(), GetPointIndex() );
+			if ( !m_TeamData[i].iIcon )
+			{
+				Warning( "Invalid hud icon material for team %d in control point '%s' ( point index %d )\n", i, GetDebugName(), GetPointIndex() );
+			}
 		}
 
 		if ( m_TeamData[i].iszOverlay != NULL_STRING )
