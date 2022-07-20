@@ -585,9 +585,6 @@ CTFDiscordPresence::CTFDiscordPresence()
 {
 	VCRHook_Time( &m_iCreationTimestamp );
 
-	// Setup early so we catch it
-	ListenForGameEvent( "server_spawn" );
-
 	rpc = this;
 }
 
@@ -674,13 +671,14 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 //-----------------------------------------------------------------------------
 bool CTFDiscordPresence::Init( void )
 {
+	ListenForGameEvent( "server_spawn" );
 	ListenForGameEvent( "localplayer_changeteam" );
 	ListenForGameEvent( "localplayer_changeclass" );
 	ListenForGameEvent( "localplayer_respawn" );
 	ListenForGameEvent( "player_death" );
-	ListenForGameEvent( "player_connect_client" );
+	ListenForGameEvent( "player_connect" );
 	ListenForGameEvent( "player_disconnect" );
-	ListenForGameEvent( "client_fullconnect" );
+	ListenForGameEvent( "client_connected" );
 	ListenForGameEvent( "client_disconnect" );
 
 	return BaseClass::Init();
