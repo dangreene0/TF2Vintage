@@ -83,7 +83,7 @@ public:
 		reply->set_remote_steamid( playerID.ConvertToUint64() );
 
 		const int nLength = reply->ByteSize();
-		CArrayAutoPtr<byte> array( new byte[nLength]() );
+		CArrayAutoPtr<byte> array( new byte[ nLength ]() );
 		reply->SerializeWithCachedSizesToArray( array.Get() );
 
 		g_pNetworking->SendMessage( serverID, k_EClientHelloMsg, array.Get(), nLength );
@@ -136,16 +136,6 @@ REG_ECON_MSG_HANDLER( CClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
 
 
 
-void CEconNetMsg::SetNetChannel( INetChannel *netchan )
-{
-	m_pNetChan = netchan;
-}
-
-void CEconNetMsg::SetReliable( bool state )
-{
-	m_bReliable = state;
-}
-
 bool CEconNetMsg::Process( void )
 {
 	if ( m_eMsgType == k_EInvalidMsg )
@@ -178,31 +168,6 @@ bool CEconNetMsg::WriteToBuffer( bf_write &buffer )
 	buffer.WriteLong( m_pPacket->Size() );
 	buffer.WriteBytes( m_pPacket->Data(), m_pPacket->Size() );
 	return !buffer.IsOverflowed();
-}
-
-bool CEconNetMsg::IsReliable( void ) const
-{
-	return m_bReliable;
-}
-
-int CEconNetMsg::GetType( void ) const
-{
-	return svc_EconMsg;
-}
-
-int CEconNetMsg::GetGroup( void ) const
-{
-	return k_nServerPort;
-}
-
-const char *CEconNetMsg::GetName( void ) const
-{
-	return "svc_EconMsg";
-}
-
-INetChannel *CEconNetMsg::GetNetChannel( void ) const
-{
-	return m_pNetChan;
 }
 
 const char *CEconNetMsg::ToString( void ) const

@@ -61,24 +61,8 @@ private:
 	MsgHdr_t m_Hdr;
 
 	friend class CRefCountAccessor;
-	virtual int AddRef( void )
-	{
-		return ThreadInterlockedIncrement( &m_cRefCount );
-	}
-	virtual int Release( void )
-	{
-		Assert( m_cRefCount > 0 );
-		int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
-		if ( nRefCounts == 0 )
-		{
-			if ( m_pMsg )
-				free( m_pMsg );
-
-			delete this;
-		}
-
-		return nRefCounts;
-	}
+	virtual int AddRef( void ) OVERRIDE;
+	virtual int Release( void ) OVERRIDE;
 	volatile uint m_cRefCount;
 };
 
@@ -90,16 +74,16 @@ public:
 	CEconNetMsg( void ) : m_pPacket( new CNetPacket() ), m_eMsgType( 0 ) {}
 
 	// Inherited via INetMessage
-	virtual void SetNetChannel( INetChannel *netchan ) OVERRIDE;
-	virtual void SetReliable( bool state ) OVERRIDE;
+	virtual void SetNetChannel( INetChannel *netchan ) OVERRIDE { m_pNetChan = netchan; }
+	virtual void SetReliable( bool state ) OVERRIDE				{ m_bReliable = state; }
 	virtual bool Process( void ) OVERRIDE;
 	virtual bool ReadFromBuffer( bf_read &buffer ) OVERRIDE;
 	virtual bool WriteToBuffer( bf_write &buffer ) OVERRIDE;
-	virtual bool IsReliable( void ) const OVERRIDE;
-	virtual int GetType( void ) const OVERRIDE;
-	virtual int GetGroup( void ) const OVERRIDE;
-	virtual const char *GetName( void ) const OVERRIDE;
-	virtual INetChannel *GetNetChannel( void ) const OVERRIDE;
+	virtual bool IsReliable( void ) const OVERRIDE				{ return m_bReliable; }
+	virtual int GetType( void ) const OVERRIDE					{ return svc_EconMsg; }
+	virtual int GetGroup( void ) const OVERRIDE					{ return k_nServerPort; }
+	virtual const char *GetName( void ) const OVERRIDE			{ return "svc_EconMsg"; }
+	virtual INetChannel *GetNetChannel( void ) const OVERRIDE	{ return m_pNetChan; }
 	virtual const char *ToString( void ) const OVERRIDE;
 
 private:

@@ -102,7 +102,6 @@ public:
 #endif
 
 	bool AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
-	void MsgFunc_NetworkMessage( bf_read &msg );
 
 private:
 	ISteamNetworking *SteamNetworking( void ) const
@@ -173,10 +172,33 @@ void CNetPacket::InitFromMemory( void const *pMemory, uint32 size )
 	Assert( ( m_Hdr.m_unMsgSize + sizeof( MsgHdr_t ) ) == size );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Ref count
+//-----------------------------------------------------------------------------
+int CNetPacket::AddRef( void )
+{
+	return ThreadInterlockedIncrement( &m_cRefCount );
+}
 
-#ifdef CLIENT_DLL
-DECLARE_MESSAGE( g_Networking, NetworkMessage );
-#endif
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+int CNetPacket::Release( void )
+{
+	Assert( m_cRefCount > 0 );
+	int nRefCounts = ThreadInterlockedDecrement( &m_cRefCount );
+	if ( nRefCounts == 0 )
+	{
+		if ( m_pMsg )
+			free( m_pMsg );
+
+		delete this;
+	}
+
+	return nRefCounts;
+}
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -652,10 +674,9 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 //-----------------------------------------------------------------------------
 void CEconNetworking::RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData )
 {
-	CNetPacket *pPacket = new CNetPacket();
-	pPacket->Init( cubData, eMsg );
 
-	Q_memcpy( pPacket->MutableData(), pubData, cubData );
+	CNetPacket *pPacket = new CNetPacket();
+	pPacket->InitFromMemory( pubData, cubData );
 
 	m_QueuedMessages.Insert( pPacket );
 }
@@ -816,22 +837,6 @@ bool CEconNetworking::AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandl
 
 	m_MessageTypes.Insert( eMsg, pHandler );
 	return true;
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CEconNetworking::MsgFunc_NetworkMessage( bf_read &msg )
-{
-	MsgType_t eMsg = (MsgType_t)msg.ReadWord();
-	uint32 cubMsgSize = msg.ReadUBitLong( sizeof( uint32 ) * 8 );
-	
-	CNetPacket *pPacket = new CNetPacket();
-	pPacket->Init( cubMsgSize, eMsg );
-
-	msg.ReadBits( pPacket->MutableData(), cubMsgSize * 8 );
-
-	m_QueuedMessages.Insert( pPacket );
 }
 
 
