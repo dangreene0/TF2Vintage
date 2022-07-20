@@ -295,7 +295,7 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 
 		uint unVersion = 0;
 		FileHandle_t fh = filesystem->Open( "version.txt", "r", "MOD" );
-		if ( fh && filesystem->Tell( fh ) > 0 )
+		if ( fh && filesystem->Size( fh ) > 0 )
 		{
 			char version[48];
 			filesystem->ReadLine( version, sizeof( version ), fh );
