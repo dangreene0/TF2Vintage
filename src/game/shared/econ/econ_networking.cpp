@@ -290,21 +290,6 @@ void CEconNetworking::OnClientConnected( CSteamID const &steamID, SNetSocket_t s
 	CSteamSocket *pSocket = OpenConnection( steamID, socket );
 	if ( pSocket )
 	{
-		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
-		{
-			CSteamID const *pPlayerID = engine->GetClientSteamID( INDEXENT( i ) );
-			if ( pPlayerID && *pPlayerID == steamID )
-			{
-				INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetPlayerNetInfo( i ) );
-				if ( pNetChan )
-				{
-					// This is safe to do multiple times
-					pNetChan->RegisterMessage( new CEconNetMsg() );
-					break;
-				}
-			}
-		}
-
 		CProtobufMsg<CServerHelloMsg> msg;
 		CSteamID const *remoteID = engine->GetGameServerSteamID();
 
