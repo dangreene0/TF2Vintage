@@ -623,8 +623,8 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 	#else
 		KeyValues *pData = new KeyValues( "NetworkMessage" );
 		pData->SetInt( "MsgType", eMsg );
-		pData->SetInt( "Length", cubData );
-		pData->SetPtr( "Data", pubData );
+		pData->SetInt( "Length", pPacket->Size() );
+		pData->SetPtr( "Data", pPacket->Data() );
 
 		engine->ServerCmdKeyValues( pData );
 	#endif
