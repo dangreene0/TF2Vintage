@@ -62,18 +62,21 @@ public:
 			return false;
 
 		uint unVersion = 0;
-		FileHandle_t fh = g_pFullFileSystem->Open( "version.txt", "r", "MOD" );
-		if ( fh && g_pFullFileSystem->Size( fh ) > 0 )
+		if ( msg->has_version() )
 		{
-			char version[48];
-			g_pFullFileSystem->ReadLine( version, sizeof( version ), fh );
-			unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen(version)+1 );
+			FileHandle_t fh = g_pFullFileSystem->Open( "version.txt", "r", "MOD" );
+			if ( fh && g_pFullFileSystem->Size( fh ) > 0 )
+			{
+				char version[48];
+				g_pFullFileSystem->ReadLine( version, sizeof( version ), fh );
+				unVersion = CRC32_ProcessSingleBuffer( version, Q_strlen( version ) + 1 );
 
-			if ( msg->version() != unVersion )
-				Warning( "The server you are trying to connect to is running a different version of the game.\n" );
+				if ( msg->version() != unVersion )
+					Warning( "The server you are trying to connect to is running a different version of the game.\n" );
+			}
+
+			g_pFullFileSystem->Close( fh );
 		}
-
-		g_pFullFileSystem->Close( fh );
 
 		CProtobufMsg<CClientHelloMsg> reply;
 		reply->set_version( unVersion );
