@@ -74,7 +74,7 @@ public:
 
 private:
 	void				UpdatePresence( bool bForce, bool bIsDead );
-	char const*			GetEncryptionKey( void ) const OVERRIDE { return "XwRJxjCc"; }
+	unsigned char const* GetEncryptionKey( void ) const OVERRIDE { return (unsigned char *)"XwRJxjCc"; }
 
 	char m_szHostName[ DISCORD_FIELD_MAXLEN ];
 	char m_szServerInfo[ DISCORD_FIELD_MAXLEN ];
