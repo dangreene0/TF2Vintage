@@ -1261,7 +1261,6 @@ void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 {
 #if defined( GAME_DLL )
 	CBasePlayer *pPlayer = (CBasePlayer *)CBaseEntity::Instance( pClient );
-		return;
 
 	CSteamID playerID{};
 	pPlayer->GetSteamID( &playerID );
