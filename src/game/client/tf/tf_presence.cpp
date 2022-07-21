@@ -615,22 +615,6 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 
 	if ( name == "player_connect_client" || name == "player_disconnect" )
 	{
-		if ( name == "player_connect_client" )
-		{
-			int userid = event->GetInt( "userid" );
-			if ( UTIL_PlayerByUserId( userid ) == C_BasePlayer::GetLocalPlayer() )
-			{
-				CSteamID steamID{};
-				if ( C_BasePlayer::GetLocalPlayer()->GetSteamID( &steamID ) )
-					V_sprintf_safe( m_szSteamID, "%llu", steamID.ConvertToUint64() );
-
-				m_Activity.GetSecrets().SetJoin( m_szServerInfo );
-				m_Activity.GetSecrets().SetMatch( m_szSteamID );
-
-				bForceUpdate = true;
-			}
-		}
-
 		if ( !TFPlayerResource() )
 			return;
 
@@ -718,6 +702,15 @@ bool CTFDiscordPresence::InitPresence( void )
 	g_pDiscord->ActivityManager().OnActivityJoin.Connect( &OnJoinedGame );
 	g_pDiscord->ActivityManager().OnActivityJoinRequest.Connect( &OnJoinRequested );
 	g_pDiscord->ActivityManager().OnActivitySpectate.Connect( &OnSpectateGame );
+
+	CSteamID steamID{};
+	if ( steamapicontext && steamapicontext->SteamUser() )
+		steamID = steamapicontext->SteamUser()->GetSteamID();
+	if ( steamID.BIndividualAccount() )
+		V_sprintf_safe( m_szSteamID, "%llu", steamID.ConvertToUint64() );
+
+	m_Activity.GetSecrets().SetMatch( GetMatchSecret() );
+	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
 
 	return true;
 }
