@@ -869,9 +869,7 @@ void CTFDiscordPresence::LevelInitPostEntity( void )
 
 	if ( steamapicontext->SteamFriends() )
 	{
-		steamapicontext->SteamFriends()->SetRichPresence( "connect", NULL );
-		steamapicontext->SteamFriends()->SetRichPresence( "steam_player_group", NULL );
-		steamapicontext->SteamFriends()->SetRichPresence( "steam_player_group_size", NULL );
+		steamapicontext->SteamFriends()->SetRichPresence( "connect", VarArgs( "steam://connect/%s", m_szServerInfo ) );
 		steamapicontext->SteamFriends()->SetRichPresence( "status", m_szHostName );
 		steamapicontext->SteamFriends()->SetRichPresence( "steam_display", GetLevelName() );
 	}
@@ -901,10 +899,8 @@ void CTFDiscordPresence::ResetPresence( void )
 	if ( steamapicontext->SteamFriends() )
 	{
 		steamapicontext->SteamFriends()->SetRichPresence( "status", "Main Menu" );
-		steamapicontext->SteamFriends()->SetRichPresence( "connect", NULL );
+		steamapicontext->SteamFriends()->SetRichPresence( "connect", VarArgs( "steam://connect/%s", m_szServerInfo ) );
 		steamapicontext->SteamFriends()->SetRichPresence( "steam_display", "Main Menu" );
-		steamapicontext->SteamFriends()->SetRichPresence( "steam_player_group", NULL );
-		steamapicontext->SteamFriends()->SetRichPresence( "steam_player_group_size", NULL );
 	}
 
 	m_Activity.SetDetails( "Main Menu" );
