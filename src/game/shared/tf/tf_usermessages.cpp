@@ -89,8 +89,6 @@ void RegisterUserMessages()
 	usermessages->Register("PlayerLoadoutUpdated", -1);
 
 	usermessages->Register("ResetInventory", 0);
-
-	usermessages->Register("NetworkMessage", -1);
 	
 	usermessages->Register("MVMStatsReset", -1);
 	usermessages->Register("MVMPlayerEvent", -1);
