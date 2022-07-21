@@ -11,6 +11,7 @@
 #include "tf_gamerules.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
+#include "tier0/valve_minmax_on.h"
 #include "tf_gamestats.h"
 #include "KeyValues.h"
 #include "viewport_panel_names.h"
