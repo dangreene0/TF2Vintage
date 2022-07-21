@@ -662,8 +662,6 @@ bool CTFDiscordPresence::Init( void )
 	ListenForGameEvent( "player_death" );
 	ListenForGameEvent( "player_connect" );
 	ListenForGameEvent( "player_disconnect" );
-	ListenForGameEvent( "client_connected" );
-	ListenForGameEvent( "client_disconnect" );
 
 	return BaseClass::Init();
 }
@@ -689,10 +687,6 @@ bool CTFDiscordPresence::InitPresence( void )
 
 	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
 	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
-	
-	Q_memset( &m_CurrentUser, 0, sizeof( discord::User ) );
-	g_pDiscord->UserManager().OnCurrentUserUpdate.Connect( &OnReady );
-	
 
 	char command[512];
 	V_snprintf( command, sizeof( command ), "%s -game \"%s\" -novid -steam", CommandLine()->GetParm( 0 ), CommandLine()->ParmValue( "-game" ) );
