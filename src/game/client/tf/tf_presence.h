@@ -67,7 +67,6 @@ public:
 
 	bool				InitPresence( void ) OVERRIDE;
 	void				ResetPresence( void ) OVERRIDE;
-	void				UpdatePresence( void ) OVERRIDE { UpdatePresence( false, false ); }
 	char const*			GetMatchSecret( void ) const OVERRIDE;
 	char const*			GetJoinSecret( void ) const OVERRIDE;
 	char const*			GetSpectateSecret( void ) const OVERRIDE;
