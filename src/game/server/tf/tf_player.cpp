@@ -9,6 +9,8 @@
 #include "tf_player.h"
 #include "nav_pathfind.h"
 #include "tf_gamerules.h"
+#include "econ_networking.h"
+#include "econ_networking_messages.h"
 #include "tf_gamestats.h"
 #include "KeyValues.h"
 #include "viewport_panel_names.h"
@@ -9244,6 +9246,84 @@ int CTFPlayer::GiveAmmo( int iCount, int iAmmoIndex, bool bSuppressSound )
 {
 	return GiveAmmo( iCount, iAmmoIndex, bSuppressSound, TF_AMMO_SOURCE_AMMOPACK );
 }
+
+//-----------------------------------------------------------------------------
+// Purpose: Reset player's information and force him to spawn
+//-----------------------------------------------------------------------------
+bool CTFPlayer::CheckInstantLoadoutRespawn( void )
+{
+	if ( !IsAlive() )
+		return false;
+
+	if ( !PointInRespawnRoom( this, WorldSpaceCenter() ) )
+		return false;
+
+	if ( TFGameRules()->InStalemate() && !TFGameRules()->CanChangeClassInStalemate() )
+		return false;
+
+	if ( TFGameRules()->IsInArenaMode() )
+		return false;
+
+	if ( TFGameRules()->State_Get() == GR_STATE_TEAM_WIN && TFGameRules()->GetWinningTeam() != GetTeamNumber() )
+		return false;
+
+	int iClass = GetPlayerClass() ? GetPlayerClass()->GetClassIndex() : TF_CLASS_UNDEFINED;
+	if ( iClass < TF_FIRST_NORMAL_CLASS || iClass > TF_LAST_NORMAL_CLASS )
+		return false;
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Reset player's information and force him to spawn
+//-----------------------------------------------------------------------------
+void CTFPlayer::ForceRegenerateAndRespawn( void )
+{
+	m_bRegenerating = true;
+	ForceRespawn();
+	m_bRegenerating = false;
+}
+
+class CLoadoutChangedHandler : public IMessageHandler
+{
+public:
+	CLoadoutChangedHandler() {}
+
+	bool ProcessMessage( CNetPacket *pPacket ) OVERRIDE
+	{
+		CSteamID playerID( pPacket->Hdr().m_ulSourceID );
+
+		CTFPlayer *pPlayer = ToTFPlayer( UTIL_PlayerBySteamID( playerID ) );
+		if ( pPlayer && pPlayer->CheckInstantLoadoutRespawn() )
+		{
+			if ( pPlayer->m_Shared.InCond( TF_COND_AIMING ) )
+			{
+				CTFWeaponBase *pWeapon = pPlayer->GetActiveTFWeapon();
+				if ( pWeapon )
+				{
+					if ( pPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) || WeaponID_IsSniperRifle( pWeapon->GetWeaponID() ) )
+					{
+						pWeapon->WeaponReset();
+					}
+				}
+			}
+
+			if ( pPlayer->IsPlayerClass( TF_CLASS_MEDIC ) )
+			{
+				CWeaponMedigun *pMedigun = dynamic_cast<CWeaponMedigun *>( pPlayer->GetActiveTFWeapon() );
+				if ( pMedigun )
+				{
+					pMedigun->Lower();
+				}
+			}
+
+			pPlayer->ForceRegenerateAndRespawn();
+		}
+
+		return true;
+	}
+};
+REG_ECON_MSG_HANDLER( CLoadoutChangedHandler, k_ELoadoutChangedMsg, CLoadoutChangedMsg );
 
 //-----------------------------------------------------------------------------
 // Purpose: Reset player's information and force him to spawn

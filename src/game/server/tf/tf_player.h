@@ -113,6 +113,8 @@ public:
 
 	virtual void		Spawn();
 	virtual int			ShouldTransmit( const CCheckTransmitInfo *pInfo );
+	bool				CheckInstantLoadoutRespawn( void );
+	void				ForceRegenerateAndRespawn( void );
 	virtual void		ForceRespawn();
 	virtual CBaseEntity *EntSelectSpawnPoint( void );
 	virtual void		InitialSpawn();

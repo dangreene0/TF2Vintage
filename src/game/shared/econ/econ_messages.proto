@@ -73,6 +73,7 @@ enum EEconSystemMsg
 {
 	k_EUpdateItemSchemaMsg		= 50;
 	k_EUpdateInventoryMsg		= 51;
+	k_ELoadoutChangedMsg		= 52;
 }
 
 message CUpdateItemSchemaMsg
@@ -92,4 +93,9 @@ message CUpdateLoadoutMsg
 message CUpdateInventoryMsg
 {
 	repeated CUpdateLoadoutMsg inventory = 1;
+}
+
+message CLoadoutChangedMsg
+{
+	// Empty notification message
 }

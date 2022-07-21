@@ -1676,7 +1676,7 @@ ConVarRef suitcharger( "sk_suitcharger" );
 				}
 			}
 
-		#if defined( USES_ECON_ITEMS ) && defined TF_VINTAGE
+		#if defined( USES_ECON_ITEMS )
 			if ( FStrEq( pszCommand, "NetworkMessage" ) )
 			{
 				MsgType_t eMsg = (MsgType_t)pKeyValues->GetInt( "MsgType" );
