@@ -89,6 +89,7 @@ private:
 	static void OnJoinedGame( char const *joinSecret );
 	static void OnSpectateGame( char const *joinSecret );
 	static void OnJoinRequested( discord::User const &joinRequester );
+	static void OnJoinRequestSuccess( discord::Result result );
 	static void OnLogMessage( discord::LogLevel logLevel, char const *pszMessage );
 	static void OnActivityUpdate( discord::Result result );
 };

@@ -794,7 +794,12 @@ void CTFDiscordPresence::OnJoinRequested( discord::User const &joinRequester )
 	// TODO: Popup dialog
 	ConColorMsg( DISCORD_COLOR, "[DRP] Join Request: %s#%s\n", joinRequester.GetUsername(), joinRequester.GetDiscriminator() );
 	ConColorMsg(DISCORD_COLOR, "[DRP] Join Request Accepted\n" );
-	//Discord_Respond( joinRequester.GetId(), DISCORD_REPLY_YES );
+	g_pDiscord->ActivityManager().SendRequestReply( joinRequester.GetId(), discord::ActivityJoinRequestReply::Yes, &OnJoinRequestSuccess );
+}
+
+void CTFDiscordPresence::OnJoinRequestSuccess( discord::Result result )
+{
+	ConDColorMsg( DISCORD_COLOR, "[DRP] Join Request result: %d", result );
 }
 
 //-----------------------------------------------------------------------------
