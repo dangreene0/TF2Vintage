@@ -175,7 +175,7 @@ bool CEconNetMsg::WriteToBuffer( bf_write &buffer )
 
 const char *CEconNetMsg::ToString( void ) const
 {
-	static char szString[96];
+	static char szString[32];
 	V_sprintf_safe( szString, "%s: type %d", GetName(), m_pPacket->Hdr().m_eMsgType );
 	return szString;
 }

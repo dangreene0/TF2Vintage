@@ -130,6 +130,21 @@ private:
 		QueueEconNetworkMessageWork( pHandler, pPacket );
 	}
 
+	void SetHeaderSteamIDs( CSmartPtr<CNetPacket> &pPacket, CSteamID const &targetID )
+	{
+		pPacket->m_Hdr.m_ulTargetID = targetID.ConvertToUint64();
+
+	#if defined GAME_DLL
+		CSteamID const *pSteamID = engine->GetGameServerSteamID();
+		pPacket->m_Hdr.m_ulSourceID = pSteamID ? pSteamID->ConvertToUint64() : 0LL;
+	#else
+		CSteamID steamID;
+		if ( steamapicontext && steamapicontext->SteamUser() )
+			steamID = steamapicontext->SteamUser()->GetSteamID();
+		pPacket->m_Hdr.m_ulSourceID = steamID.ConvertToUint64();
+	#endif
+	}
+
 	SNetListenSocket_t						m_hListenSocket;
 	SNetSocket_t							m_hServerSocket;
 	CUtlVector< CSteamSocket >				m_vecSockets;
@@ -151,7 +166,7 @@ DEFINE_FIXEDSIZE_ALLOCATOR_MT( CNetPacket, 128, UTLMEMORYPOOL_GROW_FAST );
 //-----------------------------------------------------------------------------
 void CNetPacket::Init( uint32 size, MsgType_t eMsg )
 {
-	m_Hdr = {eMsg, size, STEAM_CNX_PROTO_VERSION};
+	m_Hdr = {eMsg, size, STEAM_CNX_PROTO_VERSION, k_EProtocolProtobuf};
 
 	m_pMsg = malloc( size + sizeof( MsgHdr_t ) );
 	Q_memcpy( m_pMsg, &m_Hdr, sizeof( MsgHdr_t ) );
@@ -603,6 +618,8 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 		return false;
 
 	Q_memcpy( pPacket->MutableData(), pubData, cubData );
+
+	SetHeaderSteamIDs( pPacket, targetID );
 
 	if ( m_bIsLoopback || !m_bSteamConnection )
 	{
