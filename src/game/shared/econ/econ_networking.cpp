@@ -676,9 +676,24 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 //-----------------------------------------------------------------------------
 void CEconNetworking::RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData )
 {
-
 	CNetPacket *pPacket = new CNetPacket();
 	pPacket->InitFromMemory( pubData, cubData );
+
+	// Dumb hack, Steam IDs are 0 when received here, remove when we know why
+	if( pPacket->m_Hdr.m_ulSourceID == 0 )
+	{
+		pPacket->m_Hdr.m_ulSourceID = remoteID.ConvertToUint64();
+
+	#if defined GAME_DLL
+		CSteamID const *pSteamID = engine->GetGameServerSteamID();
+		pPacket->m_Hdr.m_ulTargetID = pSteamID ? pSteamID->ConvertToUint64() : 0LL;
+	#else
+		CSteamID steamID;
+		if ( steamapicontext && steamapicontext->SteamUser() )
+			steamID = steamapicontext->SteamUser()->GetSteamID();
+		pPacket->m_Hdr.m_ulTargetID = steamID.ConvertToUint64();
+	#endif
+	}
 
 	m_QueuedMessages.Insert( pPacket );
 }
