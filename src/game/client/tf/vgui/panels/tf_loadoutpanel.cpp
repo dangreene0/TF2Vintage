@@ -311,12 +311,6 @@ void CTFLoadoutPanel::SetSlotAndPreset( int iSlot, int iPreset )
 	m_bLoadoutChanged = true;
 }
 
-void CTFLoadoutPanel::Dev_FireLoadoutChanged( CCommand const &args )
-{
-	if( m_pszServerID && m_pszServerID[0] )
-		g_pNetworking->SendMessage( CSteamID( m_pszServerID ), k_ELoadoutChangedMsg, NULL, 0 );
-}
-
 int CTFLoadoutPanel::GetAnimSlot( CEconItemDefinition *pItemDef, int iClass )
 {
 	if ( !pItemDef )
