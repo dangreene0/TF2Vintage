@@ -6399,7 +6399,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		if ( flLoseChargewhenCharged > 0 )
 		{
 			// Subtract the damage amount from our charge level.
-			m_Shared.SetShieldChargeMeter( min( ( m_Shared.m_flChargeMeter - ( info.GetDamage() * flLoseChargewhenCharged ) ), 0.0 ) );
+			m_Shared.SetShieldChargeMeter( Min( ( m_Shared.m_flChargeMeter - ( info.GetDamage() * flLoseChargewhenCharged ) ), 0.0f ) );
 		}
 	}
 	
@@ -7143,7 +7143,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	if ( event )
 	{
 		event->SetInt( "userid", GetUserID() );
-		event->SetInt( "health", max( 0, m_iHealth ) );
+		event->SetInt( "health", Max( 0, m_iHealth.Get() ) );
 		event->SetInt( "damageamount", ( iOldHealth - m_iHealth ) );
 		event->SetInt( "crit", ( info.GetDamageType() & DMG_CRITICAL || info.GetDamageType() & DMG_MINICRITICAL ) ? 1 : 0 );
 
@@ -7611,7 +7611,7 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 					CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pWeapon, flAddChargeShieldKill, kill_refills_meter );
 					if ( flAddChargeShieldKill )
 					{
-						m_Shared.m_flChargeMeter = min( ( m_Shared.m_flChargeMeter + ( flAddChargeShieldKill * 100 ) ), 100.0f ) ;
+						m_Shared.m_flChargeMeter = Min( ( m_Shared.m_flChargeMeter + ( flAddChargeShieldKill * 100 ) ), 100.0f ) ;
 					}
 
 					// Restore HP % on kill
@@ -8308,9 +8308,9 @@ void CTFPlayer::DropAmmoPack( bool bLunchbox, bool bFeigning )
 		return;
 
 	// Fill the ammo pack with unused player ammo, if out add a minimum amount.
-	int iPrimary = max( 5, GetAmmoCount( TF_AMMO_PRIMARY ) );
-	int iSecondary = max( 5, GetAmmoCount( TF_AMMO_SECONDARY ) );
-	int iMetal = max( 5, GetAmmoCount( TF_AMMO_METAL ) );
+	int iPrimary = Max( 5, GetAmmoCount( TF_AMMO_PRIMARY ) );
+	int iSecondary = Max( 5, GetAmmoCount( TF_AMMO_SECONDARY ) );
+	int iMetal = Max( 5, GetAmmoCount( TF_AMMO_METAL ) );
 
 	// Create the ammo pack.
 	CTFAmmoPack *pAmmoPack;
@@ -12211,7 +12211,7 @@ void CTFPlayer::NoteSpokeVoiceCommand( const char *pszScenePlayed )
 		m_iJIVoiceSpam = 0;
 	
 	// Set the next time a voice command can be played. Each voice command spammed adds a half second extra to the wait time.
-	m_flNextVoiceCommandTime = gpGlobals->curtime + min( GetSceneDuration( pszScenePlayed ), tf_max_voice_speak_delay.GetFloat() ) + (m_iJIVoiceSpam * 0.5f);
+	m_flNextVoiceCommandTime = gpGlobals->curtime + Min( GetSceneDuration( pszScenePlayed ), tf_max_voice_speak_delay.GetFloat() ) + (m_iJIVoiceSpam * 0.5f);
 }
 
 //-----------------------------------------------------------------------------
