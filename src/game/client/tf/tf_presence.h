@@ -72,15 +72,15 @@ public:
 	char const*			GetSpectateSecret( void ) const OVERRIDE;
 
 private:
-	void				UpdatePresence( bool bForce, bool bIsDead );
+	void				UpdatePresence( bool bIsDead );
 	unsigned char const* GetEncryptionKey( void ) const OVERRIDE { return (unsigned char *)"XwRJxjCc"; }
 
 	char m_szHostName[ DISCORD_FIELD_MAXLEN ];
 	char m_szServerInfo[ DISCORD_FIELD_MAXLEN ];
 	char m_szSteamID[ DISCORD_FIELD_MAXLEN ];
 
-	RealTimeCountdownTimer m_updateThrottle;
 	long m_iCreationTimestamp;
+	float m_flLastPlayerJoinTime;
 
 	static discord::Activity m_Activity;
 	static discord::User m_CurrentUser;
@@ -89,7 +89,7 @@ private:
 	static void OnJoinedGame( char const *joinSecret );
 	static void OnSpectateGame( char const *joinSecret );
 	static void OnJoinRequested( discord::User const &joinRequester );
-	static void OnJoinRequestSuccess( discord::Result result );
+	static void OnJoinRequestReply( discord::Result result );
 	static void OnLogMessage( discord::LogLevel logLevel, char const *pszMessage );
 	static void OnActivityUpdate( discord::Result result );
 };
