@@ -757,11 +757,10 @@ void CTFDiscordPresence::OnReady()
 //-----------------------------------------------------------------------------
 void CTFDiscordPresence::OnJoinedGame( const char *joinSecret )
 {
-	ConDColorMsg( DISCORD_COLOR, "[DRP] Join Game: %s\n", joinSecret );
-
 	char szJoinString[64];
 	V_strcpy_safe( szJoinString, joinSecret );
 	UTIL_DecodeICE( (unsigned char *)szJoinString, sizeof( szJoinString ), rpc->GetEncryptionKey() );
+	ConDColorMsg( DISCORD_COLOR, "[DRP] Join Game: %s\n", szJoinString );
 
 	char szCommand[128];
 	Q_snprintf( szCommand, sizeof( szCommand ), "connect %s\n", szJoinString );
@@ -773,11 +772,10 @@ void CTFDiscordPresence::OnJoinedGame( const char *joinSecret )
 //-----------------------------------------------------------------------------
 void CTFDiscordPresence::OnSpectateGame( const char *spectateSecret )
 {
-	ConDColorMsg( DISCORD_COLOR, "[DRP] Spectate Game: %s\n", spectateSecret );
-
 	char szSpectateString[64];
 	V_strcpy_safe( szSpectateString, spectateSecret );
 	UTIL_DecodeICE( (unsigned char *)szSpectateString, sizeof( szSpectateString ), rpc->GetEncryptionKey() );
+	ConDColorMsg( DISCORD_COLOR, "[DRP] Spectate Game: %s\n", szSpectateString );
 
 	char szCommand[128];
 	Q_snprintf( szCommand, sizeof( szCommand ), "connect %s:27020\n", szSpectateString ); // We append this with port 27020, for STV.
@@ -796,6 +794,9 @@ void CTFDiscordPresence::OnJoinRequested( discord::User const &joinRequester )
 	g_pDiscord->ActivityManager().SendRequestReply( joinRequester.GetId(), discord::ActivityJoinRequestReply::Yes, &OnJoinRequestReply );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
 void CTFDiscordPresence::OnJoinRequestReply( discord::Result result )
 {
 	ConDColorMsg( DISCORD_COLOR, "[DRP] Join Request result: %d", result );
