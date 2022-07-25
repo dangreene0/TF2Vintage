@@ -6,8 +6,10 @@
 #include "activitylist.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
+#include "steam/isteamhttp.h"
 #endif
 #include "tier0/icommandline.h"
+#include "econ_networking_messages.h"
 
 #if defined(CLIENT_DLL)
 #include "hud_macros.h"
@@ -1349,12 +1351,134 @@ void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
 }
 #endif
 
+#ifdef GAME_DLL
+class CEconClientHelloHandler : public IMessageHandler
+{
+public:
+	bool ProcessMessage( CNetPacket *pPacket ) OVERRIDE
+	{
+		CProtobufMsg<CUpdateItemSchemaMsg> schema;
 
-//		if ( !GetItemSchema()->LoadFromBuffer( sContext.m_buffer ) )
-//		{
-//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
-//			ConColorMsg( COLOR_RED, "Unable to load Econ Item Schema from server, loading local file.\n" );
-//			ConColorMsg( COLOR_RED, "****************************************************************\n" );
-//
-//			GetItemSchema()->LoadFromFile();
-//		}
+		CUtlBuffer buf;
+		GetItemSchema()->SaveToBuffer( buf );
+
+		uint32 unSchemaCRC32 = CRC32_ProcessSingleBuffer( buf.Base(), buf.TellPut() );
+
+		schema->set_items_data( buf.Base(), buf.TellPut() );
+		schema->set_items_game_hash( UTIL_VarArgs( "%ud", unSchemaCRC32 ) );
+		schema->set_items_game_url( "https://raw.githubusercontent.com/TF2V/TF2Vintage/3.6/game/tf2vintage/assets/base/tf2v_core/scripts/items/items_game.txt" );
+
+		const int nLength = schema->ByteSize();
+		CArrayAutoPtr<byte> array( new byte[ nLength ]() );
+		schema->SerializeWithCachedSizesToArray( array.Get() );
+
+		return g_pNetworking->SendMessage( pPacket->Hdr().m_ulSourceID, k_EUpdateItemSchemaMsg, array.Get(), nLength );
+	}
+};
+REG_ECON_MSG_HANDLER( CEconClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
+#endif
+
+#ifdef CLIENT_DLL
+class CUpdateEconItemSchema : public IMessageHandler
+{
+public:
+	bool ProcessMessage( CNetPacket *pPacket ) OVERRIDE
+	{
+		CProtobufMsg<CUpdateItemSchemaMsg> msg( pPacket );
+
+		std::string data = msg->items_data();
+		CUtlBuffer buf( data.data(), data.length() );
+
+		// Ensure consistency
+		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( buf.Base(), buf.TellPut() );
+		uint32 unRecvSchemaCRC = atoi( msg->items_game_hash().c_str() );
+		if ( unSchemaCRC != unRecvSchemaCRC )
+		{
+			Assert( unSchemaCRC == unRecvSchemaCRC );
+			if ( !msg->use_online_backup() )
+				return true;
+
+			std::string url = msg->items_game_url();
+			ISteamHTTP *pHTTP = SteamHTTP();
+			if ( pHTTP )
+			{
+				HTTPRequestHandle hndl = pHTTP->CreateHTTPRequest( k_EHTTPMethodGET, url.c_str() );
+				if ( hndl == INVALID_HTTPREQUEST_HANDLE )
+					return true;
+
+				pHTTP->SetHTTPRequestNetworkActivityTimeout( hndl, 10 );
+
+				SteamAPICall_t call;
+				pHTTP->SendHTTPRequest( hndl, &call );
+				m_callback.Set( call, this, &CUpdateEconItemSchema::OnHTTPRequestCompleted );
+
+				while ( !m_bHTTPRequestComplete )
+					ThreadSleep( 15 );
+			}
+
+			return true;
+		}
+
+		if ( !GetItemSchema()->LoadFromBuffer( buf ) )
+		{
+			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+			ConColorMsg( COLOR_RED, "Unable to load Econ Item Schema from server, loading local file.\n" );
+			ConColorMsg( COLOR_RED, "****************************************************************\n" );
+
+			GetItemSchema()->LoadFromFile();
+		}
+
+		return true;
+	}
+
+private:
+	CCallResult<CUpdateEconItemSchema, HTTPRequestCompleted_t> m_callback;
+	bool m_bHTTPRequestComplete = false;
+
+	void OnHTTPRequestCompleted( HTTPRequestCompleted_t *pRequest, bool bFailed )
+	{
+		m_bHTTPRequestComplete = true;
+
+		ISteamHTTP *pHTTP = SteamHTTP();
+		if ( !pHTTP )
+		{
+			Assert( false );
+			return;
+		}
+
+		if ( pRequest->m_eStatusCode != k_EHTTPStatusCode200OK )
+		{
+			Warning( "Failed to update item schema: HTTP status %d\n", pRequest->m_eStatusCode );
+		}
+		else
+		{
+			if ( !pRequest->m_bRequestSuccessful )
+				bFailed = true;
+
+			if ( !bFailed )
+			{
+				KeyValuesAD pKeyValues( "items_game" );
+
+				CUtlBuffer buf( 0, pRequest->m_unBodySize );
+				bFailed = pHTTP->GetHTTPResponseBodyData( pRequest->m_hRequest, (uint8 *)buf.Base(), pRequest->m_unBodySize );
+				if ( !bFailed )
+				{
+					bFailed = GetItemSchema()->LoadFromBuffer( buf );
+				}
+			}
+			
+			if( bFailed )
+			{
+				ConColorMsg( COLOR_RED, "****************************************************************\n" );
+				ConColorMsg( COLOR_RED, "Unable to load Econ Item Schema from server, loading local file.\n" );
+				ConColorMsg( COLOR_RED, "****************************************************************\n" );
+
+				GetItemSchema()->LoadFromFile();
+			}
+		}
+
+		pHTTP->ReleaseHTTPRequest( pRequest->m_hRequest );
+	}
+};
+REG_ECON_MSG_HANDLER( CUpdateEconItemSchema, k_EUpdateItemSchemaMsg, CUpdateItemSchemaMsg );
+#endif
