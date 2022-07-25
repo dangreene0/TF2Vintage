@@ -1402,6 +1402,7 @@ public:
 			ISteamHTTP *pHTTP = SteamHTTP();
 			if ( pHTTP )
 			{
+				m_bHTTPRequestComplete = false;
 				HTTPRequestHandle hndl = pHTTP->CreateHTTPRequest( k_EHTTPMethodGET, url.c_str() );
 				if ( hndl == INVALID_HTTPREQUEST_HANDLE )
 					return true;
@@ -1433,7 +1434,7 @@ public:
 
 private:
 	CCallResult<CUpdateEconItemSchema, HTTPRequestCompleted_t> m_callback;
-	bool m_bHTTPRequestComplete = false;
+	bool m_bHTTPRequestComplete;
 
 	void OnHTTPRequestCompleted( HTTPRequestCompleted_t *pRequest, bool bFailed )
 	{
