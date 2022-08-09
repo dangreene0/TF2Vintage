@@ -25,7 +25,7 @@ static ConVar net_steamcnx_usep2p( "net_steamcnx_usep2p", "1", FCVAR_DEVELOPMENT
 #define STEAM_CNX_COLOR				Color(255,255,100,255)
 #define STEAM_CNX_PROTO_VERSION		2
 
-static CEconNetMsg *s_pNetMsg = new CEconNetMsg();
+CUtlMap<MsgType_t, IMessageHandler *> &MessageMap( void );
 
 
 class CSteamSocket
@@ -101,8 +101,6 @@ public:
 	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersDisconnected, SteamServersDisconnected_t, m_SteamServersDisconnectedCallback );
 #endif
 
-	bool AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler );
-
 private:
 	ISteamNetworking *SteamNetworking( void ) const
 	{
@@ -123,9 +121,9 @@ private:
 	void HandleNetPacket( CSmartPtr<CNetPacket> const &pPacket )
 	{
 		IMessageHandler *pHandler = NULL;
-		unsigned nIndex = m_MessageTypes.Find( pPacket->Hdr().m_eMsgType );
-		if ( nIndex != m_MessageTypes.InvalidIndex() )
-			pHandler = m_MessageTypes[nIndex];
+		unsigned nIndex = MessageMap().Find(pPacket->Hdr().m_eMsgType);
+		if ( nIndex != MessageMap().InvalidIndex() )
+			pHandler = MessageMap()[nIndex];
 
 		QueueEconNetworkMessageWork( pHandler, pPacket );
 	}
@@ -148,7 +146,6 @@ private:
 	SNetListenSocket_t						m_hListenSocket;
 	SNetSocket_t							m_hServerSocket;
 	CUtlVector< CSteamSocket >				m_vecSockets;
-	CUtlMap< MsgType_t, IMessageHandler* >	m_MessageTypes;
 	bool									m_bSteamConnection;
 	bool									m_bIsLoopback;
 
@@ -219,7 +216,6 @@ int CNetPacket::Release( void )
 // Purpose: 
 //-----------------------------------------------------------------------------
 CEconNetworking::CEconNetworking() : 
-	m_MessageTypes( DefLessFunc( MsgType_t ) ),
 #ifndef NO_STEAM
 	m_StatusCallback( this, &CEconNetworking::SessionStatusChanged ),
 	m_SteamServersConnectedCallback( this, &CEconNetworking::OnSteamServersConnected ),
@@ -840,28 +836,19 @@ void CEconNetworking::OnSteamServersConnectFailure( SteamServerConnectFailure_t 
 
 #endif // NO_STEAM
 
+
 //-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-bool CEconNetworking::AddMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
+
+CUtlMap<MsgType_t, IMessageHandler *> &MessageMap( void )
 {
-	int nFound = m_MessageTypes.Find( eMsg );
-	if ( nFound != m_MessageTypes.InvalidIndex() )
-	{
-		Assert( nFound == m_MessageTypes.InvalidIndex() );
-		return false;
-	}
-
-	m_MessageTypes.Insert( eMsg, pHandler );
-	return true;
+	static CUtlMap< MsgType_t, IMessageHandler * > s_MessageTypes( DefLessFunc( MsgType_t ) );
+	return s_MessageTypes;
 }
-
-
-//-----------------------------------------------------------------------------
 
 void RegisterEconNetworkMessageHandler( MsgType_t eMsg, IMessageHandler *pHandler )
 {
-	g_Networking.AddMessageHandler( eMsg, pHandler );
+	Assert( MessageMap().Find( eMsg ) == MessageMap().InvalidIndex() );
+	MessageMap().Insert( eMsg, pHandler );
 }
 
 //-----------------------------------------------------------------------------
