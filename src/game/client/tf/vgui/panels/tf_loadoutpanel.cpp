@@ -106,7 +106,10 @@ CTFLoadoutPanel::CTFLoadoutPanel(vgui::Panel* parent, const char *panelName) : C
 CTFLoadoutPanel::~CTFLoadoutPanel()
 {
 	m_pWeaponIcons.RemoveAll();
-	free( m_pszServerID );
+	if ( m_pszServerID )
+	{
+		free( m_pszServerID );
+	}
 }
 
 bool CTFLoadoutPanel::Init()
@@ -121,6 +124,7 @@ bool CTFLoadoutPanel::Init()
 	m_pItemPanel = NULL;
 	g_TFWeaponScriptParser.InitParser( "scripts/tf_weapon_*.txt", true, false );
 	m_bLoadoutChanged = false;
+	m_pszServerID = NULL;
 
 	char chEmptyLoc[32];
 	wchar_t* wcLoc = g_pVGuiLocalize->Find("SelectNoItemSlot");
