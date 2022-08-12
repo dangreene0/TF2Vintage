@@ -250,7 +250,7 @@ bool CEconNetworking::Init( void )
 		m_hListenSocket = SteamNetworking()->CreateListenSocket( k_nServerPort, SteamIPAddress_t::IPv4Any(), ECON_SERVER_PORT, net_steamcnx_allowrelay.GetBool() );
 	}
 
-	m_bIsLoopback = m_hListenSocket == NULL;
+	m_bIsLoopback = m_hListenSocket == 0;
 #endif
 
 	return true;
@@ -635,12 +635,12 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 			}
 		}
 	#else
-		KeyValues *pData = new KeyValues( "NetworkMessage" );
-		pData->SetInt( "MsgType", eMsg );
-		pData->SetInt( "Length", pPacket->Size() );
-		pData->SetPtr( "Data", pPacket->Data() );
-
-		engine->ServerCmdKeyValues( pData );
+		INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetNetChannelInfo() );
+		if ( pNetChan )
+		{
+			CEconNetMsg msg( pPacket );
+			return pNetChan->SendNetMsg( msg, true );
+		}
 	#endif
 		return true;
 	}

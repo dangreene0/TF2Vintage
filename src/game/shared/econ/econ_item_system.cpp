@@ -1,5 +1,6 @@
 #include "cbase.h"
 #include "filesystem.h"
+#include "inetchannel.h"
 #include "econ_networking.h"
 #include "econ_item_system.h"
 #include "script_parser.h"
@@ -1254,6 +1255,10 @@ void CEconItemSchema::ClientConnected( edict_t *pClient )
 	CSteamID const *playerID = engine->GetClientSteamID( pClient );
 	if ( playerID == NULL )
 		return;
+
+	INetChannel *pNetChan = dynamic_cast<INetChannel *>( engine->GetPlayerNetInfo( ENTINDEX( pClient ) ) );
+	if( pNetChan )
+		pNetChan->RegisterMessage( new CEconNetMsg() ); // This is safe to do multiple times
 
 	g_pNetworking->OnClientConnected( *playerID );
 #endif
