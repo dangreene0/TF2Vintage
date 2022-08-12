@@ -422,7 +422,7 @@ void CEconNetworking::ConnectToServer( long nIP, short nPort, CSteamID const &se
 {
 	if ( m_hServerSocket )
 	{
-		Warning( "Attempted to open multiple connections to the server!" );
+		AssertMsg( false, "Attempted to open multiple connections to the server!" );
 		return;
 	}
 
