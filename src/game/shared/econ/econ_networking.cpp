@@ -275,6 +275,8 @@ void CEconNetworking::Shutdown( void )
 		CloseConnection( &m_vecSockets[i] );
 	}
 	m_vecSockets.Purge();
+
+	m_hListenSocket = m_hServerSocket = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -335,7 +337,6 @@ void CEconNetworking::OnClientDisconnected( CSteamID const &steamID )
 		if ( m_vecSockets[i].GetSteamID() == steamID )
 		{
 			CloseConnection( &m_vecSockets[i] );
-			m_vecSockets.FastRemove( i );
 		}
 	}
 }

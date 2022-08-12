@@ -1481,5 +1481,5 @@ private:
 		pHTTP->ReleaseHTTPRequest( pRequest->m_hRequest );
 	}
 };
-REG_ECON_MSG_HANDLER( CUpdateEconItemSchema, k_EUpdateItemSchemaMsg, CUpdateItemSchemaMsg );
+REG_ECON_MSG_HANDLER( CUpdateEconItemSchema, k_EUpdateItemSchemaMsg, UpdateItemSchemaMsg );
 #endif

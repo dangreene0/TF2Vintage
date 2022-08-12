@@ -95,7 +95,7 @@ public:
 		return true;
 	}
 };
-REG_ECON_MSG_HANDLER( CServerHelloHandler, k_EServerHelloMsg, CServerHelloMsg );
+REG_ECON_MSG_HANDLER( CServerHelloHandler, k_EServerHelloMsg, ServerHelloMsg );
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -135,7 +135,7 @@ public:
 		return true;
 	}
 };
-REG_ECON_MSG_HANDLER( CClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
+REG_ECON_MSG_HANDLER( CClientHelloHandler, k_EClientHelloMsg, ClientHelloMsg );
 
 
 
