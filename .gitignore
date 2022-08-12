@@ -159,7 +159,7 @@ game/*/expressions/*
 *.ain
 
 # caches
-src/.vs/*
+*/.vs/*
 src/materialsystem/stdshaders/fxctmp9_tmp/*
 src/materialsystem/stdshaders/vshtmp9_tmp/*
 src/materialsystem/stdshaders/pshtmp9_tmp/*
