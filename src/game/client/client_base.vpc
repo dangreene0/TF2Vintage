@@ -1350,6 +1350,8 @@ $Project
 		$Libexternal "$LIBCOMMON/libcurl" [$LINUXALL]
 		$Libexternal "$LIBCOMMON/libcurlssl" [$LINUXALL]
 		$Libexternal "$SRCDIR\lib\common\$(CRYPTOPPDIR)\libssl" [$LINUXALL]
+
+		$Lib	"$LIBCOMMON\lzma"
  	}
 
 }

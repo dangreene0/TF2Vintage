@@ -1029,5 +1029,7 @@ $Project
 		$Lib	tier2
 		$Lib	tier3
 		$ImpLibexternal steam_api
+
+		$Lib	"$LIBCOMMON\lzma"
 	}
 }

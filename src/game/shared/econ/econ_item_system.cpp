@@ -11,6 +11,7 @@
 #endif
 #include "tier0/icommandline.h"
 #include "econ_networking_messages.h"
+#include "lzma/lzma.h"
 
 #if defined(CLIENT_DLL)
 #include "hud_macros.h"
@@ -1382,14 +1383,20 @@ public:
 		CProtobufMsg<CUpdateItemSchemaMsg> msg( pPacket );
 
 		std::string data = msg->items_data();
-		CUtlBuffer buf( data.data(), data.length() );
+		size_t nUncompressedSize = LZMA_GetActualSize( reinterpret_cast<byte *>( data.data() ) );
+		byte *pUncompressedSchema = reinterpret_cast<byte *>( calloc( nUncompressedSize, sizeof( byte ) ) );
+		LZMA_Uncompress( reinterpret_cast<byte *>( data.data() ), &pUncompressedSchema, &nUncompressedSize );
+
+		CUtlBuffer buf( pUncompressedSchema, nUncompressedSize, CUtlBuffer::READ_ONLY );
 
 		// Ensure consistency
-		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( buf.Base(), buf.TellPut() );
-		uint32 unRecvSchemaCRC = atoi( msg->items_game_hash().c_str() );
+		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( reinterpret_cast<void *>( data.data() ), data.length() );
+		uint32 unRecvSchemaCRC = _atoi64( msg->items_game_hash().c_str() );
 		if ( unSchemaCRC != unRecvSchemaCRC )
 		{
 			Assert( unSchemaCRC == unRecvSchemaCRC );
+			free( pUncompressedSchema );
+
 			if ( !msg->use_online_backup() )
 				return true;
 
@@ -1424,6 +1431,7 @@ public:
 			GetItemSchema()->LoadFromFile();
 		}
 
+		free( pUncompressedSchema );
 		return true;
 	}
 
