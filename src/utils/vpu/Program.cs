@@ -2,6 +2,7 @@
 using Microsoft.Build.Evaluation;
 
 string Version = "";
+string SDKVersion = "";
 string ISOStandard = "";
 string Solution = "";
 
@@ -9,7 +10,8 @@ foreach (var arg in args)
 {
 	if(arg.StartsWith('/'))
 	{
-		switch(arg.Substring(1))
+		string argument = arg.Substring(1);
+		switch (argument)
 		{
 			case "2013":
 				Version = "v120_xp";
@@ -33,6 +35,9 @@ foreach (var arg in args)
 				Solution = arg.Substring(1);
 				break;
 		}
+
+		if (argument.StartsWith("sdk:"))
+			SDKVersion = "10.0." + argument.Split(':')[1] + ".0";
 	}
 	else
 	{
@@ -71,7 +76,16 @@ foreach(var project in solutionFile.ProjectsInOrder)
 					line = line.Replace(standard, ISOStandard);
 			}
 
-			foreach(var c in line.ToArray())
+			if (line.Contains("WindowsTargetPlatformVersion"))
+			{
+				int startIndex = line.IndexOf('>') + 1;
+				int endIndex = line.IndexOf('<', startIndex);
+				var sdk = line.Substring(startIndex, endIndex - startIndex);
+				if (line.Contains(sdk))
+					line = line.Replace(sdk, SDKVersion);
+			}
+
+			foreach (var c in line.ToArray())
 			{
 				tmpFile.WriteByte((byte)c);
 			}
