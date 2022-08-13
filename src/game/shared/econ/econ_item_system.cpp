@@ -1261,6 +1261,26 @@ void CEconItemSchema::ClientConnected( edict_t *pClient )
 		pNetChan->RegisterMessage( new CEconNetMsg() ); // This is safe to do multiple times
 
 	g_pNetworking->OnClientConnected( *playerID );
+
+	CUtlBuffer buf;
+	SaveToBuffer( buf );
+
+	size_t nCompressedLength = 0;
+	byte *pCompressedSchema = LZMA_Compress( (byte *)buf.Base(), buf.TellPut(), &nCompressedLength );
+	uint32 unSchemaCRC32 = CRC32_ProcessSingleBuffer( pCompressedSchema, nCompressedLength );
+
+	CProtobufMsg<CUpdateItemSchemaMsg> msg;
+	msg->set_items_data( pCompressedSchema, nCompressedLength );
+	msg->set_items_game_hash( UTIL_VarArgs( "%ud", unSchemaCRC32 ) );
+	msg->set_items_game_url( "https://raw.githubusercontent.com/TF2V/TF2Vintage/3.6/game/tf2vintage/assets/base/tf2v_core/scripts/items/items_game.txt" );
+
+	free( pCompressedSchema );
+
+	const int nLength = msg->ByteSize();
+	CArrayAutoPtr<byte> array( new byte[ nLength ]() );
+	msg->SerializeWithCachedSizesToArray( array.Get() );
+
+	g_pNetworking->SendMessage( *playerID, k_EUpdateItemSchemaMsg, array.Get(), nLength );
 #endif
 }
 
@@ -1354,36 +1374,7 @@ void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
 		ParseSchema( schema );
 	}
 }
-#endif
 
-#ifdef GAME_DLL
-class CEconClientHelloHandler : public IMessageHandler
-{
-public:
-	bool ProcessMessage( CNetPacket *pPacket ) OVERRIDE
-	{
-		CProtobufMsg<CUpdateItemSchemaMsg> schema;
-
-		CUtlBuffer buf;
-		GetItemSchema()->SaveToBuffer( buf );
-
-		uint32 unSchemaCRC32 = CRC32_ProcessSingleBuffer( buf.Base(), buf.TellPut() );
-
-		schema->set_items_data( buf.Base(), buf.TellPut() );
-		schema->set_items_game_hash( UTIL_VarArgs( "%ud", unSchemaCRC32 ) );
-		schema->set_items_game_url( "https://raw.githubusercontent.com/TF2V/TF2Vintage/3.6/game/tf2vintage/assets/base/tf2v_core/scripts/items/items_game.txt" );
-
-		const int nLength = schema->ByteSize();
-		CArrayAutoPtr<byte> array( new byte[ nLength ]() );
-		schema->SerializeWithCachedSizesToArray( array.Get() );
-
-		return g_pNetworking->SendMessage( pPacket->Hdr().m_ulSourceID, k_EUpdateItemSchemaMsg, array.Get(), nLength );
-	}
-};
-REG_ECON_MSG_HANDLER( CEconClientHelloHandler, k_EClientHelloMsg, CClientHelloMsg );
-#endif
-
-#ifdef CLIENT_DLL
 class CUpdateEconItemSchema : public IMessageHandler
 {
 public:
