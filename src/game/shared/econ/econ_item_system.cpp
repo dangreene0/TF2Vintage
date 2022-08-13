@@ -1383,14 +1383,16 @@ public:
 		CProtobufMsg<CUpdateItemSchemaMsg> msg( pPacket );
 
 		std::string data = msg->items_data();
-		size_t nUncompressedSize = LZMA_GetActualSize( reinterpret_cast<byte *>( data.data() ) );
+		char* Cdata = strdup(data.data());
+		size_t nUncompressedSize = LZMA_GetActualSize(reinterpret_cast<unsigned char*>(Cdata));
 		byte *pUncompressedSchema = reinterpret_cast<byte *>( calloc( nUncompressedSize, sizeof( byte ) ) );
-		LZMA_Uncompress( reinterpret_cast<byte *>( data.data() ), &pUncompressedSchema, &nUncompressedSize );
+		LZMA_Uncompress(reinterpret_cast<unsigned char*>(Cdata), &pUncompressedSchema, &nUncompressedSize );
 
 		CUtlBuffer buf( pUncompressedSchema, nUncompressedSize, CUtlBuffer::READ_ONLY );
 
 		// Ensure consistency
-		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( reinterpret_cast<void *>( data.data() ), data.length() );
+		void* Vdata = reinterpret_cast<void*>(Cdata);
+		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( Vdata, data.length() );
 		uint32 unRecvSchemaCRC = _atoi64( msg->items_game_hash().c_str() );
 		if ( unSchemaCRC != unRecvSchemaCRC )
 		{
