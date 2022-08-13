@@ -923,11 +923,11 @@ bool CEconItemSchema::LoadFromFile( void )
 	return true;
 }
 
-bool CEconItemSchema::LoadFromBuffer( CUtlBuffer &buf )
+bool CEconItemSchema::LoadFromBuffer( CUtlBuffer &buf, bool bAsText )
 {
 	KeyValuesAD schema("KVDataFile");
-	if ( !schema->ReadAsBinary( buf ) )
-		return false;
+	bool bDidInit = bAsText ? schema->LoadFromBuffer( ITEMS_GAME, buf ) : schema->ReadAsBinary( buf );
+	if ( !bDidInit ) return false;
 
 	Reset();
 	ParseSchema( schema );
@@ -937,8 +937,7 @@ bool CEconItemSchema::LoadFromBuffer( CUtlBuffer &buf )
 
 bool CEconItemSchema::SaveToBuffer( CUtlBuffer &buf )
 {
-	m_pSchema->RecursiveSaveToFile( buf, 0 );
-	return true;
+	return m_pSchema->WriteAsBinary( buf );
 }
 
 void CEconItemSchema::Reset( void )
@@ -1456,11 +1455,11 @@ private:
 			{
 				KeyValuesAD pKeyValues( "items_game" );
 
-				CUtlBuffer buf( 0, pRequest->m_unBodySize );
-				bFailed = pHTTP->GetHTTPResponseBodyData( pRequest->m_hRequest, (uint8 *)buf.Base(), pRequest->m_unBodySize );
+				CUtlBuffer buf( 0, pRequest->m_unBodySize, CUtlBuffer::TEXT_BUFFER | CUtlBuffer::CONTAINS_CRLF );
+				bFailed = pHTTP->GetHTTPResponseBodyData( pRequest->m_hRequest, (uint8 *)buf.Base(), buf.TellPut() );
 				if ( !bFailed )
 				{
-					bFailed = GetItemSchema()->LoadFromBuffer( buf );
+					bFailed = GetItemSchema()->LoadFromBuffer( buf, true );
 				}
 			}
 			
