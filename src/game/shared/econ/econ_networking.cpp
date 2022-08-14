@@ -107,11 +107,11 @@ private:
 	#ifdef NO_STEAM
 		return nullptr;
 	#else
-		ISteamNetworking *pNetworking = ::SteamNetworking();
+		ISteamNetworking *pNetworking = steamapicontext->SteamNetworking();
 	#ifdef GAME_DLL
 		if ( pNetworking == NULL )
 		{
-			pNetworking = ::SteamGameServerNetworking();
+			pNetworking = steamgameserverapicontext->SteamGameServerNetworking();
 		}
 	#endif
 		return pNetworking;
