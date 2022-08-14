@@ -472,6 +472,12 @@ void CEconNetworking::ProcessDataFromServer( void )
 	if ( !SteamNetworking() )
 		return;
 
+	if ( !engine->IsConnected() )
+	{
+		CloseConnection( &m_vecSockets[0] );
+		return;
+	}
+
 	if ( net_steamcnx_usep2p.GetBool() )
 	{
 		Assert( m_vecSockets.Count() == 1 );
@@ -658,7 +664,7 @@ bool CEconNetworking::SendMessage( CSteamID const &targetID, MsgType_t eMsg, voi
 		bool bSuccess = false;
 		if ( net_steamcnx_usep2p.GetBool() )
 		{
-			bSuccess = SteamNetworking()->SendP2PPacket( pSock->GetSteamID(), pPacket->Data(), pPacket->Size(), k_EP2PSendReliable, pSock->GetRemoteChannel() );
+			bSuccess = SteamNetworking()->SendP2PPacket( pSock->GetSteamID(), pPacket->Data(), pPacket->Size(), k_EP2PSendUnreliable, pSock->GetRemoteChannel() );
 		}
 		else
 		{
