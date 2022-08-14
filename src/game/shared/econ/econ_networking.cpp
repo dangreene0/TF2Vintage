@@ -227,6 +227,8 @@ CEconNetworking::CEconNetworking() :
 {
 	m_bSteamConnection = false;
 	m_bIsLoopback = false;
+	m_hListenSocket = 0;
+	m_hServerSocket = 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -429,13 +431,16 @@ void CEconNetworking::ConnectToServer( long nIP, short nPort, CSteamID const &se
 	if ( !SteamNetworking() )
 		return;
 
+	m_hServerSocket = 1;
+
 	SteamIPAddress_t ipAddress;
 	ipAddress.m_unIPv4 = nIP;
 	ipAddress.m_eType = k_ESteamIPTypeIPv4;
-	if ( !net_steamcnx_usep2p.GetBool() )
-		m_hServerSocket = SteamNetworking()->CreateConnectionSocket( ipAddress, nPort, SERVER_TIMEOUT );
-	else
-		m_hServerSocket = 1;
+	if ( !m_bIsLoopback )
+	{
+		if ( !net_steamcnx_usep2p.GetBool() )
+			m_hServerSocket = SteamNetworking()->CreateConnectionSocket( ipAddress, nPort, SERVER_TIMEOUT );
+	}
 
 	OpenConnection( serverID, m_hServerSocket );
 
