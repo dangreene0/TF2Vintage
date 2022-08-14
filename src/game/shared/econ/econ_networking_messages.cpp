@@ -7,8 +7,6 @@
 #include "steam/steamclientpublic.h"
 #endif
 
-#include <memory>
-
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -147,7 +145,7 @@ bool CEconNetMsg::Process( void )
 	if ( m_pPacket->Hdr().m_eMsgType != m_eMsgType )
 		return false;
 
-	g_pNetworking->RecvMessage( CSteamID(), m_eMsgType, m_pPacket->Data(), m_pPacket->Size() );
+	g_pNetworking->RecvMessage( m_pPacket->Hdr().m_ulSourceID, m_eMsgType, m_pPacket->Data(), m_pPacket->Size());
 	return true;
 }
 
