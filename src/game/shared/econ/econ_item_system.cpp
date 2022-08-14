@@ -1393,7 +1393,7 @@ public:
 		// Ensure consistency
 		void* Vdata = reinterpret_cast<void*>(Cdata);
 		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( Vdata, data.length() );
-		uint32 unRecvSchemaCRC = _atoi64( msg->items_game_hash().c_str() );
+		uint32 unRecvSchemaCRC = V_atoi64( msg->items_game_hash().c_str() );
 		if ( unSchemaCRC != unRecvSchemaCRC )
 		{
 			Assert( unSchemaCRC == unRecvSchemaCRC );
