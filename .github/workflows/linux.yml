@@ -5,7 +5,7 @@ on:
 
 env:
   STEAM_RUNTIME_PATH: /valve/steam-runtime
-  CCACHE_VERSION: 3.4.2
+  CCACHE_VERSION: 3.7.7
   CCACHE_DIR: ${{ github.workspace }}/src/ccache
 
 jobs:
