@@ -105,10 +105,6 @@
 #pragma once
 #endif
 
-#if defined( GNUC )
-#pragma GCC diagnostic ignored "-fpermissive"
-#endif
-
 #ifdef VSCRIPT_DLL_EXPORT
 #define VSCRIPT_INTERFACE	DLL_EXPORT
 #define VSCRIPT_OVERLOAD	DLL_GLOBAL_EXPORT
@@ -868,6 +864,9 @@ public:
 template <class BASE_CLASS = CDefScriptScopeBase>
 class CScriptScopeT : public BASE_CLASS
 {
+#if defined( GNUC )
+	using BASE_CLASS::GetVM;
+#endif
 public:
 	CScriptScopeT() :
 		m_hScope( INVALID_HSCRIPT ),
