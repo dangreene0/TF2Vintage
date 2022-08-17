@@ -26,10 +26,10 @@ foreach (var arg in args)
 				Version = "v142";
 				break;
 			case "cxx14":
-				ISOStandard = "stdcpp14";
+				ISOStandard = "c++14";
 				break;
 			case "cxx17":
-				ISOStandard = "stdcpp17";
+				ISOStandard = "c++17";
 				break;
 			default:
 				Solution = arg.Substring(1);
@@ -48,6 +48,7 @@ foreach (var arg in args)
 if (Solution.Equals(""))
 	return;
 
+bool inClCompile = false;
 var solutionFile = SolutionFile.Parse(Path.Combine(Directory.GetCurrentDirectory(), Solution));
 foreach(var project in solutionFile.ProjectsInOrder)
 {
@@ -67,13 +68,18 @@ foreach(var project in solutionFile.ProjectsInOrder)
 					line = line.Replace(toolset, Version);
 			}
 
-			if (line.Contains("LanguageStandard"))
+			if (line.Contains("<ClCompile>"))
+				inClCompile = true;
+			if (line.Contains("</ClCompile>"))
+				inClCompile = false;
+
+			if (line.Contains("AdditionalOptions") && inClCompile)
 			{
 				int startIndex = line.IndexOf('>') + 1;
 				int endIndex = line.IndexOf('<', startIndex);
-				var standard = line.Substring(startIndex, endIndex - startIndex);
-				if (line.Contains(standard))
-					line = line.Replace(standard, ISOStandard);
+				var options = line.Substring(startIndex, endIndex - startIndex);
+				if (line.Contains(options) && !line.Contains(ISOStandard))
+					line = line.Replace(options, options + " /std:" + ISOStandard);
 			}
 
 			if (line.Contains("WindowsTargetPlatformVersion"))
