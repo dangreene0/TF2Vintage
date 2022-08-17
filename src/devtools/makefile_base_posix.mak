@@ -70,6 +70,8 @@ DEFINES += -DVPROF_LEVEL=1 -DGNUC -DNO_HOOK_MALLOC -DNO_MALLOC_OVERRIDE
 # 32bit systems, which means we don't break on filesystems with inodes > 32bit.
 # DEFINES += -D_FILE_OFFSET_BITS=64
 
+DEFINES += -D_GLIBCXX_USE_CXX11_ABI=0
+
 LDFLAGS = $(CFLAGS) $(GCC_ExtraLinkerFlags) $(OptimizerLevel)
 GENDEP_CXXFLAGS = -MMD -MP -MF $(@:.o=.P) 
 MAP_FLAGS =
