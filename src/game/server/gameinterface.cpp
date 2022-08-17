@@ -959,16 +959,15 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	if ( IsX360() && (matchmaking = (IMatchmaking *)appSystemFactory( VENGINE_MATCHMAKING_VERSION, NULL )) == NULL )
 		return false;
 
-	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
-	if ( CommandLine()->CheckParm( "-vscript" ) )
+	if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	{
 	#if defined( TF_VINTAGE )
-		char szCwd[1024];
+		char szCwd[MAX_PATH];
 		engine->GetGameDir( szCwd, MAX_PATH );
 
-		static CDllDemandLoader s_VScript( CFmtStr( "%s/bin/vscript.dll", szCwd ) );
+		static CDllDemandLoader s_VScript( CFmtStr( "%s/bin/vscript%s", szCwd, DLL_EXT_STRING ) );
 	#else
-		static CDllDemandLoader s_VScript( "vscript.dll" );
+		static CDllDemandLoader s_VScript( "vscript" DLL_EXT_STRING );
 	#endif
 
 		CreateInterfaceFn pAppFactory = s_VScript.GetFactory();

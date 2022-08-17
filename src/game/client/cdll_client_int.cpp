@@ -1322,16 +1322,15 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 		cl_cloud_settings->SetMax( 0 );
 	}
 
-	//if ( !CommandLine()->CheckParm( "-noscripting" ) )
-	if ( CommandLine()->CheckParm( "-vscript" ) )
+	if ( !CommandLine()->CheckParm( "-noscripting" ) )
 	{
 	#if defined( TF_VINTAGE_CLIENT )
 		char szCwd[1024];
 		_getcwd( szCwd, sizeof( szCwd ) );
 
-		static CDllDemandLoader s_VScript( CFmtStr( "%s/tf2vintage/bin/vscript.dll", szCwd ) );
+		static CDllDemandLoader s_VScript( CFmtStr( "%s/tf2vintage/bin/vscript%s", szCwd, DLL_EXT_STRING ) );
 	#else
-		static CDllDemandLoader s_VScript( "vscript.dll" );
+		static CDllDemandLoader s_VScript( "vscript" DLL_EXT_STRING );
 	#endif
 
 		CreateInterfaceFn pAppFactory = s_VScript.GetFactory();
@@ -1485,19 +1484,6 @@ int CHLClient::Init( CreateInterfaceFn appSystemFactory, CreateInterfaceFn physi
 #ifndef _X360
 	HookHapticMessages(); // Always hook the messages
 #endif
-	
-	// Discord RPC
-	if (!g_bTextMode)
-	{
-		/*discord::Core *core{};
-		auto result = discord::Core::Create( V_atoi64( cl_discord_appid.GetString() ), DiscordCreateFlags_NoRequireDiscord, &core );
-		if ( result != discord::Result::Ok )
-			return true;
-
-		char command[512];
-		V_snprintf( command, sizeof( command ), "%s -game \"%s\" -novid -steam", CommandLine()->GetParm( 0 ), CommandLine()->ParmValue( "-game" ) );
-		core->ActivityManager().RegisterCommand( command );*/
-	}
 	
 	// Swear list.
 	g_BannedWords.InitFromFile( "bannedwords.txt" );
