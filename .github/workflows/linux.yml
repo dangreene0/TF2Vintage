@@ -55,10 +55,9 @@ jobs:
         run: sudo apt update && sudo apt install -y zip build-essential gcc-multilib g++-multilib gcc-5 g++-5 g++-5-multilib
       
       - name: Download Steamworks SDK
-        run: sudo wget https://partner.steamgames.com/downloads/steamworks_sdk_150.zip
-      - name: Extract Steamworks SDK
         run: |
-          sudo unzip steamworks_sdk_150.zip
+          sudo wget https://partner.steamgames.com/downloads/steamworks_sdk_150.zip
+          unzip steamworks_sdk_150.zip
           sudo mv sdk/public/steam src/public/steam
 
       - name: Create project
