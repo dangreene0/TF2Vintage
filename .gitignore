@@ -72,6 +72,7 @@ src/Output-Build.txt
 src/utils/vvis_launcher/vvis_launcher.vpc.sentinel
 *.vpc.sentinel
 *_nut.h
+src/public/steam/*
 
 # Files to ignore when considering what GIT should commit.
 .DS_Store
