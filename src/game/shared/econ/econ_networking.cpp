@@ -91,15 +91,15 @@ public:
 	virtual void Update( float frametime );
 
 #ifndef NO_STEAM
-	STEAM_CALLBACK( CEconNetworking, SessionStatusChanged, SocketStatusCallback_t, m_StatusCallback );
+	STEAM_CALLBACK( CEconNetworking, SessionStatusChanged, SocketStatusCallback_t );
 
-	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, P2PSessionRequest_t, m_OnSessionRequested );
-	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, P2PSessionConnectFail_t, m_OnSessionFailed );
+	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, P2PSessionRequest_t );
+	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, P2PSessionConnectFail_t );
 
-	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnected, SteamServersConnected_t, m_SteamServersConnectedCallback );
-	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnectFailure, SteamServerConnectFailure_t, m_SteamServersConnectFailureCallback );
-	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersDisconnected, SteamServersDisconnected_t, m_SteamServersDisconnectedCallback );
 #endif
+	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnected, SteamServersConnected_t );
+	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnectFailure, SteamServerConnectFailure_t );
+	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersDisconnected, SteamServersDisconnected_t );
 
 private:
 	ISteamNetworking *SteamNetworking( void ) const
@@ -215,15 +215,7 @@ int CNetPacket::Release( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-CEconNetworking::CEconNetworking() : 
-#ifndef NO_STEAM
-	m_StatusCallback( this, &CEconNetworking::SessionStatusChanged ),
-	m_SteamServersConnectedCallback( this, &CEconNetworking::OnSteamServersConnected ),
-	m_SteamServersDisconnectedCallback( this, &CEconNetworking::OnSteamServersDisconnected ),
-	m_SteamServersConnectFailureCallback( this, &CEconNetworking::OnSteamServersConnectFailure ),
-	m_OnSessionRequested( this, &CEconNetworking::P2PSessionRequested ),
-	m_OnSessionFailed( this, &CEconNetworking::P2PSessionFailed )
-#endif
+CEconNetworking::CEconNetworking()
 {
 	m_bSteamConnection = false;
 	m_bIsLoopback = false;
