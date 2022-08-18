@@ -43,9 +43,6 @@
 #include "isteamparentalsettings.h"
 #include "isteaminput.h"
 #include "isteamremoteplay.h"
-#include "isteamnetworkingmessages.h"
-#include "isteamnetworkingsockets.h"
-#include "isteamnetworkingutils.h"
 
 
 //----------------------------------------------------------------------------------------------------------------------------------------------------------//
