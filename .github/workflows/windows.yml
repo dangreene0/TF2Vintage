@@ -24,7 +24,7 @@ jobs:
 
       - name: Download Steamworks SDK
         shell: bash
-        run: sudo wget https://partner.steamgames.com/downloads/steamworks_sdk_150.zip
+        run: wget https://partner.steamgames.com/downloads/steamworks_sdk_150.zip
       - name: Extract Steamworks SDK
         uses: edgarrc/action-7z@v1
         with:
