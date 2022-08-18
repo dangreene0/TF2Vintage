@@ -3,9 +3,7 @@
 #include "vstdlib/coroutine.h"
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
-#ifndef NO_STEAM
 #include "steam/steamclientpublic.h"
-#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -145,7 +143,7 @@ bool CEconNetMsg::Process( void )
 	if ( m_pPacket->Hdr().m_eMsgType != m_eMsgType )
 		return false;
 
-	g_pNetworking->RecvMessage( m_pPacket->Hdr().m_ulSourceID, m_eMsgType, m_pPacket->Data(), m_pPacket->Size());
+	g_pNetworking->RecvMessage( m_pPacket->Hdr().m_ulSourceID, m_eMsgType, m_pPacket->Data(), m_pPacket->Size() );
 	return true;
 }
 

@@ -6,13 +6,8 @@
 #include "tier1/smartptr.h"
 #include "tier1/utlqueue.h"
 #include "inetchannel.h"
-#ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/steam_api.h"
-#endif
-#if defined(CLIENT_DLL)
-#include "hud_macros.h"
-#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -90,13 +85,11 @@ public:
 
 	virtual void Update( float frametime );
 
-#ifndef NO_STEAM
 	STEAM_CALLBACK( CEconNetworking, SessionStatusChanged, SocketStatusCallback_t );
 
 	STEAM_CALLBACK( CEconNetworking, P2PSessionRequested, P2PSessionRequest_t );
 	STEAM_CALLBACK( CEconNetworking, P2PSessionFailed, P2PSessionConnectFail_t );
 
-#endif
 	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnected, SteamServersConnected_t );
 	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersConnectFailure, SteamServerConnectFailure_t );
 	STEAM_GAMESERVER_CALLBACK( CEconNetworking, OnSteamServersDisconnected, SteamServersDisconnected_t );
@@ -104,9 +97,6 @@ public:
 private:
 	ISteamNetworking *SteamNetworking( void ) const
 	{
-	#ifdef NO_STEAM
-		return nullptr;
-	#else
 		ISteamNetworking *pNetworking = steamapicontext->SteamNetworking();
 	#ifdef GAME_DLL
 		if ( pNetworking == NULL )
@@ -115,7 +105,6 @@ private:
 		}
 	#endif
 		return pNetworking;
-	#endif
 	}
 
 	void HandleNetPacket( CSmartPtr<CNetPacket> const &pPacket )
@@ -137,7 +126,7 @@ private:
 		pPacket->m_Hdr.m_ulSourceID = pSteamID ? pSteamID->ConvertToUint64() : 0LL;
 	#else
 		CSteamID steamID;
-		if ( steamapicontext && steamapicontext->SteamUser() )
+		if ( steamapicontext->SteamUser() )
 			steamID = steamapicontext->SteamUser()->GetSteamID();
 		pPacket->m_Hdr.m_ulSourceID = steamID.ConvertToUint64();
 	#endif
@@ -698,7 +687,6 @@ void CEconNetworking::RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, voi
 	m_QueuedMessages.Insert( pPacket );
 }
 
-#ifndef NO_STEAM
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -837,8 +825,6 @@ void CEconNetworking::OnSteamServersConnectFailure( SteamServerConnectFailure_t 
 {
 	m_bSteamConnection = false;
 }
-
-#endif // NO_STEAM
 
 
 //-----------------------------------------------------------------------------
