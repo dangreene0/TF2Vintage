@@ -38,10 +38,8 @@ public:
 	virtual void Shutdown( void ) = 0;
 	virtual void Update( float frametime ) = 0;
 #if defined(GAME_DLL)
-	virtual void OnClientConnected( CSteamID const &id, SNetSocket_t socket = 0 ) = 0;
+	virtual void OnClientConnected( CSteamID const &id ) = 0;
 	virtual void OnClientDisconnected( CSteamID const &steamID ) = 0;
-#else
-	virtual void ConnectToServer( long nIP, short nPort, CSteamID const &serverID ) = 0;
 #endif
 	virtual bool SendMessage( CSteamID const &targetID, MsgType_t eMsg, void *pubData, uint32 cubData ) = 0;
 	virtual void RecvMessage( CSteamID const &remoteID, MsgType_t eMsg, void const *pubData, uint32 const cubData ) = 0;

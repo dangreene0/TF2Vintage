@@ -425,10 +425,10 @@ void ClientModeTFNormal::Init()
 
 	BaseClass::Init();
 
-	ListenForGameEvent( "server_spawn" );
 	ListenForGameEvent( "client_connected" );
 
 	MannVsMachineStats_Init();
+
 	ListenForGameEvent( "localplayer_changeclass" );
 	ListenForGameEvent( "pumpkin_lord_summoned" );
 	ListenForGameEvent( "pumpkin_lord_killed" );
@@ -741,29 +741,6 @@ void ClientModeTFNormal::FireGameEvent( IGameEvent *event )
 	else if ( FStrEq( eventname, "player_changename" ) )
 	{
 		return; // server sends a colorized text string for this
-	}
-	else if ( FStrEq( eventname, "server_spawn" ) )
-	{
-		char const *pszAddr = event->GetString( "address" );
-		const char *pszSteamID = event->GetString( "steamid" );
-		
-		long nIP = event->GetInt( "ip" );
-		if ( nIP == 0 && V_stricmp( pszAddr, "loopback" ) == -1 )
-		{
-			CUtlStringList ip_parts;
-			V_SplitString( pszAddr, ".", ip_parts );
-			Assert( ip_parts.Count() == 4 );
-
-			int nIPParts[4];
-			for ( int i=0; i < ip_parts.Count(); ++i )
-			{
-				nIPParts[i] = V_atoi( ip_parts[i] );
-			}
-
-			nIP = ( nIPParts[0]<<24 ) + ( nIPParts[1]<<16 ) + ( nIPParts[2]<<8 ) + nIPParts[3];
-		}
-
-		g_pNetworking->ConnectToServer( nIP, ECON_SERVER_PORT, CSteamID( pszSteamID ) );
 	}
 	else if ( FStrEq( "localplayer_changeclass", eventname ) )
 	{
