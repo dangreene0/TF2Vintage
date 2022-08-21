@@ -1098,10 +1098,6 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 	TheNavMesh = NavMeshFactory();
 #endif
 
-#ifdef USES_ECON_ITEMS
-	g_pNetworking->Init();
-#endif
-
 	// init the gamestatsupload connection
 	gamestatsuploader->InitConnection();
 #endif
@@ -1112,6 +1108,10 @@ bool CServerGameDLL::DLLInit( CreateInterfaceFn appSystemFactory,
 void CServerGameDLL::PostInit()
 {
 	IGameSystem::PostInitAllSystems();
+
+#ifdef USES_ECON_ITEMS
+	g_pNetworking->Init();
+#endif
 }
 
 void CServerGameDLL::DLLShutdown( void )

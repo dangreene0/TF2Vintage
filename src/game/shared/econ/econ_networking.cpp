@@ -150,11 +150,6 @@ CEconNetworking::~CEconNetworking()
 //-----------------------------------------------------------------------------
 bool CEconNetworking::Init( void )
 {
-	if ( net_steamcnx_allowrelay.GetBool() )
-		SteamNetworkingUtils()->InitRelayNetworkAccess();
-
-	SteamNetworking()->AllowP2PPacketRelay( net_steamcnx_allowrelay.GetBool() );
-
 	return true;
 }
 
