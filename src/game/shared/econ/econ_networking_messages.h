@@ -155,6 +155,9 @@ protected:
 			sm_bRegisteredPool = true;
 		}
 
+		if ( sm_MsgPool->Count() > 0 )
+			return (TProtoMsg *)sm_MsgPool->Alloc();
+
 		TProtoMsg *pMsg = (TProtoMsg *)sm_MsgPool->Alloc();
 		Construct<TProtoMsg>( pMsg );
 		return pMsg;
@@ -162,8 +165,8 @@ protected:
 
 	void FreeMsg( TProtoMsg *pObj )
 	{
-		Destruct<TProtoMsg>( pObj );
-		sm_MsgPool->Free( (void *)pObj );
+		pObj->Clear();
+		sm_MsgPool->Free( pObj );
 	}
 
 private:
