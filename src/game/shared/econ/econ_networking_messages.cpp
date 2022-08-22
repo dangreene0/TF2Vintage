@@ -4,6 +4,7 @@
 #include "econ_networking.h"
 #include "econ_networking_messages.h"
 #include "steam/steamclientpublic.h"
+#include "steam/isteamuser.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -53,8 +54,7 @@ public:
 		DbgVerify( serverID.BGameServerAccount() );
 		
 	#if defined( CLIENT_DLL )
-		CBasePlayer *pPlayer = CBasePlayer::GetLocalPlayer();
-		if ( !pPlayer || !engine->IsConnected() )
+		if ( !engine->IsConnected() )
 			return false;
 
 		uint unVersion = 0;
@@ -77,8 +77,7 @@ public:
 		CProtobufMsg<CClientHelloMsg> reply;
 		reply->set_version( unVersion );
 
-		CSteamID playerID;
-		pPlayer->GetSteamID( &playerID );
+		CSteamID playerID = SteamUser()->GetSteamID();
 		reply->set_remote_steamid( playerID.ConvertToUint64() );
 
 		const int nLength = reply->ByteSize();
