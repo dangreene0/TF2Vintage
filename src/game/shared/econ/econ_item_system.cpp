@@ -797,10 +797,6 @@ public:
 	}
 };
 
-#ifdef CLIENT_DLL
-DECLARE_MESSAGE( g_EconItemSchema, ResetInventory )
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose: constructor
 //-----------------------------------------------------------------------------
@@ -849,10 +845,6 @@ bool CEconItemSchema::Init( void )
 
 	float flEndTime = engine->Time();
 	Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
-
-#ifdef CLIENT_DLL
-	HOOK_HUD_MESSAGE( g_EconItemSchema, ResetInventory )
-#endif
 	
 	return true;
 }
@@ -921,6 +913,12 @@ bool CEconItemSchema::LoadFromFile( void )
 	Reset();
 	ParseSchema( schema );
 
+	IGameEvent *event = gameeventmanager->CreateEvent( "inventory_updated" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
+
 	return true;
 }
 
@@ -932,6 +930,12 @@ bool CEconItemSchema::LoadFromBuffer( CUtlBuffer &buf, bool bAsText )
 
 	Reset();
 	ParseSchema( schema );
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "inventory_updated" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
 
 	return true;
 }
@@ -1292,10 +1296,6 @@ void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 	CSteamID playerID{};
 	pPlayer->GetSteamID( &playerID );
 	g_pNetworking->OnClientDisconnected( playerID );
-
-	CSingleUserRecipientFilter filter( pPlayer );
-	UserMessageBegin( filter, "ResetInventory" );
-	MessageEnd();
 #endif
 }
 
@@ -1364,17 +1364,6 @@ ISchemaAttributeType *CEconItemSchema::GetAttributeType( const char *name ) cons
 }
 
 #if defined( CLIENT_DLL )
-void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
-{
-	Reset();
-
-	KeyValuesAD schema( "KVData" );
-	if ( schema->LoadFromFile( g_pFullFileSystem, ITEMS_GAME ) )
-	{
-		ParseSchema( schema );
-	}
-}
-
 class CUpdateEconItemSchema : public IMessageHandler
 {
 public:

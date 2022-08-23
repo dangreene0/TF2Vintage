@@ -3005,8 +3005,11 @@ bool CHLClient::DisconnectAttempt( void )
 {
 	bool bRet = false;
 
-#if defined( TF_CLIENT_DLL )
-	bRet = HandleDisconnectAttempt();
+#if defined( TF_CLIENT_DLL ) || defined( TF_VINTAGE_CLIENT )
+	//bRet = HandleDisconnectAttempt();
+
+	// Revert back from the server version to our local copy
+	GetItemSchema()->LoadFromFile();
 #endif
 
 	return bRet;
