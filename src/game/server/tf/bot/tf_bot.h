@@ -550,7 +550,7 @@ inline void CTFBot::SetWeaponRestriction( CTFBot::WeaponRestrictionType restrict
 //-----------------------------------------------------------------------------
 inline bool CTFBot::HasWeaponRestriction( CTFBot::WeaponRestrictionType restrictionFlags ) const
 {
-	return (m_nWeaponRestrictions & restrictionFlags) != (CTFBot::WeaponRestrictionType)0;
+	return (m_nWeaponRestrictions & restrictionFlags) != CTFBot::WeaponRestrictionType::UNRESTRICTED;
 }
 
 //-----------------------------------------------------------------------------
@@ -582,7 +582,7 @@ inline void CTFBot::ClearAttribute( CTFBot::AttributeType attribute )
 //-----------------------------------------------------------------------------
 inline bool CTFBot::HasAttribute( CTFBot::AttributeType attribute ) const
 {
-	return (m_nBotAttributes & attribute) != (CTFBot::AttributeType)0;
+	return (m_nBotAttributes & attribute) != CTFBot::AttributeType::NONE;
 }
 
 //-----------------------------------------------------------------------------

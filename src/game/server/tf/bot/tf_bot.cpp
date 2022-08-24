@@ -186,6 +186,13 @@ CTFBot::CTFBot( CTFPlayer *player )
 	m_locomotor = new CTFBotLocomotion( this );
 	m_intention = new CTFBotIntention( this );
 
+	m_pSquad = NULL;
+	m_iSkill = (DifficultyType)tf_bot_difficulty.GetInt();
+	m_nBotAttributes = AttributeType::NONE;
+
+	SetMission( MissionType::NONE, false );
+	SetMissionTarget( NULL );
+
 	ListenForGameEvent( "teamplay_point_startcapture" );
 	ListenForGameEvent( "teamplay_point_captured" );
 	ListenForGameEvent( "teamplay_round_win" );
@@ -202,6 +209,8 @@ CTFBot::~CTFBot()
 		delete m_locomotor;
 	if ( m_intention )
 		delete m_intention;
+
+	m_suspectedSpies.PurgeAndDeleteElements();
 }
 
 //-----------------------------------------------------------------------------
@@ -213,9 +222,6 @@ void CTFBot::Spawn( void )
 	ManageRandomWeapons();
 
 	BaseClass::Spawn();
-
-	m_iSkill = (DifficultyType)tf_bot_difficulty.GetInt();
-	m_nBotAttributes = AttributeType::NONE;
 
 	m_useWeaponAbilityTimer.Start( 5.0f );
 	m_bLookingAroundForEnemies = true;
@@ -2900,6 +2906,9 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 			CTFBot *pBot = NextBotCreatePlayerBot<CTFBot>( szBotName );
 			if ( pBot == nullptr )
 				break;
+
+			if( !bNoQuota )
+				pBot->SetAttribute( CTFBot::AttributeType::QUOTAMANAGED );
 
 			pBot->HandleCommand_JoinTeam( pszTeamName );
 			pBot->HandleCommand_JoinClass( pszClassName );
