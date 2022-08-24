@@ -645,6 +645,10 @@ CTFPlayer::CTFPlayer()
 
 	m_purgatoryDuration.Invalidate();
 	m_lastCalledMedic.Invalidate();
+
+	m_nCurrency = 0;
+	m_pWaveSpawnPopulator = NULL;
+	ResetDamagePerSecond();
 }
 
 //-----------------------------------------------------------------------------
@@ -3488,6 +3492,45 @@ void CTFPlayer::PlayReadySound( void )
 
 		m_flNextReadySoundTime = gpGlobals->curtime + 4.0;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::OnDealtDamage( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
+{
+	if ( !pVictim )
+		return;
+
+	int nIndex = (int)gpGlobals->curtime % DPS_Period;
+	if ( nIndex != m_iLastDamageIndex )
+	{
+		m_iLastDamageIndex = nIndex;
+		m_rgDamageArray[ nIndex ] = info.GetDamage();
+
+		m_flDPSMax = 0;
+		for ( int i = 0; i < DPS_Period; ++i )
+		{
+			if ( m_rgDamageArray[i] > m_flDPSMax )
+				m_flDPSMax = m_rgDamageArray[i];
+		}
+	}
+	else
+	{
+		m_rgDamageArray[ nIndex ] += info.GetDamage();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ResetDamagePerSecond( void )
+{
+	for ( int i = 0; i < DPS_Period; ++i )
+		m_rgDamageArray[i] = 0;
+
+	m_iLastDamageIndex = 0;
+	m_flDPSMax = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -6528,6 +6571,10 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		ClearExpression();
 	}
 
+	if ( pTFAttacker )
+	{
+		pTFAttacker->OnDealtDamage( this, info );
+	}
 
 	if ( IsPlayerClass( TF_CLASS_SPY ) && info.GetDamageCustom() != TF_DMG_CUSTOM_TELEFRAG ) // Die anyway if fragged
 	{
