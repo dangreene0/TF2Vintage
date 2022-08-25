@@ -525,13 +525,11 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 		{
 			FOR_EACH_SUBKEY( pVisualData, pAnimData )
 			{
-				int key = ActivityList_IndexForName( pAnimData->GetName() );
-				int value = ActivityList_IndexForName( pAnimData->GetString() );
+				ActivityReplacement_t *override = new ActivityReplacement_t;
+				override->pszActivity = pAnimData->GetName();
+				override->pszReplacement = pAnimData->GetString();
 
-				if ( key != kActivityLookup_Missing && value != kActivityLookup_Missing )
-				{
-					pVisuals->animation_replacement.Insert( key, value );
-				}
+				pVisuals->animation_replacement.AddToTail( override );
 			}
 		}
 		else if ( !V_stricmp( pVisualData->GetName(), "playback_activity" ) )
