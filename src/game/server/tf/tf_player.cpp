@@ -6473,7 +6473,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 	// Send the damage message to the client for the hud damage indicator
 	// Don't do this for damage types that don't use the indicator
-	if ( !( bitsDamage & ( DMG_DROWN | DMG_FALL | DMG_BURN ) ) )
+	if ( iHealthBefore != GetHealth() && bitsDamage != DMG_GENERIC && !( bitsDamage & ( DMG_DROWN | DMG_FALL | DMG_BURN ) ) )
 	{
 		// Try and figure out where the damage is coming from
 		Vector vecDamageOrigin = info.GetReportedPosition();
@@ -6522,7 +6522,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			if ( pTFAttacker && pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_MINIGUN )
 			{
 				float flDistSqr = ( pTFAttacker->GetAbsOrigin() - GetAbsOrigin() ).LengthSqr();
-				if ( flDistSqr > 750 * 750 )
+				if ( flDistSqr > Sqr( 750.f ) )
 				{
 					bFlinch = false;
 				}
@@ -6564,7 +6564,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		OnDamagedByExplosion( info );
 	}
 
-	PainSound( info );
+	if( iHealthBefore != GetHealth() )
+		PainSound( info );
 
 	// Detect drops below 25% health and restart expression, so that characters look worried.
 	int iHealthBoundary = ( GetMaxHealth() * 0.25 );
