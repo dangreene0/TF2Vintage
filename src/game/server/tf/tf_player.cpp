@@ -2219,15 +2219,17 @@ void CTFPlayer::ValidateWearables( void )
 		if ( pTFWearable->IsExtraWearable() )
 		{
 			CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( pTFWearable->GetWeaponAssociatedWith() );
-
-			CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
-			if ( pItemDef )
+			if ( pWeapon )
 			{
-				int iSlot = pItemDef->GetLoadoutSlot( iClass );
-				if ( iSlot >= 0 )
+				CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
+				if ( pItemDef )
 				{
-					CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-					bMatch = ItemsMatch( pWeapon->GetItem(), pLoadoutItem );
+					int iSlot = pItemDef->GetLoadoutSlot( iClass );
+					if ( iSlot >= 0 )
+					{
+						CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+						bMatch = ItemsMatch( pWeapon->GetItem(), pLoadoutItem );
+					}
 				}
 			}
 		}
