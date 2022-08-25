@@ -2928,7 +2928,7 @@ CON_COMMAND_EXTERN_F( tf_bot_add, cc_tf_bot_add, "Add a bot.", FCVAR_GAMEDLL )
 class TFBotDestroyer
 {
 public:
-	TFBotDestroyer( int team=TEAM_ANY ) : m_team( team ) { }
+	TFBotDestroyer( int team=TEAM_ANY, bool bMoveToSpec=false ) : m_team( team ), m_bMoveToSpec( bMoveToSpec ) { }
 
 	bool operator()( CBaseCombatCharacter *bot )
 	{
@@ -2938,8 +2938,13 @@ public:
 			if ( pBot == nullptr )
 				return true;
 
-			engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBot->GetUserID() ) );
-			TheTFBots().OnForceKickedBots( 1 );
+			if ( m_bMoveToSpec )
+				pBot->ChangeTeam( TEAM_SPECTATOR, false, true );
+			else
+				engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBot->GetUserID() ) );
+
+			if ( pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
+				TheTFBots().OnForceKickedBots( 1 );
 		}
 
 		return true;
@@ -2947,39 +2952,61 @@ public:
 
 private:
 	int m_team;
+	bool m_bMoveToSpec;
 };
 
 CON_COMMAND_F( tf_bot_kick, "Remove a TFBot by name, or all bots (\"all\").", FCVAR_GAMEDLL )
 {
 	if ( UTIL_IsCommandIssuedByServerAdmin() )
 	{
-		const char *arg = args.Arg( 1 );
-		if ( !Q_strncmp( arg, "all", 3 ) )
+		if ( args.ArgC() < 2 )
 		{
-			TFBotDestroyer func;
-			TheNextBots().ForEachCombatCharacter( func );
+			DevMsg( "%s <bot name>, \"red\", \"blue\", or \"all\"> <optional: \"moveToSpectatorTeam\"> \n", args.Arg( 0 ) );
+			return;
+		}
+
+		int iTeamNum = TEAM_UNASSIGNED;
+		char const *pszBotName = NULL;
+		bool bMoveToSpectate = false;
+		for ( int i = 1; i <= args.ArgC(); ++i )
+		{
+			if ( FStrEq( args[i], "red" ) )
+				iTeamNum = TF_TEAM_RED;
+			else if ( FStrEq( args[i], "blue" ) )
+				iTeamNum = TF_TEAM_BLUE;
+			else if ( FStrEq( args[i], "all" ) )
+				iTeamNum = TEAM_ANY;
+			else if ( FStrEq( args[i], "moveToSpectatorTeam" ) )
+				bMoveToSpectate = true;
+			else
+				pszBotName = args[i];
+
+		}
+
+		if ( !FStrEq( pszBotName, "" ) )
+		{
+			CTFBot *pBot = ToTFBot( UTIL_PlayerByName( pszBotName ) );
+			if ( pBot )
+			{
+				if ( bMoveToSpectate )
+					pBot->ChangeTeam( TEAM_SPECTATOR, false, true );
+				else
+					engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBot->GetUserID() ) );
+
+				if ( pBot->HasAttribute( CTFBot::AttributeType::QUOTAMANAGED ) )
+					TheTFBots().OnForceKickedBots( 1 );
+			}
 		}
 		else
 		{
-			CBasePlayer *pBot = UTIL_PlayerByName( arg );
-			if ( pBot && pBot->IsFakeClient() )
+			if ( iTeamNum == TEAM_UNASSIGNED )
 			{
-				engine->ServerCommand( UTIL_VarArgs( "kickid %d\n", pBot->GetUserID() ) );
-				TheTFBots().OnForceKickedBots( 1 );
-			}
-			else if ( IsTeamName( arg ) )
-			{
-				TFBotDestroyer func;
-				if ( !Q_stricmp( arg, "red" ) )
-					func = TFBotDestroyer( TF_TEAM_RED );
-				else if ( !Q_stricmp( arg, "blue" ) )
-					func = TFBotDestroyer( TF_TEAM_BLUE );
-
-				TheNextBots().ForEachCombatCharacter( func );
+				Msg( "No bot or team with that name\n" );
 			}
 			else
 			{
-				Msg( "No bot or team with that name\n" );
+				TFBotDestroyer func( iTeamNum, bMoveToSpectate );
+				TheTFBots().ForEachCombatCharacter( func );
 			}
 		}
 	}
