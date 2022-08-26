@@ -149,7 +149,7 @@ class CountClassMembers
 {
 public:
 	CountClassMembers( CTFBot *bot, int teamNum )
-		: m_pBot( bot ), m_iTeam( teamNum )
+		: m_pBot( bot ), m_iTeam( teamNum ), m_iTotal( 0 )
 	{
 		Q_memset( &m_aClassCounts, 0, sizeof( m_aClassCounts ) );
 	}
@@ -1798,7 +1798,7 @@ void CTFBot::UpdateLookingForIncomingEnemies( bool enemy )
 
 	int iTeam = enemy ? GetTeamNumber() : GetEnemyTeam( this );
 	// really shouldn't happen
-	if ( iTeam < 0 || iTeam > 3 )
+	if ( iTeam < 0 || iTeam >= TF_TEAM_COUNT )
 		iTeam = 0;
 
 	float fRange = 150.0f;
@@ -1810,7 +1810,7 @@ void CTFBot::UpdateLookingForIncomingEnemies( bool enemy )
 	{
 		for ( int i = 0; i < 20; ++i )
 		{
-			const Vector vSpot = areas.Random()->GetRandomPoint();
+			const Vector vSpot = areas.Random()->GetRandomPoint() + Vector( 0, 0, 53.25f );
 			if ( this->IsRangeGreaterThan( vSpot, fRange ) )
 			{
 				if ( GetVisionInterface()->IsLineOfSightClear( vSpot ) )
