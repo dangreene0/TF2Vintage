@@ -506,8 +506,8 @@ void CTFNavMesh::CollectControlPointAreas()
 					Extent captureExtent;
 					captureExtent.Init( pCaptureArea );
 
-					captureExtent.lo -= 35.5f;
-					captureExtent.hi += 35.5f;
+					captureExtent.lo.z -= HalfHumanHeight;
+					captureExtent.hi.z += HalfHumanHeight;
 
 					int iIndex = pPoint->GetPointIndex();
 
@@ -664,6 +664,8 @@ void CTFNavMesh::ComputeIncursionDistances()
 						bFoundRedSpawn = true;
 					else
 						bFoundBluSpawn = true;
+
+					break;
 				}
 			}
 		}
