@@ -333,9 +333,76 @@ bool CTFBotVision::IsIgnored( CBaseEntity *ent ) const
 	CTFPlayer *pPlayer = ToTFPlayer( ent );
 	if ( pPlayer )
 	{
-		if ( pPlayer->m_Shared.InCond( TF_COND_BURNING )
-			 || pPlayer->m_Shared.InCond( TF_COND_STEALTHED_BLINK )
-			 || pPlayer->m_Shared.InCond( TF_COND_BLEEDING ) )
+		switch ( pPlayer->GetPlayerClass()->GetClassIndex() )
+		{
+			case TF_CLASS_MEDIC:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_MEDICS ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_ENGINEER:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_ENGINEERS ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_SNIPER:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SNIPERS ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_SCOUT:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SCOUTS ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_SPY:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SPIES ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_DEMOMAN:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_DEMOMEN ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_SOLDIER:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SOLDIERS ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_HEAVYWEAPONS:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_HEAVIES ) )
+				{
+					return true;
+				}
+				break;
+
+			case TF_CLASS_PYRO:
+				if ( me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_PYROS ) )
+				{
+					return true;
+				}
+				break;
+		}
+
+		if ( pPlayer->m_Shared.InCond( TF_COND_BURNING ) ||
+			 pPlayer->m_Shared.InCond( TF_COND_STEALTHED_BLINK ) ||
+			 pPlayer->m_Shared.InCond( TF_COND_BLEEDING ) ||
+			 pPlayer->m_Shared.InCond( TF_COND_URINE ) )
 		{
 			return false;
 		}
@@ -364,6 +431,11 @@ bool CTFBotVision::IsIgnored( CBaseEntity *ent ) const
 		CBaseObject *pObject = static_cast<CBaseObject *>( ent );
 		if ( pObject->IsPlacing() || pObject->IsBeingCarried() || pObject->HasSapper() )
 			return true;
+
+		if ( pObject->GetType() == OBJ_SENTRYGUN && me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SENTRY_GUNS ) )
+		{
+			return true;
+		}
 	}
 
 	return false;
