@@ -2750,37 +2750,48 @@ float CTFBotPathCost::operator()( CNavArea *area, CNavArea *fromArea, const CNav
 
 	// consistently random pathing with huge cost modifier
 	float fMultiplier = 1.0f;
-	if ( m_iRouteType == DEFAULT_ROUTE )
+	if ( m_iRouteType == DEFAULT_ROUTE && !m_Actor->IsMiniBoss() )
 	{
 		const float rand = m_Actor->TransientlyConsistentRandomValue( 10.0f, 0 );
 		fMultiplier += ( rand + 1.0f ) * 50.0f;
 	}
 
-	const int iOtherTeam = GetEnemyTeam( m_Actor );
-
-	for ( int i=0; i < IBaseObjectAutoList::AutoList().Count(); ++i )
+	if ( m_iRouteType == SAFEST_ROUTE )
 	{
-		CBaseObject *obj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
+		CTFNavArea *tfArea = assert_cast<CTFNavArea *>( area );
+		if ( tfArea->IsInCombat() )
+			fDist *= 4.0f * tfArea->GetCombatIntensity();
 
-		if ( obj->GetType() == OBJ_SENTRYGUN && obj->GetTeamNumber() == iOtherTeam )
+		if ( ( m_Actor->GetTeamNumber() == TF_TEAM_RED && tfArea->HasTFAttributes( TF_NAV_BLUE_SENTRY ) ) ||
+			 ( m_Actor->GetTeamNumber() == TF_TEAM_BLUE && tfArea->HasTFAttributes( TF_NAV_RED_SENTRY ) ) )
 		{
-			obj->UpdateLastKnownArea();
-			if ( area == obj->GetLastKnownArea() )
-			{
-				if ( m_iRouteType == SAFEST_ROUTE )
-					fDist *= 5.0f;
-				else if ( m_Actor->IsPlayerClass( TF_CLASS_SPY ) ) // spies always consider sentryguns to avoid
-					fDist *= 10.0f;
-			}
+			fDist *= 5.0f;
 		}
 	}
 
-	// we need to be sneaky, try to take routes where no players are
 	if ( m_Actor->IsPlayerClass( TF_CLASS_SPY ) )
+	{
+		const int iOtherTeam = GetEnemyTeam( m_Actor );
+
+		for ( int i=0; i < IBaseObjectAutoList::AutoList().Count(); ++i )
+		{
+			CBaseObject *obj = static_cast<CBaseObject *>( IBaseObjectAutoList::AutoList()[i] );
+
+			if ( obj->GetType() == OBJ_SENTRYGUN && obj->GetTeamNumber() == iOtherTeam )
+			{
+				obj->UpdateLastKnownArea();
+				if ( area == obj->GetLastKnownArea() )
+				{
+					fDist *= 10.0f; // spies always consider sentryguns to avoid
+				}
+			}
+		}
+
+		// we need to be sneaky, try to take routes where no players are
 		fDist += ( fDist * 10.0f * area->GetPlayerCount( m_Actor->GetTeamNumber() ) );
+	}
 
 	float fCost = fDist * fMultiplier;
-
 	if ( area->HasAttributes( NAV_MESH_FUNC_COST ) )
 		fCost *= area->ComputeFuncNavCost( m_Actor );
 
