@@ -221,7 +221,7 @@ void CTFBotVision::Update( void )
 		{
 			const CKnownEntity *known = GetKnown( pPlayer );
 
-			if ( known && ( known->IsVisibleRecently() || !pPlayer->m_Shared.InCond( TF_COND_DISGUISING ) ) )
+			if ( !known || !known->IsVisibleRecently() || pPlayer->m_Shared.InCond( TF_COND_DISGUISING ) )
 				me->ForgetSpy( pPlayer );
 		}
 	}
@@ -417,19 +417,29 @@ bool CTFBotVision::IsIgnored( CBaseEntity *ent ) const
 			return false;
 		}
 
-		if ( !pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) ||
-			 pPlayer->m_Shared.InCond( TF_COND_DISGUISING ) )
+		if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISING ) )
 		{
 			return false;
 		}
 
-		return ( pPlayer->m_Shared.GetDisguiseTeam() == me->GetTeamNumber() );
+		if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
+		{
+			return ( pPlayer->m_Shared.GetDisguiseTeam() == me->GetTeamNumber() );
+		}
 	}
 
 	if ( ent->IsBaseObject() )
 	{
 		CBaseObject *pObject = static_cast<CBaseObject *>( ent );
-		if ( pObject->IsPlacing() || pObject->IsBeingCarried() || pObject->HasSapper() )
+		if ( pObject->HasSapper() )
+		{
+			if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
+				return false;
+
+			return true;
+		}
+
+		if ( pObject->IsPlacing() || pObject->IsBeingCarried() )
 			return true;
 
 		if ( pObject->GetType() == OBJ_SENTRYGUN && me->IsBehaviorFlagSet( TF_BOT_IGNORE_ENEMY_SENTRY_GUNS ) )
