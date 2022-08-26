@@ -6921,6 +6921,9 @@ void CTFGameRules::CollectCapturePoints( CBasePlayer *pPlayer, CUtlVector<CTeamC
 		if ( !pMaster->IsInRound( pPoint ) )
 			continue;
 
+		if ( pPlayer && pPlayer->IsBot() && pPoint->ShouldBotsIgnore() )
+			continue;
+
 		if ( ObjectiveResource()->GetOwningTeam( pPoint->GetPointIndex() ) == pPlayer->GetTeamNumber() )
 			continue;
 
@@ -6959,6 +6962,9 @@ void CTFGameRules::CollectDefendPoints( CBasePlayer *pPlayer, CUtlVector<CTeamCo
 	{
 		CTeamControlPoint *pPoint = pMaster->GetControlPoint( i );
 		if ( !pMaster->IsInRound( pPoint ) )
+			continue;
+
+		if ( pPlayer && pPlayer->IsBot() && pPoint->ShouldBotsIgnore() )
 			continue;
 
 		if ( ObjectiveResource()->GetOwningTeam( pPoint->GetPointIndex() ) != pPlayer->GetTeamNumber() )
