@@ -87,7 +87,7 @@ ActionResult<CTFBot> CTFBotSniperLurk::Update( CTFBot *me, float dt )
 		{
 			if ( m_bOpportunistic )
 			{
-				CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
+				CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( TF_WPN_TYPE_PRIMARY );
 				if ( pPrimary != nullptr )
 				{
 					me->Weapon_Switch( pPrimary );
@@ -106,7 +106,7 @@ ActionResult<CTFBot> CTFBotSniperLurk::Update( CTFBot *me, float dt )
 			}
 			else
 			{
-				CBaseCombatWeapon *pSecondary = me->Weapon_GetSlot( 1 );
+				CBaseCombatWeapon *pSecondary = me->Weapon_GetSlot( TF_WPN_TYPE_SECONDARY );
 				if ( pSecondary != nullptr )
 				{
 					me->Weapon_Switch( pSecondary );
@@ -142,37 +142,37 @@ ActionResult<CTFBot> CTFBotSniperLurk::Update( CTFBot *me, float dt )
 	else
 	{
 		m_patienceDuration.Reset();
+	}
 
-		if ( !bWantsToZoom )
+	if ( !bWantsToZoom )
+	{
+		if ( m_recomputePathTimer.IsElapsed() )
 		{
-			if ( m_recomputePathTimer.IsElapsed() )
-			{
-				m_recomputePathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
+			m_recomputePathTimer.Start( RandomFloat( 1.0f, 2.0f ) );
 
-				CTFBotPathCost cost( me, SAFEST_ROUTE );
-				m_PathFollower.Compute( me, m_vecHome, cost );
-			}
+			CTFBotPathCost cost( me, SAFEST_ROUTE );
+			m_PathFollower.Compute( me, m_vecHome, cost );
+		}
 
-			m_PathFollower.Update( me );
+		m_PathFollower.Update( me );
 
-			if ( me->m_Shared.InCond( TF_COND_ZOOMED ) )
+		if ( me->m_Shared.InCond( TF_COND_ZOOMED ) )
+		{
+			me->PressAltFireButton();
+		}
+	}
+	else
+	{
+		CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
+		if ( pPrimary != nullptr )
+		{
+			me->Weapon_Switch( pPrimary );
+
+			CTFWeaponBase *pWeapon = static_cast<CTFWeaponBase *>( pPrimary );
+			if ( !me->m_Shared.InCond( TF_COND_ZOOMED ) && !pWeapon->IsWeapon( TF_WEAPON_COMPOUND_BOW ) )
 			{
 				me->PressAltFireButton();
 			}
-
-			return Action<CTFBot>::Continue();
-		}
-	}
-
-	CBaseCombatWeapon *pPrimary = me->Weapon_GetSlot( 0 );
-	if ( pPrimary != nullptr )
-	{
-		me->Weapon_Switch( pPrimary );
-
-		CTFWeaponBase *pWeapon = static_cast<CTFWeaponBase *>( pPrimary );
-		if ( !me->m_Shared.InCond( TF_COND_ZOOMED ) && !pWeapon->IsWeapon( TF_WEAPON_COMPOUND_BOW ) )
-		{
-			me->PressAltFireButton();
 		}
 	}
 
