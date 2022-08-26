@@ -68,7 +68,7 @@ public:
 
 #define TF_BOT_TYPE		1337
 
-// From tf.fgd
+// From tf.fgd, bot_generator spawn flags
 #define TF_BOT_IGNORE_ENEMY_SCOUTS		0x0001
 #define TF_BOT_IGNORE_ENEMY_SOLDIERS	0x0002
 #define TF_BOT_IGNORE_ENEMY_PYROS		0x0004

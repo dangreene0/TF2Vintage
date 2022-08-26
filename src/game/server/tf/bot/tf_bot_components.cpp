@@ -299,15 +299,32 @@ bool CTFBotVision::IsVisibleEntityNoticed( CBaseEntity *ent ) const
 		}
 	}
 
+	if ( TFGameRules()->IsMannVsMachineMode() )
+	{
+		CTFBot::SuspectedSpyInfo *pSuspectInfo = me->IsSuspectedSpy( pPlayer );
+		if ( !pSuspectInfo || !pSuspectInfo->IsCurrentlySuspected() )
+		{
+			if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pPlayer->m_Shared.GetDisguiseTeam() == me->GetTeamNumber() )
+			{
+				me->ForgetSpy( pPlayer );
+				return false;
+			}
+		}
+	}
+
 	if ( me->IsKnownSpy( pPlayer ) )
 	{
 		return true;
 	}
 
-	if ( pPlayer->IsPlacingSapper() )
+	// No es MvM
+	if ( !TFGameRules()->IsMannVsMachineMode() )
 	{
-		me->RealizeSpy( pPlayer );
-		return true;
+		if ( pPlayer->IsPlacingSapper() )
+		{
+			me->RealizeSpy( pPlayer );
+			return true;
+		}
 	}
 
 	if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pPlayer->m_Shared.GetDisguiseTeam() == me->GetTeamNumber() )
