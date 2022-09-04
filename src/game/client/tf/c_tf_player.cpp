@@ -3667,9 +3667,9 @@ void C_TFPlayer::CreateBoneAttachmentsFromWearables( C_TFRagdoll *pRagdoll, bool
 		if ( pTFWearable->IsViewModelWearable() )
 			continue;
 
-		/*if ( bDisguised && !pTFWearable->m_bDisguiseWearable ||
-			 !bDisguised && pTFWearable->m_bDisguiseWearable )
-			continue;*/
+		if ( bDisguised && !pTFWearable->IsDisguiseWearable() ||
+			 !bDisguised && pTFWearable->IsDisguiseWearable() )
+			continue;
 
 		if ( pTFWearable->GetFlags() & EF_NODRAW )
 			continue;
@@ -3708,7 +3708,7 @@ void C_TFPlayer::CreateBoneAttachmentsFromWearables( C_TFRagdoll *pRagdoll, bool
 		if ( pProp->Initialize( true ) )
 		{
 			pProp->m_nSkin = pTFWearable->GetSkin();
-			pProp->AttachEntityToBone( this, -1, Vector(0,0,0), QAngle(0,0,0) );
+			pProp->AttachEntityToBone( this );
 
 			// We set this when we update the wearables, no need to do it twice.
 			/*if ( pItem && pItem->GetStaticData() )
