@@ -8,6 +8,7 @@
 #include "tf_weapon_sniperrifle.h"
 #include "in_buttons.h"
 
+
 // Client specific.
 #ifdef CLIENT_DLL
 #include "view.h"
@@ -27,6 +28,9 @@
 
 // forward declarations
 void ToolFramework_RecordMaterialParams( IMaterial *pMaterial );
+
+#else
+#include "beam_shared.h"
 #endif
 
 #define TF_WEAPON_SNIPERRIFLE_UNCHARGE_PER_SEC	75.0f
@@ -47,6 +51,7 @@ void ToolFramework_RecordMaterialParams( IMaterial *pMaterial );
 	ConVar tf2v_sniper_crosshair( "tf2v_sniper_crosshair", "1", FCVAR_CLIENTDLL|FCVAR_ARCHIVE, "Shows the crosshair on Sniper Rifles.", true, 0, true, 1 );
 #endif
 ConVar tf2v_allow_sniper_crosshairs( "tf2v_allow_sniper_crosshairs", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Allows clients to enable crosshairs on their sniper rifles.", true, 0, true, 1 );
+ConVar tf2v_use_sniper_beams( "tf2v_use_sniper_beams", "0", FCVAR_NOTIFY | FCVAR_REPLICATED, "Draws a beam on the sniper dot.", true, 0, true, 1 );
 
 
 //=============================================================================
@@ -102,6 +107,7 @@ CTFSniperRifle::CTFSniperRifle()
 // Server specific.
 #ifdef GAME_DLL
 	m_hSniperDot = NULL;
+	m_pBeam = NULL;
 #endif
 }
 
@@ -113,6 +119,7 @@ CTFSniperRifle::~CTFSniperRifle()
 // Server specific.
 #ifdef GAME_DLL
 	DestroySniperDot();
+	DestroySniperBeam();
 #endif
 }
 
@@ -123,6 +130,9 @@ void CTFSniperRifle::Spawn()
 {
 	m_iAltFireHint = HINT_ALTFIRE_SNIPERRIFLE;
 	BaseClass::Spawn();
+#ifdef GAME_DLL
+	m_pBeam = NULL;
+#endif
 
 	ResetTimers();
 }
@@ -135,6 +145,7 @@ void CTFSniperRifle::Precache()
 	BaseClass::Precache();
 	PrecacheModel( SNIPER_DOT_SPRITE_RED );
 	PrecacheModel( SNIPER_DOT_SPRITE_BLUE );
+	PrecacheModel("effects/beam_neutral.vmt");	
 }
 
 //-----------------------------------------------------------------------------
@@ -197,6 +208,7 @@ bool CTFSniperRifle::Holster( CBaseCombatWeapon *pSwitchingTo )
 #ifdef GAME_DLL
 	// Destroy the sniper dot.
 	DestroySniperDot();
+	DestroySniperBeam();
 #endif
 
 	CTFPlayer *pPlayer = ToTFPlayer( GetPlayerOwner() );
@@ -312,6 +324,11 @@ void CTFSniperRifle::ItemPostFrame( void )
 	if ( m_hSniperDot )
 	{
 		UpdateSniperDot();
+	}
+	// Update the sniper beam position if we have one
+	if ( m_pBeam )
+	{
+		UpdateSniperBeam();
 	}
 #endif
 
@@ -451,7 +468,10 @@ void CTFSniperRifle::ZoomIn( void )
 	if (nWeaponModeDot == 0)
 	{
 		// Create the sniper dot.
-		CreateSniperDot();
+		if ( !m_hSniperDot )
+			CreateSniperDot();
+		if ( !m_pBeam )
+			CreateSniperBeam();
 	}
 	pPlayer->ClearExpression();
 #endif
@@ -513,6 +533,7 @@ void CTFSniperRifle::ZoomOut( void )
 #ifdef GAME_DLL
 		// Destroy the sniper dot.
 		DestroySniperDot();
+		DestroySniperBeam();
 #endif
 
 	// if we are thinking about zooming, cancel it
@@ -723,6 +744,135 @@ void CTFSniperRifle::UpdateSniperDot( void )
 		m_hSniperDot->Update( pEntity, trace.endpos, trace.plane.normal );
 	}
 
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Checks if we should be using sniper beams.
+//-----------------------------------------------------------------------------
+bool CTFSniperRifle::UseSniperBeams( void )
+{
+	return tf2v_use_sniper_beams.GetBool();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Used to create the sniper beam.
+//-----------------------------------------------------------------------------
+void CTFSniperRifle::CreateSniperBeam( void )
+{
+// Server specific.
+#ifdef GAME_DLL
+	// If beams are disabled or already exist, do not create one.
+	if ( UseSniperBeams() && !m_pBeam )
+	{
+
+		// Get the owning player (make sure we have one).
+		CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+		if (!pPlayer)
+			return;
+
+		// Create the sniper beam...
+		m_pBeam = CBeam::BeamCreate("effects/beam_neutral.vmt", 1.0f);
+		Vector vBeamColor = GetEnergyWeaponColor(false);
+		m_pBeam->SetColor(vBeamColor[0], vBeamColor[1], vBeamColor[2]);
+
+		m_pBeam->SetNoise(0);
+		m_pBeam->SetEndWidth(0);
+		m_pBeam->SetScrollRate(0);
+		m_pBeam->SetFadeLength(0);
+
+		// ... but do not make it visible yet.
+		m_pBeam->SetWidth(0);
+		m_pBeam->SetBrightness(0);
+
+		// Set our initial beam points.
+		Vector vecStartPos = GetMuzzlePosition();
+		Vector forward;
+		pPlayer->EyeVectors(&forward);
+		Vector vecEndPos = vecStartPos + (forward * MAX_TRACE_LENGTH);
+		m_pBeam->PointsInit(vecEndPos, vecStartPos);
+
+		// Now that we initialized, properly update the parameters of the beam.
+		UpdateSniperBeam();
+		return;
+
+	}
+
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Removes the sniper beam out of use.
+//-----------------------------------------------------------------------------
+void CTFSniperRifle::DestroySniperBeam( void )
+{
+// Server specific.
+#ifdef GAME_DLL
+	// Destroy the sniper beam
+	if ( m_pBeam )
+	{
+		UTIL_Remove( m_pBeam );
+		m_pBeam = NULL;
+	}
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Updates the location of the sniper beam.
+//-----------------------------------------------------------------------------
+void CTFSniperRifle::UpdateSniperBeam( void )
+{
+// Server specific.
+#ifdef GAME_DLL
+	if ( m_pBeam && !UseSniperBeams() )
+	{
+		DestroySniperBeam();
+		return;
+	}
+	else if ( !m_pBeam )
+		return;
+	
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+	if ( !pPlayer )
+		return;
+
+	// Get the start and endpoints.
+	Vector vecStartPos = GetMuzzlePosition();
+	Vector forward;
+	pPlayer->EyeVectors( &forward );
+	Vector vecEndPos = vecStartPos + ( forward * MAX_TRACE_LENGTH );
+
+	trace_t	trace;
+	UTIL_TraceLine(vecStartPos, vecEndPos, ( MASK_SHOT & ~CONTENTS_WINDOW ), GetOwner(), COLLISION_GROUP_NONE, &trace );
+
+	// Update the sniper beam. These are flipped around to taper the start of the beam.
+	m_pBeam->SetEndPos( vecStartPos );
+	m_pBeam->SetStartPos( trace.endpos );
+	m_pBeam->RelinkBeam();
+	
+	// Also update the size and brightness of the beam as the shot gets stronger.
+	float nBeamStrength = ( m_flChargedDamage / TF_WEAPON_SNIPERRIFLE_DAMAGE_MAX );
+	m_pBeam->SetBrightness( (int)(nBeamStrength) * 255 );
+	m_pBeam->SetWidth( nBeamStrength );
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Starting point of the laser beam.
+//-----------------------------------------------------------------------------
+Vector CTFSniperRifle::GetMuzzlePosition( void )
+{
+#ifdef GAME_DLL
+	Vector vecMuzzlePos;
+	CTFPlayer *pOwner = ToTFPlayer( GetPlayerOwner() );
+	if ( pOwner )
+	{
+		Vector vecForward, vecRight, vecUp;
+		AngleVectors( pOwner->GetAbsAngles(), &vecForward, &vecRight, &vecUp );
+		vecMuzzlePos = pOwner->Weapon_ShootPosition();
+		//vecMuzzlePos +=  vecUp + 2;
+	}
+	return vecMuzzlePos;
 #endif
 }
 
@@ -1016,6 +1166,11 @@ void CTFSniperRifle_Classic::ItemPostFrame( void )
 	{
 		UpdateSniperDot();
 	}
+	// Update the sniper beam position if we have one
+	if ( m_pBeam )
+	{
+		UpdateSniperBeam();
+	}
 #endif
 
 	// Start charging when we're zoomed in, and allowed to fire
@@ -1032,8 +1187,10 @@ void CTFSniperRifle_Classic::ItemPostFrame( void )
 	if ( pPlayer->m_nButtons & IN_ATTACK )
 	{
 #ifdef GAME_DLL
-		if (!m_hSniperDot)
+		if ( !m_hSniperDot )
 			CreateSniperDot();
+		if ( !m_pBeam )
+			CreateSniperBeam();
 #endif
 #ifdef CLIENT_DLL
 		if (!m_pLaserSight)
@@ -1085,6 +1242,7 @@ bool CTFSniperRifle_Classic::Holster( CBaseCombatWeapon *pSwitchingTo )
 #ifdef GAME_DLL
 	// Destroy the sniper dot.
 	DestroySniperDot();
+	DestroySniperBeam();
 #endif
 #ifdef CLIENT_DLL
 	// Destroy the laser sight.
@@ -1169,6 +1327,7 @@ void CTFSniperRifle_Classic::Fire(CTFPlayer *pPlayer)
 	// Destroy the sniper dot.
 	// This is implicit; since we just fired we're not charging the rifle.
 	DestroySniperDot();
+	DestroySniperBeam();
 #endif
 #ifdef CLIENT_DLL
 	// Destroy the laser sight as well.

@@ -20,6 +20,7 @@
 
 #ifdef GAME_DLL
 #include "GameEventListener.h"
+#include "beam_shared.h"
 #endif
 
 
@@ -124,9 +125,16 @@ public:
 	void CreateSniperDot(void);
 	void DestroySniperDot(void);
 	void UpdateSniperDot(void);
-
+	
+	bool UseSniperBeams( void );
+	void CreateSniperBeam( void );
+	void DestroySniperBeam( void );
+	void UpdateSniperBeam( void );
+	Vector GetMuzzlePosition( void );
+	
 #ifdef GAME_DLL
 	CHandle<CSniperDot>		m_hSniperDot;
+	CBeam						*m_pBeam;
 #endif
 
 #ifdef CLIENT_DLL
