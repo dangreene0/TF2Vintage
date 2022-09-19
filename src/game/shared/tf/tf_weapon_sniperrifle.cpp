@@ -857,12 +857,13 @@ void CTFSniperRifle::UpdateSniperBeam( void )
 #endif
 }
 
+#ifdef GAME_DLL
 //-----------------------------------------------------------------------------
 // Purpose: Starting point of the laser beam.
 //-----------------------------------------------------------------------------
 Vector CTFSniperRifle::GetMuzzlePosition( void )
 {
-#ifdef GAME_DLL
+
 	Vector vecMuzzlePos;
 	CTFPlayer *pOwner = ToTFPlayer( GetPlayerOwner() );
 	if ( pOwner )
@@ -873,8 +874,9 @@ Vector CTFSniperRifle::GetMuzzlePosition( void )
 		//vecMuzzlePos +=  vecUp + 2;
 	}
 	return vecMuzzlePos;
-#endif
+
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose:

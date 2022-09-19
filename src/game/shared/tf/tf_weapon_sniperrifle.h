@@ -130,9 +130,10 @@ public:
 	void CreateSniperBeam( void );
 	void DestroySniperBeam( void );
 	void UpdateSniperBeam( void );
-	Vector GetMuzzlePosition( void );
 	
 #ifdef GAME_DLL
+	Vector GetMuzzlePosition( void );
+	
 	CHandle<CSniperDot>		m_hSniperDot;
 	CBeam						*m_pBeam;
 #endif
