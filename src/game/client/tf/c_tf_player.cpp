@@ -131,6 +131,72 @@ static void BuildDecapitatedTransform( C_BaseAnimating *pAnimating )
 	}
 }
 
+static void BuildNeckScaleTransformations( CBaseAnimating *pAnimating, CStudioHdr *hdr, Vector *pos, Quaternion q[], const matrix3x4_t &cameraTransform, int boneMask, CBoneBitList &boneComputed, float flScale, int iClass )
+{
+	if ( pAnimating == nullptr )
+		return;
+
+	if ( flScale == 1.0f )
+		return;
+
+	int neckBone = pAnimating->LookupBone( "bip_neck" );
+	if ( neckBone == -1 )
+		return;
+
+	matrix3x4_t &neck = pAnimating->GetBoneForWrite( neckBone );
+
+	Vector spine_position, neck_position, head_position, position, offset;
+	if ( iClass != TF_CLASS_HEAVYWEAPONS )
+	{
+		// Compress the neck into the spine.
+		int iSpine = pAnimating->LookupBone( "bip_spine_3" );
+		if ( iSpine != -1 )
+		{
+			matrix3x4_t &spine = pAnimating->GetBoneForWrite( iSpine );
+			MatrixPosition( spine, spine_position );
+			MatrixPosition( neck, neck_position );
+			position = flScale * ( neck_position - spine_position );
+			MatrixSetTranslation( spine_position + position, neck );
+		}
+	}
+
+	if ( iClass == TF_CLASS_SPY )
+	{
+		int cigBone = pAnimating->LookupBone( "prp_cig" );
+		if ( cigBone != -1 )
+		{
+			matrix3x4_t &ciggy = pAnimating->GetBoneForWrite( cigBone );
+			MatrixScaleByZero( ciggy );
+		}
+	}
+
+	int headBone = pAnimating->LookupBone( "bip_head" );
+	if ( headBone != -1 )
+	{
+		matrix3x4_t &head = pAnimating->GetBoneForWrite( headBone );
+		MatrixPosition( head, head_position );
+		MatrixPosition( neck, neck_position );
+		offset = head_position - neck_position;
+		MatrixSetTranslation( neck_position, head );
+	}
+
+	int helmetBone = pAnimating->LookupBone( "prp_helmet" );
+	if ( helmetBone != -1 )
+	{
+		matrix3x4_t &helmet = pAnimating->GetBoneForWrite( helmetBone );
+		MatrixPosition( helmet, position );
+		MatrixSetTranslation( position - offset, helmet );
+	}
+
+	int hatBone = pAnimating->LookupBone( "prp_hat" );
+	if ( hatBone != -1 )
+	{
+		matrix3x4_t &hat = pAnimating->GetBoneForWrite( hatBone );
+		MatrixPosition( hat, position );
+		MatrixSetTranslation( position - offset, hat );
+	}
+}
+
 #define BDAY_HAT_MODEL		"models/effects/bday_hat.mdl"
 
 IMaterial *g_pHeadLabelMaterial[4] ={NULL, NULL};
@@ -279,6 +345,7 @@ public:
 
 	bool IsRagdollVisible();
 	bool IsDecapitation();
+	bool IsHeadSmash();
 	float GetBurnStartTime() { return m_flBurnEffectStartTime; }
 	float GetBurnEndTime() { return m_flBurnEffectEndTime; }
 
@@ -602,6 +669,12 @@ void C_TFRagdoll::BuildTransformations( CStudioHdr *pStudioHdr, Vector *pos, Qua
 	{
 		m_BoneAccessor.SetWritableBones( BONE_USED_BY_ANYTHING );
 		BuildDecapitatedTransform( this );
+	}
+
+	if ( IsHeadSmash() && !m_bHeadTransform )
+	{
+		m_BoneAccessor.SetWritableBones( BONE_USED_BY_ANYTHING );
+		BuildNeckScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, 0.5f, m_iClass );
 	}
 }
 
@@ -1193,6 +1266,14 @@ bool C_TFRagdoll::IsDecapitation()
 		return true;
 	}
 	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool C_TFRagdoll::IsHeadSmash()
+{
+	return ( cl_ragdoll_fade_time.GetFloat() > 5.0f && m_iDamageCustom == TF_DMG_CUSTOM_TAUNTATK_ENGINEER_GUITAR_SMASH );
 }
 
 extern ConVar g_ragdoll_lvfadespeed;
