@@ -820,6 +820,8 @@ private:
 	bool				m_bFlipViewModel;
 
 	CNetworkVar( float, m_flHeadScale );
+	CNetworkVar( float, m_flTorsoScale );
+	CNetworkVar( float, m_flHandScale );
 
 	float				m_flTauntAttackTime;
 	int					m_iTauntAttack;

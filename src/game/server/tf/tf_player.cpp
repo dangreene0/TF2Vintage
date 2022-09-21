@@ -361,6 +361,8 @@ public:
 	CNetworkVar( bool, m_bIceRagdoll );
 	CNetworkVar( bool, m_bCritOnHardHit );
 	CNetworkVar( float, m_flHeadScale );
+	CNetworkVar( float, m_flTorsoScale );
+	CNetworkVar( float, m_flHandScale );
 
 	CUtlVector< CHandle<CEconWearable> > m_hRagdollWearables;
 };
@@ -389,6 +391,8 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CTFRagdoll, DT_TFRagdoll )
 	SendPropBool( SENDINFO( m_bIceRagdoll ) ),
 	SendPropBool( SENDINFO( m_bCritOnHardHit ) ),
 	SendPropFloat( SENDINFO( m_flHeadScale ) ),
+	SendPropFloat( SENDINFO( m_flTorsoScale ) ),
+	SendPropFloat( SENDINFO( m_flHandScale ) ),
 END_SEND_TABLE()
 
 // -------------------------------------------------------------------------------- //
@@ -10191,6 +10195,8 @@ void CTFPlayer::CreateRagdollEntity( bool bGibbed, bool bBurning, bool bElectroc
 		pRagdoll->m_iTeam = GetTeamNumber();
 		pRagdoll->m_iClass = GetPlayerClass()->GetClassIndex();
 		pRagdoll->m_flHeadScale = m_flHeadScale;
+		pRagdoll->m_flTorsoScale = m_flTorsoScale;
+		pRagdoll->m_flHandScale = m_flHandScale;
 	}
 
 	// Turn off the player.

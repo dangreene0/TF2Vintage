@@ -429,6 +429,8 @@ public:
 	bool			m_bWaterExitEffectActive;
 
 	float			m_flHeadScale;
+	float			m_flTorsoScale;
+	float			m_flHandScale;
 
 	CMaterialReference	m_InvulnerableMaterial;
 
