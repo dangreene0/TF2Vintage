@@ -618,10 +618,6 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 		if ( !TFPlayerResource() )
 			return;
 
-		// On map change *all* connected players are reconnected, prevent rate limits here
-		if ( (m_flLastPlayerJoinTime - gpGlobals->curtime) > 4.0f )
-			return;
-
 		const int maxPlayers = gpGlobals->maxClients;
 		int curPlayers = 0;
 
@@ -629,6 +625,13 @@ void CTFDiscordPresence::FireGameEvent( IGameEvent *event )
 		{
 			if ( TFPlayerResource()->IsConnected( i ) )
 				curPlayers++;
+		}
+
+		// On map change *all* connected players are reconnected, prevent rate limits here
+		if ( ( gpGlobals->curtime - m_flLastPlayerJoinTime ) < 1.0f )
+		{
+			m_nPlayerCount = curPlayers;
+			return;
 		}
 
 		m_Activity.GetParty().GetSize().SetCurrentSize( curPlayers );
@@ -703,6 +706,7 @@ bool CTFDiscordPresence::InitPresence( void )
 		V_sprintf_safe( m_szSteamID, "%llu", steamID.ConvertToUint64() );
 
 	m_Activity.GetSecrets().SetMatch( GetMatchSecret() );
+	m_Activity.GetParty().SetId( m_szSteamID );
 	g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
 
 	return true;
@@ -907,6 +911,19 @@ void CTFDiscordPresence::ResetPresence( void )
 
 	if( g_pDiscord )
 	{
+		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
+	}
+}
+
+void CTFDiscordPresence::UpdatePresence( void )
+{
+	if ( m_flLastPlayerJoinTime != -1.0f && ( gpGlobals->curtime - m_flLastPlayerJoinTime ) > 1.0f )
+	{
+		m_flLastPlayerJoinTime = -1.0f;
+
+		m_Activity.GetParty().GetSize().SetCurrentSize( m_nPlayerCount );
+		m_Activity.GetParty().GetSize().SetMaxSize( gpGlobals->maxClients );
+
 		g_pDiscord->ActivityManager().UpdateActivity( m_Activity, &OnActivityUpdate );
 	}
 }

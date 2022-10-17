@@ -67,6 +67,7 @@ public:
 
 	bool				InitPresence( void ) OVERRIDE;
 	void				ResetPresence( void ) OVERRIDE;
+	void				UpdatePresence( void ) OVERRIDE;
 	char const*			GetMatchSecret( void ) const OVERRIDE;
 	char const*			GetJoinSecret( void ) const OVERRIDE;
 	char const*			GetSpectateSecret( void ) const OVERRIDE;
@@ -84,6 +85,7 @@ private:
 
 	long m_iCreationTimestamp;
 	float m_flLastPlayerJoinTime;
+	int m_nPlayerCount;
 
 	discord::Activity m_Activity;
 	discord::User m_CurrentUser;
