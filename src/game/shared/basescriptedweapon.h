@@ -28,8 +28,15 @@ class CScriptedWeaponScope : public CScriptScope
 	typedef CUtlVectorFixed<ScriptVariant_t, 14> CScriptArgArray;
 	typedef CUtlHashtable<char const *, CScriptFuncHolder> CScriptFuncMap;
 public:
-	CScriptedWeaponScope();
-	~CScriptedWeaponScope();
+	~CScriptedWeaponScope() {
+		FOR_EACH_VEC_BACK( m_vecPushedArgs, i )
+		{
+			m_vecPushedArgs[i].Free();
+		}
+		m_vecPushedArgs.Purge();
+
+		Term();
+	}
 
 	IScriptVM *GetVM() {
 		return CDefScriptScopeBase::GetVM();
@@ -89,35 +96,6 @@ public:
 private:
 	CScriptArgArray m_vecPushedArgs;
 	CScriptFuncMap m_FuncMap;
-};
-
-// Pulled from scripts identically to parsing a weapon file
-struct ScriptWeaponInfo_t : public FileWeaponInfo_t
-{
-	DECLARE_STRUCT_SCRIPTDESC();
-	ScriptWeaponInfo_t()
-	{
-		Q_strncpy( szPrintName, WEAPON_PRINTNAME_MISSING, MAX_WEAPON_STRING );
-		iDefaultClip1 = iMaxClip1 = -1;
-		iDefaultClip2 = iMaxClip2 = -1;
-		iFlags = ITEM_FLAG_LIMITINWORLD;
-		bShowUsageHint = false;
-		bAutoSwitchTo = true;
-		bAutoSwitchFrom = true;
-		m_bBuiltRightHanded = true;
-		m_bAllowFlipping = true;
-		m_bMeleeWeapon = false;
-		Q_strncpy( szAmmo1, "", sizeof( szAmmo1 ) );
-		Q_strncpy( szAmmo2, "", sizeof( szAmmo2 ) );
-		iRumbleEffect = -1;
-	}
-};
-struct ScriptShootSound_t
-{
-	DECLARE_STRUCT_SCRIPTDESC();
-
-	ScriptShootSound_t() { V_memset( aShootSounds, 0, sizeof( aShootSounds ) ); }
-	char aShootSounds[NUM_SHOOT_SOUND_TYPES][MAX_WEAPON_STRING];
 };
 
 
