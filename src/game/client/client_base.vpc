@@ -527,6 +527,12 @@ $Project
 		$File	"$SRCDIR\game\shared\vscript_shared.cpp"
 		$File   "vscript_client.cpp"
 		$File   "vscript_client.nut"
+		$File	"$SRCDIR\game\shared\vscript_consts_shared.cpp"
+		$File	"$SRCDIR\game\shared\vscript_consts_weapons.cpp"
+		$File	"$SRCDIR\game\shared\vscript_funcs_shared.cpp"
+		$File	"$SRCDIR\game\shared\vscript_singletons.cpp"
+		$File	"$SRCDIR\game\shared\logic_script_client.cpp"
+		$File	"$SRCDIR\game\shared\matchers.cpp"
 
 
 		$Folder	"Sixense"
