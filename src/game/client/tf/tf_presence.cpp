@@ -579,10 +579,8 @@ static CTFDiscordPresence s_drp;
 #define DISCORD_COLOR Color( 114, 137, 218, 255 )
 
 
-discord::Activity CTFDiscordPresence::m_Activity{};
-discord::User CTFDiscordPresence::m_CurrentUser{};
-
 CTFDiscordPresence::CTFDiscordPresence()
+	: m_szHostName(""), m_szServerInfo(""), m_szSteamID("")
 {
 	VCRHook_Time( &m_iCreationTimestamp );
 	m_flLastPlayerJoinTime = 0;
@@ -744,10 +742,12 @@ void CTFDiscordPresence::OnReady()
 		return;
 	}
 
-	g_pDiscord->UserManager().GetCurrentUser( &m_CurrentUser );
+	discord::User user;
+	g_pDiscord->UserManager().GetCurrentUser( &user );
+	static_cast<CTFDiscordPresence *>( rpc )->SetCurrentUser( user );
 
 	ConDColorMsg( DISCORD_COLOR, "[DRP] Ready!\n" );
-	ConDColorMsg( DISCORD_COLOR, "[DRP] User %s#%s - %lld\n", m_CurrentUser.GetUsername(), m_CurrentUser.GetDiscriminator(), m_CurrentUser.GetId() );
+	ConDColorMsg( DISCORD_COLOR, "[DRP] User %s#%s - %lld\n", user.GetUsername(), user.GetDiscriminator(), user.GetId() );
 
 	rpc->ResetPresence();
 }
