@@ -15,8 +15,6 @@
 #ifdef CLIENT_DLL
 #include "hud_macros.h"
 #include "tier0/icommandline.h"
-#include "tf_mainmenu.h"
-#include "panels/tf_mainmenupanel.h"
 #include "steam/isteamutils.h"
 #include "steam/isteamuserstats.h"
 #include "steam/isteamutils.h"
@@ -32,9 +30,6 @@ CTFInventory *GetTFInventory()
 	return &g_TFInventory;
 }
 
-#ifdef CLIENT_DLL
-DECLARE_MESSAGE( g_TFInventory, ResetInventory )
-#endif
 CTFInventory::CTFInventory()
 {
 #ifdef CLIENT_DLL
@@ -60,10 +55,7 @@ CTFInventory::~CTFInventory()
 
 bool CTFInventory::Init( void )
 {
-#ifdef CLIENT_DLL
-	HOOK_HUD_MESSAGE( g_TFInventory, ResetInventory )
-#endif
-
+	ListenForGameEvent( "inventory_updated" );
 	return true;
 }
 
@@ -87,26 +79,26 @@ void CTFInventory::LevelInitPreEntity( void )
 	GetItemSchema()->Precache();
 }
 
-void CTFInventory::ClientConnected( edict_t *pClient )
+void CTFInventory::FireGameEvent( IGameEvent *event )
 {
-#if defined( GAME_DLL )
-	if( engine->IsDedicatedServer() )
+	if ( FStrEq( event->GetName(), "inventory_updated" ) )
 	{
-		if ( !pClient || pClient->IsFree() )
-			return;
-		// Anoyingly, they are not networked at this point and not a player
-		CSteamID const *playerID = engine->GetClientSteamID( pClient );
-		if( playerID == NULL )
-			return;
+		for ( int iClass = 0; iClass < TF_CLASS_COUNT_ALL; iClass++ )
+		{
+			for ( int iSlot = 0; iSlot < TF_LOADOUT_SLOT_COUNT; iSlot++ )
+			{
+				FOR_EACH_VEC( m_Items[iClass][iSlot], iItem )
+				{
+					delete m_Items[iClass][iSlot][iItem];
+					m_Items[iClass][iSlot][iItem] = NULL;
+				}
 
-		
+				m_Items[iClass][iSlot].RemoveMultipleFromTail( m_Items[iClass][iSlot].Count() - 1 );
+			}
+		}
+
+		LoadInventory();
 	}
-#endif
-}
-
-void CTFInventory::ClientDisconnected( edict_t *pClient )
-{
-	// Reset is handled by CEconItemSchema
 }
 
 int CTFInventory::GetNumPresets(int iClass, int iSlot)
@@ -399,12 +391,6 @@ void CTFInventory::ChangeLoadoutSlot(int iClass, int iLoadoutSlot)
 	KeyValues* pClass = m_pInventory->FindKey(g_aPlayerClassNames_NonLocalized[iClass]);
 	pClass->SetInt( "activeslot", iLoadoutSlot );
 	SaveInventory();
-}
-
-
-void CTFInventory::MsgFunc_ResetInventory( bf_read &msg )
-{
-	MAINMENU_ROOT->GetMenuPanel( LOADOUT_MENU )->DefaultLayout();
 }
 #endif
 

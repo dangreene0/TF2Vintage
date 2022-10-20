@@ -67,11 +67,15 @@ public:
 
 	bool				InitPresence( void ) OVERRIDE;
 	void				ResetPresence( void ) OVERRIDE;
+	void				UpdatePresence( void ) OVERRIDE;
 	char const*			GetMatchSecret( void ) const OVERRIDE;
 	char const*			GetJoinSecret( void ) const OVERRIDE;
 	char const*			GetSpectateSecret( void ) const OVERRIDE;
 
 private:
+	discord::User const&GetCurrentUser( void ) const { return m_CurrentUser; }
+	void				SetCurrentUser( discord::User const &user ) { m_CurrentUser = user; }
+
 	void				UpdatePresence( bool bIsDead );
 	unsigned char const* GetEncryptionKey( void ) const OVERRIDE { return (unsigned char *)"XwRJxjCc"; }
 
@@ -81,9 +85,10 @@ private:
 
 	long m_iCreationTimestamp;
 	float m_flLastPlayerJoinTime;
+	int m_nPlayerCount;
 
-	static discord::Activity m_Activity;
-	static discord::User m_CurrentUser;
+	discord::Activity m_Activity;
+	discord::User m_CurrentUser;
 
 	static void OnReady();
 	static void OnJoinedGame( char const *joinSecret );

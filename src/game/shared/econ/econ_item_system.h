@@ -53,9 +53,7 @@ public:
 	CEconAttributeDefinition *GetAttributeDefinitionByClass( const char* name );
 	ISchemaAttributeType *GetAttributeType( const char *type ) const;
 
-#if defined( CLIENT_DLL )
-	void MsgFunc_ResetInventory( bf_read &msg );
-#endif
+	bool RegisterScriptFunctions( void );
 
 	KeyValues *GetSchemaKeyValues( void ) const { return m_pSchema; }
 	uint GetResetCount( void ) const { return m_unSchemaResetCount; }
@@ -72,6 +70,7 @@ protected:
 private:
 	KeyValues *m_pSchema;
 	bool m_bInited;
+	bool m_bScriptInit;
 	uint m_unSchemaResetCount;
 
 	void ParseSchema( KeyValues *pKVData );
@@ -86,7 +85,6 @@ private:
 };
 
 CEconItemSchema *GetItemSchema();
-
 
 template<class T>
 class CSchemaFieldHandle

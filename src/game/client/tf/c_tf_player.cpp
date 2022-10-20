@@ -131,6 +131,324 @@ static void BuildDecapitatedTransform( C_BaseAnimating *pAnimating )
 	}
 }
 
+static void BuildBigHeadTransformations( CBaseAnimating *pAnimating, CStudioHdr *pStudio, Vector *pos, Quaternion *q, matrix3x4_t const &cameraTransformation, int boneMask, CBoneBitList &boneComputed, float flScale )
+{
+	if ( pAnimating == nullptr )
+		return;
+
+	if ( flScale == 1.0f )
+		return;
+
+	int headBone = pAnimating->LookupBone( "bip_head" );
+	if ( headBone == -1 )
+		return;
+
+	matrix3x4_t &head = pAnimating->GetBoneForWrite( headBone );
+
+	Vector oldTransform, newTransform;
+	MatrixGetColumn( head, 3, &oldTransform );
+	MatrixScaleBy( flScale, head );
+
+	int helmetBone = pAnimating->LookupBone( "prp_helmet" );
+	if ( helmetBone != -1 )
+	{
+		matrix3x4_t &helmet = pAnimating->GetBoneForWrite( helmetBone );
+		MatrixScaleBy( flScale, helmet );
+
+		MatrixGetColumn( helmet, 3, &newTransform );
+		Vector transform = ( ( newTransform - oldTransform ) * flScale ) + oldTransform;
+		MatrixSetColumn( transform, 3, helmet );
+	}
+
+	int hatBone = pAnimating->LookupBone( "prp_hat" );
+	if ( hatBone != -1 )
+	{
+		matrix3x4_t &hat = pAnimating->GetBoneForWrite( hatBone );
+		MatrixScaleBy( flScale, hat );
+
+		MatrixGetColumn( hat, 3, &newTransform );
+		Vector transform = ( ( newTransform - oldTransform ) * flScale ) + oldTransform;
+		MatrixSetColumn( transform, 3, hat );
+	}
+}
+
+static void BuildNeckScaleTransformations( CBaseAnimating *pAnimating, CStudioHdr *hdr, Vector *pos, Quaternion q[], const matrix3x4_t &cameraTransform, int boneMask, CBoneBitList &boneComputed, float flScale, int iClass )
+{
+	if ( pAnimating == nullptr )
+		return;
+
+	if ( flScale == 1.0f )
+		return;
+
+	int neckBone = pAnimating->LookupBone( "bip_neck" );
+	if ( neckBone == -1 )
+		return;
+
+	matrix3x4_t &neck = pAnimating->GetBoneForWrite( neckBone );
+
+	Vector spine_position, neck_position, head_position, position, offset;
+	if ( iClass != TF_CLASS_HEAVYWEAPONS )
+	{
+		// Compress the neck into the spine.
+		int iSpine = pAnimating->LookupBone( "bip_spine_3" );
+		if ( iSpine != -1 )
+		{
+			matrix3x4_t &spine = pAnimating->GetBoneForWrite( iSpine );
+			MatrixPosition( spine, spine_position );
+			MatrixPosition( neck, neck_position );
+			position = flScale * ( neck_position - spine_position );
+			MatrixSetTranslation( spine_position + position, neck );
+		}
+	}
+
+	if ( iClass == TF_CLASS_SPY )
+	{
+		int cigBone = pAnimating->LookupBone( "prp_cig" );
+		if ( cigBone != -1 )
+		{
+			matrix3x4_t &ciggy = pAnimating->GetBoneForWrite( cigBone );
+			MatrixScaleByZero( ciggy );
+		}
+	}
+
+	int headBone = pAnimating->LookupBone( "bip_head" );
+	if ( headBone != -1 )
+	{
+		matrix3x4_t &head = pAnimating->GetBoneForWrite( headBone );
+		MatrixPosition( head, head_position );
+		MatrixPosition( neck, neck_position );
+		offset = head_position - neck_position;
+		MatrixSetTranslation( neck_position, head );
+	}
+
+	int helmetBone = pAnimating->LookupBone( "prp_helmet" );
+	if ( helmetBone != -1 )
+	{
+		matrix3x4_t &helmet = pAnimating->GetBoneForWrite( helmetBone );
+		MatrixPosition( helmet, position );
+		MatrixSetTranslation( position - offset, helmet );
+	}
+
+	int hatBone = pAnimating->LookupBone( "prp_hat" );
+	if ( hatBone != -1 )
+	{
+		matrix3x4_t &hat = pAnimating->GetBoneForWrite( hatBone );
+		MatrixPosition( hat, position );
+		MatrixSetTranslation( position - offset, hat );
+	}
+}
+
+static void AppendChildren_R( CUtlVector< const mstudiobone_t * > *pChildBones, const studiohdr_t *pHdr, int nBone )
+{
+	if ( !pHdr )
+		return;
+
+	for ( int i = nBone + 1; i < pHdr->numbones; ++i )
+	{
+		const mstudiobone_t *pBone = pHdr->pBone( i );
+		if ( pBone->parent == nBone )
+		{
+			pChildBones->AddToTail( pBone );
+			AppendChildren_R( pChildBones, pHdr, i );
+		}
+	}
+}
+
+static void BuildTorsoScaleTransformations( CBaseAnimating *pAnimating, CStudioHdr *pStudio, Vector *pos, Quaternion q[], const matrix3x4_t &cameraTransform, int boneMask, CBoneBitList &boneComputed, float flScale, int iClass )
+{
+	if ( pAnimating == nullptr )
+		return;
+
+	if ( flScale == 1.0f )
+		return;
+
+	int iPelvis = pAnimating->LookupBone( "bip_pelvis" );
+	if ( iPelvis == -1 )
+		return;
+
+	const studiohdr_t *pHdr = modelinfo->GetStudiomodel( pAnimating->GetModel() );
+	Vector oldTransform, newTransform, prevBoneTransform;
+
+	int spine0Bone = pAnimating->LookupBone( "bip_spine_0" );
+	if ( spine0Bone != -1 )
+	{
+		matrix3x4_t const &pelvis = pAnimating->GetBone( iPelvis );
+		MatrixPosition( pelvis, prevBoneTransform );
+
+		matrix3x4_t &spine0 = pAnimating->GetBoneForWrite( spine0Bone );
+		MatrixPosition( spine0, oldTransform );
+		newTransform = prevBoneTransform + flScale * ( oldTransform - prevBoneTransform );
+		MatrixSetTranslation( newTransform, spine0 );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, spine0Bone );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			Vector childTransform;
+			MatrixPosition( childBone, childTransform );
+			MatrixSetTranslation( childTransform + ( oldTransform - newTransform ), childBone );
+		}
+	}
+
+	int spine1Bone = pAnimating->LookupBone( "bip_spine_1" );
+	if ( spine1Bone != -1 )
+	{
+		matrix3x4_t const &pelvis = pAnimating->GetBone( spine0Bone );
+		MatrixPosition( pelvis, prevBoneTransform );
+
+		matrix3x4_t &spine0 = pAnimating->GetBoneForWrite( spine0Bone );
+		MatrixPosition( spine0, oldTransform );
+		newTransform = prevBoneTransform + flScale * ( oldTransform - prevBoneTransform );
+		MatrixSetTranslation( newTransform, spine0 );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, spine0Bone );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			Vector childTransform;
+			MatrixPosition( childBone, childTransform );
+			MatrixSetTranslation( childTransform + ( oldTransform - newTransform ), childBone );
+		}
+	}
+
+	int spine2Bone = pAnimating->LookupBone( "bip_spine_2" );
+	if ( spine2Bone != -1 )
+	{
+		matrix3x4_t const &pelvis = pAnimating->GetBone( spine1Bone );
+		MatrixPosition( pelvis, prevBoneTransform );
+
+		matrix3x4_t &spine0 = pAnimating->GetBoneForWrite( spine0Bone );
+		MatrixPosition( spine0, oldTransform );
+		newTransform = prevBoneTransform + flScale * ( oldTransform - prevBoneTransform );
+		MatrixSetTranslation( newTransform, spine0 );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, spine0Bone );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			Vector childTransform;
+			MatrixPosition( childBone, childTransform );
+			MatrixSetTranslation( childTransform + ( oldTransform - newTransform ), childBone );
+		}
+	}
+
+	int spine3Bone = pAnimating->LookupBone( "bip_spine_3" );
+	if ( spine3Bone != -1 )
+	{
+		matrix3x4_t const &pelvis = pAnimating->GetBone( spine2Bone );
+		MatrixPosition( pelvis, prevBoneTransform );
+
+		matrix3x4_t &spine0 = pAnimating->GetBoneForWrite( spine0Bone );
+		MatrixPosition( spine0, oldTransform );
+		newTransform = prevBoneTransform + flScale * ( oldTransform - prevBoneTransform );
+		MatrixSetTranslation( newTransform, spine0 );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, spine0Bone );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			Vector childTransform;
+			MatrixPosition( childBone, childTransform );
+			MatrixSetTranslation( childTransform + ( oldTransform - newTransform ), childBone );
+		}
+	}
+
+	int neckBone = pAnimating->LookupBone( "bip_neck" );
+	if ( neckBone != -1 )
+	{
+		matrix3x4_t const &pelvis = pAnimating->GetBone( spine3Bone );
+		MatrixPosition( pelvis, prevBoneTransform );
+
+		matrix3x4_t &spine0 = pAnimating->GetBoneForWrite( spine0Bone );
+		MatrixPosition( spine0, oldTransform );
+		newTransform = prevBoneTransform + flScale * ( oldTransform - prevBoneTransform );
+		MatrixSetTranslation( newTransform, spine0 );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, spine0Bone );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			Vector childTransform;
+			MatrixPosition( childBone, childTransform );
+			MatrixSetTranslation( childTransform + ( oldTransform - newTransform ), childBone );
+		}
+	}
+}
+
+static void BuildHandScaleTransformations( CBaseAnimating *pAnimating, CStudioHdr *pStudio, Vector *pos, Quaternion *q, matrix3x4_t const &cameraTransformation, int boneMask, CBoneBitList &boneComputed, float flScale )
+{
+	if ( pAnimating == nullptr )
+		return;
+
+	if ( flScale == 1.0f )
+		return;
+
+	const studiohdr_t *pHdr = modelinfo->GetStudiomodel( pAnimating->GetModel() );
+
+	int iHandL = pAnimating->LookupBone( "bip_hand_L" );
+	if ( iHandL != -1 )
+	{
+		matrix3x4_t &handL = pAnimating->GetBoneForWrite( iHandL );
+		MatrixScaleBy( flScale, handL );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, iHandL );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			MatrixScaleBy( flScale, childBone );
+		}
+	}
+
+	int iHandR = pAnimating->LookupBone( "bip_hand_R" );
+	if ( iHandR != -1 )
+	{
+		matrix3x4_t &handR = pAnimating->GetBoneForWrite( iHandR );
+		MatrixScaleBy( flScale, handR );
+
+		CUtlVector<const mstudiobone_t *> childBones;
+		AppendChildren_R( &childBones, pHdr, iHandR );
+		FOR_EACH_VEC( childBones, i )
+		{
+			int iChildBone = pAnimating->LookupBone( childBones[i]->pszName() );
+			if ( iChildBone == -1 )
+				continue;
+
+			matrix3x4_t &childBone = pAnimating->GetBoneForWrite( iChildBone );
+			MatrixScaleBy( flScale, childBone );
+		}
+	}
+}
+
 #define BDAY_HAT_MODEL		"models/effects/bday_hat.mdl"
 
 IMaterial *g_pHeadLabelMaterial[4] ={NULL, NULL};
@@ -279,6 +597,7 @@ public:
 
 	bool IsRagdollVisible();
 	bool IsDecapitation();
+	bool IsHeadSmash();
 	float GetBurnStartTime() { return m_flBurnEffectStartTime; }
 	float GetBurnEndTime() { return m_flBurnEffectEndTime; }
 
@@ -340,6 +659,8 @@ protected:
 	bool  m_bIceRagdoll;
 	bool  m_bCritOnHardHit;
 	float m_flHeadScale;
+	float m_flTorsoScale;
+	float m_flHandScale;
 	float m_flBurnEffectStartTime;	// start time of burning, or 0 if not burning
 	float m_flBurnEffectEndTime;	// start time of burning, or 0 if not burning
 	float m_flDeathDelay;
@@ -380,6 +701,8 @@ IMPLEMENT_CLIENTCLASS_DT_NOBASE( C_TFRagdoll, DT_TFRagdoll, CTFRagdoll )
 	RecvPropBool( RECVINFO( m_bIceRagdoll ) ),
 	RecvPropBool( RECVINFO( m_bCritOnHardHit ) ),
 	RecvPropFloat( RECVINFO( m_flHeadScale ) ),
+	RecvPropFloat( RECVINFO( m_flTorsoScale ) ),
+	RecvPropFloat( RECVINFO( m_flHandScale ) ),
 END_RECV_TABLE()
 
 //-----------------------------------------------------------------------------
@@ -406,6 +729,8 @@ C_TFRagdoll::C_TFRagdoll()
 	m_bStartedDying = 0;
 	m_flDeathDelay = 0.3f;
 	m_flHeadScale = 1.0f;
+	m_flTorsoScale = 1.0f;
+	m_flHandScale = 1.0f;
 
 	UseClientSideAnimation();
 }
@@ -588,20 +913,21 @@ void C_TFRagdoll::BuildTransformations( CStudioHdr *pStudioHdr, Vector *pos, Qua
 {
 	BaseClass::BuildTransformations( pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed );
 
-	float flHeadScale = 1.0f;
-	if ( m_iPlayerIndex != TF_PLAYER_INDEX_NONE )
-	{
-		C_TFPlayer *pPlayer = dynamic_cast<C_TFPlayer *>( cl_entitylist->GetBaseEntity( m_iPlayerIndex ) );
-		if ( pPlayer )
-			flHeadScale = pPlayer->m_flHeadScale;
-	}
-
-	BuildBigHeadTransformation( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, flHeadScale );
+	m_BoneAccessor.SetWritableBones( BONE_USED_BY_ANYTHING );
+	BuildBigHeadTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flHeadScale );
+	BuildTorsoScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flTorsoScale, m_iClass );
+	BuildHandScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flHandScale );
 
 	if ( IsDecapitation() && !m_bHeadTransform )
 	{
 		m_BoneAccessor.SetWritableBones( BONE_USED_BY_ANYTHING );
 		BuildDecapitatedTransform( this );
+	}
+
+	if ( IsHeadSmash() && !m_bHeadTransform )
+	{
+		m_BoneAccessor.SetWritableBones( BONE_USED_BY_ANYTHING );
+		BuildNeckScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, 0.5f, m_iClass );
 	}
 }
 
@@ -1193,6 +1519,14 @@ bool C_TFRagdoll::IsDecapitation()
 		return true;
 	}
 	return false;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool C_TFRagdoll::IsHeadSmash()
+{
+	return ( cl_ragdoll_fade_time.GetFloat() > 5.0f && m_iDamageCustom == TF_DMG_CUSTOM_TAUNTATK_ENGINEER_GUITAR_SMASH );
 }
 
 extern ConVar g_ragdoll_lvfadespeed;
@@ -2462,6 +2796,8 @@ IMPLEMENT_CLIENTCLASS_DT( C_TFPlayer, DT_TFPlayer, CTFPlayer )
 	RecvPropDataTable( "tfnonlocaldata", 0, 0, &REFERENCE_RECV_TABLE( DT_TFNonLocalPlayerExclusive ) ),
 
 	RecvPropFloat( RECVINFO( m_flHeadScale ) ),
+	RecvPropFloat( RECVINFO( m_flTorsoScale ) ),
+	RecvPropFloat( RECVINFO( m_flHandScale ) ),
 
 	RecvPropInt( RECVINFO( m_nForceTauntCam ) ),
 	RecvPropBool( RECVINFO( m_bTyping ) ),
@@ -2516,6 +2852,8 @@ C_TFPlayer::C_TFPlayer() :
 	m_aGibs.Purge();
 
 	m_flHeadScale = 1.0f;
+	m_flTorsoScale = 1.0f;
+	m_flHandScale = 1.0f;
 
 	m_bCigaretteSmokeActive = false;
 
@@ -3648,7 +3986,9 @@ void C_TFPlayer::BuildTransformations( CStudioHdr *pStudioHdr, Vector *pos, Quat
 {
 	BaseClass::BuildTransformations( pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed );
 
-	BuildBigHeadTransformation( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flHeadScale );
+	BuildBigHeadTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flHeadScale );
+	BuildTorsoScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flTorsoScale, GetPlayerClass()->GetClassIndex() );
+	BuildHandScaleTransformations( this, pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, m_flHandScale );
 
 	BuildFirstPersonMeathookTransformations( pStudioHdr, pos, q, cameraTransform, boneMask, boneComputed, "bip_head" );
 }
@@ -3667,9 +4007,9 @@ void C_TFPlayer::CreateBoneAttachmentsFromWearables( C_TFRagdoll *pRagdoll, bool
 		if ( pTFWearable->IsViewModelWearable() )
 			continue;
 
-		/*if ( bDisguised && !pTFWearable->m_bDisguiseWearable ||
-			 !bDisguised && pTFWearable->m_bDisguiseWearable )
-			continue;*/
+		if ( bDisguised && !pTFWearable->IsDisguiseWearable() ||
+			 !bDisguised && pTFWearable->IsDisguiseWearable() )
+			continue;
 
 		if ( pTFWearable->GetFlags() & EF_NODRAW )
 			continue;
@@ -3708,7 +4048,7 @@ void C_TFPlayer::CreateBoneAttachmentsFromWearables( C_TFRagdoll *pRagdoll, bool
 		if ( pProp->Initialize( true ) )
 		{
 			pProp->m_nSkin = pTFWearable->GetSkin();
-			pProp->AttachEntityToBone( this, -1, Vector(0,0,0), QAngle(0,0,0) );
+			pProp->AttachEntityToBone( this );
 
 			// We set this when we update the wearables, no need to do it twice.
 			/*if ( pItem && pItem->GetStaticData() )

@@ -2,7 +2,6 @@
 using Microsoft.Build.Evaluation;
 
 string Version = "";
-string SDKVersion = "";
 string ISOStandard = "";
 string Solution = "";
 
@@ -35,9 +34,6 @@ foreach (var arg in args)
 				Solution = arg.Substring(1);
 				break;
 		}
-
-		if (argument.StartsWith("sdk:"))
-			SDKVersion = "10.0." + argument.Split(':')[1] + ".0";
 	}
 	else
 	{
@@ -80,15 +76,6 @@ foreach(var project in solutionFile.ProjectsInOrder)
 				var options = line.Substring(startIndex, endIndex - startIndex);
 				if (line.Contains(options) && !line.Contains(ISOStandard))
 					line = line.Replace(options, options + " /std:" + ISOStandard);
-			}
-
-			if (line.Contains("WindowsTargetPlatformVersion"))
-			{
-				int startIndex = line.IndexOf('>') + 1;
-				int endIndex = line.IndexOf('<', startIndex);
-				var sdk = line.Substring(startIndex, endIndex - startIndex);
-				if (line.Contains(sdk))
-					line = line.Replace(sdk, SDKVersion);
 			}
 
 			foreach (var c in line.ToArray())

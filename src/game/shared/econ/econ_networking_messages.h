@@ -9,19 +9,10 @@
 #include "tier1/smartptr.h"
 #include "inetmessage.h"
 
-// Currently only using protobuf
-enum EProtocolType
-{
-	k_EProtocolStruct		= 1,
-	k_EProtocolProtobuf		= 2
-};
-
 struct MsgHdr_t
 {
 	MsgType_t m_eMsgType;	// Message type
 	uint32 m_unMsgSize;		// Size of message without header
-	uint8 m_ubProtoVer;
-	EProtocolType m_eProtoType;
 	uint64 m_ulSourceID;
 	uint64 m_ulTargetID;
 };
@@ -164,6 +155,9 @@ protected:
 			sm_bRegisteredPool = true;
 		}
 
+		if ( sm_MsgPool->Count() > 0 )
+			return (TProtoMsg *)sm_MsgPool->Alloc();
+
 		TProtoMsg *pMsg = (TProtoMsg *)sm_MsgPool->Alloc();
 		Construct<TProtoMsg>( pMsg );
 		return pMsg;
@@ -171,8 +165,8 @@ protected:
 
 	void FreeMsg( TProtoMsg *pObj )
 	{
-		Destruct<TProtoMsg>( pObj );
-		sm_MsgPool->Free( (void *)pObj );
+		pObj->Clear();
+		sm_MsgPool->Free( pObj );
 	}
 
 private:

@@ -635,6 +635,15 @@ public:
 	int					m_nAccumulatedSentryGunKillCount;	// for Sentry Buster missions in MvM
 	float				GetAccumulatedSentryGunKillCount( void ) const { return m_nAccumulatedSentryGunKillCount; }
 
+	enum { DPS_Period = 90 };
+	int					m_rgDamageArray[DPS_Period];
+	float				m_flDPSMax;
+	int					m_iLastDamageIndex;
+	void				OnDealtDamage( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info );
+	int					GetDamagePerSecond( void ) const { return m_flDPSMax; }
+	void				ResetDamagePerSecond( void );
+
+
 	CWaveSpawnPopulator *m_pWaveSpawnPopulator;
 	bool				m_bLimitedSupport;
 	CUtlVector<CUpgradeInfo> m_RefundableUpgrades;
@@ -811,6 +820,8 @@ private:
 	bool				m_bFlipViewModel;
 
 	CNetworkVar( float, m_flHeadScale );
+	CNetworkVar( float, m_flTorsoScale );
+	CNetworkVar( float, m_flHandScale );
 
 	float				m_flTauntAttackTime;
 	int					m_iTauntAttack;

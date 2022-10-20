@@ -5,6 +5,7 @@
 #include "econ_item_system.h"
 #include "script_parser.h"
 #include "activitylist.h"
+#include "vscript_shared.h"
 #ifndef NO_STEAM
 #include "steam/steamtypes.h"
 #include "steam/isteamhttp.h"
@@ -31,11 +32,11 @@ const char *g_TeamVisualSections[TF_TEAM_VISUALS_COUNT] =
 
 const char *g_WearableAnimTypeStrings[NUM_WEARABLEANIM_TYPES] =
 {
-	"on_spawn",
-	"start_building",
-	"stop_building",
-	"start_taunting",
-	"stop_taunting",
+	"on_spawn",			// WAP_ON_SPAWN,
+	"start_building",	// WAP_START_BUILDING,
+	"stop_building",	// WAP_STOP_BUILDING,
+	"start_taunting",		// WAP_START_TAUNTING,
+	"stop_taunting",	// WAP_STOP_TAUNTING,
 };
 
 const char *g_AttributeDescriptionFormats[] =
@@ -487,7 +488,7 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 			{
 				*pVisuals = *GetVisuals( iTeam );
 			}
-			else
+			else if ( !V_stricmp( pVisualData->GetName(), "vm_bodygroup_override" ) )
 			{
 				Warning( "Unknown visuals block: %s", pszBlockTeamName );
 			}
@@ -525,13 +526,11 @@ void CEconItemDefinition::ParseVisuals( KeyValues *pKVData, int iIndex )
 		{
 			FOR_EACH_SUBKEY( pVisualData, pAnimData )
 			{
-				int key = ActivityList_IndexForName( pAnimData->GetName() );
-				int value = ActivityList_IndexForName( pAnimData->GetString() );
+				ActivityReplacement_t *override = new ActivityReplacement_t;
+				override->pszActivity = pAnimData->GetName();
+				override->pszReplacement = pAnimData->GetString();
 
-				if ( key != kActivityLookup_Missing && value != kActivityLookup_Missing )
-				{
-					pVisuals->animation_replacement.Insert( key, value );
-				}
+				pVisuals->animation_replacement.AddToTail( override );
 			}
 		}
 		else if ( !V_stricmp( pVisualData->GetName(), "playback_activity" ) )
@@ -797,10 +796,6 @@ public:
 	}
 };
 
-#ifdef CLIENT_DLL
-DECLARE_MESSAGE( g_EconItemSchema, ResetInventory )
-#endif
-
 //-----------------------------------------------------------------------------
 // Purpose: constructor
 //-----------------------------------------------------------------------------
@@ -850,10 +845,12 @@ bool CEconItemSchema::Init( void )
 	float flEndTime = engine->Time();
 	Msg( "Processing item schema took %.02fms. Parsed %d items and %d attributes.\n", ( flEndTime - flStartTime ) * 1000.0f, m_Items.Count(), m_Attributes.Count() );
 
-#ifdef CLIENT_DLL
-	HOOK_HUD_MESSAGE( g_EconItemSchema, ResetInventory )
-#endif
-	
+	if ( !m_bScriptInit )
+	{
+		RegisterScriptFunctions();
+		m_bScriptInit = true;
+	}
+
 	return true;
 }
 
@@ -921,6 +918,12 @@ bool CEconItemSchema::LoadFromFile( void )
 	Reset();
 	ParseSchema( schema );
 
+	IGameEvent *event = gameeventmanager->CreateEvent( "inventory_updated" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
+
 	return true;
 }
 
@@ -932,6 +935,12 @@ bool CEconItemSchema::LoadFromBuffer( CUtlBuffer &buf, bool bAsText )
 
 	Reset();
 	ParseSchema( schema );
+
+	IGameEvent *event = gameeventmanager->CreateEvent( "inventory_updated" );
+	if ( event )
+	{
+		gameeventmanager->FireEventClientSide( event );
+	}
 
 	return true;
 }
@@ -1292,10 +1301,6 @@ void CEconItemSchema::ClientDisconnected( edict_t *pClient )
 	CSteamID playerID{};
 	pPlayer->GetSteamID( &playerID );
 	g_pNetworking->OnClientDisconnected( playerID );
-
-	CSingleUserRecipientFilter filter( pPlayer );
-	UserMessageBegin( filter, "ResetInventory" );
-	MessageEnd();
 #endif
 }
 
@@ -1363,18 +1368,15 @@ ISchemaAttributeType *CEconItemSchema::GetAttributeType( const char *name ) cons
 	return NULL;
 }
 
-#if defined( CLIENT_DLL )
-void CEconItemSchema::MsgFunc_ResetInventory( bf_read &msg )
+bool CEconItemSchema::RegisterScriptFunctions( void )
 {
-	Reset();
+	m_bScriptInit = true;
 
-	KeyValuesAD schema( "KVData" );
-	if ( schema->LoadFromFile( g_pFullFileSystem, ITEMS_GAME ) )
-	{
-		ParseSchema( schema );
-	}
+
+	return true;
 }
 
+#if defined( CLIENT_DLL )
 class CUpdateEconItemSchema : public IMessageHandler
 {
 public:
@@ -1383,15 +1385,15 @@ public:
 		CProtobufMsg<CUpdateItemSchemaMsg> msg( pPacket );
 
 		std::string data = msg->items_data();
-		size_t nUncompressedSize = LZMA_GetActualSize( reinterpret_cast<byte *>( data.data() ) );
+		size_t nUncompressedSize = LZMA_GetActualSize( const_cast<byte *>( reinterpret_cast<const byte *>( data.data() ) ) );
 		byte *pUncompressedSchema = reinterpret_cast<byte *>( calloc( nUncompressedSize, sizeof( byte ) ) );
-		LZMA_Uncompress( reinterpret_cast<byte *>( data.data() ), &pUncompressedSchema, &nUncompressedSize );
+		LZMA_Uncompress( const_cast<byte *>( reinterpret_cast<const byte *>( data.data() ) ), &pUncompressedSchema, &nUncompressedSize );
 
 		CUtlBuffer buf( pUncompressedSchema, nUncompressedSize, CUtlBuffer::READ_ONLY );
 
 		// Ensure consistency
-		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( reinterpret_cast<void *>( data.data() ), data.length() );
-		uint32 unRecvSchemaCRC = _atoi64( msg->items_game_hash().c_str() );
+		uint32 unSchemaCRC = CRC32_ProcessSingleBuffer( reinterpret_cast<const void *>( data.data() ), data.length() );
+		uint32 unRecvSchemaCRC = V_atoi64( msg->items_game_hash().c_str() );
 		if ( unSchemaCRC != unRecvSchemaCRC )
 		{
 			Assert( unSchemaCRC == unRecvSchemaCRC );

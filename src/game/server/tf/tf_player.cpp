@@ -361,6 +361,8 @@ public:
 	CNetworkVar( bool, m_bIceRagdoll );
 	CNetworkVar( bool, m_bCritOnHardHit );
 	CNetworkVar( float, m_flHeadScale );
+	CNetworkVar( float, m_flTorsoScale );
+	CNetworkVar( float, m_flHandScale );
 
 	CUtlVector< CHandle<CEconWearable> > m_hRagdollWearables;
 };
@@ -389,6 +391,8 @@ IMPLEMENT_SERVERCLASS_ST_NOBASE( CTFRagdoll, DT_TFRagdoll )
 	SendPropBool( SENDINFO( m_bIceRagdoll ) ),
 	SendPropBool( SENDINFO( m_bCritOnHardHit ) ),
 	SendPropFloat( SENDINFO( m_flHeadScale ) ),
+	SendPropFloat( SENDINFO( m_flTorsoScale ) ),
+	SendPropFloat( SENDINFO( m_flHandScale ) ),
 END_SEND_TABLE()
 
 // -------------------------------------------------------------------------------- //
@@ -645,6 +649,10 @@ CTFPlayer::CTFPlayer()
 
 	m_purgatoryDuration.Invalidate();
 	m_lastCalledMedic.Invalidate();
+
+	m_nCurrency = 0;
+	m_pWaveSpawnPopulator = NULL;
+	ResetDamagePerSecond();
 }
 
 //-----------------------------------------------------------------------------
@@ -2215,15 +2223,17 @@ void CTFPlayer::ValidateWearables( void )
 		if ( pTFWearable->IsExtraWearable() )
 		{
 			CTFWeaponBase *pWeapon = assert_cast<CTFWeaponBase *>( pTFWearable->GetWeaponAssociatedWith() );
-
-			CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
-			if ( pItemDef )
+			if ( pWeapon )
 			{
-				int iSlot = pItemDef->GetLoadoutSlot( iClass );
-				if ( iSlot >= 0 )
+				CEconItemDefinition *pItemDef = pWeapon->GetItem()->GetStaticData();
+				if ( pItemDef )
 				{
-					CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
-					bMatch = ItemsMatch( pWeapon->GetItem(), pLoadoutItem );
+					int iSlot = pItemDef->GetLoadoutSlot( iClass );
+					if ( iSlot >= 0 )
+					{
+						CEconItemView *pLoadoutItem = GetLoadoutItem( iClass, iSlot );
+						bMatch = ItemsMatch( pWeapon->GetItem(), pLoadoutItem );
+					}
 				}
 			}
 		}
@@ -3488,6 +3498,45 @@ void CTFPlayer::PlayReadySound( void )
 
 		m_flNextReadySoundTime = gpGlobals->curtime + 4.0;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::OnDealtDamage( CBaseCombatCharacter *pVictim, const CTakeDamageInfo &info )
+{
+	if ( !pVictim )
+		return;
+
+	int nIndex = (int)gpGlobals->curtime % DPS_Period;
+	if ( nIndex != m_iLastDamageIndex )
+	{
+		m_iLastDamageIndex = nIndex;
+		m_rgDamageArray[ nIndex ] = info.GetDamage();
+
+		m_flDPSMax = 0;
+		for ( int i = 0; i < DPS_Period; ++i )
+		{
+			if ( m_rgDamageArray[i] > m_flDPSMax )
+				m_flDPSMax = m_rgDamageArray[i];
+		}
+	}
+	else
+	{
+		m_rgDamageArray[ nIndex ] += info.GetDamage();
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CTFPlayer::ResetDamagePerSecond( void )
+{
+	for ( int i = 0; i < DPS_Period; ++i )
+		m_rgDamageArray[i] = 0;
+
+	m_iLastDamageIndex = 0;
+	m_flDPSMax = 0.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -6428,7 +6477,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 	// Send the damage message to the client for the hud damage indicator
 	// Don't do this for damage types that don't use the indicator
-	if ( !( bitsDamage & ( DMG_DROWN | DMG_FALL | DMG_BURN ) ) )
+	if ( iHealthBefore != GetHealth() && bitsDamage != DMG_GENERIC && !( bitsDamage & ( DMG_DROWN | DMG_FALL | DMG_BURN ) ) )
 	{
 		// Try and figure out where the damage is coming from
 		Vector vecDamageOrigin = info.GetReportedPosition();
@@ -6477,7 +6526,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			if ( pTFAttacker && pWeapon && pWeapon->GetWeaponID() == TF_WEAPON_MINIGUN )
 			{
 				float flDistSqr = ( pTFAttacker->GetAbsOrigin() - GetAbsOrigin() ).LengthSqr();
-				if ( flDistSqr > 750 * 750 )
+				if ( flDistSqr > Sqr( 750.f ) )
 				{
 					bFlinch = false;
 				}
@@ -6519,7 +6568,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		OnDamagedByExplosion( info );
 	}
 
-	PainSound( info );
+	if( iHealthBefore != GetHealth() )
+		PainSound( info );
 
 	// Detect drops below 25% health and restart expression, so that characters look worried.
 	int iHealthBoundary = ( GetMaxHealth() * 0.25 );
@@ -6528,6 +6578,10 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		ClearExpression();
 	}
 
+	if ( pTFAttacker )
+	{
+		pTFAttacker->OnDealtDamage( this, info );
+	}
 
 	if ( IsPlayerClass( TF_CLASS_SPY ) && info.GetDamageCustom() != TF_DMG_CUSTOM_TELEFRAG ) // Die anyway if fragged
 	{
@@ -10141,6 +10195,8 @@ void CTFPlayer::CreateRagdollEntity( bool bGibbed, bool bBurning, bool bElectroc
 		pRagdoll->m_iTeam = GetTeamNumber();
 		pRagdoll->m_iClass = GetPlayerClass()->GetClassIndex();
 		pRagdoll->m_flHeadScale = m_flHeadScale;
+		pRagdoll->m_flTorsoScale = m_flTorsoScale;
+		pRagdoll->m_flHandScale = m_flHandScale;
 	}
 
 	// Turn off the player.
