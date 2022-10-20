@@ -15,6 +15,7 @@ class CEconItemAttribute
 public:
 	DECLARE_EMBEDDED_NETWORKVAR();
 	DECLARE_CLASS_NOBASE( CEconItemAttribute );
+	virtual ~CEconItemAttribute() {}
 
 	CEconAttributeDefinition *GetStaticData( void );
 	CEconAttributeDefinition const *GetStaticData( void ) const;

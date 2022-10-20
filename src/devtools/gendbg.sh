@@ -1,7 +1,5 @@
 #!/bin/bash
 
-OBJCOPY=/usr/bin/objcopy
-
 function usage {
 	echo "$0 /path/to/input/file [-o /path/to/output/file ]"
 	echo ""
@@ -37,8 +35,8 @@ if [ "$OUTFILEDIR" != "$INFILEDIR" ]; then
 fi
 
 pushd "$INFILEDIR"	
-$OBJCOPY "$INFILE" "$OUTFILE"
-$OBJCOPY --add-gnu-debuglink="$OUTFILE" "$INFILE"
+objcopy "$INFILE" "$OUTFILE"
+objcopy --add-gnu-debuglink="$OUTFILE" "$INFILE"
 popd
 
 

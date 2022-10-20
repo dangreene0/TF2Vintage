@@ -37,8 +37,7 @@ ifeq ($(CFG), release)
 	# -fno-omit-frame-pointer: need this for stack traces with perf.
 	OptimizerLevel_CompilerSpecific = -O2 -fno-strict-aliasing -ffast-math -fno-omit-frame-pointer -ftree-vectorize
 	ifeq ($(CLANG_BUILD),1)
-		# These aren't supported wit Clang 3.5. Need to remove when we update that.
-		OptimizerLevel_CompilerSpecific += -fpredictive-commoning -funswitch-loops
+		OptimizerLevel_CompilerSpecific += 
 	else
 		OptimizerLevel_CompilerSpecific += -fpredictive-commoning -funswitch-loops
 	endif
@@ -61,7 +60,7 @@ CFLAGS = $(BASE_CFLAGS) $(ENV_CFLAGS)
 ifeq ($(CLANG_BUILD),1)
 	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -Wno-c++11-narrowing -Wno-dangling-else $(ENV_CXXFLAGS)
 else
-	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -fpermissive $(ENV_CXXFLAGS)
+	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -fpermissive -fabi-compat-version=2 -fdiagnostics-color=always $(ENV_CXXFLAGS)
 endif
 DEFINES += -DVPROF_LEVEL=1 -DGNUC -DNO_HOOK_MALLOC -DNO_MALLOC_OVERRIDE
 
@@ -135,13 +134,13 @@ endif
 CCACHE := $(SRCROOT)/devtools/bin/linux/ccache
 
 ifeq ($(origin AR), default)
-	AR = $(STEAM_RUNTIME_PATH)/bin/ar crs
+	AR = ar crs
 endif
 ifeq ($(origin CC), default)
-	CC = $(CCACHE) $(STEAM_RUNTIME_PATH)/bin/gcc$(GCC_VER)	
+	CC = $(CCACHE) gcc$(GCC_VER)	
 endif
 ifeq ($(origin CXX), default)
-	CXX = $(CCACHE) $(STEAM_RUNTIME_PATH)/bin/g++$(GCC_VER)
+	CXX = $(CCACHE) g++$(GCC_VER)
 endif
 
 # Support ccache with clang. Add -Qunused-arguments to avoid excessive warnings due to
@@ -159,21 +158,23 @@ else
 	WARN_FLAGS = -Wall -Wno-invalid-offsetof -Wno-multichar -Wno-overloaded-virtual
 	WARN_FLAGS += -Wno-write-strings
 	WARN_FLAGS += -Wno-unused-variable
-	WARN_FLAGS += -Wno-unused-but-set-variable
 	WARN_FLAGS += -Wno-unused-function
+	
 endif
 
 ifeq ($(CLANG_BUILD),1)
 	# Clang specific flags
-else ifeq ($(GCC_VER),-4.8)
+	WARN_FLAGS += -Wno-unused-const-variable -Wno-unused-local-typedef -Wno-inconsistent-missing-override -Wno-null-dereference
+else
 	WARN_FLAGS += -Wno-unused-local-typedefs
 	WARN_FLAGS += -Wno-unused-result
 	WARN_FLAGS += -Wno-narrowing
+	WARN_FLAGS += -Wno-unused-but-set-variable
 	# WARN_FLAGS += -Wno-unused-function
 endif
 
-WARN_FLAGS += -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-value -Wno-missing-field-initializers -Wno-unused-local-typedefs
-WARN_FLAGS += -Wno-sign-compare -Wno-reorder -Wno-invalid-offsetof -Wno-float-equal -Werror=return-type
+WARN_FLAGS += -Wno-unknown-pragmas -Wno-unused-parameter -Wno-unused-value -Wno-missing-field-initializers
+WARN_FLAGS += -Wno-sign-compare -Wno-reorder -Wno-invalid-offsetof -Wno-float-equal -Wno-ignored-attributes -Werror=return-type
 WARN_FLAGS += -fdiagnostics-show-option -Wformat -Wformat-security
 
 ifeq ($(TARGET_PLATFORM),linux64)
