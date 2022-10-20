@@ -2271,7 +2271,7 @@ public:
 			return;
 		}
 
-		bool bBlueTeam = pEntity->GetTeam() > 0 && pEntity->GetTeamNumber() == TF_TEAM_BLUE;
+		bool bBlueTeam = pEntity->GetTeam() != NULL && pEntity->GetTeamNumber() == TF_TEAM_BLUE;
 		C_EconEntity *pEconEnt = dynamic_cast<C_EconEntity *>( pEntity );
 
 		CEconItemView *pItem = NULL;
@@ -2303,9 +2303,9 @@ public:
 			if ( nPaintRGB != 0 )
 			{
 				float flPaint[3] ={
-					Clamp( ( (nPaintRGB & 0xFF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
-					Clamp( ( (nPaintRGB & 0x00FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
-					Clamp( ( (nPaintRGB & 0x0000FF) ) / 255.0f, 0.0f, 1.0f )
+					Clamp( 1.0f * ( (nPaintRGB & 0xFF0000) >> 16 ) / 255.0f, 0.0f, 1.0f ),
+					Clamp( 1.0f * ( (nPaintRGB & 0x00FF00) >> 8 ) / 255.0f, 0.0f, 1.0f ),
+					Clamp( 1.0f * ( (nPaintRGB & 0x0000FF) ) / 255.0f, 0.0f, 1.0f )
 				};
 
 				m_pResult->SetVecValue( flPaint[0], flPaint[1], flPaint[2] );

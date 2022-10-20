@@ -60,7 +60,7 @@ CFLAGS = $(BASE_CFLAGS) $(ENV_CFLAGS)
 ifeq ($(CLANG_BUILD),1)
 	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -Wno-c++11-narrowing -Wno-dangling-else $(ENV_CXXFLAGS)
 else
-	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -fpermissive -fabi-compat-version=2 -fdiagnostics-color=always $(ENV_CXXFLAGS)
+	CXXFLAGS = $(BASE_CFLAGS) -std=c++17 -fpermissive -fabi-compat-version=2 $(ENV_CXXFLAGS)
 endif
 DEFINES += -DVPROF_LEVEL=1 -DGNUC -DNO_HOOK_MALLOC -DNO_MALLOC_OVERRIDE
 

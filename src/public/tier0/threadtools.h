@@ -762,6 +762,11 @@ private:
 	int				m_depth;
 };
 
+#ifdef COMPILER_CLANG
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wunused-private-field"
+#endif // Q_CC_CLANG
+
 class ALIGN128 CAlignedThreadFastMutex : public CThreadFastMutex
 {
 public:
@@ -773,6 +778,10 @@ public:
 private:
 	uint8 pad[128-sizeof(CThreadFastMutex)];
 } ALIGN128_POST;
+
+#ifdef COMPILER_CLANG
+	#pragma clang diagnostic pop
+#endif
 
 #else
 typedef CThreadMutex CThreadFastMutex;

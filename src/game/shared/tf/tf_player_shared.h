@@ -50,7 +50,7 @@ EXTERN_SEND_TABLE( DT_TFPlayerShared );
 #define PERMANENT_CONDITION		-1
 
 // Damage storage for crit multiplier calculation
-class CTFDamageEvent
+class CTFDamageEvent final
 {
 	DECLARE_EMBEDDED_NETWORKVAR()
 public:

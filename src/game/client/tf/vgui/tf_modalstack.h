@@ -1,10 +1,10 @@
-//========= Copyright © Valve LLC, All rights reserved. =======================
+//========= Copyright ï¿½ Valve LLC, All rights reserved. =======================
 //
 // Purpose:		
 //
 // $NoKeywords: $
 //=============================================================================
-#ifndef TF_MODEL_STACK_H
+#ifndef TF_MODAL_STACK_H
 #define TF_MODAL_STACK_H
 
 #include "tier1/utlvector.h"
