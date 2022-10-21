@@ -770,7 +770,6 @@ ScriptEnumDesc_t *GetScriptEnumDesc( T* );
 		ScriptHook_t *pHook = &(pDesc->m_Hooks[pDesc->m_Hooks.AddToTail()]); \
 		pHook->m_func.m_desc.m_pszFunction = #hook; \
 		pHook->m_func.m_desc.m_pszScriptName = hookName; \
-		pHook->m_func.m_pFunction = ScriptConvertFuncPtrToVoid( &_className::hook ); \
 		pHook->m_func.m_flags = SF_MEMBER_FUNC; \
 		pHook->m_func.m_desc.m_pszDescription = description; \
 		pHook->m_func.m_desc.m_ReturnType = returnType; \
@@ -783,7 +782,6 @@ ScriptEnumDesc_t *GetScriptEnumDesc( T* );
 		pHook->m_func.m_desc.m_Parameters.SetGrowSize( 1 ); \
 		pHook->m_func.m_desc.m_pszFunction = #hook; \
 		pHook->m_func.m_desc.m_pszScriptName = hookName; \
-		pHook->m_func.m_pFunction = ScriptConvertFuncPtrToVoid( &_className::hook ); \
 		pHook->m_func.m_flags = SF_MEMBER_FUNC; \
 		pHook->m_func.m_desc.m_pszDescription = description; \
 		pHook->m_func.m_desc.m_ReturnType = returnType;
