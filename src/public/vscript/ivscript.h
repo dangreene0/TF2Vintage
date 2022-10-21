@@ -1307,7 +1307,7 @@ public:
 	void GetStruct( T *pStruct, HSCRIPT hScope = NULL )
 	{
 	#ifdef GNUC
-		using AllocPooledString;
+		extern string_t AllocPooledString(const char *);
 	#endif
 
 		ScriptStructDesc_t *pDesc = GetScriptDescForStruct( T );
