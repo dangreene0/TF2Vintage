@@ -2,7 +2,6 @@
 using Microsoft.Build.Evaluation;
 
 string Version = "";
-string ISOStandard = "";
 string Solution = "";
 
 foreach (var arg in args)
@@ -24,11 +23,8 @@ foreach (var arg in args)
 			case "2019":
 				Version = "v142";
 				break;
-			case "cxx14":
-				ISOStandard = "c++14";
-				break;
-			case "cxx17":
-				ISOStandard = "c++17";
+			case "2022":
+				Version = "v143";
 				break;
 			default:
 				Solution = arg.Substring(1);
@@ -44,7 +40,6 @@ foreach (var arg in args)
 if (Solution.Equals(""))
 	return;
 
-bool inClCompile = false;
 var solutionFile = SolutionFile.Parse(Path.Combine(Directory.GetCurrentDirectory(), Solution));
 foreach(var project in solutionFile.ProjectsInOrder)
 {
@@ -62,20 +57,6 @@ foreach(var project in solutionFile.ProjectsInOrder)
 				var toolset = line.Substring(startIndex, endIndex - startIndex);
 				if (line.Contains(toolset))
 					line = line.Replace(toolset, Version);
-			}
-
-			if (line.Contains("<ClCompile>"))
-				inClCompile = true;
-			if (line.Contains("</ClCompile>"))
-				inClCompile = false;
-
-			if (line.Contains("AdditionalOptions") && inClCompile)
-			{
-				int startIndex = line.IndexOf('>') + 1;
-				int endIndex = line.IndexOf('<', startIndex);
-				var options = line.Substring(startIndex, endIndex - startIndex);
-				if (line.Contains(options) && !line.Contains(ISOStandard))
-					line = line.Replace(options, options + " /std:" + ISOStandard);
 			}
 
 			foreach (var c in line.ToArray())
