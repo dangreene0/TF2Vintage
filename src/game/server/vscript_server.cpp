@@ -18,9 +18,9 @@
 #include "netpropmanager.h"
 #include "AI_Criteria.h"
 #include "AI_ResponseSystem.h"
-#if defined( _WIN32 ) || defined( POSIX )
 #include "vscript_server_nut.h"
-#endif
+#include "vscript_singletons.h"
+#include "world.h"
 
 extern ScriptClassDesc_t *GetScriptDesc( CBaseEntity * );
 
@@ -31,6 +31,11 @@ extern ScriptClassDesc_t *GetScriptDesc( CBaseEntity * );
 class CScriptEntityIterator
 {
 public:
+	HSCRIPT GetLocalPlayer()
+	{
+		return ToHScript( UTIL_GetLocalPlayerOrListenServerHost() );
+	}
+
 	HSCRIPT First() { return Next(NULL); }
 
 	HSCRIPT Next( HSCRIPT hStartEntity )
@@ -87,9 +92,20 @@ public:
 	{
 		return ToHScript( gEntList.FindEntityByClassnameWithin( ToEnt( hStartEntity ), szName, vecSrc, flRadius ) );
 	}
+
+	HSCRIPT FindByClassnameWithinBox( HSCRIPT hStartEntity, const char *szName, const Vector &vecMins, const Vector &vecMaxs )
+	{
+		return ToHScript( gEntList.FindEntityByClassnameWithin( ToEnt( hStartEntity ), szName, vecMins, vecMaxs ) );
+	}
+
+	HSCRIPT FindByClassNearestFacing( const Vector &origin, const Vector &facing, float threshold, const char *classname )
+	{
+		return ToHScript( gEntList.FindEntityClassNearestFacing( origin, facing, threshold, const_cast<char *>( classname ) ) );
+	}
 } g_ScriptEntityIterator;
 
 BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptEntityIterator, "CEntities", SCRIPT_SINGLETON "The global list of entities" )
+	DEFINE_SCRIPTFUNC( GetLocalPlayer, "Get local player or listen server host" )
 	DEFINE_SCRIPTFUNC( First, "Begin an iteration over the list of entities" )
 	DEFINE_SCRIPTFUNC( Next, "Continue an iteration over the list of entities, providing reference to a previously found entity" )
 	DEFINE_SCRIPTFUNC( CreateByClassname, "Creates an entity by classname" )
@@ -102,6 +118,8 @@ BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptEntityIterator, "CEntities", SCRIPT_SINGLETO
 	DEFINE_SCRIPTFUNC( FindByNameWithin, "Find entities by name within a radius. Pass 'null' to start an iteration, or reference to a previously found entity to continue a search"  )
 	DEFINE_SCRIPTFUNC( FindByClassnameNearest, "Find entities by class name nearest to a point."  )
 	DEFINE_SCRIPTFUNC( FindByClassnameWithin, "Find entities by class name within a radius. Pass 'null' to start an iteration, or reference to a previously found entity to continue a search"  )
+	DEFINE_SCRIPTFUNC( FindByClassnameWithinBox, "Find entities by class name within an AABB. Pass 'null' to start an iteration, or reference to a previously found entity to continue a search" )
+	DEFINE_SCRIPTFUNC( FindByClassNearestFacing, "Find the nearest entity along the facing direction from the given origin within the angular threshold with the given classname." )
 END_SCRIPTDESC();
 
 class CScriptResponseCriteria
@@ -288,6 +306,16 @@ static float Time()
 static float FrameTime()
 {
 	return gpGlobals->frametime;
+}
+
+static int MaxPlayers()
+{
+	return gpGlobals->maxClients;
+}
+
+static int GetLoadType()
+{
+	return gpGlobals->eLoadType;
 }
 
 static int Script_GetFrameCount()
@@ -643,6 +671,10 @@ bool VScriptServerInit()
 			{
 				scriptLanguage = SL_LUA;
 			}
+			else if ( !Q_stricmp( pszScriptLanguage, "angelscript" ) )
+			{
+				scriptLanguage = SL_ANGELSCRIPT;
+			}
 			else
 			{
 				DevWarning("-scriptlang does not recognize a language named '%s'. virtual machine did NOT start.\n", pszScriptLanguage );
@@ -657,14 +689,15 @@ bool VScriptServerInit()
 
 			if( g_pScriptVM )
 			{
-				Msg( "VSCRIPT: Started VScript virtual machine using script language '%s'\n", g_pScriptVM->GetLanguageName() );
-				ScriptRegisterFunctionNamed( g_pScriptVM, UTIL_ShowMessageAll, "ShowMessage", "Print a hud message on all clients" );
+				Log( "VSCRIPT SERVER: Started VScript virtual machine using script language '%s'\n", g_pScriptVM->GetLanguageName() );
 
+				ScriptRegisterFunctionNamed( g_pScriptVM, UTIL_ShowMessageAll, "ShowMessage", "Print a hud message on all clients" );
 				ScriptRegisterFunction( g_pScriptVM, SendToConsole, "Send a string to the console as a command" );
 				ScriptRegisterFunction( g_pScriptVM, SendToServerConsole, "Send a string to the server console as a command" );
 				ScriptRegisterFunction( g_pScriptVM, GetMapName, "Get the name of the map.");
 				ScriptRegisterFunctionNamed( g_pScriptVM, ScriptTraceLine, "TraceLine", "given 2 points & ent to ignore, return fraction along line that hits world or models" );
-
+				ScriptRegisterFunction( g_pScriptVM, MaxPlayers, "Get the maximum number of players allowed on this server" );
+				ScriptRegisterFunction( g_pScriptVM, GetLoadType, "Get the way the current game was loaded (corresponds to the MapLoad enum)" );
 				ScriptRegisterFunction( g_pScriptVM, Time, "Get the current server time" );
 				ScriptRegisterFunction( g_pScriptVM, FrameTime, "Get the time spent on the server in the last frame" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetFrameCount, "GetFrameCount", "Returns the engines current frame count" );
@@ -674,8 +707,6 @@ bool VScriptServerInit()
 				ScriptRegisterFunctionNamed( g_pScriptVM, DoEntFireByInstanceHandle, "EntFireByHandle", "Generate and entity i/o event. First parameter is an entity instance." );
 				ScriptRegisterFunction( g_pScriptVM, DoUniqueString, SCRIPT_ALIAS( "UniqueString", "Generate a string guaranteed to be unique across the life of the script VM, with an optional root string. Useful for adding data to tables when not sure what keys are already in use in that table." ) );
 				ScriptRegisterFunctionNamed( g_pScriptVM, ScriptCreateSceneEntity, "CreateSceneEntity", "Create a scene entity to play the specified scene." );
-				ScriptRegisterFunctionNamed( g_pScriptVM, NDebugOverlay::Box, "DebugDrawBox", "Draw a debug overlay box" );
-				ScriptRegisterFunctionNamed( g_pScriptVM, NDebugOverlay::Line, "DebugDrawLine", "Draw a debug overlay box" );
 				ScriptRegisterFunction( g_pScriptVM, DoIncludeScript, "Execute a script (internal)" );
 				ScriptRegisterFunction( g_pScriptVM, CreateProp, "Create a physics prop" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_Say, "Say", "Have player say string" );
@@ -687,7 +718,6 @@ bool VScriptServerInit()
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_ScreenFade, "ScreenFade", "Start a screenfade with the following parameters. player, red, green, blue, alpha, flFadeTime, flFadeHold, flags" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_IsModelPrecached, "IsModelPrecached", "Checks if the modelname is precached." );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_FadeClientVolume, "FadeClientVolume", "Fade out the client's volume level toward silence (or fadePercent)" );
-
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_PlayerInstanceFromIndex, "PlayerInstanceFromIndex", "Get a script handle of a player using the player index." );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetPlayerFromUserID, "GetPlayerFromUserID", "Given a user id, return the entity, or null." );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_EntIndexToHScript, "EntIndexToHScript", "Returns the script handle for the given entity index." );
@@ -710,12 +740,19 @@ bool VScriptServerInit()
 				g_pScriptVM->SetValue( "HUD_PRINTTALK", HUD_PRINTTALK );
 				g_pScriptVM->SetValue( "HUD_PRINTCENTER", HUD_PRINTCENTER );
 
+				RegisterSharedScriptConstants();
+				RegisterSharedScriptFunctions();
+
 				if ( scriptLanguage == SL_SQUIRREL )
 				{
 					g_pScriptVM->Run( g_Script_vscript_server );
 				}
 
 				VScriptRunScript( "mapspawn", false );
+
+				// Since the world entity spawns before VScript is initted, RunVScripts() is called before the VM has started, so no scripts are run.
+				// This gets around that by calling the same function right after the VM is initted.
+				GetWorldEntity()->RunVScripts();
 
 				VMPROF_SHOW( __FUNCTION__, "virtual machine startup" );
 
@@ -725,6 +762,10 @@ bool VScriptServerInit()
 			{
 				DevWarning("VM Did not start!\n");
 			}
+		}
+		else
+		{
+			Msg(  "VSCRIPT SERVER: Not starting because language is set to 'none'\n" );
 		}
 	}
 	else
@@ -872,6 +913,8 @@ public:
 
 	virtual void LevelShutdownPostEntity( void )
 	{
+		//g_ScriptNetMsg->LevelShutdownPreVM();
+
 		VScriptServerTerm();
 	}
 
@@ -886,8 +929,12 @@ public:
 
 CVScriptGameSystem g_VScriptGameSystem;
 
+ConVar script_allow_entity_creation_midgame( "script_allow_entity_creation_midgame", "1", FCVAR_NOT_CONNECTED, "Allows VScript files to create entities mid-game, as opposed to only creating entities on startup." );
 bool IsEntityCreationAllowedInScripts( void )
 {
+	if ( script_allow_entity_creation_midgame.GetBool() )
+		return true;
+
 	return g_VScriptGameSystem.m_bAllowEntityCreationInScripts;
 }
 
