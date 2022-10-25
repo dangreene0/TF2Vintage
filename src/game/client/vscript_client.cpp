@@ -13,14 +13,86 @@
 #include "characterset.h"
 #include "isaverestore.h"
 #include "gamerules.h"
-#if defined( _WIN32 ) || defined( POSIX )
 #include "vscript_client_nut.h"
-#endif
+#include "matchers.h"
+#include "c_world.h"
+#include "proxyentity.h"
+#include "materialsystem/imaterial.h"
+#include "materialsystem/imaterialvar.h"
+#include "vscript_singletons.h"
 
-extern IScriptManager *scriptmanager;
+
 extern ScriptClassDesc_t * GetScriptDesc( CBaseEntity * );
 
 static ConVar cl_mapspawn_nut_exec( "cl_mapspawn_nut_exec", "0", FCVAR_NONE, "If set to 1, client will execute scripts/vscripts/mapspawn.nut file" );
+
+
+//-----------------------------------------------------------------------------
+// Purpose: A clientside variant of CScriptEntityIterator.
+//-----------------------------------------------------------------------------
+class CScriptClientEntityIterator
+{
+public:
+	HSCRIPT GetLocalPlayer()
+	{
+		return ToHScript( C_BasePlayer::GetLocalPlayer() );
+	}
+
+	HSCRIPT First() { return Next( NULL ); }
+
+	HSCRIPT Next( HSCRIPT hStartEntity )
+	{
+		return ToHScript( ClientEntityList().NextBaseEntity( ToEnt( hStartEntity ) ) );
+	}
+
+	HSCRIPT CreateByClassname( const char *className )
+	{
+		return ToHScript( CreateEntityByName( className ) );
+	}
+
+	HSCRIPT FindByClassname( HSCRIPT hStartEntity, const char *szName )
+	{
+		const CEntInfo *pInfo = hStartEntity ? ClientEntityList().GetEntInfoPtr( ToEnt( hStartEntity )->GetRefEHandle() )->m_pNext : ClientEntityList().FirstEntInfo();
+		for ( ; pInfo; pInfo = pInfo->m_pNext )
+		{
+			C_BaseEntity *ent = (C_BaseEntity *)pInfo->m_pEntity;
+			if ( !ent )
+				continue;
+
+			if ( Matcher_Match( szName, ent->GetClassname() ) )
+				return ToHScript( ent );
+		}
+
+		return NULL;
+	}
+
+	HSCRIPT FindByName( HSCRIPT hStartEntity, const char *szName )
+	{
+		const CEntInfo *pInfo = hStartEntity ? ClientEntityList().GetEntInfoPtr( ToEnt( hStartEntity )->GetRefEHandle() )->m_pNext : ClientEntityList().FirstEntInfo();
+		for ( ; pInfo; pInfo = pInfo->m_pNext )
+		{
+			C_BaseEntity *ent = (C_BaseEntity *)pInfo->m_pEntity;
+			if ( !ent )
+				continue;
+
+			if ( Matcher_Match( szName, ent->GetEntityName() ) )
+				return ToHScript( ent );
+		}
+
+		return NULL;
+	}
+
+private:
+} g_ScriptEntityIterator;
+
+BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptClientEntityIterator, "CEntities", SCRIPT_SINGLETON "The global list of entities" )
+	DEFINE_SCRIPTFUNC( GetLocalPlayer, "Get local player" )
+	DEFINE_SCRIPTFUNC( First, "Begin an iteration over the list of entities" )
+	DEFINE_SCRIPTFUNC( Next, "Continue an iteration over the list of entities, providing reference to a previously found entity" )
+	DEFINE_SCRIPTFUNC( CreateByClassname, "Creates an entity by classname" )
+	DEFINE_SCRIPTFUNC( FindByClassname, "Find entities by class name. Pass 'null' to start an iteration, or reference to a previously found entity to continue a search" )
+	DEFINE_SCRIPTFUNC( FindByName, "Find entities by name. Pass 'null' to start an iteration, or reference to a previously found entity to continue a search" )
+END_SCRIPTDESC();
 
 //-----------------------------------------------------------------------------
 //
@@ -50,6 +122,69 @@ bool DoIncludeScript( const char *pszScript, HSCRIPT hScope )
 		return false;
 	}
 	return true;
+}
+
+static float FrameTime()
+{
+	return gpGlobals->frametime;
+}
+
+static bool Con_IsVisible()
+{
+	return engine->Con_IsVisible();
+}
+
+static bool IsWindowedMode()
+{
+	return engine->IsWindowedMode();
+}
+
+int ScreenTransform( const Vector &point, Vector &screen );
+
+//-----------------------------------------------------------------------------
+// Input array [x,y], set normalised screen space pos. Return true if on screen
+//-----------------------------------------------------------------------------
+static bool ScriptScreenTransform( const Vector &pos, HSCRIPT hArray )
+{
+	if ( g_pScriptVM->GetNumTableEntries( hArray ) >= 2 )
+	{
+		Vector v;
+		bool r = ScreenTransform( pos, v );
+		float x = 0.5f * ( 1.0f + v[0] );
+		float y = 0.5f * ( 1.0f - v[1] );
+
+		g_pScriptVM->SetValue( hArray, "0", x);
+		g_pScriptVM->SetValue( hArray, "1", y);
+		return !r;
+	}
+	return false;
+}
+
+// Creates a client-side prop
+HSCRIPT CreateProp( const char *pszEntityName, const Vector &vOrigin, const char *pszModelName, int iAnim )
+{
+	C_BaseAnimating *pBaseEntity = (C_BaseAnimating *)CreateEntityByName( pszEntityName );
+	if ( !pBaseEntity )
+		return NULL;
+
+	pBaseEntity->SetAbsOrigin( vOrigin );
+	pBaseEntity->SetModelName( pszModelName );
+	if ( !pBaseEntity->InitializeAsClientEntity( pszModelName, RENDER_GROUP_OPAQUE_ENTITY ) )
+	{
+		Warning( "Can't initialize %s as client entity\n", pszEntityName );
+		return NULL;
+	}
+
+	pBaseEntity->SetPlaybackRate( 1.0f );
+
+	int iSequence = pBaseEntity->SelectWeightedSequence( (Activity)iAnim );
+
+	if ( iSequence != -1 )
+	{
+		pBaseEntity->SetSequence( iSequence );
+	}
+
+	return ToHScript( pBaseEntity );
 }
 
 bool VScriptClientInit()
@@ -85,10 +220,19 @@ bool VScriptClientInit()
 
 			if( g_pScriptVM )
 			{
-				Msg( "VSCRIPT: Started VScript virtual machine using script language '%s'\n", g_pScriptVM->GetLanguageName() );
+				Log( "VSCRIPT CLIENT: Started VScript virtual machine using script language '%s'\n", g_pScriptVM->GetLanguageName() );
+
 				ScriptRegisterFunction( g_pScriptVM, GetMapName, "Get the name of the map.");
 				ScriptRegisterFunction( g_pScriptVM, Time, "Get the current server time" );
-				ScriptRegisterFunction( g_pScriptVM, DoIncludeScript, "Execute a script (internal)" );
+				ScriptRegisterFunction( g_pScriptVM, DoUniqueString, SCRIPT_ALIAS( "UniqueString", "Generate a string guaranteed to be unique across the life of the script VM, with an optional root string." ) );
+				ScriptRegisterFunction( g_pScriptVM, DoIncludeScript, SCRIPT_ALIAS( "IncludeScript", "Execute a script (internal)" ) );
+				ScriptRegisterFunction( g_pScriptVM, FrameTime, "Get the time spent on the client in the last frame" );
+				ScriptRegisterFunction( g_pScriptVM, Con_IsVisible, "Returns true if the console is visible" );
+				ScriptRegisterFunction( g_pScriptVM, ScreenWidth, "Width of the screen in pixels" );
+				ScriptRegisterFunction( g_pScriptVM, ScreenHeight, "Height of the screen in pixels" );
+				ScriptRegisterFunction( g_pScriptVM, IsWindowedMode, "" );
+				ScriptRegisterFunctionNamed( g_pScriptVM, ScriptScreenTransform, "ScreenTransform", "Get the x & y positions of a world position in screen space. Returns true if it's onscreen" );
+				ScriptRegisterFunction( g_pScriptVM, CreateProp, "Create an animating prop" );
 
 				g_pScriptVM->RegisterClass( GetScriptDescForClass( CScriptKeyValues ) );
 				
@@ -97,7 +241,10 @@ bool VScriptClientInit()
 					GameRules()->RegisterScriptFunctions();
 				}
 
-				//g_pScriptVM->RegisterInstance( &g_ScriptEntityIterator, "Entities" );
+				g_pScriptVM->RegisterInstance( &g_ScriptEntityIterator, "Entities" );
+
+				RegisterSharedScriptConstants();
+				RegisterSharedScriptFunctions();
 
 				if ( scriptLanguage == SL_SQUIRREL )
 				{
