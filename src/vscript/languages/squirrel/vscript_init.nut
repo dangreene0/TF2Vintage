@@ -116,121 +116,298 @@ function SimpleSpline( f )
 // Documentation table
 //-----------------------------------------------------------------------------
 
-if ( developer() > 0 )
+local Documentation <-
 {
-	Documentation <-
-	{
-		classes = {}
-		functions = {}
-		instances = {}
-	}
+	classes = {}
+	functions = {}
+	hooks = {}
+	enums = {}
+	constants = {}
+}
 
 
-	function RetrieveNativeSignature( nativeFunction )
+function RetrieveNativeSignature( nativeFunction )
+{
+	if ( nativeFunction in NativeFunctionSignatures )
 	{
-		if ( nativeFunction in NativeFunctionSignatures )
-		{
-			return NativeFunctionSignatures[nativeFunction]
-		}
-		return "<unnamed>"
+		return NativeFunctionSignatures[nativeFunction]
 	}
+	return "<unnamed>"
+}
 	
-	function RegisterFunctionDocumentation( func, name, signature, description )
+function RegisterFunctionDocumentation( name, signature, description )
+{
+	if ( description.len() )
 	{
-		if ( description.len() )
+		local b = ( description[0] == '#' );
+		if ( description[0] == '#' )
 		{
-			local b = ( description[0] == '#' );
-			if ( description[0] == '#' )
+			local colon = description.find( ":" );
+			if ( colon == null )
 			{
-				local colon = description.find( ":" );
-				if ( colon == null )
-				{
-					colon = description.len();
-				}
-				local alias = description.slice( 1, colon );
-				description = description.slice( colon + 1 );
-				name = alias;
-				signature = "#";
+				colon = description.len();
 			}
+			local alias = description.slice( 1, colon );
+			description = description.slice( colon + 1 );
+			name = alias;
+			signature = "#";
 		}
-		Documentation.functions[name] <- [ signature, description ]
 	}
+	Documentation.functions[name] <- [ signature, description ]
+}
 
-	function Document( symbolOrTable, itemIfSymbol = null, descriptionIfSymbol = null )
+function RegisterClassDocumentation( name, baseclass, members, description )
+{
+	Documentation.classes[name] <- [ baseclass, members, description ]
+}
+
+function RegisterHookDocumentation( name, signature, description )
+{
+if ( description.len() )
 	{
-		if ( typeof( symbolOrTable ) == "table" )
+		local b = ( description[0] == '#' );
+		if ( description[0] == '#' )
 		{
-			foreach( symbol, itemDescription in symbolOrTable )
+			local colon = description.find( ":" );
+			if ( colon == null )
 			{
-				Assert( typeof(symbol) == "string" )
+				colon = description.len();
+			}
+			local alias = description.slice( 1, colon );
+			description = description.slice( colon + 1 );
+			name = alias;
+			signature = "#";
+		}
+	}
+	Documentation.hooks[name] <- [ signature, description ]
+}
+
+function RegisterEnumDocumentation( name, constants, description )
+{
+	Documentation.enums[name] <- [ constants, description ]
+}
+
+function RegisterConstantDocumentation( name, signature, value, description )
+{
+	if ( description.len() )
+	{
+		local b = ( description[0] == '#' );
+		if ( description[0] == '#' )
+		{
+			local colon = description.find( ":" );
+			if ( colon == null )
+			{
+				colon = description.len();
+			}
+			local alias = description.slice( 1, colon );
+			description = description.slice( colon + 1 );
+			name = alias;
+			signature = "#";
+		}
+	}
+	Documentation.constants[name] <- [ signature, value, description ]
+}
+
+function Document( symbolOrTable, itemIfSymbol = null, descriptionIfSymbol = null )
+{
+	if ( typeof( symbolOrTable ) == "table" )
+	{
+		foreach( symbol, itemDescription in symbolOrTable )
+		{
+			Assert( typeof(symbol) == "string" )
 				
-				Document( symbol, itemDescription[0], itemDescription[1] );
-			}
-		}
-		else
-		{
-			printl( symbolOrTable + ":" + itemIfSymbol.tostring() + "/" + descriptionIfSymbol );
+			Document( symbol, itemDescription[0], itemDescription[1] );
 		}
 	}
-	
-	function PrintHelp( string = "*", exact = false )
+	else
 	{
-		local matches = []
-		
-		if ( string == "*" || !exact )
+		printl( symbolOrTable + ":" + itemIfSymbol.tostring() + "/" + descriptionIfSymbol );
+	}
+}
+
+local function printdoc( text )
+{
+	return ::printc(200,224,255,text);
+}
+
+local function printdocl( text )
+{
+	return printdoc(text + "\n");
+}
+
+local function PrintMember(name, doc)
+{
+	local text = ("Member:      " + name + "\n");
+	text += ("Signature:   " + doc[0] + "\n");
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	printdocl(text);
+}
+
+local function PrintClass(name, doc)
+{
+	local text = "=====================================\n";
+	text += ("Class:       " + name + "\n");
+	text += ("Base:        " + doc[0] + "\n");
+	foreach( k,v in doc[1] ) {
+		PrintMember( k, v );
+	}
+	foreach( k,v in doc[2] ) {
+		PrintHook( k, v );
+	}
+	if (doc[3].len())
+		text += ("Description: " + doc[3] + "\n");
+	text += "=====================================\n\n";
+
+	printdoc(text);
+}
+
+local function PrintFunc(name, doc)
+{
+	local text = "Function:    " + name + "\n"
+
+	if (doc[0] == "#")
+	{
+		// Is an aliased function
+		text += ("Signature:   function " + name + "(");
+		foreach(k,v in this[name].getinfos().parameters)
 		{
-			foreach( name, documentation in Documentation.functions )
+			if (k == 0 && v == "this") continue;
+			if (k > 1) text += (", ");
+			text += (v);
+		}
+		text += (")\n");
+	}
+	else
+	{
+		text += ("Signature:   " + doc[0] + "\n");
+	}
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	printdocl(text);
+}
+
+local function PrintHook(name, doc)
+{
+	local text = ("Hook:        " + name + "\n");
+	if (doc[0] == "#")
+	{
+		// Is an aliased function
+		text += ("Signature:   function " + name + "(");
+		foreach(k,v in this[name].getinfos().parameters)
+		{
+			if (k == 0 && v == "this") continue;
+			if (k > 1) text += (", ");
+			text += (v);
+		}
+		text += (")\n");
+	}
+	else
+	{
+		text += ("Signature:   " + doc[0] + "\n");
+	}
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	printdocl(text);
+}
+
+local function PrintConst(name, doc)
+{
+	local text = ("Constant:    " + name + "\n");
+	if (doc[0] == null)
+	{
+		text += ("Value:       null\n");
+	}
+	else
+	{
+		text += ("Value:       " + doc[0] + "\n");
+	}
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	printdocl(text);
+}
+
+local function PrintEnum(name, doc)
+{
+	local text = "=====================================\n";
+	text += ("Enum:        " + name + "\n");
+	foreach( k,v in doc[0] ) {
+		PrintConst( k, v );
+	}
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	text += "=====================================\n\n";
+
+	printdoc(text);
+}
+	
+function PrintHelp( string = "*", exact = false )
+{
+	local matches = []
+		
+	if ( string == "*" || !exact )
+	{
+		local AppendMatches = function( doclist ) {
+			foreach( name, doc in doclist )
 			{
 				if ( string != "*" && name.tolower().find( string.tolower() ) == null )
 				{
 					continue;
 				}
 				
-				matches.append( name ); 
+				matches.append( name );
 			}
-		} 
-		else if ( exact )
-		{
-			if ( string in Documentation.functions )
-				matches.append( string )
 		}
-		
-		if ( matches.len() == 0 )
-		{
-			printl( "Symbol " + string + " not found" );
-			return;
-		}
-		
-		matches.sort();
-		
-		foreach( name in matches )
-		{
-			local result = name;
-			local documentation = Documentation.functions[name];
-			
-			printl( "Function:    " + name );
-			local signature;
-			if ( documentation[0] != "#" )
-			{
-				signature = documentation[0];
-			}
-			else
-			{
-				signature = GetFunctionSignature( this[name], name );
-			}
-			
-			printl( "Signature:   " + signature );
-			if ( documentation[1].len() )
-				printl( "Description: " + documentation[1] );
-			print( "\n" ); 
-		}
+
+		AppendMatches( Documentation.functions );
+		AppendMatches( Documentation.hooks );
+		AppendMatches( Documentation.classes );
+		AppendMatches( Documentation.enums );
+		AppendMatches( Documentation.constants );
+	} 
+	else if ( exact )
+	{
+		if ( string in Documentation.functions )
+			matches.append( string );
+
+		if ( string in Documentation.hooks )
+			matches.append( string );
+
+		if ( string in Documentation.classes )
+			matches.append( string );
+
+		if ( string in Documentation.enums )
+			matches.append( string );
+
+		if ( string in Documentation.constants )
+			matches.append( string );
 	}
-}
-else
-{
-	function RetrieveNativeSignature( nativeFunction ) { return "<unnamed>"; }
-	function Document( symbolOrTable, itemIfSymbol = null, descriptionIfSymbol = null ) {}
-	function PrintHelp( string = "*", exact = false ) {}
+		
+	if ( matches.len() == 0 )
+	{
+		printl( "Symbol " + string + " not found" );
+		return;
+	}
+		
+	matches.sort();
+		
+	foreach( name in matches )
+	{
+		if ( name in Documentation.functions )
+			PrintFunc( name, Documentation.functions[name] );
+
+		if ( name in Documentation.hooks )
+			PrintHook( name, Documentation.hooks[name] );
+
+		if ( name in Documentation.classes )
+			PrintClass( name, Documentation.classes[name] );
+
+		if ( name in Documentation.enums )
+			PrintEnum( name, Documentation.enums[name] );
+
+		if ( name in Documentation.constants )
+			PrintConst( name, Documentations.constants[name] );
+	}
 }
 
 //-----------------------------------------------------------------------------
