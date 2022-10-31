@@ -116,8 +116,7 @@ function SimpleSpline( f )
 // Documentation table
 //-----------------------------------------------------------------------------
 
-local Documentation <-
-{
+local Documentation = {
 	classes = {}
 	functions = {}
 	hooks = {}
@@ -163,7 +162,7 @@ function RegisterClassDocumentation( name, baseclass, members, description )
 
 function RegisterHookDocumentation( name, signature, description )
 {
-if ( description.len() )
+	if ( description.len() )
 	{
 		local b = ( description[0] == '#' );
 		if ( description[0] == '#' )
