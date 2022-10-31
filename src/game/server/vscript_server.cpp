@@ -704,7 +704,7 @@ bool VScriptServerInit()
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_IsDedicatedServer, "IsDedicatedServer", "Returns true if this is a dedicated server.");
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetLocalPlayerOrListenServerHost, "GetListenServerHost", "Get the host player on a listen server.");
 				ScriptRegisterFunction( g_pScriptVM, DoEntFire, SCRIPT_ALIAS( "EntFire", "Generate and entity i/o event" ) );
-				ScriptRegisterFunctionNamed( g_pScriptVM, DoEntFireByInstanceHandle, "EntFireByHandle", "Generate and entity i/o event. First parameter is an entity instance." );
+				ScriptRegisterFunction( g_pScriptVM, DoEntFireByInstanceHandle, SCRIPT_ALIAS( "EntFireByHandle", "Generate and entity i/o event. First parameter is an entity instance." ) );
 				ScriptRegisterFunction( g_pScriptVM, DoUniqueString, SCRIPT_ALIAS( "UniqueString", "Generate a string guaranteed to be unique across the life of the script VM, with an optional root string. Useful for adding data to tables when not sure what keys are already in use in that table." ) );
 				ScriptRegisterFunctionNamed( g_pScriptVM, ScriptCreateSceneEntity, "CreateSceneEntity", "Create a scene entity to play the specified scene." );
 				ScriptRegisterFunction( g_pScriptVM, DoIncludeScript, "Execute a script (internal)" );
@@ -734,11 +734,10 @@ bool VScriptServerInit()
 				g_pScriptVM->RegisterInstance( &g_ScriptResponseCriteria, "ResponseCriteria" );
 				g_pScriptVM->RegisterInstance( &g_ScriptEntityOutputs, "EntityOutputs" );
 
-				// To be used with Script_ClientPrint
-				g_pScriptVM->SetValue( "HUD_PRINTNOTIFY", HUD_PRINTNOTIFY );
-				g_pScriptVM->SetValue( "HUD_PRINTCONSOLE", HUD_PRINTCONSOLE );
-				g_pScriptVM->SetValue( "HUD_PRINTTALK", HUD_PRINTTALK );
-				g_pScriptVM->SetValue( "HUD_PRINTCENTER", HUD_PRINTCENTER );
+				ScriptRegisterConstant( g_pScriptVM, HUD_PRINTNOTIFY, "Constant value used with ClientPrint" );
+				ScriptRegisterConstant( g_pScriptVM, HUD_PRINTCONSOLE, "Constant value used with ClientPrint" );
+				ScriptRegisterConstant( g_pScriptVM, HUD_PRINTTALK, "Constant value used with ClientPrint" );
+				ScriptRegisterConstant( g_pScriptVM, HUD_PRINTCENTER, "Constant value used with ClientPrint" );
 
 				RegisterSharedScriptConstants();
 				RegisterSharedScriptFunctions();
