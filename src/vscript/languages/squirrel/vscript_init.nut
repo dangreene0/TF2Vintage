@@ -155,9 +155,9 @@ function RegisterFunctionDocumentation( name, signature, description )
 	Documentation.functions[name] <- [ signature, description ]
 }
 
-function RegisterClassDocumentation( name, baseclass, members, description )
+function RegisterClassDocumentation( name, baseclass, members, hooks, description )
 {
-	Documentation.classes[name] <- [ baseclass, members, description ]
+	Documentation.classes[name] <- [ baseclass, members, hooks, description ]
 }
 
 function RegisterHookDocumentation( name, signature, description )
@@ -234,33 +234,6 @@ local function printdocl( text )
 	return printdoc(text + "\n");
 }
 
-local function PrintMember(name, doc)
-{
-	local text = ("Member:      " + name + "\n");
-	text += ("Signature:   " + doc[0] + "\n");
-	if (doc[1].len())
-		text += ("Description: " + doc[1] + "\n");
-	printdocl(text);
-}
-
-local function PrintClass(name, doc)
-{
-	local text = "=====================================\n";
-	text += ("Class:       " + name + "\n");
-	text += ("Base:        " + doc[0] + "\n");
-	foreach( k,v in doc[1] ) {
-		PrintMember( k, v );
-	}
-	foreach( k,v in doc[2] ) {
-		PrintHook( k, v );
-	}
-	if (doc[3].len())
-		text += ("Description: " + doc[3] + "\n");
-	text += "=====================================\n\n";
-
-	printdoc(text);
-}
-
 local function PrintFunc(name, doc)
 {
 	local text = "Function:    " + name + "\n"
@@ -308,6 +281,33 @@ local function PrintHook(name, doc)
 	if (doc[1].len())
 		text += ("Description: " + doc[1] + "\n");
 	printdocl(text);
+}
+
+local function PrintMember(name, doc)
+{
+	local text = ("Member:      " + name + "\n");
+	text += ("Signature:   " + doc[0] + "\n");
+	if (doc[1].len())
+		text += ("Description: " + doc[1] + "\n");
+	printdocl(text);
+}
+
+local function PrintClass(name, doc)
+{
+	local text = "=====================================\n";
+	text += ("Class:       " + name + "\n");
+	text += ("Base:        " + doc[0] + "\n");
+	foreach( k,v in doc[1] ) {
+		PrintMember( k, v );
+	}
+	foreach( k,v in doc[2] ) {
+		PrintHook( k, v );
+	}
+	if (doc[3].len())
+		text += ("Description: " + doc[3] + "\n");
+	text += "=====================================\n\n";
+
+	printdoc(text);
 }
 
 local function PrintConst(name, doc)
