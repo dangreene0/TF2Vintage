@@ -56,6 +56,25 @@ extern "C"
 	}
 }
 
+const char *ScriptDataTypeToName( ScriptDataType_t datatype )
+{
+	switch ( datatype )
+	{
+		case FIELD_VOID:		return "void";
+		case FIELD_FLOAT:		return "float";
+		case FIELD_CSTRING:		return "string";
+		case FIELD_VECTOR:		return "Vector";
+		case FIELD_INTEGER:		return "int";
+		case FIELD_BOOLEAN:		return "bool";
+		case FIELD_CHARACTER:	return "char";
+		case FIELD_HSCRIPT:		return "handle";
+		case FIELD_VARIANT:		return "variant";
+		case FIELD_MATRIX3X4:	return "matrix3x4_t";
+		case FIELD_QUATERNION:	return "Quaternion";
+		default:				return "<unknown>";
+	}
+}
+
 static SQObjectPtr const _null_;
 
 typedef struct
@@ -146,6 +165,7 @@ private:
 
 	static void					ConvertToVariant( HSQUIRRELVM pVM, SQObject const &pValue, ScriptVariant_t *pVariant );
 	static void					PushVariant( HSQUIRRELVM pVM, ScriptVariant_t const &pVariant );
+	static void					VariantToString( ScriptVariant_t const &Variant, char (&pszString)[512] );
 
 	HSQOBJECT					CreateClass( ScriptClassDesc_t *pClassDesc );
 	bool						CreateInstance( ScriptClassDesc_t *pClassDesc, ScriptInstance_t *pInstance, SQRELEASEHOOK fnRelease );
@@ -155,7 +175,11 @@ private:
 		MAX_FUNCTION_PARAMS = 14
 	};
 	void						RegisterFunctionGuts( ScriptFunctionBinding_t *pFunction, ScriptClassDesc_t *pClassDesc = NULL );
-	void						RegisterDocumentation( HSQOBJECT pClosure, ScriptFunctionBinding_t *pFunction, ScriptClassDesc_t *pClassDesc = NULL );
+	void						RegisterDocumentation( ScriptFunctionBinding_t *pFunction, ScriptClassDesc_t *pClassDesc = NULL );
+	void						RegisterDocumentation( ScriptClassDesc_t *pClassDesc );
+	void						RegisterDocumentation( ScriptHook_t *pHook, ScriptClassDesc_t *pClassDesc );
+	void						RegisterDocumentation( ScriptEnumDesc_t *pEnumDesc );
+	void						RegisterDocumentation( ScriptConstantBinding_t *pConstant );
 
 	HSQOBJECT					LookupObject( char const *szName, HSCRIPT hScope = NULL, bool bRefCount = true );
 
@@ -627,6 +651,7 @@ bool CSquirrelVM::RegisterClass( ScriptClassDesc_t *pClassDesc )
 
 	sq_pop( GetVM(), 1 );
 
+	RegisterDocumentation( pClassDesc );
 
 	m_ScriptClasses.FastInsert( (intp)pClassDesc, _class( hObject ) );
 	return true;
@@ -642,6 +667,8 @@ void CSquirrelVM::RegisterConstant( ScriptConstantBinding_t *pScriptConstant )
 	sq_newslot( GetVM(), -3, SQFalse );
 	// pop off const table
 	sq_pop( GetVM(), 1 );
+
+	RegisterDocumentation( pScriptConstant );
 }
 
 void CSquirrelVM::RegisterEnum( ScriptEnumDesc_t *pEnumDesc )
@@ -678,6 +705,8 @@ void CSquirrelVM::RegisterEnum( ScriptEnumDesc_t *pEnumDesc )
 	sq_newslot( GetVM(), -3, SQTrue );
 	// pop off const table
 	sq_pop( GetVM(), 1 );
+
+	RegisterDocumentation( pEnumDesc );
 }
 
 HSCRIPT CSquirrelVM::RegisterInstance( ScriptClassDesc_t *pDesc, void *pInstance )
@@ -1234,6 +1263,41 @@ void CSquirrelVM::PushVariant( HSQUIRRELVM pVM, ScriptVariant_t const &Variant )
 	}
 }
 
+void CSquirrelVM::VariantToString( ScriptVariant_t const &Variant, char( &szValue )[512] )
+{
+	switch ( Variant.m_type )
+	{
+		case FIELD_VOID:
+			V_strncpy( szValue, "null", sizeof( szValue ) );
+			break;
+		case FIELD_FLOAT:
+			V_snprintf( szValue, sizeof( szValue ), "%f", Variant.m_float );
+			break;
+		case FIELD_CSTRING:
+			V_snprintf( szValue, sizeof( szValue ), "\"%s\"", Variant.m_pszString );
+			break;
+		case FIELD_VECTOR:
+			V_snprintf( szValue, sizeof( szValue ), "Vector( %f, %f, %f )", Variant.m_pVector->x, Variant.m_pVector->y, Variant.m_pVector->z );
+			break;
+		case FIELD_QUATERNION:
+			V_snprintf( szValue, sizeof( szValue ), "Quaternion( %f, %f, %f, %f )", Variant.m_pQuat->x, Variant.m_pQuat->y, Variant.m_pQuat->z, Variant.m_pQuat->w );
+			break;
+		case FIELD_MATRIX3X4:
+			V_snprintf( szValue, sizeof( szValue ), "matrix3x4_t( %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f )", Variant.m_pMatrix->m_flMatVal[0][0], Variant.m_pMatrix->m_flMatVal[0][1], Variant.m_pMatrix->m_flMatVal[0][2], Variant.m_pMatrix->m_flMatVal[0][3], Variant.m_pMatrix->m_flMatVal[1][0], Variant.m_pMatrix->m_flMatVal[1][1], Variant.m_pMatrix->m_flMatVal[1][2], Variant.m_pMatrix->m_flMatVal[1][3], Variant.m_pMatrix->m_flMatVal[2][0], Variant.m_pMatrix->m_flMatVal[2][1], Variant.m_pMatrix->m_flMatVal[2][2], Variant.m_pMatrix->m_flMatVal[2][3] );
+			break;
+		case FIELD_INTEGER:
+			V_snprintf( szValue, sizeof( szValue ), "%i", Variant.m_int );
+			break;
+		case FIELD_BOOLEAN:
+			V_snprintf( szValue, sizeof( szValue ), "%d", Variant.m_bool );
+			break;
+		case FIELD_CHARACTER:
+			//char buf[2] = { value.m_char, 0 };
+			V_snprintf( szValue, sizeof( szValue ), "\"%c\"", Variant.m_char );
+			break;
+	}
+}
+
 HSQOBJECT CSquirrelVM::CreateClass( ScriptClassDesc_t *pClassDesc )
 {
 	int nArgs = sq_gettop( GetVM() );
@@ -1364,22 +1428,16 @@ void CSquirrelVM::RegisterFunctionGuts( ScriptFunctionBinding_t *pFunction, Scri
 	sq_setnativeclosurename( GetVM(), -1, pFunction->m_desc.m_pszScriptName );
 	sq_setparamscheck( GetVM(), pFunction->m_desc.m_Parameters.Count() + 1, szParamCheck );
 
-	HSQOBJECT pClosure;
-	sq_getstackobj( GetVM(), -1, &pClosure );
-
 	sq_createslot( GetVM(), -3 );
 
-	if ( developer.GetInt() )
-	{
-		if ( pFunction->m_desc.m_pszDescription && *pFunction->m_desc.m_pszDescription == *SCRIPT_HIDE )
-			return;
-
-		RegisterDocumentation( pClosure, pFunction, pClassDesc );
-	}
+	RegisterDocumentation( pFunction, pClassDesc );
 }
 
-void CSquirrelVM::RegisterDocumentation( HSQOBJECT pClosure, ScriptFunctionBinding_t *pFunction, ScriptClassDesc_t *pClassDesc )
+void CSquirrelVM::RegisterDocumentation( ScriptFunctionBinding_t *pFunction, ScriptClassDesc_t *pClassDesc )
 {
+	if ( pFunction->m_desc.m_pszDescription && *pFunction->m_desc.m_pszDescription == *SCRIPT_HIDE )
+		return;
+
 	char szName[128]{};
 	if ( pClassDesc )
 	{
@@ -1388,46 +1446,8 @@ void CSquirrelVM::RegisterDocumentation( HSQOBJECT pClosure, ScriptFunctionBindi
 	}
 	V_strcat_safe( szName, pFunction->m_desc.m_pszScriptName );
 
-	char const *pszReturnType = "";
-	switch ( pFunction->m_desc.m_ReturnType )
-	{
-		case FIELD_VOID:
-			pszReturnType = "void";
-			break;
-		case FIELD_FLOAT:
-			pszReturnType = "float";
-			break;
-		case FIELD_CSTRING:
-			pszReturnType = "string";
-			break;
-		case FIELD_VECTOR:
-			pszReturnType = "Vector";
-			break;
-		case FIELD_QUATERNION:
-			pszReturnType = "Quaternion";
-			break;
-		case FIELD_MATRIX3X4:
-			pszReturnType = "matrix3x4_t";
-			break;
-		case FIELD_INTEGER:
-			pszReturnType = "int";
-			break;
-		case FIELD_BOOLEAN:
-			pszReturnType = "bool";
-			break;
-		case FIELD_CHARACTER:
-			pszReturnType = "char";
-			break;
-		case FIELD_HSCRIPT:
-			pszReturnType = "handle";
-			break;
-		default:
-			pszReturnType = "<unknown>";
-			break;
-	}
-
 	char szSignature[512]{};
-	V_strcat_safe( szSignature, pszReturnType );
+	V_strcat_safe( szSignature, ScriptDataTypeToName( pFunction->m_desc.m_ReturnType ) );
 	V_strcat_safe( szSignature, " " );
 	V_strcat_safe( szSignature, szName );
 	V_strcat_safe( szSignature, "(" );
@@ -1436,42 +1456,7 @@ void CSquirrelVM::RegisterDocumentation( HSQOBJECT pClosure, ScriptFunctionBindi
 		if ( i != 0 )
 			V_strcat_safe( szSignature, ", " );
 
-		char const *pszArgumentType = "";
-		switch ( pFunction->m_desc.m_Parameters[i] )
-		{
-			case FIELD_FLOAT:
-				pszArgumentType = "float";
-				break;
-			case FIELD_CSTRING:
-				pszArgumentType = "string";
-				break;
-			case FIELD_VECTOR:
-				pszArgumentType = "Vector";
-				break;
-			case FIELD_QUATERNION:
-				pszArgumentType = "Quaternion";
-				break;
-			case FIELD_MATRIX3X4:
-				pszArgumentType = "matrix3x4_t";
-				break;
-			case FIELD_INTEGER:
-				pszArgumentType = "int";
-				break;
-			case FIELD_BOOLEAN:
-				pszArgumentType = "bool";
-				break;
-			case FIELD_CHARACTER:
-				pszArgumentType = "char";
-				break;
-			case FIELD_HSCRIPT:
-				pszArgumentType = "handle";
-				break;
-			default:
-				pszReturnType = "<unknown>";
-				break;
-		}
-
-		V_strcat_safe( szSignature, pszArgumentType );
+		V_strcat_safe( szSignature, ScriptDataTypeToName( pFunction->m_desc.m_Parameters[i] ) );
 	}
 	V_strcat_safe( szSignature, ")" );
 
@@ -1479,15 +1464,151 @@ void CSquirrelVM::RegisterDocumentation( HSQOBJECT pClosure, ScriptFunctionBindi
 	sq_pushobject( GetVM(), pRegisterDocumentation );
 	// push our parameters
 	sq_pushroottable( GetVM() );
-	sq_pushobject( GetVM(), pClosure );
 	sq_pushstring( GetVM(), szName, -1 );
 	sq_pushstring( GetVM(), szSignature, -1 );
 	sq_pushstring( GetVM(), pFunction->m_desc.m_pszDescription, -1 );
 	// call the function and pop the parameters
-	sq_call( GetVM(), 5, SQFalse, SQ_CALL_RAISE_ERROR );
+	sq_call( GetVM(), 4, SQFalse, SQ_CALL_RAISE_ERROR );
+}
 
-	// pop off the closure
+void CSquirrelVM::RegisterDocumentation( ScriptClassDesc_t *pClassDesc )
+{
+	char szBaseClass[512] = "";
+	if ( pClassDesc->m_pBaseDesc )
+		V_strcpy_safe( szBaseClass, pClassDesc->m_pBaseDesc->m_pszScriptName );
+
+	sq_newtableex( GetVM(), pClassDesc->m_MemberBindings.Count() );
+	FOR_EACH_VEC( pClassDesc->m_MemberBindings, i )
+	{
+		char szMemberName[512] = "";
+		V_strcat_safe( szMemberName, pClassDesc->m_pszScriptName );
+		V_strcat_safe( szMemberName, "::" );
+		V_strcat_safe( szMemberName, pClassDesc->m_MemberBindings[i].m_pszScriptName );
+		sq_pushstring( GetVM(), szMemberName, -1 );
+		sq_newtableex( GetVM(), 2 );
+
+		char szMemberSignature[512];
+		V_sprintf_safe( szMemberSignature, "%s %s%s;", 
+						ScriptDataTypeToName( pClassDesc->m_MemberBindings[i].m_nMemberType ),
+						pClassDesc->m_MemberBindings[i].m_nMemberType == FIELD_HSCRIPT ? "@" : "",
+						pClassDesc->m_MemberBindings[i].m_pszScriptName );
+		sq_pushstring( GetVM(), szMemberSignature, -1 );
+		sq_arrayinsert( GetVM(), -2, 0 );
+
+		sq_pushstring( GetVM(), pClassDesc->m_MemberBindings[i].m_pszDescription, -1 );
+		sq_arrayinsert( GetVM(), -2, 1 );
+
+		sq_createslot( GetVM(), -3 );
+	}
+
+	HSQOBJECT hTable = _null_;
+	sq_getstackobj( GetVM(), -1, &hTable );
+	sq_addref( GetVM(), &hTable );
+
 	sq_pop( GetVM(), 1 );
+
+	FOR_EACH_VEC( pClassDesc->m_Hooks, i )
+	{
+		RegisterDocumentation( &pClassDesc->m_Hooks[i], pClassDesc );
+	}
+
+	sq_pushobject( GetVM(), LookupObject( "RegisterClassDocumentation", NULL, false ) );
+	sq_pushroottable( GetVM() );
+	sq_pushstring( GetVM(), pClassDesc->m_pszScriptName, -1 );
+	sq_pushstring( GetVM(), szBaseClass, -1 );
+	sq_pushobject( GetVM(), hTable );
+	sq_pushstring( GetVM(), pClassDesc->m_pszDescription, -1 );
+	sq_call( GetVM(), 5, SQFalse, SQ_CALL_RAISE_ERROR );
+}
+
+void CSquirrelVM::RegisterDocumentation( ScriptHook_t *pHook, ScriptClassDesc_t *pClassDesc )
+{
+	if ( pHook->m_func.m_desc.m_pszDescription && *pHook->m_func.m_desc.m_pszDescription == *SCRIPT_HIDE )
+		return;
+
+	char szName[128] = "";
+	if ( pClassDesc )
+	{
+		V_strcat_safe( szName, pClassDesc->m_pszScriptName );
+		V_strcat_safe( szName, "::" );
+	}
+	V_strcat_safe( szName, pHook->m_func.m_desc.m_pszScriptName );
+
+	char szSignature[512] = "";
+	V_strcat_safe( szSignature, ScriptDataTypeToName( pHook->m_func.m_desc.m_ReturnType ) );
+	V_strcat_safe( szSignature, " " );
+	V_strcat_safe( szSignature, szName );
+	V_strcat_safe( szSignature, "(" );
+	FOR_EACH_VEC( pHook->m_func.m_desc.m_Parameters, i )
+	{
+		if ( i != 0 )
+			V_strcat_safe( szSignature, ", " );
+
+		V_strcat_safe( szSignature, ScriptDataTypeToName( pHook->m_func.m_desc.m_Parameters[i] ) );
+	}
+	V_strcat_safe( szSignature, ")" );
+
+	sq_pushobject( GetVM(), LookupObject( "RegisterHookDocumentation", NULL, false ) );
+	sq_pushroottable( GetVM() );
+	sq_pushstring( GetVM(), szName, -1 );
+	sq_pushstring( GetVM(), szSignature, -1 );
+	sq_pushstring( GetVM(), pHook->m_func.m_desc.m_pszDescription, -1 );
+	sq_call( GetVM(), 4, SQFalse, SQ_CALL_RAISE_ERROR );
+}
+
+void CSquirrelVM::RegisterDocumentation( ScriptEnumDesc_t *pEnumDesc )
+{
+	if ( pEnumDesc->m_pszDescription && *pEnumDesc->m_pszDescription == *SCRIPT_HIDE )
+		return;
+
+	sq_newtableex( GetVM(), pEnumDesc->m_ConstantBindings.Count() );
+	FOR_EACH_VEC( pEnumDesc->m_ConstantBindings, i )
+	{
+		char szName[512];
+		V_sprintf_safe( szName, "%s", pEnumDesc->m_ConstantBindings[i].m_pszScriptName );
+		sq_pushstring( GetVM(), szName, -1 );
+		sq_newarray( GetVM(), 2 );
+		
+		char szValue[512];
+		VariantToString( pEnumDesc->m_ConstantBindings[i].m_data, szValue );
+		sq_pushstring( GetVM(), szValue, -1 );
+		sq_arrayinsert( GetVM(), -2, 0 );
+
+		sq_pushstring( GetVM(), pEnumDesc->m_ConstantBindings[i].m_pszDescription, -1 );
+		sq_arrayinsert( GetVM(), -2, 1 );
+
+		sq_createslot( GetVM(), -3 );
+	}
+	
+	HSQOBJECT hTable = _null_;
+	sq_getstackobj( GetVM(), -1, &hTable );
+	sq_addref( GetVM(), &hTable );
+
+	sq_pop( GetVM(), 1 );
+
+	sq_pushobject( GetVM(), LookupObject( "RegisterEnumDocumentation", NULL, false ) );
+	sq_pushroottable( GetVM() );
+	sq_pushstring( GetVM(), pEnumDesc->m_pszScriptName, -1 );
+	sq_pushobject( GetVM(), hTable );
+	sq_pushstring( GetVM(), pEnumDesc->m_pszDescription, -1 );
+	sq_call( GetVM(), 4, SQFalse, SQ_CALL_RAISE_ERROR );
+}
+
+void CSquirrelVM::RegisterDocumentation( ScriptConstantBinding_t *pConstDesc )
+{
+	if ( pConstDesc->m_pszDescription && pConstDesc->m_pszDescription[0] == SCRIPT_HIDE[0] )
+		return;
+
+	char szValue[512];
+	VariantToString( pConstDesc->m_data, szValue );
+
+	sq_pushobject( GetVM(), LookupObject( "RegisterConstDocumentation", NULL, false ) );
+	sq_pushroottable( GetVM() );
+	sq_pushstring( GetVM(), pConstDesc->m_pszScriptName, -1 );
+	sq_pushstring( GetVM(), ScriptDataTypeToName( pConstDesc->m_data.m_type ), -1 );
+	sq_pushstring( GetVM(), szValue, -1 );
+	sq_pushstring( GetVM(), pConstDesc->m_pszDescription, -1 );
+	sq_call( GetVM(), 5, SQFalse, SQ_CALL_RAISE_ERROR );
 }
 
 HSQOBJECT CSquirrelVM::LookupObject( char const *szName, HSCRIPT hScope, bool bRefCount )

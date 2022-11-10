@@ -155,9 +155,9 @@ function RegisterFunctionDocumentation( name, signature, description )
 	Documentation.functions[name] <- [ signature, description ]
 }
 
-function RegisterClassDocumentation( name, baseclass, members, hooks, description )
+function RegisterClassDocumentation( name, baseclass, members, description )
 {
-	Documentation.classes[name] <- [ baseclass, members, hooks, description ]
+	Documentation.classes[name] <- [ baseclass, members, description ]
 }
 
 function RegisterHookDocumentation( name, signature, description )
@@ -186,7 +186,7 @@ function RegisterEnumDocumentation( name, constants, description )
 	Documentation.enums[name] <- [ constants, description ]
 }
 
-function RegisterConstantDocumentation( name, signature, value, description )
+function RegisterConstantDocumentation( name, type, value, description )
 {
 	if ( description.len() )
 	{
@@ -201,10 +201,9 @@ function RegisterConstantDocumentation( name, signature, value, description )
 			local alias = description.slice( 1, colon );
 			description = description.slice( colon + 1 );
 			name = alias;
-			signature = "#";
 		}
 	}
-	Documentation.constants[name] <- [ signature, value, description ]
+	Documentation.constants[name] <- [ type, value, description ]
 }
 
 function Document( symbolOrTable, itemIfSymbol = null, descriptionIfSymbol = null )
@@ -300,11 +299,8 @@ local function PrintClass(name, doc)
 	foreach( k,v in doc[1] ) {
 		PrintMember( k, v );
 	}
-	foreach( k,v in doc[2] ) {
-		PrintHook( k, v );
-	}
-	if (doc[3].len())
-		text += ("Description: " + doc[3] + "\n");
+	if (doc[2].len())
+		text += ("Description: " + doc[2] + "\n");
 	text += "=====================================\n\n";
 
 	printdoc(text);
@@ -313,16 +309,17 @@ local function PrintClass(name, doc)
 local function PrintConst(name, doc)
 {
 	local text = ("Constant:    " + name + "\n");
-	if (doc[0] == null)
+	text +=      ("Type:        " + doc[0] + "\n");
+	if (doc[1] == null)
 	{
 		text += ("Value:       null\n");
 	}
 	else
 	{
-		text += ("Value:       " + doc[0] + "\n");
+		text += ("Value:       " + doc[1] + "\n");
 	}
-	if (doc[1].len())
-		text += ("Description: " + doc[1] + "\n");
+	if (doc[2].len())
+		text += ("Description: " + doc[2] + "\n");
 	printdocl(text);
 }
 
@@ -331,7 +328,9 @@ local function PrintEnum(name, doc)
 	local text = "=====================================\n";
 	text += ("Enum:        " + name + "\n");
 	foreach( k,v in doc[0] ) {
-		PrintConst( k, v );
+		text += ("  Enum:        " + k + "\n");
+		text += ("  Value:       " + v[0] + "\n");
+		text += ("  Description: " + v[1] + "\n");
 	}
 	if (doc[1].len())
 		text += ("Description: " + doc[1] + "\n");
