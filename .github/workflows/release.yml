@@ -49,8 +49,17 @@ jobs:
       - name: Upload product [7z]
         uses: actions/upload-artifact@v3
         with:
-          name: tf2vintage
+          name: tf2vintage (7z)
           path: tf2vintage.7z
+      - name: Pack [SFX]
+        uses: edgarrc/action-7z@v1
+        with:
+          args: 7z a -mx=9 -sfx7z.sfx tf2vintage.exe ./game/tf2vintage/
+      - name: Upload product [SFX]
+        uses: actions/upload-artifact@v3
+        with:
+          name: tf2vintage (SFX)
+          path: tf2vintage.exe
       - name: Clean up leftover binaries
         uses: geekyeggo/delete-artifact@v1
         with:
