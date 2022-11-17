@@ -1485,7 +1485,7 @@ void CSquirrelVM::RegisterDocumentation( ScriptClassDesc_t *pClassDesc )
 		V_strcat_safe( szMemberName, "::" );
 		V_strcat_safe( szMemberName, pClassDesc->m_MemberBindings[i].m_pszScriptName );
 		sq_pushstring( GetVM(), szMemberName, -1 );
-		sq_newtableex( GetVM(), 2 );
+		sq_newarray( GetVM(), 2 );
 
 		char szMemberSignature[512];
 		V_sprintf_safe( szMemberSignature, "%s %s%s;", 

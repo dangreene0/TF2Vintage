@@ -328,7 +328,7 @@ local function PrintEnum(name, doc)
 	local text = "=====================================\n";
 	text += ("Enum:        " + name + "\n");
 	foreach( k,v in doc[0] ) {
-		text += ("  Enum:        " + k + "\n");
+		text += ("  Name:        " + k + "\n");
 		text += ("  Value:       " + v[0] + "\n");
 		text += ("  Description: " + v[1] + "\n");
 	}
