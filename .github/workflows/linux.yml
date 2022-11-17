@@ -49,7 +49,7 @@ jobs:
       - name: Download Steamworks SDK
         uses: actions/checkout@v3
         with:
-          path: src/public
+          path: src/public/steam
           ssh-key: ${{ secrets.SDK_DEPLOY_KEY }}
           repository: Deathreus/steamworks_sdk
 
