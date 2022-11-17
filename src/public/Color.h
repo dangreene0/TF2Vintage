@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 class Color
 {
-	ALLOW_SCRIPT_ACCESS();
+	ALLOW_SCRIPT_ACCESS( Color );
 public:
 	// constructors
 	Color()

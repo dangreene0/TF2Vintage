@@ -127,10 +127,12 @@ void RegisterSharedScriptConstants()
 	//
 	// Enums
 	//
-	g_pScriptVM->RegisterEnum( GetScriptDescForEnum( IN ) );
-	g_pScriptVM->RegisterEnum( GetScriptDescForEnum( RenderMode ) );
-	g_pScriptVM->RegisterEnum( GetScriptDescForEnum( Hitgroup ) );
-	g_pScriptVM->RegisterEnum( GetScriptDescForEnum( MapLoad ) );
+	ScriptEnumDesc_t *pEnumDesc = ScriptEnumDesc_t::GetDescList();
+	while ( pEnumDesc )
+	{
+		g_pScriptVM->RegisterEnum( pEnumDesc );
+		pEnumDesc = pEnumDesc->m_pNext;
+	}
 
 	// 
 	// Activities

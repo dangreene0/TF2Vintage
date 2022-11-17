@@ -170,6 +170,7 @@ enum ExtendedFieldType
 
 typedef int ScriptDataType_t;
 struct ScriptVariant_t;
+typedef void ( *ScriptDescInitFunc_t )( );
 
 template <typename T> struct ScriptDeducer { /*enum { FIELD_TYPE = FIELD_TYPEUNKNOWN };*/ };
 #define DECLARE_DEDUCE_FIELDTYPE( fieldType, type ) template<> struct ScriptDeducer<type> { enum { FIELD_TYPE = fieldType }; };
@@ -336,7 +337,19 @@ struct ScriptHook_t
 
 struct ScriptClassDesc_t
 {
-	ScriptClassDesc_t() : m_pszScriptName( 0 ), m_pszClassname( 0 ), m_pszDescription( 0 ), m_pBaseDesc( 0 ), m_pfnConstruct( 0 ), m_pfnDestruct( 0 ), pHelper(NULL) {}
+	ScriptClassDesc_t( ScriptDescInitFunc_t pInitFunc ) : m_pszScriptName( 0 ), m_pszClassname( 0 ), m_pszDescription( 0 ), m_pBaseDesc( 0 ), m_pfnConstruct( 0 ), m_pfnDestruct( 0 ), pHelper( NULL )
+	{
+		pInitFunc();
+		auto pNext = GetDescList();
+		GetDescList() = this;
+		m_pNext = pNext;
+	}
+
+	static ScriptClassDesc_t *&GetDescList()
+	{
+		static ScriptClassDesc_t *pHead = NULL;
+		return pHead;
+	}
 
 	const char *						m_pszScriptName;
 	const char *						m_pszClassname;
@@ -347,6 +360,8 @@ struct ScriptClassDesc_t
 	void *(*m_pfnConstruct)();
 	void (*m_pfnDestruct)( void *);
 	IScriptInstanceHelper *				pHelper; // optional helper
+
+	ScriptClassDesc_t *					m_pNext;
 
 //---------------------------------------------------------
 	CUtlVector<ScriptHook_t>			m_Hooks;
@@ -609,10 +624,17 @@ struct ScriptEnumDesc_t
 {
 	ScriptEnumDesc_t() : m_pszScriptName( 0 ), m_pszDescription( 0 ), m_flags( 0 ) {}
 
+	static ScriptEnumDesc_t *&GetDescList()
+	{
+		static ScriptEnumDesc_t *pHead;
+		return pHead;
+	}
+
 	const char			*m_pszScriptName;
 	const char			*m_pszDescription;
 	CUtlVector<ScriptConstantBinding_t> m_ConstantBindings;
 	unsigned			m_flags;
+	ScriptEnumDesc_t	*m_pNext;
 };
 
 //-----------------------------------------------------------------------------
@@ -677,15 +699,27 @@ struct ScriptEnumDesc_t
 #endif
 
 #define BEGIN_SCRIPTENUM( enumName, description ) \
+		void Init##enumName##ScriptDesc(); \
 		struct ScriptEnum##enumName##Desc_t : public ScriptEnumDesc_t \
 		{ \
-		} g_##enumName##_EnumDesc; \
+			ScriptEnum##enumName##Desc_t( ScriptDescInitFunc_t pInitFunc ) : ScriptEnumDesc_t() \
+			{ \
+				pInitFunc(); \
+				auto pNext = GetDescList(); \
+				GetDescList() = this; \
+				m_pNext = pNext; \
+			} \
+		} g_##enumName##_EnumDesc( Init##enumName##ScriptDesc ); \
 		DEFINE_ENUM_SCRIPTDESC_FUNCTION( enumName ) \
+		{ \
+			return &g_##enumName##_EnumDesc; \
+		} \
+		void Init##enumName##ScriptDesc() \
 		{ \
 			static bool bInitialized; \
 			if ( bInitialized ) \
 			{ \
-				return &g_##enumName##_EnumDesc; \
+				return; \
 			} \
 			\
 			bInitialized = true; \
@@ -697,9 +731,7 @@ struct ScriptEnumDesc_t
 #define DEFINE_ENUMCONST( constant, description )							DEFINE_ENUMCONST_NAMED( constant, #constant, description )
 #define DEFINE_ENUMCONST_NAMED( constant, scriptName, description )			ScriptAddConstantToEnumDescNamed( pDesc, constant, scriptName, description );
 
-#define END_SCRIPTENUM() \
-			return pDesc; \
-		}
+#define END_SCRIPTENUM() }
 
 template<typename T>
 ScriptEnumDesc_t *GetScriptEnumDesc( T* );
@@ -710,7 +742,7 @@ ScriptEnumDesc_t *GetScriptEnumDesc( T* );
 // 
 //-----------------------------------------------------------------------------
 
-#define ALLOW_SCRIPT_ACCESS() 																template <typename T> friend ScriptClassDesc_t *GetScriptDesc(T *)
+#define ALLOW_SCRIPT_ACCESS( className ) 													friend void Init##className##ScriptDesc();
 
 #define BEGIN_SCRIPTDESC( className, baseClass, description )								BEGIN_SCRIPTDESC_NAMED( className, baseClass, #className, description )
 #define BEGIN_SCRIPTDESC_ROOT( className, description )										BEGIN_SCRIPTDESC_ROOT_NAMED( className, #className, description )
@@ -725,13 +757,18 @@ ScriptEnumDesc_t *GetScriptEnumDesc( T* );
 #endif
 
 #define BEGIN_SCRIPTDESC_NAMED( className, baseClass, scriptName, description ) \
-	ScriptClassDesc_t g_##className##_ScriptDesc; \
+	void Init##className##ScriptDesc(); \
+	ScriptClassDesc_t g_##className##_ScriptDesc( Init##className##ScriptDesc ); \
 	DEFINE_SCRIPTDESC_FUNCTION( className, baseClass ) \
+	{ \
+		return &g_##className##_ScriptDesc; \
+	} \
+	void Init##className##ScriptDesc() \
 	{ \
 		static bool bInitialized; \
 		if ( bInitialized ) \
 		{ \
-			return &g_##className##_ScriptDesc; \
+			return; \
 		} \
 		\
 		bInitialized = true; \
@@ -755,9 +792,7 @@ ScriptEnumDesc_t *GetScriptEnumDesc( T* );
 #define BEGIN_SCRIPTDESC_ROOT_NAMED( className, scriptName, description ) \
 	BEGIN_SCRIPTDESC_NAMED( className, ScriptNoBase_t, scriptName, description )
 
-#define END_SCRIPTDESC() \
-		return pDesc; \
-	}
+#define END_SCRIPTDESC() }
 
 #define DEFINE_SCRIPTFUNC( func, description )												DEFINE_SCRIPTFUNC_NAMED( func, #func, description )
 #define DEFINE_SCRIPTFUNC_NAMED( func, scriptName, description )							ScriptAddFunctionToClassDescNamed( pDesc, _className, func, scriptName, description );

@@ -837,4 +837,11 @@ void RegisterSharedScriptFunctions()
 	//ScriptRegisterFunction( g_pScriptVM, GetTickCount, "Simulation ticks" );
 
 	RegisterScriptSingletons();
+
+	ScriptClassDesc_t *pClassDesc = ScriptClassDesc_t::GetDescList();
+	while ( pClassDesc )
+	{
+		g_pScriptVM->RegisterClass( pClassDesc );
+		pClassDesc = pClassDesc->m_pNext;
+	}
 }

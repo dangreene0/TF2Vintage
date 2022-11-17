@@ -34,7 +34,8 @@ HSCRIPT VScriptCompileScript( const char *pszScriptName, bool bWarnMissing = fal
 bool VScriptRunScript( const char *pszScriptName, HSCRIPT hScope, bool bWarnMissing = false );
 inline bool VScriptRunScript( const char *pszScriptName, bool bWarnMissing = false ) { return VScriptRunScript( pszScriptName, NULL, bWarnMissing ); }
 
-#define DECLARE_ENT_SCRIPTDESC()													ALLOW_SCRIPT_ACCESS(); virtual ScriptClassDesc_t *GetScriptDesc()
+// !FIXME! This relies on the developer not forgetting to add DECLARE_CLASS to their entity class, do we want to enforce that?
+#define DECLARE_ENT_SCRIPTDESC()													ALLOW_SCRIPT_ACCESS( ThisClass ); virtual ScriptClassDesc_t *GetScriptDesc()
 
 #define _IMPLEMENT_ENT_SCRIPTDESC_ACCESSOR( className )								template <> ScriptClassDesc_t *GetScriptDesc<className>( className * ); ScriptClassDesc_t *className::GetScriptDesc()  { return ::GetScriptDesc( this ); }	
 
