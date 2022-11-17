@@ -265,29 +265,63 @@ END_SEND_TABLE()
 
 
 BEGIN_ENT_SCRIPTDESC( CBaseAnimating, CBaseEntity, "Animating models" )
+
 	DEFINE_SCRIPTFUNC( LookupAttachment, "Get the named attachement id" )
 	DEFINE_SCRIPTFUNC_NAMED( ScriptGetAttachmentOrigin, "GetAttachmentOrigin", "Get the attachement id's origin vector" )
 	DEFINE_SCRIPTFUNC_NAMED( ScriptGetAttachmentAngles, "GetAttachmentAngles", "Get the attachement id's angles as a p,y,r vector" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetAttachmentMatrix, "GetAttachmentMatrix", "Get the attachement id's matrix transform" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetPoseParameter, "GetPoseParameter", "Get the specified pose parameter's value" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptSetPoseParameter, "SetPoseParameter", "Set the specified pose parameter to the specified value" )
+	DEFINE_SCRIPTFUNC( LookupBone, "Get the named bone id" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetBoneTransform, "GetBoneTransform", "Get the transform for the specified bone" )
+	DEFINE_SCRIPTFUNC( GetPhysicsBone, "Get physics bone from bone index" )
+	DEFINE_SCRIPTFUNC( GetNumBones, "Get the number of bones" )
+	DEFINE_SCRIPTFUNC( GetSequence, "Gets the current sequence" )
+	DEFINE_SCRIPTFUNC( SetSequence, "Sets the current sequence" )
+	DEFINE_SCRIPTFUNC( SequenceLoops, "Loops the current sequence" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptSequenceDuration, "SequenceDuration", "Get the specified sequence duration" )
+	DEFINE_SCRIPTFUNC( LookupSequence, "Gets the index of the specified sequence name" )
+	DEFINE_SCRIPTFUNC( LookupActivity, "Gets the ID of the specified activity name" )
+	DEFINE_SCRIPTFUNC_NAMED( HasMovement, "SequenceHasMovement", "Checks if the specified sequence has movement" )
+	DEFINE_SCRIPTFUNC( GetSequenceMoveYaw, "Gets the move yaw of the specified sequence" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetSequenceMoveDist, "GetSequenceMoveDist", "Gets the move distance of the specified sequence" )
+	DEFINE_SCRIPTFUNC( GetSequenceName, "Gets the name of the specified sequence index" )
+	DEFINE_SCRIPTFUNC( GetSequenceActivityName, "Gets the activity name of the specified sequence index" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetSequenceActivity, "GetSequenceActivity", "Gets the activity ID of the specified sequence index" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptSelectWeightedSequence, "SelectWeightedSequence", "Selects a sequence for the specified activity ID" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptSelectHeaviestSequence, "SelectHeaviestSequence", "Selects the sequence with the heaviest weight for the specified activity ID" )
+	DEFINE_SCRIPTFUNC_NAMED( ScriptGetSequenceKeyValues, "GetSequenceKeyValues", "Get a KeyValue class instance on the specified sequence. WARNING: This uses the same KeyValue pointer as GetModelKeyValues!" )
+	DEFINE_SCRIPTFUNC( GetPlaybackRate, "" )
+	DEFINE_SCRIPTFUNC( SetPlaybackRate, "" )
+	DEFINE_SCRIPTFUNC( GetCycle, "" )
+	DEFINE_SCRIPTFUNC( SetCycle, "" )
+	DEFINE_SCRIPTFUNC( GetSkin, "Gets the model's skin" )
+	DEFINE_SCRIPTFUNC( SetSkin, "Sets the model's skin" )
 	DEFINE_SCRIPTFUNC( IsSequenceFinished, "Ask whether the main sequence is done playing" )
 	DEFINE_SCRIPTFUNC( SetBodygroup, "Sets a bodygroup" )
-	DEFINE_SCRIPTFUNC( GetBodygroup, "Get the bodygroup" )
-	DEFINE_SCRIPTFUNC( GetBodygroupName, "Get the name of the bodygroup" )
-	DEFINE_SCRIPTFUNC( GetSequence, "Get the active sequence." )
-	DEFINE_SCRIPTFUNC( SetSequence, "Sets the active sequence, keeping the current cycle." )
-	DEFINE_SCRIPTFUNC( GetSequenceName, "Returns the name of the sequence." )
-	DEFINE_SCRIPTFUNC( LookupSequence, "Get the named sequence id" )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptSetPoseParameter, "SetPoseParameter", "Set the specified pose parameter to the specified value." )
-	DEFINE_SCRIPTFUNC( LookupActivity, "Get the named activity id" )
-	DEFINE_SCRIPTFUNC( GetSequenceActivityName, "Get the activity name of the sequence" )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptSequenceDuration, "GetSequenceDuration", "Returns the duration in seconds of the passed sequence." )
-	DEFINE_SCRIPTFUNC( GetModelScale, "Get scale of entity's model." )
-	DEFINE_SCRIPTFUNC( SetModelScale, "Sets the model's scale with change duration." )
-	DEFINE_SCRIPTFUNC( StopAnimation, "Stop the current animation by setting playback rate to 0.0" )
-	DEFINE_SCRIPTFUNC( ResetSequence, "Sets the active sequence, resetting the current cycle" )
-	DEFINE_SCRIPTFUNC( LookupBone, "Get the named bone id" )
-	DEFINE_SCRIPTFUNC( GetAttachmentBone, "Gets the bone for an attachment" )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptGetBoneOrigin, "GetBoneOrigin", "Get the bone id's origin vector" )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptGetBoneAngles, "GetBoneAngles", "Get the bone id's angles" )
+	DEFINE_SCRIPTFUNC( GetBodygroup, "Gets a bodygroup" )
+	DEFINE_SCRIPTFUNC( GetBodygroupName, "Gets a bodygroup name" )
+	DEFINE_SCRIPTFUNC( FindBodygroupByName, "Finds a bodygroup by name" )
+	DEFINE_SCRIPTFUNC( GetBodygroupCount, "Gets the number of models in a bodygroup" )
+	DEFINE_SCRIPTFUNC( GetNumBodyGroups, "Gets the number of bodygroups" )
+
+	DEFINE_SCRIPTFUNC( Dissolve, "Use 'sprites/blueglow1.vmt' for the default material, Time() for the default start time, false for npcOnly if you don't want it to check if the entity is a NPC first, 0 for the default dissolve type, Vector(0,0,0) for the default dissolver origin, and 0 for the default magnitude." )
+	DEFINE_SCRIPTFUNC( Ignite, "'NPCOnly' only lets this fall through if the entity is a NPC and 'CalledByLevelDesigner' determines whether to treat this like the Ignite input or just an internal ignition call." )
+	DEFINE_SCRIPTFUNC( Scorch, "Makes the entity darker from scorching" )
+
+	DEFINE_SCRIPTFUNC( BecomeRagdollOnClient, "" )
+	DEFINE_SCRIPTFUNC( IsRagdoll, "" )
+	DEFINE_SCRIPTFUNC( CanBecomeRagdoll, "" )
+
+	BEGIN_SCRIPTHOOK( OnServerRagdoll, "OnServerRagdoll", FIELD_VOID, "Called when this entity creates/turns into a server-side ragdoll." )
+		DEFINE_SCRIPTHOOK_PARAM( "ragdoll", FIELD_HSCRIPT )
+		DEFINE_SCRIPTHOOK_PARAM( "submodel", FIELD_BOOLEAN )
+	END_SCRIPTHOOK()
+
+	BEGIN_SCRIPTHOOK( HandleAnimEvent, "HandleAnimEvent", FIELD_BOOLEAN, "Called when handling animation events. Return false to cancel base handling." )
+		DEFINE_SCRIPTHOOK_PARAM( "event", FIELD_HSCRIPT )
+	END_SCRIPTHOOK()
+
 END_SCRIPTDESC();
 
 
@@ -315,6 +349,9 @@ CBaseAnimating::CBaseAnimating()
 	m_fadeMaxDist = 0;
 	m_flFadeScale = 0.0f;
 	m_fBoneCacheFlags = 0;
+
+	m_hOnServerRagdoll = INVALID_HSCRIPT;
+	m_hHandleAnimEvent = INVALID_HSCRIPT;
 }
 
 CBaseAnimating::~CBaseAnimating()
@@ -1134,6 +1171,9 @@ void CBaseAnimating::DispatchAnimEvents ( CBaseAnimating *eventHandler )
 			event.eventtime = m_flAnimTime + (flCycle - GetCycle()) / flCycleRate + GetAnimTimeInterval();
 		}
 
+		if ( !eventHandler->ScriptHookHandleAnimEvent( &event ) )
+			continue;
+
 		/*
 		if (m_debugOverlays & OVERLAY_NPC_SELECTED_BIT)
 		{
@@ -1162,6 +1202,30 @@ void CBaseAnimating::DispatchAnimEvents ( CBaseAnimating *eventHandler )
 			break;
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CBaseAnimating::ScriptHookHandleAnimEvent( animevent_t *pEvent )
+{
+	if ( m_ScriptScope.IsInitialized() )
+	{
+		if ( m_hHandleAnimEvent == INVALID_HSCRIPT )
+		{
+			m_hHandleAnimEvent = m_ScriptScope.LookupFunction( "HandleAnimEvent" );
+		}
+		HSCRIPT hEvent = g_pScriptVM->RegisterInstance( pEvent );
+
+		// event
+		ScriptVariant_t returnValue = true;
+		m_ScriptScope.Call( m_hHandleAnimEvent, &returnValue, hEvent );
+
+		g_pScriptVM->RemoveInstance( hEvent );
+		return returnValue.m_bool;
+	}
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1993,37 +2057,6 @@ bool CBaseAnimating::GetAttachment ( int iAttachment, Vector &absOrigin, QAngle 
 
 
 //-----------------------------------------------------------------------------
-// Purpose: Returns the world location and world angles of an attachment to vscript caller
-// Input  : attachment name
-// Output :	location and angles
-//-----------------------------------------------------------------------------
-const Vector &CBaseAnimating::ScriptGetAttachmentOrigin( int iAttachment )
-{
-
-	static Vector absOrigin;
-	static QAngle qa;
-
-	CBaseAnimating::GetAttachment( iAttachment, absOrigin, qa );
-
-	return absOrigin;
-}
-
-const Vector &CBaseAnimating::ScriptGetAttachmentAngles( int iAttachment )
-{
-
-	static Vector absOrigin;
-	static Vector absAngles;
-	static QAngle qa;
-
-	CBaseAnimating::GetAttachment( iAttachment, absOrigin, qa );
-	absAngles.x = qa.x;
-	absAngles.y = qa.y;
-	absAngles.z = qa.z;
-	return absAngles;
-}
-
-
-//-----------------------------------------------------------------------------
 // Purpose: Returns the world location and world angles of an attachment
 // Input  : attachment index
 // Output :	location and angles
@@ -2112,6 +2145,80 @@ bool CBaseAnimating::GetAttachment( int iAttachment, Vector &absOrigin, Vector *
 	return bRet;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Returns the world location and world angles of an attachment to vscript caller
+// Input  : attachment name
+// Output :	location and angles
+//-----------------------------------------------------------------------------
+const Vector &CBaseAnimating::ScriptGetAttachmentOrigin( int iAttachment )
+{
+
+	static Vector absOrigin;
+	static QAngle absAngles;
+
+	GetAttachment( iAttachment, absOrigin, absAngles );
+	return absOrigin;
+}
+
+const QAngle &CBaseAnimating::ScriptGetAttachmentAngles( int iAttachment )
+{
+
+	static Vector absOrigin;
+	static QAngle absAngles;
+
+	GetAttachment( iAttachment, absOrigin, absAngles );
+	return absAngles;
+}
+
+const matrix3x4_t &CBaseAnimating::ScriptGetAttachmentMatrix( int iAttachment )
+{
+	static matrix3x4_t matrix;
+
+	GetAttachment( iAttachment, matrix );
+	return matrix;
+}
+
+float CBaseAnimating::ScriptGetPoseParameter( const char *szName )
+{
+	CStudioHdr *pHdr = GetModelPtr();
+	if ( pHdr == NULL )
+		return 0.0f;
+
+	int iPoseParam = LookupPoseParameter( pHdr, szName );
+	return GetPoseParameter( iPoseParam );
+}
+
+const matrix3x4_t &CBaseAnimating::ScriptGetBoneTransform( int iBone )
+{
+	static matrix3x4_t transform;
+
+	GetBoneTransform( iBone, transform );
+
+	return transform;
+}
+
+//-----------------------------------------------------------------------------
+// VScript access to sequence's key values
+// for iteration and value access, use:
+//	ScriptFindKey, ScriptGetFirstSubKey, ScriptGetString, 
+//	ScriptGetInt, ScriptGetFloat, ScriptGetNextKey
+// NOTE: This is recycled from ScriptGetModelKeyValues() and uses its pointer!!!
+//-----------------------------------------------------------------------------
+HSCRIPT CBaseAnimating::ScriptGetSequenceKeyValues( int iSequence )
+{
+	KeyValues *pSeqKeyValues = GetSequenceKeyValues( iSequence );
+	HSCRIPT hScript = NULL;
+	if ( pSeqKeyValues )
+	{
+		// UNDONE: how does destructor get called on this
+		m_pScriptModelKeyValues = new CScriptKeyValues( pSeqKeyValues );
+
+		// UNDONE: who calls ReleaseInstance on this??? Does name need to be unique???
+		hScript = g_pScriptVM->RegisterInstance( m_pScriptModelKeyValues );
+	}
+
+	return hScript;
+}
 
 //-----------------------------------------------------------------------------
 // Returns the attachment in local space

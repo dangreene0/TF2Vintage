@@ -143,6 +143,7 @@ public:
 	bool HasAnimEvent( int nSequence, int nEvent );
 	virtual	void DispatchAnimEvents ( CBaseAnimating *eventHandler ); // Handle events that have happend since last time called up until X seconds into the future
 	virtual void HandleAnimEvent( animevent_t *pEvent );
+	bool ScriptHookHandleAnimEvent( animevent_t *pEvent );
 
 	int		LookupPoseParameter( CStudioHdr *pStudioHdr, const char *szName );
 	inline int	LookupPoseParameter( const char *szName ) { return LookupPoseParameter(GetModelPtr(), szName); }
@@ -193,7 +194,28 @@ public:
 	int GetAttachmentBone( int iAttachment );
 	virtual bool GetAttachment( int iAttachment, matrix3x4_t &attachmentToWorld );
 	const Vector &ScriptGetAttachmentOrigin( int iAttachment );
-	const Vector &ScriptGetAttachmentAngles( int iAttachment );
+	const QAngle &ScriptGetAttachmentAngles( int iAttachment );
+
+	const matrix3x4_t &ScriptGetAttachmentMatrix( int iAttachment );
+	float	ScriptGetPoseParameter( const char *szName );
+
+	const matrix3x4_t &ScriptGetBoneTransform( int iBone );
+
+	int		ScriptGetSequenceActivity( int iSequence ) { return GetSequenceActivity( iSequence ); }
+	float	ScriptGetSequenceMoveDist( int iSequence ) { return GetSequenceMoveDist( GetModelPtr(), iSequence ); }
+	int		ScriptSelectHeaviestSequence( int activity ) { return SelectHeaviestSequence( (Activity)activity ); }
+	int		ScriptSelectWeightedSequence( int activity, int curSequence ) { return SelectWeightedSequence( (Activity)activity, curSequence ); }
+
+	HSCRIPT ScriptGetSequenceKeyValues( int iSequence );
+
+	// For VScript
+	int		GetSkin() { return m_nSkin; }
+	void	SetSkin( int iSkin ) { m_nSkin = iSkin; }
+private:
+	HSCRIPT m_hOnServerRagdoll;
+	HSCRIPT m_hHandleAnimEvent;
+
+public:
 
 	// These return the attachment in the space of the entity
 	bool GetAttachmentLocal( const char *szName, Vector &origin, QAngle &angles );
