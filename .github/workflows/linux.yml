@@ -14,7 +14,7 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -22,7 +22,7 @@ jobs:
         run: |
           echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
       
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         id: cache
         with:
           path: |
@@ -47,7 +47,7 @@ jobs:
         run: sudo apt update && sudo apt install -y zip build-essential gcc-multilib g++-multilib
       
       - name: Download Steamworks SDK
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: src/public
           ssh-key: ${{ secrets.SDK_DEPLOY_KEY }}
@@ -60,7 +60,7 @@ jobs:
         run: cd src && sudo make -f TF2vintage.mak
 
       - name: Upload product
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: tf2vintage-linux
           path: game/tf2vintage/bin/
