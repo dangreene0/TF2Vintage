@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: src/public
-          ssh: ${{ secrets.SDK_DEPLOY_KEY }}
+          ssh-key: ${{ secrets.SDK_DEPLOY_KEY }}
           repository: Deathreus/steamworks_sdk
 
       - name: Create project
