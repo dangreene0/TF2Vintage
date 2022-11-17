@@ -417,7 +417,6 @@ public:
 	virtual void			SetModelIndex( int index );
 	virtual int				GetModelIndex( void ) const;
  	virtual string_t		GetModelName( void ) const;
-	const char				*ScriptGetModelName( void ) const;
 
 	void					ClearModelIndexOverrides( void );
 	virtual void			SetModelIndexOverride( int index, int nValue );
@@ -1996,6 +1995,7 @@ public:
 	void ScriptSetParent( HSCRIPT hParent, const char *szAttachment );
 
 	void ScriptSetName( const char *newName );
+	const char *ScriptGetModelName( void ) const;
 
 	void ScriptEmitSound( const char *soundname );
 	void ScriptStopSound( const char *soundname );
