@@ -35,6 +35,7 @@
 #include "datacache/imdlcache.h"
 #include "basemultiplayerplayer.h"
 #include "voice_gamemgr.h"
+#include "fmtstr.h"
 
 #if defined( TF_DLL ) || defined ( TF_VINTAGE )
 #include "tf_player.h"
@@ -1594,6 +1595,31 @@ void ClientCommand( CBasePlayer *pPlayer, const CCommand &args )
 	{
 		if ( !g_pGameRules->ClientCommand( pPlayer, args ) )
 		{
+			// Console command hook for VScript
+			if ( pPlayer->m_ScriptScope.IsInitialized() )
+			{
+				ScriptVariant_t functionReturn;
+				g_pScriptVM->SetValue( "command", ScriptVariant_t( pCmd ) );
+
+				ScriptVariant_t varTable;
+				g_pScriptVM->CreateTable( varTable );
+				HSCRIPT hTable = varTable.m_hScript;
+				for ( int i = 0; i < args.ArgC(); i++ )
+				{
+					g_pScriptVM->SetValue( hTable, CNumStr( i ), ScriptVariant_t( args[i] ) );
+				}
+				g_pScriptVM->SetValue( "args", varTable );
+
+				pPlayer->CallScriptFunction( "ClientCommand", &functionReturn );
+
+				g_pScriptVM->ClearValue( "command" );
+				g_pScriptVM->ClearValue( "args" );
+				g_pScriptVM->ReleaseValue( varTable );
+
+				if ( functionReturn.m_bool )
+					return;
+			}
+
 			if ( Q_strlen( pCmd ) > 128 )
 			{
 				ClientPrint( pPlayer, HUD_PRINTCONSOLE, "Console command too long.\n" );

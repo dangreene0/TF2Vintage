@@ -617,6 +617,33 @@ public:
 
 	virtual bool			ShouldAnnounceAchievement( void );
 
+	// ----------------------------------------------------------------------------
+	// VScript accessors
+	// ----------------------------------------------------------------------------
+	bool					ScriptIsPlayerNoclipping( void );
+
+	HSCRIPT					VScriptGetExpresser();
+
+	int						GetButtons() { return m_nButtons; }
+	int						GetButtonPressed() { return m_afButtonPressed; }
+	int						GetButtonReleased() { return m_afButtonReleased; }
+	int						GetButtonLast() { return m_afButtonLast; }
+	int						GetButtonDisabled() { return m_afButtonDisabled; }
+	int						GetButtonForced() { return m_afButtonForced; }
+
+	const Vector&			ScriptGetEyeForward();
+	const Vector&			ScriptGetEyeRight();
+	const Vector&			ScriptGetEyeUp();
+
+	Vector					ScriptGetAutoaimVector( float flScale ) { return GetAutoaimVector( flScale ); }
+	Vector					ScriptGetAutoaimVectorCustomMaxDist( float flScale, float flMaxDist ) { return GetAutoaimVector( flScale, flMaxDist ); }
+
+	const Vector&			ScriptGetPunchAngle();
+	void					ScriptSetPunchAngle( const Vector &punchAngle );
+
+	void					ScriptSetFOV( int iFOV, float flSpeed );					// Overrides player FOV, ignores zoom owner
+	HSCRIPT					ScriptGetFOVOwner() { return ToHScript( m_hZoomOwner ); }
+
 #if defined ( USES_ECON_ITEMS )
 	// Wearables
 	virtual void			EquipWearable( CEconWearable *pItem );
@@ -1141,6 +1168,8 @@ private:
 	// Player name
 	char					m_szNetname[MAX_PLAYER_NAME_LENGTH];
 
+	HSCRIPT					m_hPlayerRunCommand;
+
 protected:
 	// HACK FOR TF2 Prediction
 	friend class CTFGameMovementRecon;
@@ -1226,17 +1255,6 @@ private:
 
 public:
 	virtual unsigned int PlayerSolidMask( bool brushOnly = false ) const;	// returns the solid mask for the given player, so bots can have a more-restrictive set
-
-	// ----------------------------------------------------------------------------
-	// VScript accessors
-	// ----------------------------------------------------------------------------
-	const QAngle&		ScriptEyeAngles( void );
-	const Vector&		ScriptEyeForward( void );
-	const Vector&		ScriptEyeRight( void );
-	const Vector&		ScriptEyeUp( void );
-
-	const Vector&		ScriptGetPunchAngle();
-	void				ScriptSetPunchAngle( const Vector &punchAngle );
 };
 
 typedef CHandle<CBasePlayer> CBasePlayerHandle;
@@ -1368,21 +1386,24 @@ inline bool CBasePlayer::IsFiringWeapon( void ) const
 	return m_weaponFiredTimer.HasStarted() && m_weaponFiredTimer.IsLessThen( 1.0f );
 }
 
-inline const Vector &CBasePlayer::ScriptEyeForward( void )
+//-----------------------------------------------------------------------------
+// VScript accessors
+//-----------------------------------------------------------------------------
+inline const Vector &CBasePlayer::ScriptGetEyeForward()
 {
-	static Vector vecFwd;
-	EyeVectors( &vecFwd, NULL, NULL );
-	return vecFwd;
+	static Vector vecForward;
+	EyeVectors( &vecForward );
+	return vecForward;
 }
 
-inline const Vector &CBasePlayer::ScriptEyeRight( void )
+inline const Vector &CBasePlayer::ScriptGetEyeRight()
 {
 	static Vector vecRight;
-	EyeVectors( NULL, &vecRight, NULL );
+	EyeVectors( NULL, &vecRight );
 	return vecRight;
 }
 
-inline const Vector &CBasePlayer::ScriptEyeUp( void )
+inline const Vector &CBasePlayer::ScriptGetEyeUp()
 {
 	static Vector vecUp;
 	EyeVectors( NULL, NULL, &vecUp );
