@@ -391,6 +391,20 @@ void CBaseAnimating::Activate()
 	}
 }
 
+void CBaseAnimating::UpdateOnRemove()
+{
+	if ( m_ScriptScope.IsInitialized() )
+	{
+		if ( m_hHandleAnimEvent != INVALID_HSCRIPT )
+			m_ScriptScope.ReleaseFunction( m_hHandleAnimEvent );
+
+		if ( m_hOnServerRagdoll != INVALID_HSCRIPT )
+			m_ScriptScope.ReleaseFunction( m_hOnServerRagdoll );
+	}
+
+	BaseClass::UpdateOnRemove();
+}
+
 
 //-----------------------------------------------------------------------------
 // Force our lighting origin to be trasmitted
@@ -938,6 +952,24 @@ bool CBaseAnimating::CanBecomeRagdoll( void )
 	
 	if ( GetFlags() & FL_TRANSRAGDOLL )
 		 return false;
+
+	return true;
+}
+
+bool CBaseAnimating::ScriptHookOnServerRagdoll( HSCRIPT hRagdoll, bool bSubModel )
+{
+	if ( m_ScriptScope.IsInitialized() )
+	{
+		if ( m_hOnServerRagdoll == INVALID_HSCRIPT )
+		{
+			m_hOnServerRagdoll = m_ScriptScope.LookupFunction( "OnServerRagdoll" );
+		}
+
+		// event
+		ScriptVariant_t returnValue = true;
+		m_ScriptScope.Call( m_hOnServerRagdoll, &returnValue, hRagdoll, bSubModel );
+		return returnValue.m_bool;
+	}
 
 	return true;
 }

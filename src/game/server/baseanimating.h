@@ -50,6 +50,7 @@ public:
 	virtual void Activate();
 	virtual void Spawn();
 	virtual void Precache();
+	virtual void UpdateOnRemove();
 	virtual void SetTransmit( CCheckTransmitInfo *pInfo, bool bAlways );
 
 	virtual int	 Restore( IRestore &restore );
@@ -132,6 +133,7 @@ public:
 	virtual bool BecomeRagdollOnClient( const Vector &force );
 	virtual bool IsRagdoll();
 	virtual bool CanBecomeRagdoll( void ); //Check if this entity will ragdoll when dead.
+	bool ScriptHookOnServerRagdoll( HSCRIPT hRagdoll, bool bSubModel );
 
 	virtual	void GetSkeleton( CStudioHdr *pStudioHdr, Vector pos[], Quaternion q[], int boneMask );
 
