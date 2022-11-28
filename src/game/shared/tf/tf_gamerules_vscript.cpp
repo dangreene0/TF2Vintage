@@ -15,9 +15,24 @@
 #include "tier0/memdbgon.h"
 
 #if defined( GAME_DLL )
-class CScriptConvars
+class CScriptConvars : public CAutoGameSystem
 {
 public:
+	void LevelInitPreEntity() OVERRIDE
+	{
+		m_AllowList.RemoveAll();
+
+		KeyValuesAD kvAllowList( "vscript_convar_allowlist" );
+		if ( kvAllowList->LoadFromFile( g_pFullFileSystem, "cfg/vscript_convar_allowlist.txt", "GAME" ) )
+		{
+			FOR_EACH_SUBKEY( kvAllowList, pSubKey )
+			{
+				if ( !V_stricmp( pSubKey->GetString(), "allowed" ) )
+					m_AllowList.AddString( pSubKey->GetName() );
+			}
+		}
+	}
+
 	ScriptVariant_t GetClientConvarValue( int clientIndex, const char *name )
 	{
 		const char *cvar = engine->GetClientConVarValue( clientIndex, name );
@@ -48,7 +63,27 @@ public:
 		return SCRIPT_VARIANT_NULL;
 	}
 
-	void SetValue( const char *name, float value )
+	ScriptVariant_t GetInt( const char *name )
+	{
+		ConVarRef cvar( name );
+		if ( cvar.IsValid() )
+		{
+			return ScriptVariant_t( cvar.GetInt() );
+		}
+		return SCRIPT_VARIANT_NULL;
+	}
+
+	ScriptVariant_t GetBool( const char *name )
+	{
+		ConVarRef cvar( name );
+		if ( cvar.IsValid() )
+		{
+			return ScriptVariant_t( cvar.GetBool() );
+		}
+		return SCRIPT_VARIANT_NULL;
+	}
+
+	void SetValue( const char *name, ScriptVariant_t value )
 	{
 		ConVarRef cvar( name );
 		if ( !cvar.IsValid() )
@@ -56,46 +91,62 @@ public:
 			return;
 		}
 
-		TFGameRules()->SaveConvar( cvar );
-
-		cvar.SetValue( value );
-	}
-
-	void SetValueString( const char *name, const char *value )
-	{
-		ConVarRef cvar( name );
-		if ( !cvar.IsValid() )
+		switch ( value.m_type )
 		{
-			return;
+			case FIELD_INTEGER:
+			{
+				cvar.SetValue( value.m_int );
+
+				TFGameRules()->SaveConvar( cvar );
+				break;
+			}
+			case FIELD_BOOLEAN:
+			{
+				cvar.SetValue( value.m_bool );
+
+				TFGameRules()->SaveConvar( cvar );
+				break;
+			}
+			case FIELD_FLOAT:
+			{
+				cvar.SetValue( value.m_float );
+
+				TFGameRules()->SaveConvar( cvar );
+				break;
+			}
+			case FIELD_CSTRING:
+			{
+				cvar.SetValue( value.m_pszString );
+
+				TFGameRules()->SaveConvar( cvar );
+				break;
+			}
+			default:
+			{
+				Warning( "%s.SetValue() unsupported value type %s\n", name, ScriptFieldTypeName( value.m_type ) );
+				break;
+			}
 		}
-
-		TFGameRules()->SaveConvar( cvar );
-
-		cvar.SetValue( value );
 	}
 
-	void ExecuteConCommand( const char *pszCommand )
+	bool IsConVarOnAllowList( char const *name )
 	{
-		CCommand cmd;
-		cmd.Tokenize( pszCommand );
-
-		ConCommand *command = cvar->FindCommand( cmd[0] );
-		if ( command )
-		{
-			if ( !command->IsFlagSet( FCVAR_GAMEDLL ) )
-				return;
-			command->Dispatch( cmd );
-		}
+		CUtlSymbol sym = m_AllowList.Find( name );
+		return sym.IsValid();
 	}
+
+private:
+	CUtlSymbolTable m_AllowList;
 } g_ConvarsVScript;
 
 BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptConvars, "Convars", SCRIPT_SINGLETON "Provides an interface for getting and setting convars on the server." )
 	DEFINE_SCRIPTFUNC( GetClientConvarValue, "Returns the convar value for the entindex as a string. Only works with client convars with the FCVAR_USERINFO flag." )
 	DEFINE_SCRIPTFUNC( GetStr, "Returns the convar as a string. May return null if no such convar." )
 	DEFINE_SCRIPTFUNC( GetFloat, "Returns the convar as a float. May return null if no such convar." )
-	DEFINE_SCRIPTFUNC( SetValue, "Sets the value of the convar to a numeric value." )
-	DEFINE_SCRIPTFUNC( SetValueString, "Sets the value of the convar to a string." )
-	DEFINE_SCRIPTFUNC( ExecuteConCommand, "Executes the convar command." )
+	DEFINE_SCRIPTFUNC( GetInt, "Returns the convar as an integer. May return null if no such convar." )
+	DEFINE_SCRIPTFUNC( GetBool, "Returns the convar as a boolean. May return null if no such convar." )
+	DEFINE_SCRIPTFUNC( SetValue, "Sets the value of the convar. The convar must be in cfg/vscript_convar_allowlist.txt to be set. Supported types are bool, int, float, string." )
+	DEFINE_SCRIPTFUNC( IsConVarOnAllowList, "Checks if the convar is allowed to be used and is in cfg/vscript_convar_allowlist.txt." )
 END_SCRIPTDESC();
 #endif
 

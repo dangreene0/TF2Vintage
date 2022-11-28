@@ -233,8 +233,6 @@ bool VScriptClientInit()
 				ScriptRegisterFunction( g_pScriptVM, IsWindowedMode, "" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, ScriptScreenTransform, "ScreenTransform", "Get the x & y positions of a world position in screen space. Returns true if it's onscreen" );
 				ScriptRegisterFunction( g_pScriptVM, CreateProp, "Create an animating prop" );
-
-				g_pScriptVM->RegisterClass( GetScriptDescForClass( CScriptKeyValues ) );
 				
 				if ( GameRules() )
 				{
