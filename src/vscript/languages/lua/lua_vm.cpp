@@ -65,6 +65,7 @@ public:
 	void				ReleaseScript( HSCRIPT hScript );
 
 	HSCRIPT				CreateScope( const char *pszScope, HSCRIPT hParent = NULL );
+	HSCRIPT				ReferenceScope( HSCRIPT hScope );
 	void				ReleaseScope( HSCRIPT hScript );
 
 	HSCRIPT				LookupFunction( const char *pszFunction, HSCRIPT hScope = NULL );
@@ -259,6 +260,20 @@ HSCRIPT CLuaVM::CreateScope( const char *pszScope, HSCRIPT hParent )
 	}
 
 	return (HSCRIPT)luaL_ref( GetVM(), LUA_REGISTRYINDEX );
+}
+
+HSCRIPT CLuaVM::ReferenceScope( HSCRIPT hScope )
+{
+	if ( hScope )
+	{
+		lua_rawgeti( GetVM(), LUA_REGISTRYINDEX, (intptr_t)hScope );
+		if ( lua_isnil( GetVM(), -1 ) || !lua_istable( GetVM(), -1 ) )
+			return NULL;
+
+		return (HSCRIPT)luaL_ref( GetVM(), LUA_REGISTRYINDEX );
+	}
+
+	return NULL;
 }
 
 void CLuaVM::ReleaseScope( HSCRIPT hScript )

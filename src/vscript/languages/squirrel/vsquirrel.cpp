@@ -118,6 +118,7 @@ public:
 	void				ReleaseScript( HSCRIPT hScript );
 
 	HSCRIPT				CreateScope( const char *pszScope, HSCRIPT hParent = NULL );
+	HSCRIPT				ReferenceScope( HSCRIPT hScope );
 	void				ReleaseScope( HSCRIPT hScript );
 
 	HSCRIPT				LookupFunction( const char *pszFunction, HSCRIPT hScope = NULL );
@@ -441,6 +442,22 @@ HSCRIPT CSquirrelVM::CreateScope( const char *pszScope, HSCRIPT hParent )
 	pObject->_unVal = hScope._unVal;
 
 	return (HSCRIPT)pObject;
+}
+
+HSCRIPT CSquirrelVM::ReferenceScope( HSCRIPT hScope )
+{
+	if ( hScope )
+	{
+		sq_addref( GetVM(), (HSQOBJECT *)hScope );
+
+		HSQOBJECT *pObject = new HSQOBJECT;
+		pObject->_type = ((HSQOBJECT *)hScope)->_type;
+		pObject->_unVal = ((HSQOBJECT *)hScope)->_unVal;
+
+		return (HSCRIPT)pObject;
+	}
+
+	return NULL;
 }
 
 void CSquirrelVM::ReleaseScope( HSCRIPT hScript )

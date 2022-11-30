@@ -66,6 +66,7 @@ public:
 	void				ReleaseScript( HSCRIPT hScript );
 
 	HSCRIPT				CreateScope( const char *pszScope, HSCRIPT hParent = NULL );
+	HSCRIPT				ReferenceScope( HSCRIPT hScope );
 	void				ReleaseScope( HSCRIPT hScript );
 
 	HSCRIPT				LookupFunction( const char *pszFunction, HSCRIPT hScope = NULL );
@@ -355,6 +356,24 @@ HSCRIPT CAngelScriptVM::CreateScope( const char *pszScope, HSCRIPT hParent )
 	}
 
 	return (HSCRIPT)pScope;
+}
+
+HSCRIPT CAngelScriptVM::ReferenceScope( HSCRIPT hScope )
+{
+	if ( hScope )
+	{
+		ScriptScope_t *pScope = m_ScopePool.GetObject();
+		if ( !pScope )
+			return INVALID_HSCRIPT;
+
+		V_strcpy_safe( pScope->szScopeName, ((ScriptScope_t *)hScope)->szScopeName );
+		pScope->pParent = ((ScriptScope_t *)hScope)->pParent;
+		pScope->pModule = ((ScriptScope_t *)hScope)->pModule;
+
+		return (HSCRIPT)pScope;
+	}
+	
+	return INVALID_HSCRIPT;
 }
 
 void CAngelScriptVM::ReleaseScope( HSCRIPT hScript )
