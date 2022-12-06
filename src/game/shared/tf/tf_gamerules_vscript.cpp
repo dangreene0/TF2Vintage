@@ -139,7 +139,7 @@ private:
 	CUtlSymbolTable m_AllowList;
 } g_ConvarsVScript;
 
-BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptConvars, "Convars", SCRIPT_SINGLETON "Provides an interface for getting and setting convars on the server." )
+BEGIN_SCRIPTDESC_ROOT_NAMED( CScriptConvars, "CConvars", SCRIPT_SINGLETON "Provides an interface for getting and setting convars on the server." )
 	DEFINE_SCRIPTFUNC( GetClientConvarValue, "Returns the convar value for the entindex as a string. Only works with client convars with the FCVAR_USERINFO flag." )
 	DEFINE_SCRIPTFUNC( GetStr, "Returns the convar as a string. May return null if no such convar." )
 	DEFINE_SCRIPTFUNC( GetFloat, "Returns the convar as a float. May return null if no such convar." )
