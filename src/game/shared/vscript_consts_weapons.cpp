@@ -43,8 +43,6 @@ END_SCRIPTENUM();
 
 void RegisterWeaponScriptConstants()
 {
-	g_pScriptVM->RegisterEnum( GetScriptDescForEnum( WeaponSound ) );
-
 	//
 	// Vector cones
 	//
