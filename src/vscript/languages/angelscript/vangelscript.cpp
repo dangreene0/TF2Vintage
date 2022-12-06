@@ -593,6 +593,14 @@ bool CAngelScriptVM::RegisterClass( ScriptClassDesc_t *pClassDesc )
 
 void CAngelScriptVM::RegisterConstant( ScriptConstantBinding_t *pScriptConstant )
 {
+	// HACKHACK: RegisterProperty fails if the data value is 0, as it needs a valid address
+	// to point to in order to reference it, store a dummy reference and give it that
+	if ( pScriptConstant->m_data.m_hScript == NULL )
+	{
+		static int CONST_NULL = 0;
+		pScriptConstant->m_data.m_hScript = (HSCRIPT)&CONST_NULL;
+	}
+
 	char szDecleration[256] = "const ";
 	switch ( pScriptConstant->m_data.m_type )
 	{
@@ -628,7 +636,7 @@ void CAngelScriptVM::RegisterConstant( ScriptConstantBinding_t *pScriptConstant 
 
 	V_strcat_safe( szDecleration, pScriptConstant->m_pszScriptName );
 
-	Verify( m_pEngine->RegisterGlobalProperty( szDecleration, pScriptConstant->m_data.m_hScript ) >= 0 );
+	Verify( m_pEngine->RegisterGlobalProperty( szDecleration, &pScriptConstant->m_data.m_int ) >= 0 );
 }
 
 void CAngelScriptVM::RegisterEnum( ScriptEnumDesc_t *pEnumDesc )
@@ -1078,7 +1086,7 @@ bool CAngelScriptVM::RegisterFunctionGuts( ScriptFunctionBinding_t *pFuncBinding
 	int nNumParams = pFuncBinding->m_desc.m_Parameters.Count();
 	for ( int i = 0; i < nNumParams; ++i )
 	{
-		ScriptDataType_t &type = pFuncBinding->m_desc.m_Parameters[i];
+		ScriptDataType_t type = pFuncBinding->m_desc.m_Parameters[i];
 		switch ( type )
 		{
 			case FIELD_VOID:
