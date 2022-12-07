@@ -1075,6 +1075,9 @@ bool CAngelScriptVM::RegisterFunctionGuts( ScriptFunctionBinding_t *pFuncBinding
 		case FIELD_HSCRIPT:
 			pszDecleration = "ref &";
 			break;
+		case FIELD_VARIANT:
+			pszDecleration = "any @";
+			break;
 		default:
 			AssertMsg1( false, "Unhandled data type(%d) passed in function registration.", pFuncBinding->m_desc.m_ReturnType );
 			return false;
@@ -1119,8 +1122,11 @@ bool CAngelScriptVM::RegisterFunctionGuts( ScriptFunctionBinding_t *pFuncBinding
 			case FIELD_HSCRIPT:
 				pszDecleration += "ref &in";
 				break;
+			case FIELD_VARIANT:
+				pszDecleration += "any &in";
+				break;
 			default:
-				AssertMsg1( false, "Unhandled data type(%d) passed in function registration.", pFuncBinding->m_desc.m_ReturnType );
+				AssertMsg1( false, "Unhandled data type(%d) passed in function registration.", type );
 				return false;
 		}
 
