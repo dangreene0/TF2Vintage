@@ -732,7 +732,6 @@ BEGIN_ENT_SCRIPTDESC_ROOT( CBaseEntity, "Root class of all server-side entities"
 
 	DEFINE_SCRIPTFUNC_NAMED( ScriptSpawn, "Spawn", "Spawns the entity into the game." )
 	DEFINE_SCRIPTFUNC( Activate, "Activates the spawned entity." )
-	DEFINE_SCRIPTFUNC( SetCollisionGroup, "Sets the entity's collision group." )
 
 	DEFINE_SCRIPTFUNC_NAMED( ScriptGetMoveParent, "GetMoveParent", "If in hierarchy, retrieves the entity's parent" )
 	DEFINE_SCRIPTFUNC_NAMED( ScriptGetRootMoveParent, "GetRootMoveParent", "If in hierarchy, walks up the hierarchy to find the root parent" )

@@ -318,11 +318,6 @@ static int GetLoadType()
 	return gpGlobals->eLoadType;
 }
 
-static int Script_GetFrameCount()
-{
-	return gpGlobals->framecount;
-}
-
 static void SendToConsole( const char *pszCommand )
 {
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayerOrListenServerHost();
@@ -340,11 +335,6 @@ static void SendToServerConsole( const char *pszCommand )
 	char szCommand[512];
 	Q_snprintf( szCommand, sizeof(szCommand), "%s\n", pszCommand );
 	engine->ServerCommand( szCommand );
-}
-
-static bool Script_IsDedicatedServer()
-{
-	return engine->IsDedicatedServer();
 }
 
 HSCRIPT Script_GetLocalPlayerOrListenServerHost()
@@ -368,17 +358,6 @@ static const char *DoUniqueString( const char *pszBase )
 bool Script_IsModelPrecached( const char *modelname )
 {
 	return engine->IsModelPrecached( VScriptCutDownString( modelname ) );
-}
-
-static void Script_AddThinkToEnt( HSCRIPT entity, const char *funcName )
-{
-	CBaseEntity *pEntity = ToEnt( entity );
-
-	if ( !pEntity )
-		return;
-
-	pEntity->m_iszScriptThinkFunction = AllocPooledString( funcName );
-	pEntity->SetContextThink( &CBaseEntity::ScriptThink, gpGlobals->curtime, "ScriptThink" );
 }
 
 static void DoEntFire( const char *pszTarget, const char *pszAction, const char *pszValue, float delay, HSCRIPT hActivator, HSCRIPT hCaller )
@@ -536,12 +515,6 @@ HSCRIPT Script_GetPlayerFromUserID( int userID )
 	return ToHScript( pPlayer );
 }
 
-HSCRIPT Script_EntIndexToHScript( int entIndex )
-{
-	CBaseEntity *pBaseEntity = UTIL_EntityByIndex( entIndex );
-	return ToHScript( pBaseEntity );
-}
-
 static void Script_Say( HSCRIPT hPlayer, const char *pText )
 {
 	CBaseEntity *pBaseEntity = ToEnt(hPlayer);
@@ -575,53 +548,6 @@ static void Script_ClientPrint( HSCRIPT hPlayer, int iDest, const char *pText )
 		ClientPrint( pPlayer, iDest, pText );
 	else
 		UTIL_ClientPrintAll( iDest, pText );
-}
-
-static void Script_StringToFile( const char *pszFileName, const char *pszString )
-{
-	char szFullFileName[256];
-	Q_snprintf( szFullFileName, sizeof(szFullFileName), "save/vscripts/%s", pszFileName );
-
-	static char szFolders[256];
-	bool bHasFolders = false;
-	const char *pszDelimiter = V_strrchr( pszFileName, '/' );
-	if ( pszDelimiter )
-	{
-		bHasFolders = true;
-		V_strncpy( szFolders, pszFileName, MIN( ARRAYSIZE(szFolders), pszDelimiter - pszFileName + 1 ) );
-	}
-
-	if ( bHasFolders )
-		g_pFullFileSystem->CreateDirHierarchy( CFmtStr( "save/vscripts/%s", szFolders ), "GAME" );
-	else
-		g_pFullFileSystem->CreateDirHierarchy( "save/vscripts", "GAME" );
-	CUtlBuffer buf;
-	buf.PutString( pszString );
-	g_pFullFileSystem->WriteFile( szFullFileName, "GAME", buf );
-}
-
-static const char *Script_FileToString( const char *pszFileName )
-{
-	char szFullFileName[256];
-	Q_snprintf( szFullFileName, sizeof(szFullFileName), "save/vscripts/%s", pszFileName );
-
-	FileHandle_t fh = g_pFullFileSystem->Open( szFullFileName, "rb" );
-	if ( fh == FILESYSTEM_INVALID_HANDLE )
-		return NULL;
-
-	static char szString[16384];
-	int size = g_pFullFileSystem->Size(fh) + 1;
-	if ( size > sizeof(szString) )
-	{
-		Warning( "File %s (from %s) is len %i too long for a ScriptFileRead\n", szFullFileName, pszFileName, size );
-		return NULL;
-	}
-
-	CUtlBuffer buf( 0, size, CUtlBuffer::TEXT_BUFFER );
-	g_pFullFileSystem->Read( szString, size, fh );
-	g_pFullFileSystem->Close(fh);
-
-	return szString;
 }
 
 static void Script_ScreenShake( const Vector &center, float amplitude, float frequency, float duration, float radius, int eCommand, bool bAirShake )
@@ -700,8 +626,6 @@ bool VScriptServerInit()
 				ScriptRegisterFunction( g_pScriptVM, GetLoadType, "Get the way the current game was loaded (corresponds to the MapLoad enum)" );
 				ScriptRegisterFunction( g_pScriptVM, Time, "Get the current server time" );
 				ScriptRegisterFunction( g_pScriptVM, FrameTime, "Get the time spent on the server in the last frame" );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetFrameCount, "GetFrameCount", "Returns the engines current frame count" );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_IsDedicatedServer, "IsDedicatedServer", "Returns true if this is a dedicated server.");
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetLocalPlayerOrListenServerHost, "GetListenServerHost", "Get the host player on a listen server.");
 				ScriptRegisterFunction( g_pScriptVM, DoEntFire, SCRIPT_ALIAS( "EntFire", "Generate and entity i/o event" ) );
 				ScriptRegisterFunction( g_pScriptVM, DoEntFireByInstanceHandle, SCRIPT_ALIAS( "EntFireByHandle", "Generate and entity i/o event. First parameter is an entity instance." ) );
@@ -711,16 +635,12 @@ bool VScriptServerInit()
 				ScriptRegisterFunction( g_pScriptVM, CreateProp, "Create a physics prop" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_Say, "Say", "Have player say string" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_ClientPrint, "ClientPrint", "Print a client message" );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_StringToFile, "StringToFile", "Stores the string into the file." );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_FileToString, "FileToString", "Reads a string from file. Returns the string from the file, null if no file or file is too big." );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_AddThinkToEnt, "AddThinkToEnt", "Adds a late bound think function to the C++ think tables for the obj" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_ScreenShake, "ScreenShake", "Start a screenshake with the following parameters. vecCenter, flAmplitude, flFrequency, flDuration, flRadius, eCommand( SHAKE_START = 0, SHAKE_STOP = 1 ), bAirShake" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_ScreenFade, "ScreenFade", "Start a screenfade with the following parameters. player, red, green, blue, alpha, flFadeTime, flFadeHold, flags" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_IsModelPrecached, "IsModelPrecached", "Checks if the modelname is precached." );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_FadeClientVolume, "FadeClientVolume", "Fade out the client's volume level toward silence (or fadePercent)" );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_PlayerInstanceFromIndex, "PlayerInstanceFromIndex", "Get a script handle of a player using the player index." );
 				ScriptRegisterFunctionNamed( g_pScriptVM, Script_GetPlayerFromUserID, "GetPlayerFromUserID", "Given a user id, return the entity, or null." );
-				ScriptRegisterFunctionNamed( g_pScriptVM, Script_EntIndexToHScript, "EntIndexToHScript", "Returns the script handle for the given entity index." );
 				
 				if ( GameRules() )
 				{

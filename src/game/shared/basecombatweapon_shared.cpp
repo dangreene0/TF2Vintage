@@ -2991,9 +2991,6 @@ END_NETWORK_TABLE()
 
 BEGIN_ENT_SCRIPTDESC( CBaseCombatWeapon, CBaseAnimating, "The base class for all equippable weapons." )
 
-	DEFINE_SCRIPTFUNC_NAMED( ScriptGetOwner, "GetOwner", "Get the weapon's owner." )
-	DEFINE_SCRIPTFUNC_NAMED( ScriptSetOwner, "SetOwner", "Set the weapon's owner." )
-
 	DEFINE_SCRIPTFUNC( Clip1, "Get the weapon's current primary ammo." )
 	DEFINE_SCRIPTFUNC( Clip2, "Get the weapon's current secondary ammo." )
 #ifndef CLIENT_DLL
