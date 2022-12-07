@@ -675,13 +675,13 @@ struct ScriptEnumDesc_t
 //-----------------------------------------------------------------------------
 
 #define ScriptRegisterConstant( pVM, constant, description )										ScriptRegisterConstantNamed( pVM, constant, #constant, description )
-#define ScriptRegisterConstantNamed( pVM, constant, scriptName, description )						do { static ScriptConstantBinding_t binding; binding.m_pszScriptName = scriptName; binding.m_pszDescription = description; binding.m_data = constant; pVM->RegisterConstant( &binding ); } while (0)
+#define ScriptRegisterConstantNamed( pVM, constant, scriptName, description )						do { static ScriptConstantBinding_t binding; binding.m_pszScriptName = scriptName; binding.m_pszDescription = description; binding.m_data = ScriptVariant_t( constant ); pVM->RegisterConstant( &binding ); } while (0)
 
 // Could probably use a better name.
 // This is used for registering variants (particularly vectors) not tied to existing variables.
 // The principal difference is that m_data is initted with bCopy set to true.
 #define ScriptRegisterConstantFromTemp( pVM, constant, description )								ScriptRegisterConstantFromTempNamed( pVM, constant, #constant, description )
-#define ScriptRegisterConstantFromTempNamed( pVM, constant, scriptName, description )				do { static ScriptConstantBinding_t binding; binding.m_pszScriptName = scriptName; binding.m_pszDescription = description; binding.m_data = ScriptVariant_t( constant, true ); pVM->RegisterConstant( &binding ); } while (0)
+#define ScriptRegisterConstantFromTempNamed( pVM, constant, scriptName, description )				do { static ScriptConstantBinding_t binding; binding.m_pszScriptName = scriptName; binding.m_pszDescription = description; binding.m_data = ScriptVariant_t( constant ); pVM->RegisterConstant( &binding ); } while (0)
 
 //-----------------------------------------------------------------------------
 // 
