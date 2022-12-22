@@ -455,6 +455,42 @@ ScriptStatus_t CAngelScriptVM::ExecuteFunction( HSCRIPT hFunction, ScriptVariant
 	asIScriptContext *pCtx = m_ContextMgr.AddContext( m_pEngine, pFunction );
 	pCtx->SetLineCallback( asMETHOD( CAngelScriptVM, OnLineCue ), this, asCALL_THISCALL );
 
+	for ( int i = 0; i < nArgs; ++i )
+	{
+		switch ( pArgs[i].m_type )
+		{
+			case FIELD_BOOLEAN:
+			case FIELD_CHARACTER:
+				pCtx->SetArgByte( i, pArgs[i].m_char );
+				break;
+			case FIELD_FLOAT:
+				pCtx->SetArgFloat( i, pArgs[i].m_float );
+				break;
+			case FIELD_INTEGER:
+				pCtx->SetArgDWord( i, pArgs[i].m_int );
+				break;
+			case FIELD_CSTRING:
+				AssertMsg( false, "Need to handle conversion from c-string in function execution" );
+				pCtx->SetArgVarType( i, (void *)pArgs[i].m_pszString, m_nStringTypeID );
+				break;
+			case FIELD_VECTOR:
+				pCtx->SetArgVarType( i, (void *)pArgs[i].m_pVector, m_nVectorTypeID );
+				break;
+			case FIELD_MATRIX3X4:
+				pCtx->SetArgVarType( i, (void *)pArgs[i].m_pMatrix, m_nMatrixTypeID );
+				break;
+			case FIELD_QUATERNION:
+				pCtx->SetArgVarType( i, (void *)pArgs[i].m_pQuat, m_nQuaternionTypeID );
+				break;
+			case FIELD_HSCRIPT:
+				pCtx->SetArgAddress( i, pArgs[i].m_hScript );
+				break;
+			default:
+				AssertMsg( false, "Unhandled data type(%d) encountered executing function %s", pArgs[i].m_type, pFunction->GetName() );
+				break;
+		}
+	}
+
 	if ( m_ContextMgr.ExecuteScripts() > 0 )
 	{
 		if ( bWait )
@@ -1244,22 +1280,16 @@ void CAngelScriptVM::Free( void *p )
 
 int CAngelScriptVM::OnInclude( char const *pszFromFile, char const *pszSection, CScriptBuilder *pBuilder, void *pvParam )
 {
-	FILE *fp = fopen( pszFromFile, "rb" );
-	if ( fp == nullptr )
-		return -1;
-	
-	fseek( fp, 0, SEEK_END );
-	size_t nFileLen = ftell( fp );
-	fseek( fp, 0, SEEK_SET );
+	// HACK: This was the easiest method I could think of to be able to include scripts from the 'scripts/vscript' directory
+	CAngelScriptVM *pVM = reinterpret_cast<CAngelScriptVM *>( pvParam );
+	asIScriptFunction *pFunc = pVM->m_pEngine->GetGlobalFunctionByDecl( "bool DoIncludeScript(string, ref &in)" );
+	if ( pFunc )
+	{
+		ScriptVariant_t arg = pszFromFile;
+		return pVM->ExecuteFunction( (HSCRIPT)pFunc, &arg, 1, NULL, NULL, true );
+	}
 
-	CUtlBuffer buf( 0, nFileLen+1 );
-	size_t nRead = fread( buf.Base(), 1, nFileLen, fp );
-	if ( nRead != nFileLen )
-		return -1;
-
-	fclose( fp );
-
-	return pBuilder->AddSectionFromMemory( "Include", (char *)buf.Base());
+	return 1;
 }
 
 asIScriptContext *CAngelScriptVM::OnRequestContext( asIScriptEngine *engine, void *pvParam )
