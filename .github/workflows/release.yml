@@ -49,7 +49,7 @@ jobs:
       - name: Upload product [7z]
         uses: actions/upload-artifact@v3
         with:
-          name: tf2vintage (7z)
+          name: tf2vintage
           path: tf2vintage.7z
       - name: Clean up leftover binaries
         uses: geekyeggo/delete-artifact@v1
