@@ -3779,11 +3779,15 @@ void CBasePlayer::PlayerRunCommand(CUserCmd *ucmd, IMoveHelper *moveHelper)
 		{
 			m_hPlayerRunCommand = m_ScriptScope.LookupFunction( "PlayerRunCommand" );
 		}
-		HSCRIPT hCmd = g_pScriptVM->RegisterInstance( ucmd );
 
-		m_ScriptScope.Call( m_hPlayerRunCommand, NULL, hCmd );
+		if ( m_hPlayerRunCommand != INVALID_HSCRIPT )
+		{
+			HSCRIPT hCmd = g_pScriptVM->RegisterInstance( ucmd );
 
-		g_pScriptVM->RemoveInstance( hCmd );
+			m_ScriptScope.Call( m_hPlayerRunCommand, NULL, hCmd );
+
+			g_pScriptVM->RemoveInstance( hCmd );
+		}
 	}
 	
 	PlayerMove()->RunCommand(this, ucmd, moveHelper);

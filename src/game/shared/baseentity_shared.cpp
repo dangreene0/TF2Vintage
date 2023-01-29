@@ -1611,16 +1611,20 @@ void CBaseEntity::FireBullets( const FireBulletsInfo_t &info )
 		{
 			m_hFireBullets = m_ScriptScope.LookupFunction( "FireBullets" );
 		}
-		HSCRIPT hInfo = g_pScriptVM->RegisterInstance( const_cast<FireBulletsInfo_t *>( &info ) );
 
-		ScriptVariant_t functionReturn;
-		if ( m_ScriptScope.Call( m_hFireBullets, &functionReturn, hInfo ) == SCRIPT_DONE )
+		if ( m_hFireBullets != INVALID_HSCRIPT )
 		{
-			if ( !functionReturn.m_bool )
-				return;
-		}
+			HSCRIPT hInfo = g_pScriptVM->RegisterInstance( const_cast<FireBulletsInfo_t *>( &info ) );
 
-		g_pScriptVM->RemoveInstance( hInfo );
+			ScriptVariant_t functionReturn;
+			if ( m_ScriptScope.Call( m_hFireBullets, &functionReturn, hInfo ) == SCRIPT_DONE )
+			{
+				if ( !functionReturn.m_bool )
+					return;
+			}
+
+			g_pScriptVM->RemoveInstance( hInfo );
+		}
 	}
 #endif
 	static int	tracerCount;

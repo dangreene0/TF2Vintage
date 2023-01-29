@@ -2285,18 +2285,22 @@ void CBaseEntity::Event_Killed( const CTakeDamageInfo &info )
 		{
 			m_hOnDeath = m_ScriptScope.LookupFunction( "OnDeath" );
 		}
-		HSCRIPT hInfo = g_pScriptVM->RegisterInstance( const_cast<CTakeDamageInfo *>( &info ) );
 
-		ScriptVariant_t retVal;
-		ScriptStatus_t result = m_ScriptScope.Call( m_hOnDeath, &retVal, hInfo );
-		if ( result != SCRIPT_ERROR && retVal.m_type == FIELD_BOOLEAN && !retVal.m_bool )
+		if ( m_hOnDeath != INVALID_HSCRIPT )
 		{
-			// Make this entity cheat death
-			g_pScriptVM->RemoveInstance( hInfo );
-			return;
-		}
+			HSCRIPT hInfo = g_pScriptVM->RegisterInstance( const_cast<CTakeDamageInfo *>( &info ) );
 
-		g_pScriptVM->RemoveInstance( hInfo );
+			ScriptVariant_t retVal;
+			ScriptStatus_t result = m_ScriptScope.Call( m_hOnDeath, &retVal, hInfo );
+			if ( result != SCRIPT_ERROR && retVal.m_type == FIELD_BOOLEAN && !retVal.m_bool )
+			{
+				// Make this entity cheat death
+				g_pScriptVM->RemoveInstance( hInfo );
+				return;
+			}
+
+			g_pScriptVM->RemoveInstance( hInfo );
+		}
 	}
 
 	if( info.GetAttacker() )
@@ -2464,17 +2468,29 @@ void CBaseEntity::UpdateOnRemove( void )
 		}
 		m_ScriptThinkFuncs.PurgeAndDeleteElements();
 
-		m_ScriptScope.ReleaseFunction( m_hFireBullets );
-		m_hFireBullets = INVALID_HSCRIPT;
+		if ( m_hFireBullets != INVALID_HSCRIPT )
+		{
+			m_ScriptScope.ReleaseFunction( m_hFireBullets );
+			m_hFireBullets = INVALID_HSCRIPT;
+		}
 
-		m_ScriptScope.ReleaseFunction( m_hOnDeath );
-		m_hOnDeath = INVALID_HSCRIPT;
+		if ( m_hOnDeath != INVALID_HSCRIPT )
+		{
+			m_ScriptScope.ReleaseFunction( m_hOnDeath );
+			m_hOnDeath = INVALID_HSCRIPT;
+		}
 
-		m_ScriptScope.ReleaseFunction( m_hVPhysicsCollision );
-		m_hVPhysicsCollision = INVALID_HSCRIPT;
+		if ( m_hVPhysicsCollision != INVALID_HSCRIPT )
+		{
+			m_ScriptScope.ReleaseFunction( m_hVPhysicsCollision );
+			m_hVPhysicsCollision = INVALID_HSCRIPT;
+		}
 
-		m_ScriptScope.ReleaseFunction( m_hHandleInteraction );
-		m_hHandleInteraction = INVALID_HSCRIPT;
+		if ( m_hHandleInteraction != INVALID_HSCRIPT )
+		{
+			m_ScriptScope.ReleaseFunction( m_hHandleInteraction );
+			m_hHandleInteraction = INVALID_HSCRIPT;
+		}
 	}
 }
 
@@ -3071,14 +3087,17 @@ void CBaseEntity::VPhysicsCollision( int index, gamevcollisionevent_t *pEvent )
 			m_hVPhysicsCollision = m_ScriptScope.LookupFunction( "VPhysicsCollision" );
 		}
 
-		Vector vecContactPoint;
-		pEvent->pInternalData->GetContactPoint( vecContactPoint );
+		if ( m_hVPhysicsCollision != INVALID_HSCRIPT )
+		{
+			Vector vecContactPoint;
+			pEvent->pInternalData->GetContactPoint( vecContactPoint );
 
-		Vector vecSurfaceNormal;
-		pEvent->pInternalData->GetSurfaceNormal( vecSurfaceNormal );
+			Vector vecSurfaceNormal;
+			pEvent->pInternalData->GetSurfaceNormal( vecSurfaceNormal );
 
-		// entity, speed, point, normal
-		m_ScriptScope.Call( m_hVPhysicsCollision, NULL, pHitEntity->GetScriptInstance(), pEvent->collisionSpeed, vecContactPoint, vecSurfaceNormal );
+			// entity, speed, point, normal
+			m_ScriptScope.Call( m_hVPhysicsCollision, NULL, pHitEntity->GetScriptInstance(), pEvent->collisionSpeed, vecContactPoint, vecSurfaceNormal );
+		}
 	}
 
 	// Don't make sounds / effects if neither entity is MOVETYPE_VPHYSICS.  The game
@@ -4940,19 +4959,22 @@ bool CBaseEntity::DispatchInteraction( int interactionType, void *data, CBaseCom
 			m_hHandleInteraction = m_ScriptScope.LookupFunction( "HandleInteraction" );
 		}
 
-		//HSCRIPT hData = g_pScriptVM->RegisterInstance( data );
-
-		// interaction, data, sourceEnt
-		ScriptVariant_t functionReturn;
-		ScriptStatus_t result = m_ScriptScope.Call( m_hHandleInteraction, &functionReturn, interactionType, ToHScript( sourceEnt ) );
-		if ( result == SCRIPT_DONE && ( functionReturn.m_type == FIELD_BOOLEAN ) )
+		if ( m_hHandleInteraction != INVALID_HSCRIPT )
 		{
-			// Return the interaction here
-			//g_pScriptVM->RemoveInstance( hData );
-			return functionReturn.m_bool;
-		}
+			//HSCRIPT hData = g_pScriptVM->RegisterInstance( data );
 
-		//g_pScriptVM->RemoveInstance( hData );
+			// interaction, data, sourceEnt
+			ScriptVariant_t functionReturn;
+			ScriptStatus_t result = m_ScriptScope.Call( m_hHandleInteraction, &functionReturn, interactionType, ToHScript( sourceEnt ) );
+			if ( result == SCRIPT_DONE && ( functionReturn.m_type == FIELD_BOOLEAN ) )
+			{
+				// Return the interaction here
+				//g_pScriptVM->RemoveInstance( hData );
+				return functionReturn.m_bool;
+			}
+
+			//g_pScriptVM->RemoveInstance( hData );
+		}
 	}
 
 	return HandleInteraction( interactionType, data, sourceEnt );

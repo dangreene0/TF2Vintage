@@ -965,10 +965,13 @@ bool CBaseAnimating::ScriptHookOnServerRagdoll( HSCRIPT hRagdoll, bool bSubModel
 			m_hOnServerRagdoll = m_ScriptScope.LookupFunction( "OnServerRagdoll" );
 		}
 
-		// event
-		ScriptVariant_t returnValue = true;
-		m_ScriptScope.Call( m_hOnServerRagdoll, &returnValue, hRagdoll, bSubModel );
-		return returnValue.m_bool;
+		if ( m_hOnServerRagdoll != INVALID_HSCRIPT )
+		{
+			// event
+			ScriptVariant_t returnValue = true;
+			m_ScriptScope.Call( m_hOnServerRagdoll, &returnValue, hRagdoll, bSubModel );
+			return returnValue.m_bool;
+		}
 	}
 
 	return true;
@@ -1247,14 +1250,18 @@ bool CBaseAnimating::ScriptHookHandleAnimEvent( animevent_t *pEvent )
 		{
 			m_hHandleAnimEvent = m_ScriptScope.LookupFunction( "HandleAnimEvent" );
 		}
-		HSCRIPT hEvent = g_pScriptVM->RegisterInstance( pEvent );
 
-		// event
-		ScriptVariant_t returnValue = true;
-		m_ScriptScope.Call( m_hHandleAnimEvent, &returnValue, hEvent );
+		if ( m_hHandleAnimEvent != INVALID_HSCRIPT )
+		{
+			HSCRIPT hEvent = g_pScriptVM->RegisterInstance( pEvent );
 
-		g_pScriptVM->RemoveInstance( hEvent );
-		return returnValue.m_bool;
+			// event
+			ScriptVariant_t returnValue = true;
+			m_ScriptScope.Call( m_hHandleAnimEvent, &returnValue, hEvent );
+
+			g_pScriptVM->RemoveInstance( hEvent );
+			return returnValue.m_bool;
+		}
 	}
 
 	return true;
