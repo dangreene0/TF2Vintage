@@ -5,7 +5,7 @@
 	type 		multiplayer_only 
 	icon		"resource/game"		
 	developer 	"Team Fortress 2 Vintage Team"
-	developer_url 	"https://steamcommunity.com/groups/TF2_Vintage"
+	developer_url 	"https://discord.gg/bGw6cX9yVs"
 	nomodels 		1
 	nohimodel 		1
 	nocrosshair 	0
