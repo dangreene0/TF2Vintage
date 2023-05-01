@@ -27,7 +27,7 @@ jobs:
   build-game:
     needs: [build-windows, build-linux]
     runs-on:
-      ubuntu-latest
+      ubuntu-20.04
     
     steps:
       - name: Checkout game assets
