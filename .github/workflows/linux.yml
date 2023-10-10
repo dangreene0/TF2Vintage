@@ -1,7 +1,9 @@
 name: Linux
 
+# on: 
+#   workflow_call:
 on: 
-  workflow_call:
+  workflow_dispatch:
 
 env:
   CCACHE_VERSION: 3.7.7
